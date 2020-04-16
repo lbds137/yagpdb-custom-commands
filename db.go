@@ -66,4 +66,4 @@
 }}
 
 {{ sendMessage nil $embed }}
-{{ deleteTrigger 0 }}
+{{ deleteTrigger 5 }}
