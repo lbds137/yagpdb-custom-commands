@@ -1,5 +1,5 @@
-{{ $args := parseArgs 3 (joinStr "" "Usage: `get|set` `key` `value`")
-    (carg "string" "operation (`get` or `set`)")
+{{ $args := parseArgs 3 (joinStr "" "Usage: `del|get|set` `key` `value`")
+    (carg "string" "operation (`del`, `get`, or `set`)")
     (carg "string" "key")
     (carg "string" "value")
 }}
@@ -8,13 +8,16 @@
 {{ $key := $args.Get 1 }}
 {{ $value := $args.Get 2 }}
 
+{{ $isDel := eq $operation "del" }}
 {{ $isGet := eq $operation "get" }}
 {{ $isSet := eq $operation "set" }}
-{{ $operationCheck := or $isGet $isSet }}
+{{ $operationCheck := or $isDel $isGet $isSet }}
 {{ $valueCheck := or $value $isGet }}
 
 {{ if and $operationCheck $key $valueCheck }}
-    {{ if $isGet }}
+    {{ if $isDel }}
+        {{ dbDel .User.ID $key $value }} 
+    {{ else if $isGet }}
         {{ dbGet .User.ID $key }} 
     {{ else if $isSet }}
         {{ dbSet .User.ID $key $value }} 
