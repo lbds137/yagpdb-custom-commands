@@ -10,7 +10,7 @@
 {{ if and (ge $n $min) (le $n $max) }}
     {{ execCC 15 nil 0 (sdict "Operation" "get" "Key" (joinStr "" "Rule #" $n) "UserID" .Guild.OwnerID) }}
 {{ else }}
-    ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
+    {{ sendMessage nil (joinStr "" "⚠️ Could not find rule number: `" $n "`") }}
 {{ end }}
 
 {{ deleteTrigger 5 }}
