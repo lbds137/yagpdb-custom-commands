@@ -21,7 +21,7 @@
     {{ $ptAction := "" }}
     {{ if or $isDel $isGet }}
         {{ $result = (dbGet .User.ID $key).Value }}
-	    {{ if $isDel }}
+        {{ if $isDel }}
             {{ $ptAction = "deleted" }}
             {{ dbDel .User.ID $key }} 
         {{ else if $isGet }}
