@@ -1,12 +1,12 @@
 {{ $args := parseArgs 3 (joinStr "" "Usage: `del|get|set` `key` `value`")
-    (carg "string" "operation (`del`, `get`, or `set`)")
+    (carg "string" "operation")
     (carg "string" "key")
-    (carg "string" "value")
+    (carg "string" "value (optional)")
 }}
 
 {{ $operation := $args.Get 0 }}
 {{ $key := $args.Get 1 }}
-{{ $value := $args.Get 2 }}
+{{ $value := and ($args.IsSet 2) ($args.Get 2) }}
 
 {{ $isDel := eq $operation "del" }}
 {{ $isGet := eq $operation "get" }}
