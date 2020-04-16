@@ -40,7 +40,7 @@
         {{ $userFull = joinStr "" .Member.Nick " (" .User.String ")" }}
     {{ end }}
     {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
-    {{ $uAvatar := joinStr "" "https://cdn.discordapp.com/avatars/" (toString .User.ID) "/" .User.Avatar ".gif" }}
+    {{ $uAvatar := joinStr "" "https://cdn.discordapp.com/avatars/" .User.ID "/" .User.Avatar ".gif" }}
     {{ $author := sdict "name" $userFull "url" $userLink "icon_url" $uAvatar }}
 
     {{ editMessage nil $hereMsgID (complexMessageEdit
