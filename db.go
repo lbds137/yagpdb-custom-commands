@@ -15,6 +15,7 @@
 {{ $valueCheck := or $value $isGet }}
 
 {{ if and $operationCheck $key $valueCheck }}
+    {{ $resultEmoji := "✅" }}
     {{ if $isDel }}
         {{ dbDel .User.ID $key $value }} 
     {{ else if $isGet }}
@@ -22,13 +23,17 @@
     {{ else if $isSet }}
         {{ dbSet .User.ID $key $value }} 
     {{ end }}
+
+    {{ joinStr "" $resultEmoji " Successful `" $operation "` of `" $key ", " $value "` for <@" .User.ID ">!" }} 
 {{ else }}
-    {{ $errEmoji := "⚠️" }}
+    {{ $resultEmoji := "⚠️" }}
     {{ if not $operationCheck }}
-        {{ $errEmoji }} Invalid operation provided: {{ joinStr "" "`" $operation "`" }}
+        {{ joinStr "" $resultEmoji " Invalid operation provided: `" $operation "`" }}
     {{ else if not $key }}
-        {{ $errEmoji }} You must provide a key!
+        {{ joinStr "" $resultEmoji " You must provide a key!" }}
     {{ else if not $valueCheck }}
-        {{ $errEmoji }} You must provide a value!
+        {{ joinStr "" $resultEmoji " You must provide a value!" }}
     {{ end }}
 {{ end }}
+
+{{ deleteTrigger 0 }}
