@@ -14,25 +14,25 @@
     {{ $staffRoleID := 499037360340598819 }}
     {{ if hasRoleID $staffRoleID }}
         {{ $hereText = joinStr ""
-            "A staff member has moved this conversation to **#" $thereChannel.Name "**."
-            "\n\nPlease go there now. [Click or tap here to move.](" $thereLink ")"
+            "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
+            "🔗 [Click or tap here to move.](" $thereLink ")"
         }}
         {{ $thereText = joinStr ""
-            "A staff member has moved a conversation from **#" .Channel.Name "** to here."
-            "\n\n[Click or tap here to return.](" $hereLink ")"
+            "A staff member has moved a conversation from **#" .Channel.Name "** to here.\n\n"
+            "🔗 [Click or tap here to return.](" $hereLink ")"
         }}
     {{ else }}
         {{ $hereText = joinStr ""
-            "A server member has linked to **#" $thereChannel.Name "**."
-            "\n\n[Click or tap here to move.](" $thereLink ")"
+            "A server member has linked to **#" $thereChannel.Name "**.\n\n"
+            "🔗 [Click or tap here to move.](" $thereLink ")"
         }}
         {{ $thereText = joinStr ""
-            "A server member has linked from **#" .Channel.Name "** to here."
-            "\n\n[Click or tap here to return.](" $hereLink ")"
+            "A server member has linked from **#" .Channel.Name "** to here.\n\n"
+            "🔗 [Click or tap here to return.](" $hereLink ")"
         }}
     {{ end }}
     
-    {{ $title := "🔗 Channel Link 🔗" }}
+    {{ $title := "Channel Link" }}
     {{ $color := 0xff0000 }}
 
     {{ $userFull := .User.String }}

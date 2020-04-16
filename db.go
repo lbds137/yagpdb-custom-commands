@@ -33,7 +33,7 @@
     {{ end }}
 
     {{ if or $result $value }}
-        {{ $resultText = joinStr "" "Value " $ptAction ": `" (or $result $value) "`\n\n" }}
+        {{ $resultText = joinStr "" "Value for key `" $key "` " $ptAction ": `" (or $result $value) "`\n\n" }}
     {{ else }}
         {{ $resultEmoji = "⚠️" }}
         {{ $resultText = joinStr "" "No value found for key: `" $key "`\n\n" }}
