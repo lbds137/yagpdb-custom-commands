@@ -18,30 +18,38 @@
 {{ $resultText := "" }}
 {{ $resultEmoji := "✅" }}
 {{ if and $operationCheck $key $valueCheck }}
-    {{ if $isDel }}
-        {{ dbDel .User.ID $key }} 
-    {{ else if $isGet }}
-        {{ $result = dbGet .User.ID $key }}
-	{{ if $result.Value }} 
-        	{{ $resultText = joinStr "" "Value retrieved: `" $result.Value "`\n\n" }}
-	{{ else }}
-		{{ $resultText = joinStr "" "No value found for key: `" $key "`\n\n" }}
-	{{ end }}
+    {{ $ptAction := "" }}
+    {{ if or $isDel $isGet }}
+        {{ $result = (dbGet .User.ID $key).Value }}
+	    {{ if $isDel }}
+            {{ $ptAction = "deleted" }}
+		    {{ dbDel .User.ID $key }} 
+        {{ else if $isGet }}
+            {{ $ptAction = "retrieved" }}
+        {{ end }}
     {{ else if $isSet }}
-	{{ $resultText = joinStr "" "Value added: `" $value "`\n\n" }}
+        {{ $ptAction = "set" }}
         {{ dbSet .User.ID $key $value }} 
     {{ end }}
-    {{ $resultText = joinStr "" $resultText $resultEmoji " Operation `" $operation "` for key `" $key "` successfully completed!" }}
+
+    {{ if or $result $isSet }}
+        {{ $resultText = joinStr "" "Value " $ptAction ": `" (or $result $value) "`\n\n" }}
+    {{ else }}
+        {{ $resultEmoji = "⚠️" }}
+        {{ $resultText = joinStr "" "No value found for key: `" $key "`\n\n" }}
+    {{ end }}
 {{ else }}
     {{ $resultEmoji = "⚠️" }}
     {{ if not $operationCheck }}
-        {{ $resultText = joinStr "" $resultText $resultEmoji " Invalid operation provided: `" $operation "`" }}
+        {{ $resultText = joinStr "" "Invalid operation provided: `" $operation "`" }}
     {{ else if not $key }}
-        {{ $resultText = joinStr "" $resultText $resultEmoji " You must provide a key!" }}
+        {{ $resultText = "You must provide a key!" }}
     {{ else if not $valueCheck }}
-        {{ $resultText = joinStr "" $resultText $resultEmoji " You must provide a value!" }}
+        {{ $resultText = "You must provide a value!" }}
     {{ end }}
 {{ end }}
+
+{{ $resultText = joinStr " " $resultEmoji $resultText }}
 
 {{ $userFull := .User.String }}
 {{ if .Member.Nick }}
@@ -51,7 +59,7 @@
 {{ $uAvatar := joinStr "" "https://cdn.discordapp.com/avatars/" .User.ID "/" .User.Avatar ".gif" }}
 {{ $author := sdict "name" $userFull "url" $userLink "icon_url" $uAvatar }}
 {{ $embed := cembed
-    "title" "Database Operation"
+  "title" (joinStr "" "Database Operation: `" $operation "`")
     "description" $resultText
     "color" 0xff0000
     "author" $author
