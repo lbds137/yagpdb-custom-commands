@@ -1,12 +1,24 @@
-{{ $args := parseArgs 2 (joinStr "" "Usage: `del|get|set` `key` `value`")
-    (carg "string" "operation")
-    (carg "string" "key")
-    (carg "string" "value (optional)")
-}}
+{{ $operation := "" }}
+{{ $key := "" }}
+{{ $value := "" }}
+{{ $member := "" }}
 
-{{ $operation := $args.Get 0 }}
-{{ $key := $args.Get 1 }}
-{{ $value := and ($args.IsSet 2) ($args.Get 2) }}
+{{ if .ExecData }}
+    {{ $operation = .ExecData.Operation }}
+    {{ $key = .ExecData.Key }}
+    {{ $value = .ExecData.Value }}
+    {{ $member = getMember .ExecData.UserID }}
+{{ else }}
+    {{ $args := parseArgs 2 (joinStr "" "Usage: `del|get|set` `key` `value`")
+        (carg "string" "operation")
+        (carg "string" "key")
+        (carg "string" "value (optional)")
+    }}
+    {{ $operation = $args.Get 0 }}
+    {{ $key = $args.Get 1 }}
+    {{ $value = and ($args.IsSet 2) ($args.Get 2) }}
+    {{ $member = .Member }}
+{{ end }}
 
 {{ $isDel := eq $operation "del" }}
 {{ $isGet := eq $operation "get" }}
@@ -20,21 +32,22 @@
 {{ if and $operationCheck $key $valueCheck }}
     {{ $ptAction := "" }}
     {{ if or $isDel $isGet }}
-        {{ $result = (dbGet .User.ID $key).Value }}
+        {{ $result = (dbGet $member.User.ID $key).Value }}
         {{ if $isDel }}
             {{ $ptAction = "deleted" }}
-            {{ dbDel .User.ID $key }} 
+            {{ dbDel $member.User.ID $key }} 
         {{ else if $isGet }}
             {{ $ptAction = "retrieved" }}
         {{ end }}
     {{ else if $isSet }}
         {{ $ptAction = "set" }}
-        {{ dbSet .User.ID $key $value }} 
+        {{ dbSet $member.User.ID $key $value }} 
     {{ end }}
 
     {{ if or $result $value }}
         {{ $resultText = joinStr "" "Value for key `" $key "` " $ptAction ": `" (or $result $value) "`\n\n" }}
     {{ else }}
+        {{ $result = "(no result found for specified key)" }}
         {{ $resultEmoji = "⚠️" }}
         {{ $resultText = joinStr "" "No value found for key: `" $key "`\n\n" }}
     {{ end }}
@@ -51,19 +64,25 @@
 
 {{ $resultText = joinStr " " $resultEmoji $resultText }}
 
-{{ $userFull := .User.String }}
-{{ if .Member.Nick }}
-    {{ $userFull = joinStr "" .Member.Nick " (" .User.String ")" }}
-{{ end }}
-{{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
-{{ $uAvatar := joinStr "" "https://cdn.discordapp.com/avatars/" .User.ID "/" .User.Avatar ".gif" }}
-{{ $author := sdict "name" $userFull "url" $userLink "icon_url" $uAvatar }}
-{{ $embed := cembed
-    "title" (joinStr "" "Database Operation: `" $operation "`")
-    "description" $resultText
-    "color" 0xff0000
-    "author" $author
-}}
+{{ if and .ExecData $isGet }}
+    {{ execCC 3 nil 0 (sdict "Key" $key "Value" (or $result $value)) }}
+{{ else }}
+    {{ $userFull := $member.User.String }}
+    {{ if $member.Nick }}
+        {{ $userFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
+    {{ end }}
+    {{ $userLink := joinStr "" "https://discordapp.com/users/" $member.User.ID }}
+    {{ $uAvatar := joinStr "" "https://cdn.discordapp.com/avatars/" $member.User.ID "/" $member.User.Avatar ".gif" }}
+    {{ $author := sdict "name" $userFull "url" $userLink "icon_url" $uAvatar }}
 
-{{ sendMessage nil $embed }}
+    {{ $embed := cembed
+        "title" (joinStr "" "Database Operation: `" $operation "`")
+        "description" $resultText
+        "color" 0xff0000
+        "author" $author
+    }}
+
+    {{ sendMessage nil $embed }}
+{{ end }}
+
 {{ deleteTrigger 5 }}
