@@ -5,8 +5,7 @@
     (carg "int" "rule number to view")
 }}
 
-{{ $n := ($args.Get 0) }}
-
+{{ $n := $args.Get 0 }}
 
 {{ if and (ge $n $min) (le $n $max) }}
     {{ $ccID := 0 }}
@@ -34,7 +33,7 @@
     
     {{ execCC $ccID nil 0 (sdict "RuleNumber" $n) }}
 {{ else }}
-    ⚠️ Could not find the requested rule number: {{ $n }}
+    ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
 {{ end }}
 
 {{ deleteTrigger 0 }}
