@@ -1,0 +1,3 @@
+{{ $rText := "**Do not promote discriminatory / violent ideologies.** This rule refers to (but is not limited to) things such as white supremacy, Nazism, mass murder, genocide, etc. *Note: it is acceptable to discuss these things (in the appropriate channel) provided that you do not express support for or affinity with them.*" }}
+ 
+{{ execCC 3 nil 0 (sdict "RuleNumber" .ExecData.RuleNumber "RuleText" $rText) }}

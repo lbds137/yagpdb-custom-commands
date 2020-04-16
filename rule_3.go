@@ -1,0 +1,3 @@
+{{ $rText := "**Do not insult or belittle someone on the basis of their identity.** This server is intended to be inclusive of and respectful towards marginalized groups, including but not limited to LGBTQIA+ folks, racial/ethnic minorities, neurodivergent folks, people with mental illness and/or disabilities, plurals, non-native English speakers, immigrants, et cetera, so please do not use language that is disparaging towards such folks." }}
+ 
+{{ execCC 3 nil 0 (sdict "RuleNumber" .ExecData.RuleNumber "RuleText" $rText) }}
