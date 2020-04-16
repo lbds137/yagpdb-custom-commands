@@ -36,4 +36,4 @@
     ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
 {{ end }}
 
-{{ deleteTrigger 0 }}
+{{ deleteTrigger 5 }}
