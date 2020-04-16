@@ -23,7 +23,7 @@
         {{ $result = (dbGet .User.ID $key).Value }}
 	    {{ if $isDel }}
             {{ $ptAction = "deleted" }}
-		    {{ dbDel .User.ID $key }} 
+            {{ dbDel .User.ID $key }} 
         {{ else if $isGet }}
             {{ $ptAction = "retrieved" }}
         {{ end }}
@@ -32,7 +32,7 @@
         {{ dbSet .User.ID $key $value }} 
     {{ end }}
 
-    {{ if or $result $isSet }}
+    {{ if or $result $value }}
         {{ $resultText = joinStr "" "Value " $ptAction ": `" (or $result $value) "`\n\n" }}
     {{ else }}
         {{ $resultEmoji = "⚠️" }}
@@ -59,7 +59,7 @@
 {{ $uAvatar := joinStr "" "https://cdn.discordapp.com/avatars/" .User.ID "/" .User.Avatar ".gif" }}
 {{ $author := sdict "name" $userFull "url" $userLink "icon_url" $uAvatar }}
 {{ $embed := cembed
-  "title" (joinStr "" "Database Operation: `" $operation "`")
+    "title" (joinStr "" "Database Operation: `" $operation "`")
     "description" $resultText
     "color" 0xff0000
     "author" $author
