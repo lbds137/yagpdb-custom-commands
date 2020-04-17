@@ -33,7 +33,7 @@
     {{ end }}
     
     {{ $title := "Channel Link" }}
-    {{ $color := 0xff0000 }}
+    {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
 
     {{ $userFull := .User.String }}
     {{ if .Member.Nick }}

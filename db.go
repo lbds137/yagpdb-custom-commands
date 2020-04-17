@@ -70,7 +70,7 @@
 {{ $embed := cembed
     "title" (joinStr "" "Database Operation: `" $operation "`")
     "description" $resultText
-    "color" 0xff0000
+    "color" (toInt (dbGet .Guild.OwnerID "Embed Color").Value)
     "author" $author
 }}
 
