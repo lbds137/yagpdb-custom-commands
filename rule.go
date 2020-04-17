@@ -8,9 +8,11 @@
 {{ $n := $args.Get 0 }}
 
 {{ if and (ge $n $min) (le $n $max) }}
-    {{ execCC 15 nil 0 (sdict "Operation" "get" "Key" (joinStr "" "Rule #" $n) "UserID" .Guild.OwnerID) }}
+    {{ $key := joinStr "" "Rule #" $n }}
+    {{ $result := (dbGet .Guild.OwnerID $key).Value }}
+    {{ execCC 3 nil 0 (sdict "Key" $key "Value" $result) }}
 {{ else }}
-    {{ sendMessage nil (joinStr "" "⚠️ Could not find rule number: `" $n "`") }}
+    ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
 {{ end }}
 
 {{ deleteTrigger 5 }}

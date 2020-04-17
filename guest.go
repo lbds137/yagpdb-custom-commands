@@ -1,5 +1,5 @@
 {{ $commandName := "Guest User Check" }}
-{{ $hoursCutoff := 24 }}
+{{ $hoursCutoff := (toInt (dbGet .Guild.OwnerID "Guest Grace Period Hours").Value) }}
 {{ $actionTaken := "" }}
 
 {{ $userID := (userArg (index .Args 1)).ID }}
