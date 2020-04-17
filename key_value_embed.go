@@ -3,7 +3,7 @@
 {{ $embed := cembed
     "title" .ExecData.Key
     "description" .ExecData.Value
-    "color" 0xff0000
+    "color" (toInt (dbGet .Guild.OwnerID "Embed Color").Value)
     "author" (sdict "name" .Guild.Name "url" "https://thenighthouse.org/" "icon_url" $gIcon)
 }}
 
