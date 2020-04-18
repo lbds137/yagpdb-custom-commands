@@ -7,4 +7,4 @@
     "author" (sdict "name" .Guild.Name "url" "https://thenighthouse.org/" "icon_url" $gIcon)
 }}
 
-{{ sendMessage nil $embed }}
+{{ sendMessage .ExecData.Channel $embed }}
