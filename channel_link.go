@@ -4,11 +4,11 @@
 {{ if $thereChannel }}
     {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
     {{ $thereMsgID := sendMessageRetID $tcID (complexMessage "content" "Loading...") }}
-
+ 
     {{ $cLinkBaseUrl := "https://discordapp.com/channels" }}
     {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $tcID "/" $thereMsgID }}
     {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" .Channel.ID "/" $hereMsgID }}
-
+ 
     {{ $hereText := "" }}
     {{ $thereText := "" }}
     {{ $staffRoleID := 499037360340598819 }}
@@ -34,7 +34,7 @@
     
     {{ $title := "Channel Link" }}
     {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
-
+ 
     {{ $userFull := .User.String }}
     {{ if .Member.Nick }}
         {{ $userFull = joinStr "" .Member.Nick " (" .User.String ")" }}
@@ -42,7 +42,7 @@
     {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
     {{ $uAvatar := joinStr "" "https://cdn.discordapp.com/avatars/" .User.ID "/" .User.Avatar ".gif" }}
     {{ $author := sdict "name" $userFull "url" $userLink "icon_url" $uAvatar }}
-
+ 
     {{ editMessage nil $hereMsgID (complexMessageEdit
         "content" ""
         "embed" (cembed
@@ -61,6 +61,6 @@
             "author" $author
         )
     ) }}
-
+ 
     {{ deleteTrigger 0 }}
 {{ end }}
