@@ -1,4 +1,7 @@
-{{ $key := index .CmdArgs 0 }}
+{{ $key := "" }}
+{{ if gt (len .CmdArgs) 0 }}
+    {{ $key = index .CmdArgs 0 }}
+{{ end }}
 
 {{ $title := "" }}
 {{ $result := "" }}
