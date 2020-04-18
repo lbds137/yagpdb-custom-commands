@@ -17,4 +17,8 @@
   )}}
   {{ sendMessage $welcome $message }}
   {{ deleteTrigger 5 }}
+{{ else }}
+  You have already agreed to the rules!
+  {{ deleteTrigger 5 }}
+  {{ deleteResponse 5 }}
 {{ end }}
