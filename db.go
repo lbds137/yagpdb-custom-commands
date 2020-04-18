@@ -40,11 +40,11 @@
     {{ end }}
 
     {{ if or $result $value }}
-        {{ $resultText = joinStr "" "Value for key `" $key "` " $ptAction ": `" (or $result $value) "`\n\n" }}
+        {{ $resultText = joinStr "" "Value for key `" $key "` " $ptAction ": `" (or $result $value) "`" }}
     {{ else }}
         {{ $result = "(no result found)" }}
         {{ $resultEmoji = "⚠️" }}
-        {{ $resultText = joinStr "" "No value found for key: `" $key "`\n\n" }}
+        {{ $resultText = joinStr "" "No value found for key: `" $key "`" }}
     {{ end }}
 {{ else }}
     {{ $resultEmoji = "⚠️" }}
