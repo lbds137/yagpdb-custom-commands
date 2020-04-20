@@ -32,4 +32,4 @@
 	{{ $result = joinStr "" "❌ No action was taken against **" $member.User.String "** at this time." }}
 {{ end }}
  
-{{ execCC 3 nil 0 (sdict "Key" $commandName "Value" $result) }}
+{{ execCC 3 nil 0 (sdict "Title" $commandName "Description" $result) }}
