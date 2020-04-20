@@ -5,9 +5,9 @@
 {{ if not (hasRoleID $agreeRole) }}
   {{ giveRoleID .User.ID $agreeRole}}
  
-  {{ $key := "User Agreement Record" }}
-  {{ $value := (joinStr "" "✅ User **" .User.String "** (ID: " .User.ID ") has agreed to abide by the rules and was given the <@&" $agreeRole "> role!") }}
-  {{ execCC 3 nil 0 (sdict "Key" $key "Value" $value "Channel" $modLog) }}
+  {{ $title := "User Agreement Record" }}
+  {{ $description := (joinStr "" "✅ User **" .User.String "** (ID: " .User.ID ") has agreed to abide by the rules and was given the <@&" $agreeRole "> role!") }}
+  {{ execCC 3 nil 0 (sdict "Title" $title "Description" $description "Channel" $modLog) }}
  
   ✅ Your agreement has been recorded! Please proceed to <#{{ $introduction }}> to post a compliant introduction. Thank you!
   {{ deleteTrigger 5 }}

@@ -6,5 +6,5 @@
 {{ if $key }}
     {{ execCC 22 nil 0 (sdict "UserID" .Guild.OwnerID "Key" (title $key)) }}
 {{ else }}
-    {{ execCC 3 nil 0 (sdict "Key" "Info Lookup Failed" "Value" "⚠️ You did not provide a key to look up!") }}
+    {{ execCC 3 nil 0 (sdict "Title" "Info Lookup Failed" "Description" "⚠️ You did not provide a key to look up!") }}
 {{ end }}

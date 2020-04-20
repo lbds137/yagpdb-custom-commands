@@ -10,7 +10,7 @@
 {{ if and (ge $n $min) (le $n $max) }}
     {{ $key := joinStr "" "Rule #" $n }}
     {{ $result := (dbGet .Guild.OwnerID $key).Value }}
-    {{ execCC 3 nil 0 (sdict "Key" $key "Value" $result) }}
+    {{ execCC 3 nil 0 (sdict "Title" $key "Description" $result) }}
 {{ else }}
     ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
 {{ end }}

@@ -5,5 +5,5 @@
     (carg "string" "color (optional)")
 }}
 
-{{ execCC 3 nil 0 (sdict "Key" ($args.Get 0) "Value" ($args.Get 1) "ImageURL" ($args.Get 2) "Color" ($args.Get 3)) }}
+{{ execCC 3 nil 0 (sdict "Title" ($args.Get 0) "Description" ($args.Get 1) "ImageURL" ($args.Get 2) "Color" ($args.Get 3)) }}
 {{ deleteTrigger 0 }}
