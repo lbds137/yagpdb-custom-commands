@@ -6,5 +6,4 @@
     }}
     {{ execCC 3 nil 0 (sdict "Title" "Invalid Ticket Command" "Description" $result "DeleteResponse" true "DeleteDelay" 10) }}
     {{ deleteTrigger 0 }}
-    {{ deleteResponse 5 }}
 {{ end }}
