@@ -16,4 +16,5 @@
 
 {{ $result := (joinStr "" "The `int` value of `" $trigger "` is `" $intVal "`.") }}
 {{ execCC 3 nil 0 (sdict "Title" "Color Conversion: `hex` to `int`" "Description" $result "Color" $intVal) }}
+
 {{ deleteTrigger 5}}
