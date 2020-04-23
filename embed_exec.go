@@ -23,4 +23,7 @@
     "image" (sdict "url" .ExecData.ImageURL)
 }}
 
-{{ sendMessage .ExecData.Channel $embed }}
+{{ $messageID := sendMessageRetID .ExecData.Channel $embed }}
+{{ if .ExecData.DeleteResponse }}
+    {{ deleteMessage .ExecData.Channel $messageID (or .ExecData.DeleteDelay 5) }}
+{{ end }}
