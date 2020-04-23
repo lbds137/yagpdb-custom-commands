@@ -1,19 +1,21 @@
-{{ $agreeRole := 700913447595933748 }}
-{{ $introduction := 497573378807562250 }}
-{{ $modLog := 637455918782742528 }}
+{{ $agreementRole := toInt (dbGet .Guild.OwnerID "Agreement Role ID").Value }}
+{{ $introduction := toInt (dbGet .Guild.OwnerID "Introduction Channel ID").Value }}
+{{ $modLog := toInt (dbGet .Guild.OwnerID "Mod Log Channel ID").Value }}
  
-{{ if not (hasRoleID $agreeRole) }}
-  {{ giveRoleID .User.ID $agreeRole}}
+{{ if not (hasRoleID $agreementRole) }}
+  {{ giveRoleID .User.ID $agreementRole}}
  
   {{ $title := "User Agreement Record" }}
-  {{ $description := (joinStr "" "✅ User **" .User.String "** (ID: " .User.ID ") has agreed to abide by the rules and was given the <@&" $agreeRole "> role!") }}
+  {{ $description := (joinStr "" "✅ User **" .User.String "** (ID: " .User.ID ") has agreed to abide by the rules and was given the <@&" $agreementRole "> role!") }}
   {{ execCC 3 nil 0 (sdict "Title" $title "Description" $description "Channel" $modLog) }}
- 
-  ✅ Your agreement has been recorded! Please proceed to <#{{ $introduction }}> to post a compliant introduction. Thank you!
+
+  {{ $result := joinStr "" "✅ Your agreement has been recorded! Please proceed to <#" $introduction "> to post a compliant introduction. Thank you!" }}
+  {{ execCC 3 nil 0 (sdict "Title" "Agreement Success" "Description" $result "DeleteResponse" true "DeleteDelay" 5) }}
+
   {{ deleteTrigger 5 }}
-  {{ deleteResponse 5 }}
 {{ else }}
-  ❌ You have already agreed to the rules!
+  {{ $result := "❌ You have already agreed to the rules!" }}
+  {{ execCC 3 nil 0 (sdict "Title" "Agreement Failure" "Description" $result "DeleteResponse" true "DeleteDelay" 5) }}
+
   {{ deleteTrigger 5 }}
-  {{ deleteResponse 5 }}
 {{ end }}
