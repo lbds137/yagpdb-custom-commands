@@ -5,5 +5,6 @@
         " Replace `[reason]` with a brief but descriptive reason for opening the ticket, e.g. `concern about another member`." 
     }}
     {{ execCC 3 nil 0 (sdict "Title" "Invalid Ticket Command" "Description" $result "DeleteResponse" true "DeleteDelay" 10) }}
+
     {{ deleteTrigger 0 }}
 {{ end }}
