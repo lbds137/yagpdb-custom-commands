@@ -1,8 +1,12 @@
 {{ $commandName := "Guest User Check" }}
 {{ $hoursCutoff := (toInt (dbGet .Guild.OwnerID "Guest Grace Period Hours").Value) }}
 {{ $actionTaken := "" }}
- 
-{{ $userID := (userArg (index .Args 1)).ID }}
+
+{{ $args := parseArgs 1 (joinStr "" "Please enter a user ID.")
+    (carg "string" "user ID")
+}}
+
+{{ $userID := (userArg ($args.Get 0)).ID }}
 {{ $member := getMember $userID }}
 {{ $now := currentTime }}
 {{ $userJoined := $member.JoinedAt }}
