@@ -19,6 +19,7 @@
 {{ if in $validSizes $argSize }}
     {{ $size = $argSize }}
 {{ end }}
+{{ $title := joinStr "" "User Avatar for " $user.String }}
 {{ $avatarURL := $user.AvatarURL $size }}
 
-{{ execCC 3 nil 0 (sdict "ImageURL" $avatarURL) }}
+{{ execCC 3 nil 0 (sdict "Title" $title "ImageURL" $avatarURL) }}
