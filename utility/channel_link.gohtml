@@ -11,7 +11,7 @@
  
     {{ $hereText := "" }}
     {{ $thereText := "" }}
-    {{ $staffRoleID := 499037360340598819 }}
+    {{ $staffRoleID := toInt (dbGet .Guild.OwnerID "Staff Role ID").Value }}
     {{ if hasRoleID $staffRoleID }}
         {{ $hereText = joinStr ""
             "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
