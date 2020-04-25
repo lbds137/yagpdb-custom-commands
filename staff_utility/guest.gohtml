@@ -25,10 +25,10 @@
  
 {{ $result := "" }}
 {{ if eq $actionTaken "kick" }}
-        {{ $hoursString := "hours" }}
-        {{ if eq $hoursExceeded 1 }}
-            {{ $hoursString = "hour" }}
-        {{ end }}
+    {{ $hoursString := "hours" }}
+    {{ if eq $hoursExceeded 1 }}
+        {{ $hoursString = "hour" }}
+    {{ end }}
 	{{ $kickReason := joinStr "" "exceeding the inactivity grace period by **" $hoursExceeded "** " $hoursString }}
 	{{ $result = joinStr "" "🥾 Kicked user **" $member.User.String "** for " $kickReason "." }}
 	{{ $silent := exec "kick" $userID $kickReason }}
