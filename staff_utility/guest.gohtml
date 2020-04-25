@@ -13,7 +13,7 @@
 {{ $hoursSinceJoin := toInt ($now.Sub $userJoined.Parse).Hours }}
 {{ $hoursExceeded := sub $hoursSinceJoin $hoursCutoff }}
  
-{{ if not (targetHasRoleID $userID 624676327135641620) }} 
+{{ if not (targetHasRoleID $userID (toInt (dbGet .Guild.OwnerID "Active Role ID").Value)) }} 
 	{{ if gt $hoursExceeded 0 }}
 		{{ $actionTaken = "kick" }}
 	{{ else }}
