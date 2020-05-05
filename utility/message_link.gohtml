@@ -1,0 +1,91 @@
+{{ $trigger := lower .Message.Content }}
+{{ $gcmString := reReplace "https://discordapp.com/channels/" $trigger ""}}
+{{ $gcmSlice := split $gcmString "/" }}
+{{ $guildID := index $gcmSlice 0 }}
+{{ $channelID := index $gcmSlice 1 }}
+{{ $messageID := index $gcmSlice 2 }}
+
+{{ $guildCheck := eq .Message.GuildID (toInt $guildID) }}
+{{ $staffCheck := hasRoleID (toInt (dbGet .Guild.OwnerID "Staff Role ID").Value) }}
+{{ $thisChannelNsfw := (getChannel .Message.ChannelID).NSFW }}
+{{ $thatChannelNsfw := (getChannel $channelID).NSFW }}
+{{ $nsfwCheck := or (not $thatChannelNsfw) (and $thisChannelNsfw $thatChannelNsfw) }}
+
+{{ if and $guildCheck (or $staffCheck $nsfwCheck) }}
+    {{ $message := getMessage $channelID $messageID }}
+    {{ $msgText := $message.Content }}
+    {{ $msgAttachments := $message.Attachments }}
+    {{ $msgEmbeds := $message.Embeds}}
+
+    {{ $title := "Message Link" }}
+    {{ $description := "" }}
+    {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
+    {{ $image := "" }}
+
+    {{ $member := getMember $message.Author.ID }}
+    {{ $userFull := $member.User.String }}
+    {{ if $member.Nick }}
+        {{ $userFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
+    {{ end }}
+    {{ $userLink := joinStr "" "https://discordapp.com/users/" $member.User.ID }}
+    {{ $author := sdict "name" $userFull "url" $userLink "icon_url" ($member.User.AvatarURL "128") }}
+
+    {{ if gt (len $msgAttachments) 0 }}
+        {{ $firstAttachment := index $msgAttachments 0 }}
+        {{ $image = $firstAttachment.URL }}
+
+        {{ $attachmentLinks := "" }}
+        {{ range $i, $attachment := $msgAttachments }}
+            {{ $attachmentLink := joinStr "" "[" $attachment.URL "]" }}
+            {{ $attachmentLinks = joinStr "" $attachmentLinks $attachmentLink }}
+            {{ if ne $i (sub (len $msgAttachments) 1) }}
+                {{ $attachmentLinks = joinStr "" $attachmentLinks "\n\n" }}
+            {{ end }}
+        {{ end }}
+
+        {{ $msgText = joinStr "\n\n" $msgText $attachmentLinks }}
+    {{ end }}
+
+    {{ if gt (len $msgEmbeds) 0 }}
+        {{ $embed := index $msgEmbeds 0 }}
+        {{ $title = $embed.Title }}
+        {{ $description = $embed.Description }}
+        {{ if $embed.Author }}
+            {{ $author = sdict "name" $embed.Author.Name "url" $embed.Author.URL "icon_url" $embed.Author.IconURL }}
+        {{ end }}
+        {{ if $embed.Image }}
+            {{ $image = $embed.Image.URL }}
+        {{ end }}
+    {{ end }}
+
+    {{ $divider := "━━━━━━━━━━━━━━━━━━━━━━━━" }}
+    {{ $msgLink := joinStr "" "🔗 [Go to message](" $trigger ")" }}
+
+    {{ $fullDescription := "" }}
+    {{ if $msgText }}
+        {{ $fullDescription = $msgText }}
+    {{ end }}
+    {{ if $description }}
+        {{ if $fullDescription }}
+            {{ $fullDescription = joinStr "\n\n" $fullDescription $divider $description }}
+        {{ else }}
+            {{ $fullDescription = $description }}
+        {{ end }}
+    {{ end }}
+
+    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
+    {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
+
+    {{ $output := cembed
+        "title" $title
+        "description" (joinStr "\n\n" $fullDescription $divider $msgLink)
+        "color" $color
+        "author" $author
+        "image" (sdict "url" $image)
+        "footer" (sdict "text" $channelName "icon_url" $gIcon)
+        "timestamp" $message.Timestamp
+    }}
+
+    {{ sendMessage nil $output }}
+    {{ deleteTrigger 0 }}
+{{ end }}
