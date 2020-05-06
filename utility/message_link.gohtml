@@ -29,7 +29,7 @@
 
     {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
     {{ $title := "Message Link" }}
-    {{ $description := $message.Content }}
+    {{ $description := joinStr "\n" $message.Content "━━━━━━━━━━━━━━━━━━━━" }}
     {{ $attachmentLinks := "" }}
     {{ $image := "" }}
     {{ $thumbnail := "" }}
@@ -38,6 +38,7 @@
     {{ $embedAuthor := "" }}
     {{ $embedTitle := "" }}
     {{ $embedDescription := "" }}
+    {{ $embedFields := "" }}
 
     {{ $user := userArg $msgAuthor.ID }}
     {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator ) }}
@@ -78,6 +79,9 @@
                 {{ $embedDescription = $embed.Description }}
             {{ end }}
         {{ end }}
+        {{ if $embed.Fields }}
+            {{ $embedFields = $embed.Fields }}
+        {{ end }}
         {{ if $embed.Image }}
             {{ if $image }}
                 {{ $thumbnail = $embed.Image.URL }}
@@ -106,6 +110,15 @@
     {{ end }}
     {{ if $embedDescription }}
         {{ $fields = $fields.Append (sdict "name" "Embed Description" "value" $embedDescription "inline" false) }}
+    {{ end }}
+    {{ if $embedFields }}
+        {{ range $field := $embedFields }}
+            {{ $fields = $fields.Append (sdict
+                "name" (joinStr "" "Embed Field: `" $field.Name "`")
+                "value" $field.Value
+                "inline" false
+            ) }}
+        {{ end }}
     {{ end }}
     {{ $msgLink := joinStr "" "🔗 [Click here to view the message](" $trigger ")\n━━━━━━━━━━━━━━━━━━━━" }}
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
