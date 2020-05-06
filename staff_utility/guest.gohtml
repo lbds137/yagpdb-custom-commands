@@ -1,3 +1,10 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `16`
+  Trigger type: `Command`
+  Trigger: `guest`
+*/ -}}
+
 {{ $commandName := "Guest User Check" }}
 {{ $hoursCutoff := (toInt (dbGet .Guild.OwnerID "Guest Grace Period Hours").Value) }}
 {{ $actionTaken := "" }}
