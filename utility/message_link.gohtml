@@ -2,7 +2,7 @@
   Author: Vladlena Costescu (@lbds137)
   ID: `32`
   Trigger type: `Regex`
-  Trigger: `\Ahttps://discordapp.com/channels/[0-9]{17,}/[0-9]{17,}/[0-9]{17,}\z`
+  Trigger: `\Ahttps://(ptb.|canary.)?discord(?:app)?.com/channels/\d{17,}/\d{17,}/\d{17,}\z`
 */ -}}
 
 {{ $trigger := lower .Message.Content }}
@@ -24,15 +24,20 @@
 {{ if and $guildCheck (or $staffCheck $nsfwCheck) }}
     {{ $message := getMessage $channelID $messageID }}
     {{ $msgAuthor := $message.Author }}
-    {{ $msgText := $message.Content }}
     {{ $msgAttachments := $message.Attachments }}
     {{ $msgEmbeds := $message.Embeds}}
 
-    {{ $title := "Message Link" }}
-    {{ $description := "" }}
     {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
+    {{ $title := "Message Link" }}
+    {{ $description := $message.Content }}
+    {{ $attachmentLinks := "" }}
     {{ $image := "" }}
     {{ $thumbnail := "" }}
+
+    {{ $embedFieldLimit := sub 1024 2 }}
+    {{ $embedAuthor := "" }}
+    {{ $embedTitle := "" }}
+    {{ $embedDescription := "" }}
 
     {{ $user := userArg $msgAuthor.ID }}
     {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator ) }}
@@ -49,7 +54,6 @@
         {{ $firstAttachment := index $msgAttachments 0 }}
         {{ $image = $firstAttachment.URL }}
 
-        {{ $attachmentLinks := "" }}
         {{ range $i, $attachment := $msgAttachments }}
             {{ $attachmentLink := joinStr "" "[" $attachment.URL "]" }}
             {{ $attachmentLinks = joinStr "" $attachmentLinks $attachmentLink }}
@@ -57,21 +61,29 @@
                 {{ $attachmentLinks = joinStr "" $attachmentLinks "\n\n" }}
             {{ end }}
         {{ end }}
-
-        {{ $msgText = joinStr "\n\n" $msgText $attachmentLinks }}
     {{ end }}
 
     {{ if gt (len $msgEmbeds) 0 }}
         {{ $embed := index $msgEmbeds 0 }}
-        {{ if $embed.Title }} 
-            {{ $title = $embed.Title }}
-        {{ end }}
-        {{ $description = $embed.Description }}
         {{ if $embed.Author }}
-            {{ $author = sdict "name" $embed.Author.Name "url" $embed.Author.URL "icon_url" $embed.Author.IconURL }}
+            {{ $embedAuthor = joinStr "" "**" $embed.Author.Name "**" }}
+        {{ end }}
+        {{ if $embed.Title }}
+            {{ $embedTitle = joinStr "" "**" $embed.Title "**" }}
+        {{ end }}
+        {{ if $embed.Description }}
+            {{ if ge (len $embed.Description) $embedFieldLimit }}
+                {{ $embedDescription = joinStr "" (slice $embed.Description 0 $embedFieldLimit) "…" }}
+            {{ else }}
+                {{ $embedDescription = $embed.Description }}
+            {{ end }}
         {{ end }}
         {{ if $embed.Image }}
-            {{ $image = $embed.Image.URL }}
+            {{ if $image }}
+                {{ $thumbnail = $embed.Image.URL }}
+            {{ else }}
+                {{ $image = $embed.Image.URL }}
+            {{ end }}
         {{ end }}
         {{ if $embed.Thumbnail }}
             {{ if $image }}
@@ -82,26 +94,28 @@
         {{ end }}
     {{ end }}
 
-    {{ $divider := "━━━━━━━━━━━━━━━━━━━━" }}
-    {{ $msgLink := joinStr "" "🔗 [Go to message](" $trigger ")" }}
-
-    {{ $fullDescription := "" }}
-    {{ if $msgText }}
-        {{ $fullDescription = $msgText }}
+    {{ $fields := cslice }}
+    {{ if $attachmentLinks }}
+        {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentLinks "inline" false) }}
     {{ end }}
-    {{ if $description }}
-        {{ if $fullDescription }}
-            {{ $fullDescription = joinStr "\n" $fullDescription $divider $description }}
-        {{ else }}
-            {{ $fullDescription = $description }}
-        {{ end }}
+    {{ if $embedAuthor }}
+        {{ $fields = $fields.Append (sdict "name" "Embed Author" "value" $embedAuthor "inline" false) }}
     {{ end }}
+    {{ if $embedTitle }}
+        {{ $fields = $fields.Append (sdict "name" "Embed Title" "value" $embedTitle "inline" false) }}
+    {{ end }}
+    {{ if $embedDescription }}
+        {{ $fields = $fields.Append (sdict "name" "Embed Description" "value" $embedDescription "inline" false) }}
+    {{ end }}
+    {{ $msgLink := joinStr "" "🔗 [Click here to view the message](" $trigger ")\n━━━━━━━━━━━━━━━━━━━━" }}
+    {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
 
     {{ $output := cembed
-        "title" $title
-        "description" (joinStr "\n" $fullDescription $divider $msgLink)
         "color" $color
         "author" $author
+        "title" $title
+        "description" $description
+        "fields" $fields
         "image" (sdict "url" $image)
         "thumbnail" (sdict "url" $thumbnail)
         "footer" (sdict "text" $channelName "icon_url" $gIcon)
