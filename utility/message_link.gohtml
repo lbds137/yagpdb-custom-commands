@@ -5,6 +5,9 @@
 {{ $channelID := index $gcmSlice 1 }}
 {{ $messageID := index $gcmSlice 2 }}
 
+{{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
+{{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
+
 {{ $guildCheck := eq .Message.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID (toInt (dbGet .Guild.OwnerID "Staff Role ID").Value) }}
 {{ $thisChannelNsfw := (getChannel .Message.ChannelID).NSFW }}
@@ -13,6 +16,7 @@
 
 {{ if and $guildCheck (or $staffCheck $nsfwCheck) }}
     {{ $message := getMessage $channelID $messageID }}
+    {{ $msgAuthor := $message.Author }}
     {{ $msgText := $message.Content }}
     {{ $msgAttachments := $message.Attachments }}
     {{ $msgEmbeds := $message.Embeds}}
@@ -22,13 +26,16 @@
     {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
     {{ $image := "" }}
 
-    {{ $member := getMember $message.Author.ID }}
-    {{ $userFull := $member.User.String }}
-    {{ if $member.Nick }}
-        {{ $userFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
+    {{ $user := userArg $msgAuthor.ID }}
+    {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator ) }}
+    {{ $member := getMember $msgAuthor.ID }}
+    {{ if $member }}
+        {{ if $member.Nick }}
+            {{ $usernameFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
+        {{ end }}
     {{ end }}
-    {{ $userLink := joinStr "" "https://discordapp.com/users/" $member.User.ID }}
-    {{ $author := sdict "name" $userFull "url" $userLink "icon_url" ($member.User.AvatarURL "128") }}
+    {{ $userLink := joinStr "" "https://discordapp.com/users/" $msgAuthor.ID }}
+    {{ $author := sdict "name" $usernameFull "url" $userLink "icon_url" (or ($user.AvatarURL "128") $gIcon) }}
 
     {{ if gt (len $msgAttachments) 0 }}
         {{ $firstAttachment := index $msgAttachments 0 }}
@@ -74,9 +81,6 @@
             {{ $fullDescription = $description }}
         {{ end }}
     {{ end }}
-
-    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
-    {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
 
     {{ $output := cembed
         "title" $title
