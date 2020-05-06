@@ -69,7 +69,7 @@
     {{ end }}
     {{ if $description }}
         {{ if $fullDescription }}
-            {{ $fullDescription = joinStr "\n\n" $fullDescription $divider $description }}
+            {{ $fullDescription = joinStr "\n" $fullDescription $divider $description }}
         {{ else }}
             {{ $fullDescription = $description }}
         {{ end }}
@@ -80,7 +80,7 @@
 
     {{ $output := cembed
         "title" $title
-        "description" (joinStr "\n\n" $fullDescription $divider $msgLink)
+        "description" (joinStr "\n" $fullDescription $divider $msgLink)
         "color" $color
         "author" $author
         "image" (sdict "url" $image)
