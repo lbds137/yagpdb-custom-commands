@@ -48,7 +48,9 @@
 
     {{ if gt (len $msgEmbeds) 0 }}
         {{ $embed := index $msgEmbeds 0 }}
-        {{ $title = $embed.Title }}
+        {{ if $embed.Title }} 
+            {{ $title = $embed.Title }}
+        {{ end }}
         {{ $description = $embed.Description }}
         {{ if $embed.Author }}
             {{ $author = sdict "name" $embed.Author.Name "url" $embed.Author.URL "icon_url" $embed.Author.IconURL }}
