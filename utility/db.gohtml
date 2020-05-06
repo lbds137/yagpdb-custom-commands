@@ -1,3 +1,10 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `15`
+  Trigger type: `Command`
+  Trigger: `db`
+*/ -}}
+
 {{ $operation := "" }}
 {{ if ge (len .CmdArgs) 1 }}
     {{ $operation = index .CmdArgs 0 }}

@@ -1,3 +1,10 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `26`
+  Trigger type: `Command`
+  Trigger: `kb`
+*/ -}}
+
 {{ $args := parseArgs 1 (joinStr "" "Please enter a key to look up in the knowledge base.")
     (carg "string" "key")
 }}

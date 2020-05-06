@@ -1,3 +1,9 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `3`
+  Trigger type: `None`
+*/ -}}
+
 {{ $author := "" }}
 {{ if and .ExecData.AuthorID (ne (toString .ExecData.AuthorID) (toString .Guild.ID)) }}
     {{ $member := getMember .ExecData.AuthorID }}

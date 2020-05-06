@@ -1,3 +1,10 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `30`
+  Trigger type: `Regex`
+  Trigger: `.*`
+*/ -}}
+
 {{ $trigger := .Message.Content }}
 {{ if not (reFind "\\Ay\\^agree\\z" $trigger) }}
     {{ $result := "⚠️ You must enter the correct command for agreeing to the rules: `y^agree`" }}

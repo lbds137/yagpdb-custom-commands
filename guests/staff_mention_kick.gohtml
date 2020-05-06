@@ -1,0 +1,13 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `17`
+  Trigger type: `Contains`
+  Trigger: `<@&499037360340598819>`
+*/ -}}
+
+{{ $kickReason := "pinging staff in an attempt to expedite the server admission process" }}
+{{ $silent := execAdmin "kick" .User.ID $kickReason }}
+{{ joinStr "" "Kicked user **" .User.String " for " $kickReason "!" }} 
+ 
+{{ deleteTrigger 0 }}
+{{ deleteResponse 5 }} 

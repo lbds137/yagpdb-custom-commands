@@ -1,5 +1,12 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `29`
+  Trigger type: `Regex`
+  Trigger: `.*`
+*/ -}}
+
 {{ $trigger := .Message.Content }}
-{{ if not (reFind "y\\^ticket open .+" $trigger) }}
+{{ if not (reFind "\\Ay\\^ticket open .+\\z" $trigger) }}
     {{ $result := joinStr "" 
         "⚠️ You must enter a proper ticket open command: `y^ticket open [reason]`\n\n"
         " Replace `[reason]` with a brief but descriptive reason for opening the ticket, e.g. `concern about another member`." 
