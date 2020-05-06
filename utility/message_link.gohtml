@@ -29,7 +29,7 @@
 
     {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
     {{ $title := "Message Link" }}
-    {{ $description := joinStr "\n" $message.Content "━━━━━━━━━━━━━━━━━━━━" }}
+    {{ $description := $message.Content }}
     {{ $attachmentLinks := "" }}
     {{ $image := "" }}
     {{ $thumbnail := "" }}
@@ -98,7 +98,9 @@
         {{ end }}
     {{ end }}
 
-    {{ $fields := cslice }}
+    {{ $divider := "━━━━━━━━━━━━━━━━━━━━" }}
+    {{ $fakeSpace := "⠀" }}
+    {{ $fields := cslice (sdict "name" $fakeSpace "value" (joinStr "" $divider "\n" $fakeSpace) "inline" false) }}
     {{ if $attachmentLinks }}
         {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentLinks "inline" false) }}
     {{ end }}
@@ -120,8 +122,9 @@
             ) }}
         {{ end }}
     {{ end }}
-    {{ $msgLink := joinStr "" "🔗 [Click here to view the message](" $trigger ")\n━━━━━━━━━━━━━━━━━━━━" }}
+    {{ $msgLink := joinStr "" "🔗 [Click here to view the message](" $trigger ")" }}
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
+    {{ $fields = $fields.Append (sdict "name" $fakeSpace "value" (joinStr "" $divider "\n" $fakeSpace) "inline" false) }}
 
     {{ $output := cembed
         "color" $color
