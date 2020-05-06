@@ -24,6 +24,7 @@
     {{ $title := "Message Link" }}
     {{ $description := "" }}
     {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
+    {{ $thumbnail := "" }}
     {{ $image := "" }}
 
     {{ $user := userArg $msgAuthor.ID }}
@@ -62,6 +63,9 @@
         {{ if $embed.Author }}
             {{ $author = sdict "name" $embed.Author.Name "url" $embed.Author.URL "icon_url" $embed.Author.IconURL }}
         {{ end }}
+        {{ if $embed.Thumbnail }}
+            {{ $thumbnail = $embed.Thumbnail.URL }}
+        {{ end }}
         {{ if $embed.Image }}
             {{ $image = $embed.Image.URL }}
         {{ end }}
@@ -87,6 +91,7 @@
         "description" (joinStr "\n" $fullDescription $divider $msgLink)
         "color" $color
         "author" $author
+        "thumbnail" (sdict "url" $thumbnail)
         "image" (sdict "url" $image)
         "footer" (sdict "text" $channelName "icon_url" $gIcon)
         "timestamp" $message.Timestamp
