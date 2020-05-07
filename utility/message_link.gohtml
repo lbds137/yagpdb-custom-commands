@@ -67,10 +67,10 @@
     {{ if gt (len $msgEmbeds) 0 }}
         {{ $embed := index $msgEmbeds 0 }}
         {{ if $embed.Author }}
-            {{ $embedAuthor = joinStr "" "**" $embed.Author.Name "**" }}
+            {{ $embedAuthor = $embed.Author.Name }}
         {{ end }}
         {{ if $embed.Title }}
-            {{ $embedTitle = joinStr "" "**" $embed.Title "**" }}
+            {{ $embedTitle = $embed.Title }}
         {{ end }}
         {{ if $embed.Description }}
             {{ if ge (len $embed.Description) $embedFieldLimit }}
@@ -98,9 +98,7 @@
         {{ end }}
     {{ end }}
 
-    {{ $divider := "━━━━━━━━━━━━━━━━━━━━" }}
-    {{ $fakeSpace := "⠀" }}
-    {{ $fields := cslice (sdict "name" $fakeSpace "value" (joinStr "" $divider "\n" $fakeSpace) "inline" false) }}
+    {{ $fields := cslice }}
     {{ if $attachmentLinks }}
         {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentLinks "inline" false) }}
     {{ end }}
@@ -122,9 +120,8 @@
             ) }}
         {{ end }}
     {{ end }}
-    {{ $msgLink := joinStr "" "🔗 [Click here to view the message](" $trigger ")" }}
+    {{ $msgLink := joinStr "" "🔗 [Click or tap here to view the message.](" $trigger ")" }}
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
-    {{ $fields = $fields.Append (sdict "name" $fakeSpace "value" (joinStr "" $divider "\n" $fakeSpace) "inline" false) }}
 
     {{ $output := cembed
         "color" $color
