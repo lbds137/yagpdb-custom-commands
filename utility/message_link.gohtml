@@ -36,6 +36,7 @@
 
     {{ $embedFieldLimit := sub 1024 2 }}
     {{ $embedAuthor := "" }}
+    {{ $embedProvider := "" }}
     {{ $embedTitle := "" }}
     {{ $embedDescription := "" }}
     {{ $embedFields := "" }}
@@ -69,6 +70,9 @@
         {{ $embed := index $msgEmbeds 0 }}
         {{ if $embed.Author }}
             {{ $embedAuthor = $embed.Author.Name }}
+        {{ end }}
+        {{ if $embed.Provider }}
+            {{ $embedProvider = $embed.Provider.Name }}
         {{ end }}
         {{ if $embed.Title }}
             {{ $embedTitle = $embed.Title }}
@@ -108,6 +112,9 @@
     {{ end }}
     {{ if $embedAuthor }}
         {{ $fields = $fields.Append (sdict "name" "Embed Author" "value" $embedAuthor "inline" false) }}
+    {{ end }}
+    {{ if $embedProvider }}
+        {{ $fields = $fields.Append (sdict "name" "Embed Provider" "value" $embedProvider "inline" false) }}
     {{ end }}
     {{ if $embedTitle }}
         {{ $fields = $fields.Append (sdict "name" "Embed Title" "value" $embedTitle "inline" false) }}
