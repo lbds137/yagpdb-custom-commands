@@ -73,7 +73,7 @@
             {{ $embedTitle = $embed.Title }}
         {{ end }}
         {{ if $embed.Description }}
-            {{ if ge (len $embed.Description) $embedFieldLimit }}
+            {{ if ge (len (toRune $embed.Description)) $embedFieldLimit }}
                 {{ $embedDescription = joinStr "" (slice $embed.Description 0 $embedFieldLimit) "…" }}
             {{ else }}
                 {{ $embedDescription = $embed.Description }}
