@@ -2,15 +2,30 @@
   Author: Vladlena Costescu (@lbds137)
   ID: `32`
   Trigger type: `Regex`
-  Trigger: `\Ahttps://(ptb.|canary.)?discord(?:app)?.com/channels/\d{17,}/\d{17,}/\d{17,}\z`
+  Trigger: `https://(ptb.|canary.)?discord(?:app)?.com/channels/\d{17,}/\d{17,}/\d{17,}`
 */ -}}
 
-{{ $trigger := lower .Message.Content }}
-{{ $gcmString := reReplace "https://(ptb.|canary.)?discord(?:app)?.com/channels/" $trigger ""}}
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $fullRegex := joinStr "" $baseURLRegex "\\d{17,}/\\d{17,}/\\d{17,}" }}
+
+{{ $triggerMsg := .Message.Content }}
+{{ $trigger := reFind $fullRegex $triggerMsg }}
+{{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
+{{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
+{{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
+
+{{ $gcmString := reReplace $baseURLRegex $trigger "" }}
 {{ $gcmSlice := split $gcmString "/" }}
 {{ $guildID := index $gcmSlice 0 }}
 {{ $channelID := index $gcmSlice 1 }}
 {{ $messageID := index $gcmSlice 2 }}
+
+{{ $triggerAuthor := .Message.Author }}
+{{ $triggerAuthorFull := $triggerAuthor.String }}
+{{ $triggerMember := getMember $triggerAuthor.ID }}
+{{ if $triggerMember.Nick }}
+    {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
+{{ end }}
 
 {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
 {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
@@ -149,6 +164,11 @@
         "timestamp" $message.Timestamp
     }}
 
-    {{ sendMessage nil $output }}
+    {{ $quoteString := joinStr "" "> 🔗 **" $triggerAuthorFull "** linked a message:\n⠀" }}
+    {{ $complexContent := $quoteString }}
+    {{ if $triggerMsgContent }}
+        {{ $complexContent = joinStr "" $complexContent "\n" $triggerMsgContent "\n⠀" }}
+    {{ end }}
+    {{ sendMessage nil (complexMessage "content" $complexContent "embed" $output) }}
     {{ deleteTrigger 0 }}
 {{ end }}
