@@ -164,10 +164,10 @@
         "timestamp" $message.Timestamp
     }}
 
-    {{ $quoteString := joinStr "" "> 🔗 **" $triggerAuthorFull "** linked a message:\n⠀" }}
+    {{ $quoteString := joinStr "" "> 🔗 **" $triggerAuthorFull "** linked a message:" }}
     {{ $complexContent := $quoteString }}
     {{ if $triggerMsgContent }}
-        {{ $complexContent = joinStr "" $complexContent "\n" $triggerMsgContent "\n⠀" }}
+        {{ $complexContent = joinStr "\n" $complexContent $triggerMsgContent }}
     {{ end }}
     {{ sendMessage nil (complexMessage "content" $complexContent "embed" $output) }}
     {{ deleteTrigger 0 }}
