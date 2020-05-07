@@ -7,28 +7,14 @@
 
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{17,}/\\d{17,}/\\d{17,}" }}
-
 {{ $triggerMsg := .Message.Content }}
 {{ $trigger := reFind $fullRegex $triggerMsg }}
-{{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
-{{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
-{{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
 
 {{ $gcmString := reReplace $baseURLRegex $trigger "" }}
 {{ $gcmSlice := split $gcmString "/" }}
 {{ $guildID := index $gcmSlice 0 }}
 {{ $channelID := index $gcmSlice 1 }}
 {{ $messageID := index $gcmSlice 2 }}
-
-{{ $triggerAuthor := .Message.Author }}
-{{ $triggerAuthorFull := $triggerAuthor.String }}
-{{ $triggerMember := getMember $triggerAuthor.ID }}
-{{ if $triggerMember.Nick }}
-    {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
-{{ end }}
-
-{{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
-{{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
 
 {{ $guildCheck := eq .Message.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID (toInt (dbGet .Guild.OwnerID "Staff Role ID").Value) }}
@@ -37,10 +23,24 @@
 {{ $nsfwCheck := or (not $thatChannelNsfw) (and $thisChannelNsfw $thatChannelNsfw) }}
 
 {{ if and $guildCheck (or $staffCheck $nsfwCheck) }}
+    {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
+    {{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
+    {{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
+    
+    {{ $triggerAuthor := .Message.Author }}
+    {{ $triggerAuthorFull := $triggerAuthor.String }}
+    {{ $triggerMember := getMember $triggerAuthor.ID }}
+    {{ if $triggerMember.Nick }}
+        {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
+    {{ end }}
+
+    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
+    {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
+
     {{ $message := getMessage $channelID $messageID }}
     {{ $msgAuthor := $message.Author }}
     {{ $msgAttachments := $message.Attachments }}
-    {{ $msgEmbeds := $message.Embeds}}
+    {{ $msgEmbeds := $message.Embeds }}
 
     {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
     {{ $title := "Message Link" }}
@@ -58,7 +58,7 @@
     {{ $embedFooter := "" }}
 
     {{ $user := userArg $msgAuthor.ID }}
-    {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator ) }}
+    {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
     {{ $member := getMember $msgAuthor.ID }}
     {{ if $member }}
         {{ if $member.Nick }}
@@ -157,9 +157,9 @@
         "author" $author
         "title" $title
         "description" $description
-        "fields" $fields
         "image" (sdict "url" $image)
         "thumbnail" (sdict "url" $thumbnail)
+        "fields" $fields
         "footer" (sdict "text" $channelName "icon_url" $gIcon)
         "timestamp" $message.Timestamp
     }}
