@@ -39,6 +39,7 @@
     {{ $embedTitle := "" }}
     {{ $embedDescription := "" }}
     {{ $embedFields := "" }}
+    {{ $embedFooter := "" }}
 
     {{ $user := userArg $msgAuthor.ID }}
     {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator ) }}
@@ -96,6 +97,9 @@
                 {{ $image = $embed.Thumbnail.URL }}
             {{ end }}
         {{ end }}
+        {{ if $embed.Footer }}
+            {{ $embedFooter = $embed.Footer.Text }}
+        {{ end }}
     {{ end }}
 
     {{ $fields := cslice }}
@@ -119,6 +123,9 @@
                 "inline" false
             ) }}
         {{ end }}
+    {{ end }}
+    {{ if $embedFooter }}
+        {{ $fields = $fields.Append (sdict "name" "Embed Footer" "value" $embedFooter "inline" false) }}
     {{ end }}
     {{ $msgLink := joinStr "" "🔗 [Click or tap here to view the message.](" $trigger ")" }}
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
