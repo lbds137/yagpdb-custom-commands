@@ -140,7 +140,7 @@
     {{ if $embedFields }}
         {{ range $field := $embedFields }}
             {{ $fields = $fields.Append (sdict
-                "name" (joinStr "" "Embed Field: `" $field.Name "`")
+                "name" (joinStr " " "Embed Field:" $field.Name)
                 "value" $field.Value
                 "inline" false
             ) }}
