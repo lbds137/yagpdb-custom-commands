@@ -6,7 +6,7 @@
 */ -}}
 
 {{ $trigger := lower .Message.Content }}
-{{ $gcmString := reReplace "https://discordapp.com/channels/" $trigger ""}}
+{{ $gcmString := reReplace "https://(ptb.|canary.)?discord(?:app)?.com/channels/" $trigger ""}}
 {{ $gcmSlice := split $gcmString "/" }}
 {{ $guildID := index $gcmSlice 0 }}
 {{ $channelID := index $gcmSlice 1 }}
