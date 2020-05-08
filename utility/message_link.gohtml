@@ -166,7 +166,7 @@
 
     {{ $complexMsgContent := "" }}
     {{ if $triggerMsgContent }}
-        {{ $complexMsgContent = joinStr "" "> 🔗 **" $triggerAuthorFull "** quoted a message:\n" $triggerMsgContent }}
+        {{ $complexMsgContent = joinStr "" "> 💬 **" $triggerAuthorFull "** quoted a message:\n" $triggerMsgContent }}
     {{ else }}
         {{ $complexMsgContent = joinStr "" "> 🔗 **" $triggerAuthorFull "** linked a message:" }}
     {{ end }}
