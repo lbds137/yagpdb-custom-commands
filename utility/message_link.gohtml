@@ -34,6 +34,7 @@
         {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
     {{ end }}
 
+    {{ $defaultAvatar := (dbGet .Guild.OwnerID "Default Avatar").Value }}
     {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
     {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
 
@@ -66,7 +67,7 @@
         {{ end }}
     {{ end }}
     {{ $userLink := joinStr "" "https://discordapp.com/users/" $msgAuthor.ID }}
-    {{ $author := sdict "name" $usernameFull "url" $userLink "icon_url" (or ($user.AvatarURL "128") $gIcon) }}
+    {{ $author := sdict "name" $usernameFull "url" $userLink "icon_url" (or ($user.AvatarURL "128") $defaultAvatar) }}
 
     {{ if gt (len $msgAttachments) 0 }}
         {{ $firstAttachment := index $msgAttachments 0 }}
