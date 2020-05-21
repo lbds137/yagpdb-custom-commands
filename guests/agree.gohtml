@@ -11,21 +11,21 @@
 
 {{ $defaultAvatar := (dbGet .Guild.OwnerID "Default Avatar").Value }}
 {{ $userAvatar := .User.AvatarURL "128" }}
- 
+
 {{ if not (hasRoleID $agreementRole) }}
-  {{ giveRoleID .User.ID $agreementRole}}
+    {{ giveRoleID .User.ID $agreementRole}}
 
-  {{ $title := "User Agreement Record" }}
-  {{ $description := (joinStr "" "✅ User **" .User.String "** (ID: " .User.ID ") has agreed to abide by the rules and was given the <@&" $agreementRole "> role!") }}
-  {{ execCC 3 nil 0 (sdict "Title" $title "Description" $description "ThumbnailURL" (or $userAvatar $defaultAvatar) "Channel" $modLog) }}
+    {{ $title := "User Agreement Record" }}
+    {{ $description := (joinStr "" "✅ User **" .User.String "** (ID: " .User.ID ") has agreed to abide by the rules and was given the <@&" $agreementRole "> role!") }}
+    {{ execCC 3 nil 0 (sdict "Title" $title "Description" $description "ThumbnailURL" (or $userAvatar $defaultAvatar) "Channel" $modLog) }}
 
-  {{ $result := joinStr "" "✅ Your agreement has been recorded! Please proceed to <#" $introduction "> to post a compliant introduction. Thank you!" }}
-  {{ execCC 3 nil 0 (sdict "Title" "Agreement Success" "Description" $result "DeleteResponse" true "DeleteDelay" 5) }}
+    {{ $result := joinStr "" "✅ Your agreement has been recorded! Please proceed to <#" $introduction "> to post a compliant introduction. Thank you!" }}
+    {{ execCC 3 nil 0 (sdict "Title" "Agreement Success" "Description" $result "DeleteResponse" true "DeleteDelay" 5) }}
 
-  {{ deleteTrigger 5 }}
+    {{ deleteTrigger 5 }}
 {{ else }}
-  {{ $result := "❌ You have already agreed to the rules!" }}
-  {{ execCC 3 nil 0 (sdict "Title" "Agreement Failure" "Description" $result "DeleteResponse" true "DeleteDelay" 5) }}
+    {{ $result := "❌ You have already agreed to the rules!" }}
+    {{ execCC 3 nil 0 (sdict "Title" "Agreement Failure" "Description" $result "DeleteResponse" true "DeleteDelay" 5) }}
 
-  {{ deleteTrigger 5 }}
+    {{ deleteTrigger 5 }}
 {{ end }}
