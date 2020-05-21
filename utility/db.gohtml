@@ -94,8 +94,8 @@
     "title" (joinStr "" "Database Operation: `" $operation "`")
     "description" $resultText
     "fields" (cslice
-        (sdict "name" "User ID" "value" (joinStr "" "`" $userID "`") "inline" false)
-        (sdict "name" "Key" "value" (joinStr "" "`" (or $key $nil) "`") "inline" false)
+        (sdict "name" "User ID" "value" (joinStr "" "`" $userID "`") "inline" true)
+        (sdict "name" "Key" "value" (joinStr "" "`" (or $key $nil) "`") "inline" true)
         (sdict "name" "Value" "value" (joinStr "" "`" (or $value $nil) "`") "inline" false)
     )
 }}

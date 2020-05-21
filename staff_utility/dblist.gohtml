@@ -1,0 +1,36 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  ID: `36`
+  Trigger type: `Command`
+  Trigger: `db`
+*/ -}}
+
+{{ $valueMaxLen := 50 }}
+
+{{ $entries := cslice }}
+{{ range $i, $entry := dbTopEntries "%" 100 0 }}
+    {{ $value := $entry.Value }}
+    {{ if ge (len (toRune $value)) $valueMaxLen }}
+        {{ $value = joinStr "" (slice $value 0 $valueMaxLen) "…" }}
+    {{ end }}
+
+    {{ $result := joinStr ""
+        "**User ID:** `" $entry.UserID "`\n"
+        "**Key:** `" $entry.Key "`\n"
+        "**Value:** `" $value "`\n"
+        "**━━━━━━━━━━━━━━━━━━━━**"
+    }}
+    {{ $entries = $entries.Append (sdict "name" (joinStr "" "ID: `" $entry.ID "`") "value" $result "inline" false) }}
+{{ end }}
+
+{{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
+{{ $author := sdict "name" .Guild.Name "url" "https://thenighthouse.org/" "icon_url" $gIcon }}
+
+{{ $embed := cembed
+    "author" $author
+    "color" (toInt (dbGet .Guild.OwnerID "Embed Color").Value)
+    "title" (joinStr "" "Top 100 Database Entries")
+    "fields" $entries
+}}
+
+{{ sendMessage nil $embed }}
