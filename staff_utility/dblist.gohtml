@@ -5,7 +5,7 @@
   Trigger: `db`
 */ -}}
 
-{{ $valueMaxLen := 50 }}
+{{ $valueMaxLen := 20 }}
 
 {{ $entries := cslice }}
 {{ range $i, $entry := dbTopEntries "%" 100 0 }}
