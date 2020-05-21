@@ -26,6 +26,7 @@
     "color" (or .ExecData.Color $dbEmbedColor)
     "author" $author
     "image" (sdict "url" .ExecData.ImageURL)
+    "thumbnail" (sdict "url" .ExecData.ThumbnailURL)
 }}
 
 {{ $messageID := sendMessageRetID .ExecData.Channel $embed }}
