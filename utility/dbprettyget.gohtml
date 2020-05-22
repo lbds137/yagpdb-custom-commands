@@ -14,15 +14,21 @@
     {{ $authorID = .Guild.ID }}
 {{ else if gt (len .CmdArgs) 0 }}
     {{ $key = index .CmdArgs 0 }}
-    {{ $userID = .User.ID }}
-    {{ $authorID = $userID }}
+    {{ if gt (len .CmdArgs) 1 }}
+        {{ if reFind "\\A\\d+\\z" (index .CmdArgs 1) }}
+            {{ $userID = toInt (index .CmdArgs 1) }}
+        {{ end }}
+    {{ else }}
+        {{ $userID = .User.ID }}
+    {{ end }}
+    {{ $authorID = .User.ID }}
 {{ end }}
  
 {{ $title := "" }}
 {{ $result := "" }}
 {{ if $key }}
     {{ $title = $key }}
-    {{ $result = or (dbGet .User.ID $key).Value "(no result found)" }}
+    {{ $result = or (dbGet $userID $key).Value "(no result found)" }}
 {{ else }}
     {{ $title = "Missing Argument" }}
     {{ $result = "⚠️ You did not provide a key to look up!" }}
