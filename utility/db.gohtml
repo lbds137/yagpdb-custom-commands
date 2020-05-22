@@ -5,29 +5,40 @@
 */ -}}
 
 {{ $userID := .Member.User.ID }}
-
 {{ $operation := "" }}
-{{ if ge (len .CmdArgs) 1 }}
-    {{ $operation = index .CmdArgs 0 }}
-{{ end }}
-
-{{ $opArray := split $operation ":" }}
-{{ if eq 2 (len $opArray) }}
-    {{ $operation = index $opArray 0 }}
-    {{ $opPartTwo := index $opArray 1 }}
-    {{ if or (eq "0" $opPartTwo) (gt (toInt $opPartTwo) 0) }}
-        {{ $userID = toInt $opPartTwo }}
-    {{ end }}
-{{ end }}
-
 {{ $key := "" }}
-{{ if ge (len .CmdArgs) 2 }}
-    {{ $key = index .CmdArgs 1 }}
-{{ end }}
-
 {{ $value := "" }}
-{{ if ge (len .CmdArgs) 3 }}
-    {{ $value = index .CmdArgs 2 }}
+{{ $title := "" }}
+
+{{ $isExec := or .ExecData.UserID .ExecData.Operation .ExecData.Key .ExecData.Value .ExecData.Title }}
+
+{{ if $isExec }}
+    {{ $userID = .ExecData.UserID }}
+    {{ $operation = .ExecData.Operation }}
+    {{ $key = .ExecData.Key }}
+    {{ $value = .ExecData.Value }}
+    {{ $title = .ExecData.Title }}
+{{ else }}
+    {{ if ge (len .CmdArgs) 1 }}
+        {{ $operation = index .CmdArgs 0 }}
+    {{ end }}
+
+    {{ $opArray := split $operation ":" }}
+    {{ if eq 2 (len $opArray) }}
+        {{ $operation = index $opArray 0 }}
+        {{ $opPartTwo := index $opArray 1 }}
+        {{ if or (eq "0" $opPartTwo) (gt (toInt $opPartTwo) 0) }}
+            {{ $userID = toInt $opPartTwo }}
+        {{ end }}
+    {{ end }}
+
+    {{ if ge (len .CmdArgs) 2 }}
+        {{ $key = index .CmdArgs 1 }}
+    {{ end }}
+
+    {{ if ge (len .CmdArgs) 3 }}
+        {{ $value = index .CmdArgs 2 }}
+    {{ end }}
 {{ end }}
 
 {{ $isDel := eq "del" $operation }}
@@ -78,10 +89,14 @@
     {{ $value = joinStr "" (slice $value 0 $embedFieldLimit) "…" }}
 {{ end }}
 
+{{ if not (and $isExec .ExecData.Title) }}
+    {{ $title = joinStr "" "Database Operation: `" $operation "`" }}
+{{ end }}
+
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ execCC $embed_exec nil 0 (sdict
-    "Title" (joinStr "" "Database Operation: `" $operation "`")
+    "Title" $title
     "Description" $resultText
     "AuthorID" $userID
     "Fields" (cslice
