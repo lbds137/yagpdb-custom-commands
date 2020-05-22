@@ -5,13 +5,31 @@
   Trigger: `db`
 */ -}}
 
+{{ $title := "Top 100 Database Entries" }}
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+
+{{ $maxEntries := 100 }}
+{{ $maxFields := 25 }}
 {{ $valueMaxLen := 20 }}
 
 {{ $entries := cslice }}
-{{ range $i, $entry := dbTopEntries "%" 100 0 }}
-    {{ $value := $entry.Value }}
-    {{ if ge (len (toRune $value)) $valueMaxLen }}
-        {{ $value = joinStr "" (slice $value 0 $valueMaxLen) "…" }}
+{{ $iEnd := 0 }}
+{{ $lastBoundary := 0 }}
+{{- range $i, $entry := dbTopEntries "%" $maxEntries 0 -}}
+    {{- $iEnd = $i -}}
+    {{- if and (gt $i 0) (eq 0 (toInt (mod $i $maxFields))) -}}
+        {{- $iHuman := add 1 $i -}}
+        {{- $lastBoundary = $iHuman -}}
+        {{- execCC 3 nil 0 (sdict
+            "Title" (joinStr "" $title " (" (sub $iHuman $maxFields) "-" $i ")")
+            "Fields" $entries
+        ) -}}
+        {{- $entries = cslice -}}
+    {{- end -}}
+
+    {{- $value := $entry.Value -}}
+    {{- if ge (len (toRune $value)) $valueMaxLen -}}
+        {{- $value = joinStr "" (slice $value 0 $valueMaxLen) "…" -}}
     {{ end }}
 
     {{ $result := joinStr ""
@@ -20,17 +38,11 @@
         "**Value:** `" $value "`\n"
         "**━━━━━━━━━━━━━━━━━━━━**"
     }}
-    {{ $entries = $entries.Append (sdict "name" (joinStr "" "ID: `" $entry.ID "`") "value" $result "inline" false) }}
-{{ end }}
+    {{- $entries = $entries.Append (sdict "name" (joinStr "" "ID: `" $entry.ID "`") "value" $result "inline" false) -}}
+{{- end -}}
 
-{{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
-{{ $author := sdict "name" .Guild.Name "url" "https://thenighthouse.org/" "icon_url" $gIcon }}
-
-{{ $embed := cembed
-    "author" $author
-    "color" (toInt (dbGet .Guild.OwnerID "Embed Color").Value)
-    "title" (joinStr "" "Top 100 Database Entries")
-    "fields" $entries
-}}
-
-{{ sendMessage nil $embed }}
+{{ $iEndHuman := add 1 $iEnd }}
+{{ execCC 3 nil 0 (sdict
+    "Title" (joinStr "" $title " (" $lastBoundary "-" $iEndHuman ")")
+    "Fields" $entries
+) }}
