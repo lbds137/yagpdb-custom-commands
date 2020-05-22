@@ -5,11 +5,15 @@
   Trigger: `agree`
 */ -}}
 
-{{ $agreementRole := toInt (dbGet .Guild.OwnerID "Agreement Role ID").Value }}
-{{ $introduction := toInt (dbGet .Guild.OwnerID "Introduction Channel ID").Value }}
-{{ $modLog := toInt (dbGet .Guild.OwnerID "Mod Log Channel ID").Value }}
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
-{{ $defaultAvatar := (dbGet .Guild.OwnerID "Default Avatar").Value }}
+{{ $agreementRole := toInt (dbGet $rolesCategoryID "Agreement Role ID").Value }}
+{{ $introduction := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
+{{ $modLog := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
+
+{{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
 {{ $userAvatar := .User.AvatarURL "128" }}
 
 {{ if not (hasRoleID $agreementRole) }}
