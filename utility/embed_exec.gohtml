@@ -5,7 +5,9 @@
 */ -}}
 
 {{ $author := "" }}
-{{ if and .ExecData.AuthorID (ne (toString .ExecData.AuthorID) (toString .Guild.ID)) }}
+{{ $execAuthorValid := reFind "\\A\\d{17,}\\z" (toString .ExecData.AuthorID) }}
+{{ $execAuthorNotGuild := ne (toString .ExecData.AuthorID) (toString .Guild.ID) }}
+{{ if and $execAuthorValid $execAuthorNotGuild }}
     {{ $member := getMember .ExecData.AuthorID }}
     {{ $userFull := $member.User.String }}
     {{ if $member.Nick }}
@@ -18,7 +20,8 @@
     {{ $author = sdict "name" .Guild.Name "url" "https://thenighthouse.org/" "icon_url" $gIcon }}
 {{ end }}
 
-{{ $dbEmbedColor :=  toInt (dbGet .Guild.OwnerID "Embed Color").Value }}
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
 
 {{ $embed := cembed
     "title" .ExecData.Title
