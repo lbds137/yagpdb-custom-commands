@@ -27,6 +27,10 @@
     {{ end }}
 {{ end }}
 
+{{ if in $validSizes $argSize }}
+    {{ $size = $argSize }}
+{{ end }}
+
 {{ if $argUser }}
     {{ $user = $argUser }}
     {{ $avatarURL = $user.AvatarURL $size }}
@@ -47,9 +51,6 @@
         }}
         {{ $avatarURL = joinStr "" $avatarURL "?size=" $size }}
     {{ end }}
-{{ end }}
-{{ if in $validSizes $argSize }}
-    {{ $size = $argSize }}
 {{ end }}
 
 {{ $title := joinStr "" $avatarType " Avatar for " $avatarOwner }}
