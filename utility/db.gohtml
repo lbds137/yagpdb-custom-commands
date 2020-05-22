@@ -5,8 +5,7 @@
   Trigger: `db`
 */ -}}
 
-{{ $member := .Member }}
-{{ $userID := $member.User.ID }}
+{{ $userID := .Member.User.ID }}
 
 {{ $operation := "" }}
 {{ if ge (len .CmdArgs) 1 }}
@@ -75,31 +74,20 @@
 
 {{ $resultText = joinStr " " $resultEmoji $resultText }}
 
-{{ $userFull := $member.User.String }}
-{{ if $member.Nick }}
-    {{ $userFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
-{{ end }}
-{{ $userLink := joinStr "" "https://discordapp.com/users/" $member.User.ID }}
-{{ $userAvatar := $member.User.AvatarURL "128" }}
-{{ $author := sdict "name" $userFull "url" $userLink "icon_url" $userAvatar }}
-
 {{ $embedFieldLimit := sub 1024 4 }}
 {{ if ge (len (toRune $value)) $embedFieldLimit }}
     {{ $value = joinStr "" (slice $value 0 $embedFieldLimit) "…" }}
 {{ end }}
 
-{{ $embed := cembed
-    "author" $author
-    "color" (toInt (dbGet .Guild.OwnerID "Embed Color").Value)
-    "title" (joinStr "" "Database Operation: `" $operation "`")
-    "description" $resultText
-    "fields" (cslice
+{{ execCC 3 nil 0 (sdict
+    "Title" (joinStr "" "Database Operation: `" $operation "`")
+    "Description" $resultText
+    "AuthorID" $userID
+    "Fields" (cslice
         (sdict "name" "User ID" "value" (joinStr "" "`" $userID "`") "inline" true)
         (sdict "name" "Key" "value" (joinStr "" "`" (or $key $nil) "`") "inline" true)
         (sdict "name" "Value" "value" (joinStr "" "`" (or $value $nil) "`") "inline" false)
     )
-}}
-
-{{ sendMessage nil $embed }}
+) }}
 
 {{ deleteTrigger 5 }}
