@@ -6,7 +6,10 @@
 */ -}}
 
 {{ $title := "Top 100 Database Entries" }}
+
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 
 {{ $maxEntries := 100 }}
 {{ $maxFields := 25 }}
@@ -20,7 +23,7 @@
     {{- if and (gt $i 0) (eq 0 (toInt (mod $i $maxFields))) -}}
         {{- $iHuman := add 1 $i -}}
         {{- $lastBoundary = $iHuman -}}
-        {{- execCC 3 nil 0 (sdict
+        {{- execCC $embed_exec nil 0 (sdict
             "Title" (joinStr "" $title " (" (sub $iHuman $maxFields) "-" $i ")")
             "Fields" $entries
         ) -}}
@@ -42,7 +45,7 @@
 {{- end -}}
 
 {{ $iEndHuman := add 1 $iEnd }}
-{{ execCC 3 nil 0 (sdict
+{{ execCC $embed_exec nil 0 (sdict
     "Title" (joinStr "" $title " (" $lastBoundary "-" $iEndHuman ")")
     "Fields" $entries
 ) }}

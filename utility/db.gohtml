@@ -79,7 +79,9 @@
     {{ $value = joinStr "" (slice $value 0 $embedFieldLimit) "…" }}
 {{ end }}
 
-{{ execCC 3 nil 0 (sdict
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ execCC $embed_exec nil 0 (sdict
     "Title" (joinStr "" "Database Operation: `" $operation "`")
     "Description" $resultText
     "AuthorID" $userID

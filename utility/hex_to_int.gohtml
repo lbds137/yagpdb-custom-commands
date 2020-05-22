@@ -22,6 +22,9 @@
 {{ end }}
 
 {{ $result := (joinStr "" "The `int` value of `" $trigger "` is `" $intVal "`.") }}
-{{ execCC 3 nil 0 (sdict "Title" "Color Conversion: `hex` to `int`" "Description" $result "Color" $intVal) }}
 
-{{ deleteTrigger 5}}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ execCC $embed_exec nil 0 (sdict "Title" "Color Conversion: `hex` to `int`" "Description" $result "Color" $intVal) }}
+
+{{ deleteTrigger 5 }}
