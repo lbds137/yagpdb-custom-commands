@@ -5,6 +5,9 @@
   Trigger: `https://(ptb.|canary.)?discord(?:app)?.com/channels/\d{17,}/\d{17,}/\d{17,}`
 */ -}}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{17,}/\\d{17,}/\\d{17,}" }}
 {{ $triggerMsg := .Message.Content }}
@@ -17,7 +20,7 @@
 {{ $messageID := index $gcmSlice 2 }}
 
 {{ $guildCheck := eq .Message.GuildID (toInt $guildID) }}
-{{ $staffCheck := hasRoleID (toInt (dbGet .Guild.OwnerID "Staff Role ID").Value) }}
+{{ $staffCheck := hasRoleID (toInt (dbGet $rolesCategoryID "Staff Role ID").Value) }}
 {{ $thisChannelNsfw := (getChannel .Message.ChannelID).NSFW }}
 {{ $thatChannelNsfw := (getChannel $channelID).NSFW }}
 {{ $nsfwCheck := or (not $thatChannelNsfw) (and $thisChannelNsfw $thatChannelNsfw) }}
@@ -34,7 +37,7 @@
         {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
     {{ end }}
 
-    {{ $defaultAvatar := (dbGet .Guild.OwnerID "Default Avatar").Value }}
+    {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
     {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
     {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
 
@@ -43,7 +46,7 @@
     {{ $msgAttachments := $message.Attachments }}
     {{ $msgEmbeds := $message.Embeds }}
 
-    {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
+    {{ $color := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
     {{ $title := "Message Link" }}
     {{ $description := $message.Content }}
     {{ $attachmentLinks := "" }}
