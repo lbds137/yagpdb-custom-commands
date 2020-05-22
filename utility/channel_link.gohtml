@@ -5,20 +5,23 @@
   Trigger: `\A<#[0-9]{17,}>\z`
 */ -}}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+
 {{ $trigger := .Message.Content }}
 {{ $tcID := slice $trigger 2 (sub (len $trigger) 1) }}
 {{ $thereChannel := getChannel $tcID }}
 {{ if $thereChannel }}
     {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
     {{ $thereMsgID := sendMessageRetID $tcID (complexMessage "content" "Loading...") }}
- 
+
     {{ $cLinkBaseUrl := "https://discordapp.com/channels" }}
     {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $tcID "/" $thereMsgID }}
     {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" .Channel.ID "/" $hereMsgID }}
- 
+
     {{ $hereText := "" }}
     {{ $thereText := "" }}
-    {{ $staffRoleID := toInt (dbGet .Guild.OwnerID "Staff Role ID").Value }}
+    {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
     {{ if hasRoleID $staffRoleID }}
         {{ $hereText = joinStr ""
             "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
@@ -38,17 +41,18 @@
             "🔗 [Click or tap here to return.](" $hereLink ")"
         }}
     {{ end }}
-    
+
     {{ $title := "Channel Link" }}
-    {{ $color := (toInt (dbGet .Guild.OwnerID "Embed Color").Value) }}
- 
+    {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+    {{ $color := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
+
     {{ $userFull := .User.String }}
     {{ if .Member.Nick }}
         {{ $userFull = joinStr "" .Member.Nick " (" .User.String ")" }}
     {{ end }}
     {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
-    {{ $author := sdict "name" $userFull "url" $userLink "icon_url" (.User.AvatarURL "128") }}
- 
+    {{ $author := sdict "name" $userFull "url" $userLink "icon_url" (or (.User.AvatarURL "128") $defaultAvatar) }}
+
     {{ editMessage nil $hereMsgID (complexMessageEdit
         "content" ""
         "embed" (cembed
@@ -67,6 +71,6 @@
             "author" $author
         )
     ) }}
- 
+
     {{ deleteTrigger 0 }}
 {{ end }}
