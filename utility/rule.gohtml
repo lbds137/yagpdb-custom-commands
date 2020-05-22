@@ -18,7 +18,10 @@
     {{ $key := joinStr "" "Rule #" $n }}
     {{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
     {{ $result := (dbGet $rulesCategoryID $key).Value }}
-    {{ execCC 3 nil 0 (sdict "Title" $key "Description" $result) }}
+
+    {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+    {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+    {{ execCC $embed_exec nil 0 (sdict "Title" $key "Description" $result) }}
 {{ else }}
     ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
 {{ end }}

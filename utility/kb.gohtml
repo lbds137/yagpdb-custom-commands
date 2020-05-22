@@ -10,10 +10,13 @@
 }}
 
 {{ $knowledgeCategoryID := toInt (dbGet 0 "Knowledge").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $dbprettyget := toInt (dbGet $commandsCategoryID "dbprettyget").Value }}
 
 {{ $key := $args.Get 0 }}
 {{ if $key }}
-    {{ execCC 22 nil 0 (sdict "UserID" $knowledgeCategoryID "Key" (title $key)) }}
+    {{ execCC $dbprettyget nil 0 (sdict "UserID" $knowledgeCategoryID "Key" (title $key)) }}
 {{ else }}
-    {{ execCC 3 nil 0 (sdict "Title" "Info Lookup Failed" "Description" "⚠️ You did not provide a key to look up!") }}
+    {{ execCC $embed_exec nil 0 (sdict "Title" "Info Lookup Failed" "Description" "⚠️ You did not provide a key to look up!") }}
 {{ end }}

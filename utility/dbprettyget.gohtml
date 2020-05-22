@@ -23,7 +23,7 @@
     {{ end }}
     {{ $authorID = .User.ID }}
 {{ end }}
- 
+
 {{ $title := "" }}
 {{ $result := "" }}
 {{ if $key }}
@@ -33,6 +33,9 @@
     {{ $title = "Missing Argument" }}
     {{ $result = "⚠️ You did not provide a key to look up!" }}
 {{ end }}
-{{ execCC 3 nil 0 (sdict "Title" $title "Description" $result "AuthorID" $authorID) }}
+
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $result "AuthorID" $authorID) }}
 
 {{ deleteTrigger 0 }}
