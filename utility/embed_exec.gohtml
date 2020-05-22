@@ -23,6 +23,7 @@
 {{ $embed := cembed
     "title" .ExecData.Title
     "description" .ExecData.Description
+    "fields" .ExecData.Fields
     "color" (or .ExecData.Color $dbEmbedColor)
     "author" $author
     "image" (sdict "url" .ExecData.ImageURL)

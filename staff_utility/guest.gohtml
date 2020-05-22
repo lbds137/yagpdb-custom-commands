@@ -6,26 +6,43 @@
 */ -}}
 
 {{ $commandName := "Guest User Check" }}
-{{ $hoursCutoff := (toInt (dbGet .Guild.OwnerID "Guest Grace Period Hours").Value) }}
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+
+{{ $hoursCutoff := (toInt (dbGet $globalCategoryID "Guest Grace Period Hours").Value) }}
 {{ $actionTaken := "" }}
+{{ $reason := "" }}
 
 {{ $args := parseArgs 1 (joinStr "" "Please enter a user ID.") (carg "string" "user ID") }}
 
 {{ $userID := (userArg ($args.Get 0)).ID }}
 {{ $member := getMember $userID }}
-{{ $now := currentTime }}
-{{ $userJoined := $member.JoinedAt }}
-{{ $hoursSinceJoin := toInt ($now.Sub $userJoined.Parse).Hours }}
+{{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+{{ $userAvatar := $member.User.AvatarURL "128" }}
+
+{{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
+{{ $activeRoleID := toInt (dbGet $rolesCategoryID "Active Role ID").Value }}
+{{ $isGuest := targetHasRoleID $userID $guestRoleID }}
+{{ $isActive := targetHasRoleID $userID $activeRoleID }}
+
+{{ $hoursSinceJoin := toInt (currentTime.Sub $member.JoinedAt.Parse).Hours }}
 {{ $hoursExceeded := sub $hoursSinceJoin $hoursCutoff }}
 
-{{ if not (targetHasRoleID $userID (toInt (dbGet .Guild.OwnerID "Active Role ID").Value)) }}
+{{ if and $isGuest (not $isActive) }}
     {{ if gt $hoursExceeded 0 }}
         {{ $actionTaken = "kick" }}
+        {{ $reason = "The user has exceeded the inactivity grace period." }}
     {{ else }}
         {{ $actionTaken = "none" }}
+        {{ $reason = "The user has not yet exceeded the inactivity grace period." }}
     {{ end }}
 {{ else }}
     {{ $actionTaken = "none" }}
+    {{ if $isActive }}
+        {{ $reason = "The user is active." }}
+    {{ else }}
+        {{ $reason = "The user is not a guest." }}
+    {{ end }}
 {{ end }}
 
 {{ $result := "" }}
@@ -35,10 +52,16 @@
         {{ $hoursString = "hour" }}
     {{ end }}
     {{ $kickReason := joinStr "" "exceeding the inactivity grace period by **" $hoursExceeded "** " $hoursString }}
-    {{ $result = joinStr "" "🥾 Kicked user **" $member.User.String "** for " $kickReason "." }}
+    {{ $result = joinStr "" "🥾 **" $member.User.String "** has been kicked!" }}
     {{ $silent := exec "kick" $userID $kickReason }}
 {{ else }}
-    {{ $result = joinStr "" "❌ No action was taken against **" $member.User.String "** at this time." }}
+    {{ $result = joinStr "" "❌ No action was taken against **" $member.User.String "**." }}
 {{ end }}
 
-{{ execCC 3 nil 0 (sdict "Title" $commandName "Description" $result) }}
+{{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
+{{ execCC 3 nil 0 (sdict
+    "Title" $commandName
+    "Description" $result
+    "Fields" $fields
+    "ThumbnailURL" (or $userAvatar $defaultAvatar)
+) }}
