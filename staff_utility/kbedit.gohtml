@@ -6,8 +6,8 @@
 
 {{ $args := parseArgs 2
     (joinStr ""
-        "Usage: `[Key]` `[Value]`. "
-        "The key is the name of the knowledge base entry you wish to add, and the value is the text that goes with it."
+        "Usage: `[Key]` `[Value]`.\n"
+        "The key is the name of the knowledge base entry to add, and the value is the text that goes with it.\n"
         "In order to __delete__ an entry, please use `(nil)` for the value."
     )
     (carg "string" "key")
