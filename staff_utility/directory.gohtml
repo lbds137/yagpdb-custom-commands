@@ -1,0 +1,21 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `directory`
+*/ -}}
+
+{{ $args := parseArgs 1 (joinStr "" "Please enter a category to look up in the directory.")
+    (carg "string" "key")
+}}
+
+{{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $dbprettyget := toInt (dbGet $commandsCategoryID "dbprettyget").Value }}
+
+{{ $key := $args.Get 0 }}
+{{ if $key }}
+    {{ execCC $dbprettyget nil 0 (sdict "UserID" $directoryCategoryID "Key" (title $key)) }}
+{{ else }}
+    {{ execCC $embed_exec nil 0 (sdict "Title" "Directory Lookup Failed" "Description" "⚠️ You did not provide a category to look up!") }}
+{{ end }}
