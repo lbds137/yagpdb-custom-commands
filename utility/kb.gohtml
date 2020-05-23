@@ -4,7 +4,7 @@
   Trigger: `kb`
 */ -}}
 
-{{ $args := parseArgs 1 (joinStr "" "Please enter a key to look up in the knowledge base.")
+{{ $args := parseArgs 1 (joinStr "" "Please enter a topic to look up in the knowledge base.")
     (carg "string" "key")
 }}
 
@@ -17,5 +17,5 @@
 {{ if $key }}
     {{ execCC $dbprettyget nil 0 (sdict "UserID" $knowledgeCategoryID "Key" (title $key)) }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict "Title" "Info Lookup Failed" "Description" "⚠️ You did not provide a key to look up!") }}
+    {{ execCC $embed_exec nil 0 (sdict "Title" "Knowledge Base Lookup Failed" "Description" "⚠️ You did not provide a topic to look up!") }}
 {{ end }}
