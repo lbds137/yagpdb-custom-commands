@@ -1,0 +1,53 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `prune`
+*/ -}}
+
+{{ $args := parseArgs 1
+    (joinStr "Please specify an action (either `announce` or `remind`)."
+)
+    (carg "string" "action")
+}}
+
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
+{{ $action := $args.Get 0 }}
+
+{{ $isAnnounce := eq $action "announce" }}
+{{ $isRemind := eq $action "remind" }}
+
+{{ if or $isAnnounce $isRemind }}
+    {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+    {{ $adminCategoryID := toInt (dbGet 0 "Admin").Value }}
+    {{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
+
+    {{ $title := "" }}
+    {{ $message := "" }}
+    {{ $roleID := "" }}
+
+    {{ if $isAnnounce }}
+        {{ $title = "Inactivity Prune Announcement" }}
+        {{ $roleID = toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
+    {{ else }}
+        {{ $title = "Inactivity Prune Reminder" }}
+        {{ $roleID = toInt (dbGet $rolesCategoryID "Inactive Role ID").Value }}
+    {{ end }}
+
+    {{ $message = (dbGet $adminCategoryID $title).Value }}
+    {{ $message = reReplace "\\#\\{date\\}" $message $nextPruneDate }}
+
+    {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $message) }}
+
+    {{ exec "MentionRole" $roleID }}
+{{ else }}
+    {{ execCC $embed_exec nil 0 (sdict
+        "Title" "Invalid Action Specified"
+        "Description" "⚠️ You must enter either `announce` or `remind` for the action parameter!"
+        "DeleteResponse" true
+        "DeleteDelay" 5
+    ) }}
+{{ end }}
+
+{{ deleteTrigger 0 }}
