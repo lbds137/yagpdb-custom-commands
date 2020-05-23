@@ -1,0 +1,36 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `directoryedit`
+*/ -}}
+
+{{ $args := parseArgs 2
+    (joinStr "\n"
+        "Usage: `[Key]` `[Value]`"
+        "The key is the name of the directory entry to update, and the value is the text that goes with it."
+        "In order to __delete__ an entry, please use `(nil)` for the value."
+    )
+    (carg "string" "key")
+    (carg "string" "value")
+}}
+
+{{ $key := $args.Get 0 }}
+{{ $value := $args.Get 1 }}
+{{ $operation := "set" }}
+{{ if eq $value "(nil)" }}
+    {{ $value = "" }}
+    {{ $operation = "del" }}
+{{ end }}
+
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
+{{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
+{{ execCC $db nil 0 (sdict
+    "UserID" $directoryCategoryID
+    "Operation" $operation
+    "Key" $key
+    "Value" $value
+    "Title" "Directory Entry Editing"
+) }}
+
+{{ deleteTrigger 5 }}
