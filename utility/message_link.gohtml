@@ -20,9 +20,12 @@
 
 {{ $guildCheck := eq .Message.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID (toInt (dbGet $rolesCategoryID "Staff Role ID").Value) }}
-{{ $thisChannelNsfw := (getChannel .Message.ChannelID).NSFW }}
-{{ $thatChannelNsfw := (getChannel $channelID).NSFW }}
-{{ $nsfwCheck := or (not $thatChannelNsfw) (and $thisChannelNsfw $thatChannelNsfw) }}
+{{ $thisChannelNSFW := (getChannel .Message.ChannelID).NSFW }}
+{{ $thatChannelNSFW := "" }}
+{{ if getChannel $channelID }}
+    {{ $thatChannelNSFW = and (getChannel $channelID).NSFW }}
+{{ end }}
+{{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 
 {{ if and $guildCheck (or $staffCheck $nsfwCheck) }}
     {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
