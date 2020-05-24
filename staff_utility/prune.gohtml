@@ -4,9 +4,7 @@
   Trigger: `prune`
 */ -}}
 
-{{ $args := parseArgs 1
-    (joinStr "Please specify an action (either `announce` or `remind`)."
-)
+{{ $args := parseArgs 1 "Please specify an action (either `announce` or `remind`)."
     (carg "string" "action")
 }}
 
