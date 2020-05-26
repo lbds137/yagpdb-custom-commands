@@ -1,0 +1,105 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `admituser`
+*/ -}}
+
+{{ $args := parseArgs 2 "Usage: `[message link]` `[minor|adult]`"
+    (carg "string" "message link")
+    (carg "string" "minor or adult")
+}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
+{{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
+{{ $memberRoleID := toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
+{{ $minorRoleID := toInt (dbGet $rolesCategoryID "Minor Role ID").Value }}
+{{ $adultRoleID := toInt (dbGet $rolesCategoryID "Adult Role ID").Value }}
+
+{{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
+{{ $modLogChannelID := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
+
+{{ $messageLinkArg := $args.Get 0 }}
+
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $fullLinkRegex := joinStr "" $baseURLRegex "\\d{17,}/\\d{17,}/\\d{17,}" }}
+{{ $messageLink := reFind $fullLinkRegex $messageLinkArg }}
+
+{{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
+{{ $gcmSlice := split $gcmString "/" }}
+{{ $guildID := index $gcmSlice 0 }}
+{{ $channelID := index $gcmSlice 1 }}
+{{ $messageID := index $gcmSlice 2 }}
+
+{{ $guildCheck := eq $guildID (toString .Guild.ID) }}
+{{ $channelCheck := eq $channelID (toString $introductionChannelID) }}
+
+{{ if and $guildCheck $channelCheck }}
+    {{ $message := getMessage $channelID $messageID }}
+    {{ $userID := $message.Author.ID }}
+    {{ $guildMember := getMember $userID }}
+    {{ if $guildMember }}
+        {{ $userType := lower ($args.Get 1) }}
+        {{ $isMinor := eq "minor" $userType }}
+        {{ $isAdult := eq "adult" $userType }}
+        {{ $article := "" }}
+        {{ if or $isMinor $isAdult }}
+            {{ if $isMinor }}
+                {{ $article = "a" }}
+                {{ giveRoleID $userID $minorRoleID }}
+            {{ else }}
+                {{ $article = "an" }}
+                {{ giveRoleID $userID $adultRoleID }}
+            {{ end }}
+            {{ giveRoleID $userID $memberRoleID }}
+            {{ takeRoleID $userID $guestRoleID }}
+            {{ addMessageReactions $channelID $messageID "👋" }}
+
+            {{ $user := $guildMember.User }}
+            {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+            {{ $userAvatar := .User.AvatarURL "128" }}
+            {{ $staffUser := .User }}
+
+            {{ $title := "User Admission Record" }}
+            {{ $description := joinStr ""
+                "✅ User **" $user.String "** (ID: " $user.ID ") "
+                "has been admitted to **" .Guild.Name "** by "
+                "**" $staffUser.String "** (ID: " $staffUser.ID ") "
+                "as " $article " **" (title $userType) "**!"
+            }}
+            {{ execCC $embed_exec nil 0 (sdict
+                "Title" $title
+                "Description" $description
+                "ThumbnailURL" (or $userAvatar $defaultAvatar)
+                "Channel" $modLogChannelID
+            ) }}
+        {{ else }}
+            {{ execCC $embed_exec nil 0 (sdict
+                "Title" "Invalid User Type"
+                "Description" "⚠️ You must enter either `minor` or `adult` for the user type parameter!"
+                "DeleteResponse" true
+                "DeleteDelay" 5
+            ) }}
+        {{ end }}
+    {{ else }}
+        {{ execCC $embed_exec nil 0 (sdict
+            "Title" "Invalid User"
+            "Description" joinStr "" "⚠️ The user you are trying to admit is not currently in **" .Guild.Name "**!"
+            "DeleteResponse" true
+            "DeleteDelay" 5
+        ) }}
+    {{ end }}
+{{ else }}
+    {{ execCC $embed_exec nil 0 (sdict
+        "Title" "Invalid Message Link"
+        "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
+        "DeleteResponse" true
+        "DeleteDelay" 5
+    ) }}
+{{ end }}
+{{ deleteTrigger 0 }}
