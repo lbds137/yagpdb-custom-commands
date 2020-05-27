@@ -6,12 +6,18 @@
 
 {{ $trigger := .Message.Content }}
 {{ if not (reFind "\\Ay\\^ticket open .+\\z" $trigger) }}
-    {{ $result := joinStr "" 
-        "⚠️ You must enter a proper ticket open command: `y^ticket open [reason]`\n\n"
-        " Replace `[reason]` with a brief but descriptive reason for opening the ticket, e.g. `concern about another member`." 
+    {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+    {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+    {{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
+    {{ $result := joinStr ""
+        "⚠️ Please enter a valid ticket open command: `" $prefix "ticket open [reason]`\n\n"
+        "Replace `[reason]` with a brief but descriptive reason for opening the ticket, "
+        "e.g. `concern about another member's conduct`.\n\n"
+        "*Note: the reason is limited to a maximum of **__90 characters__**, and "
+        "submitting a longer reason will cause the ticket submission to fail.*"
     }}
 
-    {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
     {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
     {{ execCC $embed_exec nil 0 (sdict "Title" "Invalid Ticket Command" "Description" $result "DeleteResponse" true "DeleteDelay" 10) }}
 
