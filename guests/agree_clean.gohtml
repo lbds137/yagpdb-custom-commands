@@ -6,9 +6,12 @@
 
 {{ $trigger := .Message.Content }}
 {{ if not (reFind "\\Ay\\^agree\\z" $trigger) }}
-    {{ $result := "⚠️ You must enter the correct command for agreeing to the rules: `y^agree`" }}
-
+    {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
     {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+    {{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
+    {{ $result := joinStr "" "⚠️ Please enter the correct command for agreeing to the rules: `" $prefix "agree`" }}
+
     {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
     {{ execCC $embed_exec nil 0 (sdict "Title" "Invalid Agreement Command" "Description" $result "DeleteResponse" true "DeleteDelay" 5) }}
 
