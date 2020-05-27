@@ -4,6 +4,8 @@
   Trigger: `admituser`
 */ -}}
 
+{{ $emoji := "👋" }}
+
 {{ $args := parseArgs 2 "Usage: `[message link]` `[minor|adult]`"
     (carg "string" "message link")
     (carg "string" "minor or adult")
@@ -58,7 +60,7 @@
             {{ end }}
             {{ giveRoleID $userID $memberRoleID }}
             {{ takeRoleID $userID $guestRoleID }}
-            {{ addMessageReactions $channelID $messageID "👋" }}
+            {{ addMessageReactions $channelID $messageID $emoji }}
 
             {{ $user := $guildMember.User }}
             {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
@@ -67,7 +69,7 @@
 
             {{ $title := "User Admission Record" }}
             {{ $description := joinStr ""
-                "✅ User **" $user.String "** (ID: " $user.ID ") "
+                $emoji " User **" $user.String "** (ID: " $user.ID ") "
                 "has been admitted to **" .Guild.Name "** by "
                 "**" $staffUser.String "** (ID: " $staffUser.ID ") "
                 "as " $article " **" (title $userType) "**!"
