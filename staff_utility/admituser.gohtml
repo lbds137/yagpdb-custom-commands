@@ -62,7 +62,7 @@
 
             {{ $user := $guildMember.User }}
             {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
-            {{ $userAvatar := .User.AvatarURL "128" }}
+            {{ $userAvatar := $user.AvatarURL "128" }}
             {{ $staffUser := .User }}
 
             {{ $title := "User Admission Record" }}
