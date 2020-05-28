@@ -58,3 +58,5 @@
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ execCC $embed_exec nil 0 (sdict "Title" $title "ImageURL" $avatarURL) }}
+
+{{ deleteTrigger 5 }}
