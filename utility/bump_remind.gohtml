@@ -1,0 +1,22 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Minute interval`
+  Interval: `15`
+*/ -}}
+
+{{ $bumpCooldownMinutes := 120 }}
+{{ $now := currentTime }}
+{{ $guildOwnerUser := userArg .Guild.OwnerID }}
+{{ $reminderMessage := joinStr "" $guildOwnerUser.Mention " it is now time to bump **" .Guild.Name "**!" }}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $lastBumpTime := (dbGet $globalCategoryID "Last Bump").Value }}
+
+{{ if $lastBumpTime }}
+    {{ $minutesSinceBump := toInt ($now.Sub $lastBumpTime).Minutes }}
+    {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
+        {{ sendMessage nil $reminderMessage }}
+    {{ end }}
+{{ else }}
+    {{ sendMessage nil $reminderMessage }}
+{{ end }}
