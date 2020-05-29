@@ -1,0 +1,20 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Exact Match`
+  Trigger: `!d bump`
+*/ -}}
+
+{{ $bumpCooldownMinutes := 120 }}
+{{ $now := currentTime }}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $lastBumpTime := (dbGet $globalCategoryID "Last Bump").Value }}
+
+{{ if $lastBumpTime }}
+    {{ $minutesSinceBump := toInt ($now.Sub $lastBumpTime).Minutes }}
+    {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
+        {{ dbSet $globalCategoryID "Last Bump" $now }}
+    {{ end }}
+{{ else }}
+    {{ dbSet $globalCategoryID "Last Bump" $now }}
+{{ end }}
