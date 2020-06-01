@@ -54,7 +54,7 @@
 
         {{ execCC $ticket_adduser_exec $ticketChannelID 0 (sdict "UserID" $userID) }}
         {{ $introductionText := joinStr ""
-            "Introduction posted by " $guildMember.User.Mention ":\n"
+            "💬 **Introduction posted by " $guildMember.User.Mention ":**\n"
             ">>> " $message.Content
         }}
         {{ sleep 5 }}
