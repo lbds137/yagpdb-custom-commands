@@ -1,0 +1,12 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `None`
+*/ -}}
+
+{{ $discordIDRegex := "\\d{17,}" }}
+
+{{ $userID := reFind $discordIDRegex (toString .ExecData.UserID) }}
+
+{{ if $userID }}
+    {{ exec "ticket adduser" $userID }}
+{{ end }}
