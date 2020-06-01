@@ -1,0 +1,78 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `screenuser`
+*/ -}}
+
+{{ $reasonMaxLen := 90 }}
+
+{{ $args := parseArgs 2 "Usage: `[message link]` `[reason for screening]`"
+    (carg "string" "message link")
+    (carg "string" "reason for screening")
+}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $ticket_adduser_exec := toInt (dbGet $commandsCategoryID "ticket_adduser_exec").Value }}
+
+{{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
+{{ $ticketSubmissionChannelID := toInt (dbGet $channelsCategoryID "Ticket Submission Channel ID").Value }}
+
+{{ $messageLinkArg := $args.Get 0 }}
+
+{{ $discordIDRegex := "\\d{17,}" }}
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $fullLinkRegex := joinStr "" $baseURLRegex $discordIDRegex "/" $discordIDRegex "/" $discordIDRegex }}
+{{ $messageLink := reFind $fullLinkRegex $messageLinkArg }}
+
+{{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
+{{ $gcmSlice := split $gcmString "/" }}
+{{ $guildID := index $gcmSlice 0 }}
+{{ $channelID := index $gcmSlice 1 }}
+{{ $messageID := index $gcmSlice 2 }}
+
+{{ $guildCheck := eq $guildID (toString .Guild.ID) }}
+{{ $channelCheck := eq $channelID (toString $introductionChannelID) }}
+
+{{ if and $guildCheck $channelCheck }}
+    {{ $message := getMessage $channelID $messageID }}
+    {{ $userID := $message.Author.ID }}
+    {{ $guildMember := getMember $userID }}
+    {{ if $guildMember }}
+        {{ $reasonArg := lower ($args.Get 1) }}
+        {{ $reason := joinStr "" "screening user " $userID ": " $reasonArg }}
+        {{ if ge (len (toRune $reason)) $reasonMaxLen }}
+            {{ $reason = joinStr "" (slice $reason 0 (sub $reasonMaxLen 2)) "…" }}
+        {{ end }}
+
+        {{ $ticketOpenResult:= exec "ticket open" $reason }}
+        {{ $ticketChannelID := reFind $discordIDRegex $ticketOpenResult }}
+
+        {{ execCC $ticket_adduser_exec $ticketChannelID 0 (sdict "UserID" $userID) }}
+        {{ $introductionText := joinStr ""
+            "Introduction posted by " $guildMember.User.Mention ":\n"
+            ">>> " $message.Content
+        }}
+        {{ sleep 5 }}
+        {{ sendMessage $ticketChannelID $introductionText }}
+    {{ else }}
+        {{ execCC $embed_exec nil 0 (sdict
+            "Title" "Invalid User"
+            "Description" joinStr "" "⚠️ The user you are trying to screen is not currently in **" .Guild.Name "**!"
+            "DeleteResponse" true
+            "DeleteDelay" 5
+        ) }}
+    {{ end }}
+{{ else }}
+    {{ execCC $embed_exec nil 0 (sdict
+        "Title" "Invalid Message Link"
+        "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
+        "DeleteResponse" true
+        "DeleteDelay" 5
+    ) }}
+{{ end }}
+{{ deleteTrigger 0 }}
