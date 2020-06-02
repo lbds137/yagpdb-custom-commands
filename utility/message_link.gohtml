@@ -132,10 +132,10 @@
         {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentLinks "inline" false) }}
     {{ end }}
     {{ if $embedAuthor }}
-        {{ $fields = $fields.Append (sdict "name" "Embed Author" "value" $embedAuthor "inline" false) }}
+        {{ $fields = $fields.Append (sdict "name" "Embed Author" "value" $embedAuthor "inline" true) }}
     {{ end }}
     {{ if $embedProvider }}
-        {{ $fields = $fields.Append (sdict "name" "Embed Provider" "value" $embedProvider "inline" false) }}
+        {{ $fields = $fields.Append (sdict "name" "Embed Provider" "value" $embedProvider "inline" true) }}
     {{ end }}
     {{ if $embedTitle }}
         {{ $fields = $fields.Append (sdict "name" "Embed Title" "value" $embedTitle "inline" false) }}
