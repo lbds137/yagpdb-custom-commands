@@ -6,21 +6,23 @@
 
 {{ $key := "" }}
 {{ $userID := "" }}
-{{ $authorID := "" }}
+{{ $authorID := .Guild.ID }}
 {{ if .ExecData.Key }}
     {{ $key = .ExecData.Key }}
     {{ $userID = or .ExecData.UserID .User.ID }}
-    {{ $authorID = .Guild.ID }}
 {{ else if gt (len .CmdArgs) 0 }}
     {{ $key = index .CmdArgs 0 }}
     {{ if gt (len .CmdArgs) 1 }}
         {{ if reFind "\\A\\d+\\z" (index .CmdArgs 1) }}
             {{ $userID = toInt (index .CmdArgs 1) }}
+            {{ if userArg $userID }}
+                {{ $authorID = $userID }}
+            {{ end }}
         {{ end }}
     {{ else }}
         {{ $userID = .User.ID }}
+        {{ $authorID = $userID }}
     {{ end }}
-    {{ $authorID = .User.ID }}
 {{ end }}
 
 {{ $title := "" }}
