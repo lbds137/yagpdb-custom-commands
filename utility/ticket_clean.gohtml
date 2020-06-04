@@ -9,6 +9,10 @@
     {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
     {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 
+    {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+    {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+    {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
     {{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
     {{ $result := joinStr ""
         "⚠️ Please enter a valid ticket open command: `" $prefix "ticket open [reason]`\n\n"
@@ -18,8 +22,12 @@
         "submitting a longer reason will cause the ticket submission to fail.*"
     }}
 
-    {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-    {{ execCC $embed_exec nil 0 (sdict "Title" "Invalid Ticket Command" "Description" $result "DeleteResponse" true "DeleteDelay" 10) }}
+    {{ execCC $embed_exec nil 0 (sdict
+        "Title" "Invalid Ticket Command"
+        "Description" $result
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
+    ) }}
 
-    {{ deleteTrigger 0 }}
+    {{ deleteTrigger $deleteTriggerDelay }}
 {{ end }}

@@ -5,10 +5,19 @@
 */ -}}
 
 {{ $commandName := "Guest User Check" }}
+
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 
 {{ $hoursCutoff := (toInt (dbGet $globalCategoryID "Guest Grace Period Hours").Value) }}
+{{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
+{{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
+{{ $activeRoleID := toInt (dbGet $rolesCategoryID "Active Role ID").Value }}
+
 {{ $actionTaken := "" }}
 {{ $reason := "" }}
 
@@ -16,11 +25,8 @@
 
 {{ $userID := (userArg ($args.Get 0)).ID }}
 {{ $member := getMember $userID }}
-{{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
 {{ $userAvatar := $member.User.AvatarURL "128" }}
 
-{{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
-{{ $activeRoleID := toInt (dbGet $rolesCategoryID "Active Role ID").Value }}
 {{ $isGuest := targetHasRoleID $userID $guestRoleID }}
 {{ $isActive := targetHasRoleID $userID $activeRoleID }}
 
@@ -59,8 +65,6 @@
 
 {{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
 
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ execCC $embed_exec nil 0 (sdict
     "Title" $commandName
     "Description" $result
@@ -68,4 +72,4 @@
     "ThumbnailURL" (or $userAvatar $defaultAvatar)
 ) }}
 
-{{ deleteTrigger 0 }}
+{{ deleteTrigger $deleteTriggerDelay }}

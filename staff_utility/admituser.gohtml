@@ -16,6 +16,8 @@
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 {{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 
 {{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
@@ -85,7 +87,7 @@
                 "Title" "Invalid User Type"
                 "Description" "⚠️ You must enter either `minor` or `adult` for the user type parameter!"
                 "DeleteResponse" true
-                "DeleteDelay" 5
+                "DeleteDelay" $deleteResponseDelay
             ) }}
         {{ end }}
     {{ else }}
@@ -93,7 +95,7 @@
             "Title" "Invalid User"
             "Description" joinStr "" "⚠️ The user you are trying to admit is not currently in **" .Guild.Name "**!"
             "DeleteResponse" true
-            "DeleteDelay" 5
+            "DeleteDelay" $deleteResponseDelay
         ) }}
     {{ end }}
 {{ else }}
@@ -101,7 +103,7 @@
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true
-        "DeleteDelay" 5
+        "DeleteDelay" $deleteResponseDelay
     ) }}
 {{ end }}
-{{ deleteTrigger 0 }}
+{{ deleteTrigger $deleteTriggerDelay }}
