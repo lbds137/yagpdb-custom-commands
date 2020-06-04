@@ -4,9 +4,14 @@
   Trigger: `<@&499037360340598819>`
 */ -}}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+
 {{ $kickReason := "pinging staff in an attempt to expedite the server admission process" }}
 {{ $silent := execAdmin "kick" .User.ID $kickReason }}
 {{ joinStr "" "Kicked user **" .User.String " for " $kickReason "!" }} 
  
-{{ deleteTrigger 0 }}
-{{ deleteResponse 5 }} 
+{{ deleteTrigger $deleteTriggerDelay }}
+{{ deleteResponse $deleteResponseDelay }}

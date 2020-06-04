@@ -4,6 +4,12 @@
   Trigger: `avatar`
 */ -}}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
 {{ $validSizes := cslice "32" "64" "128" "256" "512" "1024" }}
 {{ $user := .Member.User }}
 {{ $size := "1024" }}
@@ -54,9 +60,6 @@
 {{ end }}
 
 {{ $title := joinStr "" $avatarType " Avatar for " $avatarOwner }}
-
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ execCC $embed_exec nil 0 (sdict "Title" $title "ImageURL" $avatarURL) }}
 
-{{ deleteTrigger 5 }}
+{{ deleteTrigger $deleteTriggerDelay }}

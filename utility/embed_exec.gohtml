@@ -3,6 +3,10 @@
   Trigger type: `None`
 */ -}}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+
 {{ $author := "" }}
 {{ $execAuthorValid := reFind "\\A\\d{17,}\\z" (toString .ExecData.AuthorID) }}
 {{ $execAuthorNotGuild := ne (toString .ExecData.AuthorID) (toString .Guild.ID) }}
@@ -19,9 +23,6 @@
     {{ $author = sdict "name" .Guild.Name "url" "https://thenighthouse.org/" "icon_url" $gIcon }}
 {{ end }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
-
 {{ $embed := cembed
     "title" .ExecData.Title
     "description" .ExecData.Description
@@ -34,5 +35,5 @@
 
 {{ $messageID := sendMessageRetID .ExecData.Channel $embed }}
 {{ if .ExecData.DeleteResponse }}
-    {{ deleteMessage .ExecData.Channel $messageID (or .ExecData.DeleteDelay 5) }}
+    {{ deleteMessage .ExecData.Channel $messageID (or .ExecData.DeleteDelay $deleteResponseDelay) }}
 {{ end }}

@@ -15,8 +15,12 @@
     (carg "string" "color (optional)")
 }}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
 {{ execCC $embed_exec nil 0 (sdict
     "Title" ($args.Get 0)
     "Description" ($args.Get 1)
@@ -24,4 +28,4 @@
     "Color" ($args.Get 3)
 ) }}
 
-{{ deleteTrigger 0 }}
+{{ deleteTrigger $deleteTriggerDelay }}

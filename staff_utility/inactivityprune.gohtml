@@ -8,8 +8,15 @@
     (carg "string" "action")
 }}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+{{ $adminCategoryID := toInt (dbGet 0 "Admin").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
 
 {{ $action := $args.Get 0 }}
 
@@ -17,10 +24,6 @@
 {{ $isRemind := eq $action "remind" }}
 
 {{ if or $isAnnounce $isRemind }}
-    {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-    {{ $adminCategoryID := toInt (dbGet 0 "Admin").Value }}
-    {{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
-
     {{ $title := "" }}
     {{ $message := "" }}
     {{ $roleID := "" }}
@@ -44,8 +47,8 @@
         "Title" "Invalid Action Specified"
         "Description" "⚠️ You must enter either `announce` or `remind` for the action parameter!"
         "DeleteResponse" true
-        "DeleteDelay" 5
+        "DeleteDelay" $deleteResponseDelay
     ) }}
 {{ end }}
 
-{{ deleteTrigger 0 }}
+{{ deleteTrigger $deleteTriggerDelay }}

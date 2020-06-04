@@ -7,6 +7,11 @@
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 
+{{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+{{ $color := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
+
 {{ $trigger := .Message.Content }}
 {{ $tcID := slice $trigger 2 (sub (len $trigger) 1) }}
 {{ $thereChannel := getChannel $tcID }}
@@ -20,7 +25,6 @@
 
     {{ $hereText := "" }}
     {{ $thereText := "" }}
-    {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
     {{ if hasRoleID $staffRoleID }}
         {{ $hereText = joinStr ""
             "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
@@ -42,8 +46,6 @@
     {{ end }}
 
     {{ $title := "Channel Link" }}
-    {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
-    {{ $color := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
 
     {{ $userFull := .User.String }}
     {{ if .Member.Nick }}
@@ -71,5 +73,5 @@
         )
     ) }}
 
-    {{ deleteTrigger 0 }}
+    {{ deleteTrigger $deleteTriggerDelay }}
 {{ end }}

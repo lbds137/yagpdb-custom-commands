@@ -10,19 +10,23 @@
 {{ $args := parseArgs 1 (joinStr "" "Please enter a valid rule number (" $min "-" $max ").")
     (carg "int" "rule number to view")
 }}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
  
 {{ $n := $args.Get 0 }}
  
 {{ if and (ge $n $min) (le $n $max) }}
     {{ $key := joinStr "" "Rule #" $n }}
-    {{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
     {{ $result := (dbGet $rulesCategoryID $key).Value }}
 
-    {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-    {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
     {{ execCC $embed_exec nil 0 (sdict "Title" $key "Description" $result) }}
 {{ else }}
     ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
 {{ end }}
  
-{{ deleteTrigger 5 }}
+{{ deleteTrigger $deleteTriggerDelay }}
