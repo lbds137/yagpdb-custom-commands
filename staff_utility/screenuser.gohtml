@@ -51,15 +51,15 @@
             {{ $reason = joinStr "" (slice $reason 0 (sub $reasonMaxLen 2)) "…" }}
         {{ end }}
 
-        {{ $ticketOpenResult:= exec "ticket open" $reason }}
+        {{ $ticketOpenResult := exec "ticket open" $reason }}
         {{ $ticketChannelID := reFind $discordIDRegex $ticketOpenResult }}
-
+        {{ sleep 3 }}
         {{ execCC $ticket_adduser_exec $ticketChannelID 0 (sdict "UserID" $userID) }}
         {{ $introductionText := joinStr ""
             "💬 **Introduction posted by " $guildMember.User.Mention ":**\n"
             ">>> " $message.Content
         }}
-        {{ sleep 5 }}
+        {{ sleep 3 }}
         {{ sendMessage $ticketChannelID $introductionText }}
     {{ else }}
         {{ execCC $embed_exec nil 0 (sdict
