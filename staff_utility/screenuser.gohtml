@@ -48,19 +48,24 @@
         {{ $reasonArg := lower ($args.Get 1) }}
         {{ $reason := joinStr "" "screening user " $userID ": " $reasonArg }}
         {{ if ge (len (toRune $reason)) $reasonMaxLen }}
-            {{ $reason = joinStr "" (slice $reason 0 (sub $reasonMaxLen 2)) "…" }}
+            {{ $reason = joinStr "" (slice $reason 0 (sub $reasonMaxLen 3)) "…" }}
         {{ end }}
 
         {{ $ticketOpenResult := exec "ticket open" $reason }}
         {{ $ticketChannelID := reFind $discordIDRegex $ticketOpenResult }}
-        {{ sleep 3 }}
+
         {{ execCC $ticket_adduser_exec $ticketChannelID 0 (sdict "UserID" $userID) }}
         {{ $introductionText := joinStr ""
             "💬 **Introduction posted by " $guildMember.User.Mention ":**\n"
             ">>> " $message.Content
         }}
-        {{ sleep 3 }}
+        {{ $reasonText := joinStr ""
+            "ℹ️ **Reason for additional screening:**\n"
+            ">>> " $reasonArg
+        }}
+        {{ sleep 1 }}
         {{ sendMessage $ticketChannelID $introductionText }}
+        {{ sendMessage $ticketChannelID $reasonText }}
     {{ else }}
         {{ execCC $embed_exec nil 0 (sdict
             "Title" "Invalid User"
