@@ -17,6 +17,7 @@
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
 {{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
 
 {{ $action := $args.Get 0 }}
@@ -33,10 +34,11 @@
 
 {{ if or $isDate $isEnd $isPrune $isRemind $isStart }}
     {{ $title := "" }}
-    {{ $message := "" }}
-    {{ $roleID := "" }}
+    {{ $result := "" }}
 
     {{ if or $isEnd $isRemind $isStart }}
+        {{ $roleID := "" }}
+
         {{ if $isStart }}
             {{ $title = "Inactivity Prune Opening Announcement" }}
             {{ $roleID = toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
@@ -48,12 +50,70 @@
             {{ $roleID = toInt (dbGet $rolesCategoryID "Inactive Role ID").Value }}
         {{ end }}
 
-        {{ $message = (dbGet $adminCategoryID $title).Value }}
-        {{ $message = reReplace "\\#\\{date\\}" $message $nextPruneDate }}
+        {{ $result = (dbGet $adminCategoryID $title).Value }}
+        {{ $result = reReplace "\\#\\{date\\}" $result $nextPruneDate }}
 
-        {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $message) }}
+        {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $result) }}
 
         {{ exec "MentionRole" $roleID }}
+    {{ else if $isDate }}
+        {{ if $param }}
+            {{ execCC $db nil 0 (sdict
+                "UserID" $adminCategoryID
+                "Operation" "set"
+                "Key" "Next Prune Date"
+                "Value" $param
+                "Title" "Inactivity Prune Date Editing"
+            ) }}
+        {{ else }}
+            {{ execCC $embed_exec nil 0 (sdict
+                "Title" "Missing Date Parameter"
+                "Description" "⚠️ You must enter a non-empty date parameter!"
+                "DeleteResponse" true
+                "DeleteDelay" $deleteResponseDelay
+            ) }}
+        {{ end }}
+    {{ else if $isPrune }}
+        {{ $userArg := userArg $param }}
+        {{ if $userArg }}
+            {{ $userID := $userArg.ID }}
+            {{ $member := getMember $userID }}
+
+            {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+            {{ $userAvatar := $member.User.AvatarURL "128" }}
+
+            {{ $activeRoleID := toInt (dbGet $rolesCategoryID "Active Role ID").Value }}
+            {{ $inactiveRoleID := toInt (dbGet $rolesCategoryID "Inactive Role ID").Value }}
+
+            {{ $isActive := targetHasRoleID $userID $activeRoleID }}
+            {{ $isInactive := targetHasRoleID $userID $inactiveRoleID }}
+
+            {{ $reason := "" }}
+            {{ if and (not $isActive) $isInactive }}
+                {{ $kickReason := joinStr "" "pruned due to inactivity" }}
+                {{ $reason = joinStr "" "The user was " $kickReason "." }}
+                {{ $result = joinStr "" "🥾 **" $member.User.String "** has been kicked!" }}
+                {{ $silent := exec "kick" $userID $kickReason }}
+            {{ else }}
+                {{ $reason = "The user is not inactive." }}
+                {{ $result = joinStr "" "❌ No action was taken against **" $member.User.String "**." }}
+            {{ end }}
+
+            {{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
+            {{ execCC $embed_exec nil 0 (sdict
+                "Title" "Inactivity Prune"
+                "Description" $result
+                "Fields" $fields
+                "ThumbnailURL" (or $userAvatar $defaultAvatar)
+            ) }}
+        {{ else }}
+            {{ execCC $embed_exec nil 0 (sdict
+                "Title" "Invalid User Parameter"
+                "Description" "⚠️ You must enter a valid user parameter!"
+                "DeleteResponse" true
+                "DeleteDelay" $deleteResponseDelay
+            ) }}
+        {{ end }}
     {{ end }}
 {{ else }}
     {{ execCC $embed_exec nil 0 (sdict
