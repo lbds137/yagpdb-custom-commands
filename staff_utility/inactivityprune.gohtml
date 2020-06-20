@@ -4,8 +4,9 @@
   Trigger: `inactivityprune`
 */ -}}
 
-{{ $args := parseArgs 1 "Please specify an action (either `announce` or `remind`)."
+{{ $args := parseArgs 1 "Please specify an action: `date`, `end`, `prune`, `remind`, or `start`."
     (carg "string" "action")
+    (carg "string" "param (optional)")
 }}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
@@ -19,33 +20,45 @@
 {{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
 
 {{ $action := $args.Get 0 }}
+{{ $param := "" }}
+{{ if $args.IsSet 1 }}
+    {{ $param = $args.Get 1 }}
+{{ end }}
 
-{{ $isAnnounce := eq $action "announce" }}
+{{ $isDate := eq $action "date" }}
+{{ $isEnd := eq $action "end" }}
+{{ $isPrune := eq $action "prune" }}
 {{ $isRemind := eq $action "remind" }}
+{{ $isStart := eq $action "start" }}
 
-{{ if or $isAnnounce $isRemind }}
+{{ if or $isDate $isEnd $isPrune $isRemind $isStart }}
     {{ $title := "" }}
     {{ $message := "" }}
     {{ $roleID := "" }}
 
-    {{ if $isAnnounce }}
-        {{ $title = "Inactivity Prune Announcement" }}
-        {{ $roleID = toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
-    {{ else }}
-        {{ $title = "Inactivity Prune Reminder" }}
-        {{ $roleID = toInt (dbGet $rolesCategoryID "Inactive Role ID").Value }}
+    {{ if or $isEnd $isRemind $isStart }}
+        {{ if $isStart }}
+            {{ $title = "Inactivity Prune Opening Announcement" }}
+            {{ $roleID = toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
+        {{ else if $isEnd }}
+            {{ $title = "Inactivity Prune Closing Announcement" }}
+            {{ $roleID = toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
+        {{ else }}
+            {{ $title = "Inactivity Prune Reminder" }}
+            {{ $roleID = toInt (dbGet $rolesCategoryID "Inactive Role ID").Value }}
+        {{ end }}
+
+        {{ $message = (dbGet $adminCategoryID $title).Value }}
+        {{ $message = reReplace "\\#\\{date\\}" $message $nextPruneDate }}
+
+        {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $message) }}
+
+        {{ exec "MentionRole" $roleID }}
     {{ end }}
-
-    {{ $message = (dbGet $adminCategoryID $title).Value }}
-    {{ $message = reReplace "\\#\\{date\\}" $message $nextPruneDate }}
-
-    {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $message) }}
-
-    {{ exec "MentionRole" $roleID }}
 {{ else }}
     {{ execCC $embed_exec nil 0 (sdict
         "Title" "Invalid Action Specified"
-        "Description" "⚠️ You must enter either `announce` or `remind` for the action parameter!"
+        "Description" "⚠️ You must enter a valid action parameter!"
         "DeleteResponse" true
         "DeleteDelay" $deleteResponseDelay
     ) }}
