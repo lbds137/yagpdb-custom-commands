@@ -14,6 +14,9 @@
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 
 {{ $agreementRole := toInt (dbGet $rolesCategoryID "Agreement Role ID").Value }}
+{{ $announcementNotifyRole := toInt (dbGet $rolesCategoryID "Announcement Notify Role ID").Value }}
+{{ $discussionNotifyRole := toInt (dbGet $rolesCategoryID "Discussion Notify Role ID").Value }}
+
 {{ $introduction := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
 {{ $modLog := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
 
@@ -21,7 +24,9 @@
 {{ $userAvatar := .User.AvatarURL "128" }}
 
 {{ if not (hasRoleID $agreementRole) }}
-    {{ giveRoleID .User.ID $agreementRole}}
+    {{ giveRoleID .User.ID $agreementRole }}
+    {{ giveRoleID .User.ID $announcementNotifyRole }}
+    {{ giveRoleID .User.ID $discussionNotifyRole }}
 
     {{ $title := "User Agreement Record" }}
     {{ $description := (joinStr ""
