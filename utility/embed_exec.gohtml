@@ -4,6 +4,7 @@
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $serverURL := or (dbGet $globalCategoryID "Server URL").Value "" }}
 {{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 
@@ -20,7 +21,7 @@
     {{ $author = sdict "name" $userFull "url" $userLink "icon_url" ($member.User.AvatarURL "128") }}
 {{ else }}
     {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
-    {{ $author = sdict "name" .Guild.Name "url" "https://thenighthouse.org/" "icon_url" $gIcon }}
+    {{ $author = sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
 {{ end }}
 
 {{ $embed := cembed
