@@ -13,15 +13,16 @@
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
 {{ $trigger := .Message.Content }}
-{{ $tcID := slice $trigger 2 (sub (len $trigger) 1) }}
-{{ $thereChannel := getChannel $tcID }}
-{{ if $thereChannel }}
+{{ $hereChannelID := toString .Channel.ID }}
+{{ $thereChannelID := slice $trigger 2 (sub (len $trigger) 1) }}
+{{ $thereChannel := getChannel $thereChannelID }}
+{{ if and $thereChannel (ne $hereChannelID $thereChannelID) }}
     {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
-    {{ $thereMsgID := sendMessageRetID $tcID (complexMessage "content" "Loading...") }}
+    {{ $thereMsgID := sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
 
     {{ $cLinkBaseUrl := "https://discordapp.com/channels" }}
-    {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $tcID "/" $thereMsgID }}
-    {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" .Channel.ID "/" $hereMsgID }}
+    {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $thereChannelID "/" $thereMsgID }}
+    {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $hereChannelID "/" $hereMsgID }}
 
     {{ $hereText := "" }}
     {{ $thereText := "" }}
@@ -63,7 +64,7 @@
             "author" $author
         )
     ) }}
-    {{ editMessage $tcID $thereMsgID (complexMessageEdit
+    {{ editMessage $thereChannelID $thereMsgID (complexMessageEdit
         "content" ""
         "embed" (cembed
             "title" $title
