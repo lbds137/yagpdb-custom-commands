@@ -1,0 +1,74 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `bootstrap`
+*/ -}}
+
+{{ $args := parseArgs 1 (joinStr "" "Please enter the ID of the `embed_exec` custom command from the YAGPDB console.")
+    (carg "int" "`embed_exec` custom command ID")
+}}
+
+{{ $embed_exec := $args.Get 0 }}
+
+{{ dbSet 0 "Category" "Index" }}
+{{ dbSet 1 "Category" "Global" }}
+{{ dbSet 2 "Category" "Commands" }}
+{{ dbSet 3 "Category" "Rules" }}
+{{ dbSet 4 "Category" "Roles" }}
+{{ dbSet 5 "Category" "Channels" }}
+{{ dbSet 6 "Category" "Admin" }}
+{{ dbSet 7 "Category" "Knowledge" }}
+{{ dbSet 8 "Category" "Directory" }}
+
+{{ dbSet 0 "Index" 0 }}
+{{ dbSet 0 "Global" 1 }}
+{{ dbSet 0 "Commands" 2 }}
+{{ dbSet 0 "Rules" 3 }}
+{{ dbSet 0 "Roles" 4 }}
+{{ dbSet 0 "Channels" 5 }}
+{{ dbSet 0 "Admin" 6 }}
+{{ dbSet 0 "Knowledge" 7 }}
+{{ dbSet 0 "Directory" 8 }}
+
+{{ dbSet 1 "Embed Color" 16777214 }}
+{{ dbSet 1 "Default Avatar" "https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png" }}
+{{ dbSet 1 "Delete Trigger Delay" 5 }}
+
+{{ dbSet 2 "embed_exec" $embed_exec }}
+
+{{ execCC $embed_exec nil 0 (sdict
+    "Title" "Bootstrap Execution Complete"
+    "Description" "The bootstrapping process completed successfully! The default values that were set follow below."
+    "Fields" (cslice
+        (sdict "name" "User ID: `0`" "value" "Key: `Category` \nValue: `Index`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Index` \nValue: `0`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Global` \nValue: `1`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Commands` \nValue: `2`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Rules` \nValue: `3`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Roles` \nValue: `4`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Channels` \nValue: `5`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Admin` \nValue: `6`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Knowledge` \nValue: `7`" "inline" false)
+        (sdict "name" "User ID: `0`" "value" "Key: `Directory` \nValue: `8`" "inline" false)
+        (sdict "name" "User ID: `1`" "value" "Key: `Category` \nValue: `Global`" "inline" false)
+        (sdict "name" "User ID: `1`" "value" "Key: `Embed Color` \nValue: `16777214`" "inline" false)
+        (sdict "name" "User ID: `1`" "value" (joinStr ""
+            "Key: `Default Avatar` \n"
+            "Value: `https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png`"
+        ) "inline" false)
+        (sdict "name" "User ID: `1`" "value" "Key: `Delete Trigger Delay` \nValue: `5`" "inline" false)
+        (sdict "name" "User ID: `2`" "value" "Key: `Category` \nValue: `Commands`" "inline" false)
+        (sdict "name" "User ID: `2`" "value" (joinStr ""
+            "Key: `embed_exec` \n"
+            "Value: `" $embed_exec "`"
+        ) "inline" false)
+        (sdict "name" "User ID: `3`" "value" "Key: `Category` \nValue: `Rules`" "inline" false)
+        (sdict "name" "User ID: `4`" "value" "Key: `Category` \nValue: `Roles`" "inline" false)
+        (sdict "name" "User ID: `5`" "value" "Key: `Category` \nValue: `Channels`" "inline" false)
+        (sdict "name" "User ID: `6`" "value" "Key: `Category` \nValue: `Admin`" "inline" false)
+        (sdict "name" "User ID: `7`" "value" "Key: `Category` \nValue: `Knowledge`" "inline" false)
+        (sdict "name" "User ID: `8`" "value" "Key: `Category` \nValue: `Directory`" "inline" false)
+    )
+) }}
+
+{{ deleteTrigger 5 }}
