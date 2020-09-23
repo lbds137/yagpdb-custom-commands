@@ -121,16 +121,16 @@
         {{ end }}
         {{ if $embed.Image }}
             {{ if $image }}
-                {{ $thumbnail = $embed.Image.URL }}
+                {{ $thumbnail = or $embed.Image.ProxyURL $embed.Image.URL }}
             {{ else }}
-                {{ $image = $embed.Image.URL }}
+                {{ $image = or $embed.Image.ProxyURL $embed.Image.URL }}
             {{ end }}
         {{ end }}
         {{ if $embed.Thumbnail }}
             {{ if $image }}
-                {{ $thumbnail = $embed.Thumbnail.URL }}
+                {{ $thumbnail = or $embed.Thumbnail.ProxyURL $embed.Thumbnail.URL }}
             {{ else }}
-                {{ $image = $embed.Thumbnail.URL }}
+                {{ $image = or $embed.Thumbnail.ProxyURL $embed.Thumbnail.URL }}
             {{ end }}
         {{ end }}
         {{ if $embed.Footer }}
