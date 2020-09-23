@@ -14,7 +14,8 @@
 
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{17,}/\\d{17,}/\\d{17,}" }}
-{{ $triggerMsg := .Message.Content }}
+{{ $triggerMsgObj := or .ExecData.Message .Message }}
+{{ $triggerMsg := $triggerMsgObj.Content }}
 {{ $trigger := reFind $fullRegex $triggerMsg }}
 
 {{ $gcmString := reReplace $baseURLRegex $trigger "" }}
@@ -23,9 +24,9 @@
 {{ $channelID := index $gcmSlice 1 }}
 {{ $messageID := index $gcmSlice 2 }}
 
-{{ $guildCheck := eq .Message.GuildID (toInt $guildID) }}
+{{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
-{{ $thisChannelNSFW := (getChannel .Message.ChannelID).NSFW }}
+{{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
 {{ $thatChannelNSFW := "" }}
 {{ if getChannel $channelID }}
     {{ $thatChannelNSFW = and (getChannel $channelID).NSFW }}
@@ -36,8 +37,8 @@
     {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
     {{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
     {{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
-    
-    {{ $triggerAuthor := .Message.Author }}
+
+    {{ $triggerAuthor := $triggerMsgObj.Author }}
     {{ $triggerAuthorFull := $triggerAuthor.String }}
     {{ $triggerMember := getMember $triggerAuthor.ID }}
     {{ if $triggerMember.Nick }}
@@ -174,11 +175,11 @@
     }}
 
     {{ $complexMsgContent := "" }}
-    {{ if $triggerMsgContent }}
+    {{ if and (not .ExecData.DisableQuote) $triggerMsgContent }}
         {{ $complexMsgContent = joinStr "" "> 💬 **" $triggerAuthorFull "** quoted a message:\n" $triggerMsgContent }}
     {{ else }}
         {{ $complexMsgContent = joinStr "" "> 🔗 **" $triggerAuthorFull "** linked a message:" }}
     {{ end }}
-    {{ sendMessage nil (complexMessage "content" $complexMsgContent "embed" $output) }}
+    {{ sendMessage .ExecData.ChannelID (complexMessage "content" $complexMsgContent "embed" $output) }}
     {{ deleteTrigger $deleteTriggerDelay }}
 {{ end }}
