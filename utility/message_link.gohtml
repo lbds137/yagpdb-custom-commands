@@ -75,8 +75,15 @@
             {{ $usernameFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
         {{ end }}
     {{ end }}
-    {{ $userLink := joinStr "" "https://discordapp.com/users/" $msgAuthor.ID }}
-    {{ $author := sdict "name" $usernameFull "url" $userLink "icon_url" (or ($user.AvatarURL "128") $defaultAvatar) }}
+    {{ $userLink := "" }}
+    {{ if $user }}
+        {{ $userLink = joinStr "" "https://discordapp.com/users/" $msgAuthor.ID }}
+    {{ end }}
+    {{ $author := sdict
+        "name" $usernameFull
+        "url" $userLink
+        "icon_url" (or ($msgAuthor.AvatarURL "128") $defaultAvatar)
+    }}
 
     {{ if gt (len $msgAttachments) 0 }}
         {{ $firstAttachment := index $msgAttachments 0 }}
