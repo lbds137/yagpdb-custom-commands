@@ -19,6 +19,7 @@
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $message_link := toInt (dbGet $commandsCategoryID "message_link").Value }}
 
 {{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
 {{ $memberRoleID := toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
@@ -26,6 +27,7 @@
 {{ $adultRoleID := toInt (dbGet $rolesCategoryID "Adult Role ID").Value }}
 
 {{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
+{{ $introductionArchiveChannelID := toInt (dbGet $channelsCategoryID "Introduction Archive Channel ID").Value }}
 {{ $modLogChannelID := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
 
 {{ $messageLinkArg := $args.Get 0 }}
@@ -63,6 +65,11 @@
             {{ giveRoleID $userID $memberRoleID }}
             {{ takeRoleID $userID $guestRoleID }}
             {{ addMessageReactions $channelID $messageID $emoji }}
+            {{ execCC $message_link nil 0 (sdict
+                "Message" .Message
+                "ChannelID" $introductionArchiveChannelID
+                "DisableQuote" true
+            ) }}
 
             {{ $user := $guildMember.User }}
             {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
@@ -106,4 +113,5 @@
         "DeleteDelay" $deleteResponseDelay
     ) }}
 {{ end }}
+
 {{ deleteTrigger $deleteTriggerDelay }}
