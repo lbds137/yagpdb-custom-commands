@@ -23,6 +23,7 @@
 {{ $guildID := index $gcmSlice 0 }}
 {{ $channelID := index $gcmSlice 1 }}
 {{ $messageID := index $gcmSlice 2 }}
+{{ $message := getMessage $channelID $messageID }}
 
 {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
@@ -33,7 +34,7 @@
 {{ end }}
 {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 
-{{ if and $guildCheck (or $staffCheck $nsfwCheck) }}
+{{ if and $message $guildCheck (or $staffCheck $nsfwCheck) }}
     {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
     {{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
     {{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
@@ -48,7 +49,6 @@
     {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
     {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
 
-    {{ $message := getMessage $channelID $messageID }}
     {{ $msgAuthor := $message.Author }}
     {{ $msgAttachments := $message.Attachments }}
     {{ $msgEmbeds := $message.Embeds }}
