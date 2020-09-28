@@ -46,10 +46,8 @@
     {{ $guildMember := getMember $userID }}
     {{ if $guildMember }}
         {{ $reasonArg := lower ($args.Get 1) }}
-        {{ $reason := joinStr "" "screening user " $userID ": " $reasonArg }}
-        {{ if ge (len (toRune $reason)) $reasonMaxLen }}
-            {{ $reason = joinStr "" (slice $reason 0 (sub $reasonMaxLen 3)) "…" }}
-        {{ end }}
+        {{ $user := $guildMember.User }}
+        {{ $reason := joinStr "" "screening user " $userID " " $user.Username "_" $user.Discriminator }}
 
         {{ $ticketOpenResult := exec "ticket open" $reason }}
         {{ $ticketChannelID := reFind $discordIDRegex $ticketOpenResult }}
