@@ -1,0 +1,24 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `rules`
+*/ -}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $count := toInt (dbGet $rulesCategoryID "Count").Value }}
+
+{{ if $count }}
+    {{ range $n := seq 1 (add 1 $count) }}
+        {{ $key := joinStr "" "Rule #" $n }}
+        {{ $result := (dbGet $rulesCategoryID $key).Value }}
+
+        {{ execCC $embed_exec nil 0 (sdict "Title" $key "Description" $result) }}
+        {{ sleep 1 }}
+    {{ end }}
+{{ end }}
+{{ deleteTrigger $deleteTriggerDelay }}
