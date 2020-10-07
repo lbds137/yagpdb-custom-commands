@@ -1,13 +1,13 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
-  Trigger: `kbedit`
+  Trigger: `directory_edit`
 */ -}}
 
 {{ $args := parseArgs 2
     (joinStr "\n"
         "Usage: `[Key]` `[Value]`"
-        "The key is the name of the knowledge base entry to update, and the value is the text that goes with it."
+        "The key is the name of the directory entry to update, and the value is the text that goes with it."
         "In order to __delete__ an entry, please use `(nil)` for the value."
     )
     (carg "string" "key")
@@ -16,7 +16,7 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $knowledgeCategoryID := toInt (dbGet 0 "Knowledge").Value }}
+{{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
@@ -30,11 +30,11 @@
 {{ end }}
 
 {{ execCC $db nil 0 (sdict
-    "UserID" $knowledgeCategoryID
+    "UserID" $directoryCategoryID
     "Operation" $operation
     "Key" $key
     "Value" $value
-    "Title" "Knowledge Base Entry Editing"
+    "Title" "Directory Entry Editing"
 ) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
