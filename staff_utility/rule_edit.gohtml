@@ -1,0 +1,39 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `rule_edit`
+*/ -}}
+
+{{ $args := parseArgs 2
+    (joinStr "\n"
+        "Usage: `[Rule Number]` `[Text]`"
+        "In order to __delete__ a rule, please use `(nil)` for the text."
+    )
+    (carg "string" "rule number")
+    (carg "string" "text")
+}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
+
+{{ $key := joinStr "" "Rule #" ($args.Get 0) }}
+{{ $value := $args.Get 1 }}
+{{ $operation := "set" }}
+{{ if eq $value "(nil)" }}
+    {{ $value = "" }}
+    {{ $operation = "del" }}
+{{ end }}
+
+{{ execCC $db nil 0 (sdict
+    "UserID" $rulesCategoryID
+    "Operation" $operation
+    "Key" $key
+    "Value" $value
+    "Title" "Rule Editing"
+) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
