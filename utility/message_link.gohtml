@@ -8,8 +8,10 @@
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 
 {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
-{{ $embedColor := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
+{{ $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
+{{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
@@ -46,7 +48,11 @@
         {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
     {{ end }}
 
-    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
+    {{ $gIconExtension := ".png" }}
+    {{ if ge $guildPremiumTier 1 }}
+        {{ $gIconExtension = ".gif" }}
+    {{ end }}
+    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
     {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
 
     {{ $msgAuthor := $message.Author }}
