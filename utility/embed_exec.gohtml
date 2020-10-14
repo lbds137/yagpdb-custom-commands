@@ -6,6 +6,7 @@
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $serverURL := or (dbGet $globalCategoryID "Server URL").Value "" }}
 {{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
+{{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 
 {{ $author := "" }}
@@ -20,7 +21,11 @@
     {{ $userLink := joinStr "" "https://discordapp.com/users/" $member.User.ID }}
     {{ $author = sdict "name" $userFull "url" $userLink "icon_url" ($member.User.AvatarURL "128") }}
 {{ else }}
-    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon ".gif") }}
+    {{ $gIconExtension := ".png" }}
+    {{ if ge $guildPremiumTier 1 }}
+        {{ $gIconExtension = ".gif" }}
+    {{ end }}
+    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
     {{ $author = sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
 {{ end }}
 
