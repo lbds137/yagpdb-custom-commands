@@ -4,19 +4,20 @@
   Trigger: `rule`
 */ -}}
 
-{{ $min := 1 }}
-{{ $max := 10 }}
- 
-{{ $args := parseArgs 1 (joinStr "" "Please enter a valid rule number (" $min "-" $max ").")
-    (carg "int" "rule number to view")
-}}
-
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 {{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $count := toInt (dbGet $rulesCategoryID "Count").Value }}
+
+{{ $min := 1 }}
+{{ $max := or $count 10 }}
+
+{{ $args := parseArgs 1 (joinStr "" "Please enter a valid rule number (" $min "-" $max ").")
+    (carg "int" "rule number to view")
+}}
  
 {{ $n := $args.Get 0 }}
  
