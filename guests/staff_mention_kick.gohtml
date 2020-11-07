@@ -1,7 +1,7 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
-  Trigger type: `Contains`
-  Trigger: `<@&499037360340598819>`
+  Trigger type: `regex`
+  Trigger: `(<@&499037360340598819>)|(@everyone)|(@here)`
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
