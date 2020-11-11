@@ -6,9 +6,11 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
 {{ $userID := .Member.User.ID }}
 {{ $operation := "" }}
@@ -33,7 +35,10 @@
     {{ if eq 2 (len $opArray) }}
         {{ $operation = index $opArray 0 }}
         {{ $opPartTwo := index $opArray 1 }}
-        {{ if or (eq "0" $opPartTwo) (gt (toInt $opPartTwo) 0) }}
+
+        {{ $numberCheck := or (eq "0" $opPartTwo) (gt (toInt $opPartTwo) 0) }}
+        {{ $permissionCheck := hasRoleID $staffRoleID }}
+        {{ if and $numberCheck $permissionCheck }}
             {{ $userID = toInt $opPartTwo }}
         {{ end }}
     {{ end }}
