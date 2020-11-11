@@ -4,19 +4,31 @@
   Interval: `5`
 */ -}}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+
+{{ $lastBumpTime := (dbGet $globalCategoryID "Last Bump").Value }}
+{{ $bumpRoleID := toInt (dbGet $rolesCategoryID "Bump Role ID").Value }}
+
 {{ $bumpCooldownMinutes := 120 }}
 {{ $now := currentTime }}
-{{ $guildOwnerUser := userArg .Guild.OwnerID }}
-{{ $reminderMessage := joinStr "" $guildOwnerUser.Mention " it is now time to bump **" .Guild.Name "**!" }}
-
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $lastBumpTime := (dbGet $globalCategoryID "Last Bump").Value }}
+{{ $reminderMessage := joinStr "" "It is now time to bump **" .Guild.Name "**!" }}
 
 {{ if $lastBumpTime }}
     {{ $minutesSinceBump := toInt ($now.Sub $lastBumpTime).Minutes }}
     {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
         {{ sendMessage nil $reminderMessage }}
+        {{ if $bumpRoleID }}
+            {{ exec "MentionRole" $bumpRoleID }}
+        {{ else }}
+            {{ sendMessage nil (userArg .Guild.OwnerID).Mention }}
+        {{ end }}
     {{ end }}
 {{ else }}
     {{ sendMessage nil $reminderMessage }}
+    {{ if $bumpRoleID }}
+        {{ exec "MentionRole" $bumpRoleID }}
+    {{ else }}
+        {{ sendMessage nil (userArg .Guild.OwnerID).Mention }}
+    {{ end }}
 {{ end }}
