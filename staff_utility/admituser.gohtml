@@ -6,9 +6,9 @@
 
 {{ $emoji := "👋" }}
 
-{{ $args := parseArgs 2 "Usage: `[message link]` `[minor|adult]`"
+{{ $args := parseArgs 1 "Usage: `[message link]` `[minor|adult] (optional for 18+ only servers)`"
     (carg "string" "message link")
-    (carg "string" "minor or adult")
+    (carg "string" "minor or adult (optional for 18+ only servers)")
 }}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
@@ -28,6 +28,8 @@
 
 {{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
 {{ $introductionArchiveChannelID := toInt (dbGet $channelsCategoryID "Introduction Archive Channel ID").Value }}
+{{ $welcomeChannelID := toInt (dbGet $channelsCategoryID "Welcome Channel ID").Value }}
+{{ $roleAssignmentChannelID := toInt (dbGet $channelsCategoryID "Role Assignment Channel ID").Value }}
 {{ $modLogChannelID := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
 
 {{ $messageLinkArg := $args.Get 0 }}
@@ -43,35 +45,61 @@
 {{ $messageID := index $gcmSlice 2 }}
 
 {{ $guildCheck := eq $guildID (toString .Guild.ID) }}
-{{ $channelCheck := eq $channelID (toString $introductionChannelID) }}
+{{ $channelCheck := or (not $introductionChannelID) (eq $channelID (toString $introductionChannelID)) }}
 
 {{ if and $guildCheck $channelCheck }}
     {{ $message := getMessage $channelID $messageID }}
     {{ $userID := $message.Author.ID }}
     {{ $guildMember := getMember $userID }}
+    {{ $user := $guildMember.User }}
     {{ if $guildMember }}
-        {{ $userType := lower ($args.Get 1) }}
+        {{ $userType := "" }}
+        {{ if $args.IsSet 1 }}
+            {{ $userType = lower ($args.Get 1) }}
+        {{ end }}
         {{ $isMinor := eq "minor" $userType }}
         {{ $isAdult := eq "adult" $userType }}
-        {{ $article := "" }}
-        {{ if or $isMinor $isAdult }}
-            {{ if $isMinor }}
-                {{ $article = "a" }}
-                {{ giveRoleID $userID $minorRoleID }}
-            {{ else }}
-                {{ $article = "an" }}
-                {{ giveRoleID $userID $adultRoleID }}
+        {{ $hasUserType := or $isMinor $isAdult }}
+        {{ $ignoreUserType := and (not $minorRoleID) (not $adultRoleID) }}
+        {{ if or $hasUserType $ignoreUserType }}
+            {{ $userTypeString := "" }}
+            {{ if $hasUserType }}
+                {{ $article := "" }}
+                {{ if $isMinor }}
+                    {{ $article = "a" }}
+                    {{ giveRoleID $userID $minorRoleID }}
+                {{ else }}
+                    {{ $article = "an" }}
+                    {{ giveRoleID $userID $adultRoleID }}
+                {{ end }}
+                {{ $userTypeString = joinStr "" " as " $article " **" (title $userType) "**" }}
             {{ end }}
             {{ giveRoleID $userID $memberRoleID }}
             {{ takeRoleID $userID $guestRoleID }}
             {{ addMessageReactions $channelID $messageID $emoji }}
-            {{ execCC $message_link nil 0 (sdict
-                "Message" .Message
-                "ChannelID" $introductionArchiveChannelID
-                "DisableQuote" true
-            ) }}
+            {{ if $introductionArchiveChannelID }}
+                {{ execCC $message_link nil 0 (sdict
+                    "Message" .Message
+                    "ChannelID" $introductionArchiveChannelID
+                    "DisableQuote" true
+                ) }}
+            {{ end }}
 
-            {{ $user := $guildMember.User }}
+            {{ if $welcomeChannelID }}
+                {{ $welcomeString := joinStr ""
+                    "Welcome to **" .Guild.Name "**, "
+                    $user.Mention "!"
+                }}
+                {{ if $roleAssignmentChannelID }}
+                    {{ $welcomeString = joinStr ""
+                        $welcomeString " Feel free to visit <#" $roleAssignmentChannelID "> "
+                        "and assign yourself some optional roles to improve your experience in the server. "
+                        "We hope you have a pleasant stay!"
+                    }}
+                {{ end }}
+                {{ sendMessage $welcomeChannelID $welcomeString }}
+            {{ end }}
+
             {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
             {{ $userAvatar := $user.AvatarURL "128" }}
             {{ $staffUser := .User }}
@@ -80,8 +108,8 @@
             {{ $description := joinStr ""
                 $emoji " User **" $user.String "** (ID: " $user.ID ") "
                 "has been admitted to **" .Guild.Name "** by "
-                "**" $staffUser.String "** (ID: " $staffUser.ID ") "
-                "as " $article " **" (title $userType) "**!"
+                "**" $staffUser.String "** (ID: " $staffUser.ID ")"
+                $userTypeString "!"
             }}
             {{ execCC $embed_exec nil 0 (sdict
                 "Title" $title
