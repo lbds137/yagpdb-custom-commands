@@ -1,7 +1,7 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Regex`
-  Trigger: `https://(ptb.|canary.)?discord(?:app)?.com/channels/\d{17,}/\d{17,}/\d{17,}`
+  Trigger: `https://(ptb.|canary.)?discord(?:app)?.com/channels/\d{16,}/\d{16,}/\d{16,}`
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
@@ -15,7 +15,7 @@
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
-{{ $fullRegex := joinStr "" $baseURLRegex "\\d{17,}/\\d{17,}/\\d{17,}" }}
+{{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 {{ $triggerMsgObj := or .ExecData.Message .Message }}
 {{ $triggerMsg := $triggerMsgObj.Content }}
 {{ $trigger := reFind $fullRegex $triggerMsg }}

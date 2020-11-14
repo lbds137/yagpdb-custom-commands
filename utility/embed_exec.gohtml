@@ -10,7 +10,7 @@
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 
 {{ $author := "" }}
-{{ $execAuthorValid := reFind "\\A\\d{17,}\\z" (toString .ExecData.AuthorID) }}
+{{ $execAuthorValid := reFind "\\A\\d{16,}\\z" (toString .ExecData.AuthorID) }}
 {{ $execAuthorNotGuild := ne (toString .ExecData.AuthorID) (toString .Guild.ID) }}
 {{ if and $execAuthorValid $execAuthorNotGuild }}
     {{ $member := getMember .ExecData.AuthorID }}
