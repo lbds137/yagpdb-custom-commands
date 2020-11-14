@@ -3,7 +3,7 @@
   Trigger type: `None`
 */ -}}
 
-{{ $discordIDRegex := "\\d{17,}" }}
+{{ $discordIDRegex := "\\d{16,}" }}
 
 {{ $userID := reFind $discordIDRegex (toString .ExecData.UserID) }}
 

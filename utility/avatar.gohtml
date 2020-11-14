@@ -41,7 +41,7 @@
     {{ $user = $argUser }}
     {{ $avatarURL = $user.AvatarURL $size }}
     {{ $avatarOwner = $user.String }}
-{{ else if reFind "\\A\\d{17,}\\z" $argUserID }}
+{{ else if reFind "\\A\\d{16,}\\z" $argUserID }}
     {{ if eq $argUserID (toString .Guild.ID) }}
         {{ $avatarType = "Guild" }}
         {{ $avatarOwner = .Guild.Name }}

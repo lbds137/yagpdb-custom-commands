@@ -1,7 +1,7 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Regex`
-  Trigger: `\A<#\d{17,}>\z`
+  Trigger: `\A<#\d{16,}>\z`
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}

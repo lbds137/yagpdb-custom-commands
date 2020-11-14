@@ -35,7 +35,7 @@
 {{ $messageLinkArg := $args.Get 0 }}
 
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
-{{ $fullLinkRegex := joinStr "" $baseURLRegex "\\d{17,}/\\d{17,}/\\d{17,}" }}
+{{ $fullLinkRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 {{ $messageLink := reFind $fullLinkRegex $messageLinkArg }}
 
 {{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
