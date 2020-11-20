@@ -36,7 +36,7 @@
 {{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
 {{ $thatChannelNSFW := "" }}
 {{ if getChannel $channelID }}
-    {{ $thatChannelNSFW = and (getChannel $channelID).NSFW }}
+    {{ $thatChannelNSFW = (getChannel $channelID).NSFW }}
 {{ end }}
 {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 
