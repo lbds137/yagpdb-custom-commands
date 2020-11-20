@@ -7,6 +7,7 @@
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 
+{{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
 {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
 {{ $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
 {{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
@@ -14,8 +15,10 @@
 
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
+{{ $prefixRegex := joinStr "" "\\A\\Q" $prefix "\\E" }}
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
+
 {{ $triggerMsgObj := or .ExecData.Message .Message }}
 {{ $triggerMsg := $triggerMsgObj.Content }}
 {{ $trigger := reFind $fullRegex $triggerMsg }}
@@ -27,6 +30,7 @@
 {{ $messageID := index $gcmSlice 2 }}
 {{ $message := getMessage $channelID $messageID }}
 
+{{ $prefixCheck := not (reFind $prefixRegex $triggerMsg) }}
 {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
 {{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
@@ -36,7 +40,7 @@
 {{ end }}
 {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 
-{{ if and $message $guildCheck (or $staffCheck $nsfwCheck) }}
+{{ if and $message $prefixCheck $guildCheck (or $staffCheck $nsfwCheck) }}
     {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
     {{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
     {{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
