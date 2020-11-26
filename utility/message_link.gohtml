@@ -31,7 +31,8 @@
 {{ $messageID := index $gcmSlice 2 }}
 {{ $message := getMessage $channelID $messageID }}
 
-{{ $ignoreCheck := and (not (reFind $ignoreRegex $triggerMsg)) (not (reFind $prefixRegex $triggerMsg)) }}
+{{ $execDataCheck := .ExecData.Message }}
+{{ $ignoreCheck := not (or (reFind $ignoreRegex $triggerMsg) (reFind $prefixRegex $triggerMsg)) }}
 {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
 {{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
@@ -41,7 +42,7 @@
 {{ end }}
 {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 
-{{ if and $message $ignoreCheck $guildCheck (or $staffCheck $nsfwCheck) }}
+{{ if and $message (or $execDataCheck $ignoreCheck) $guildCheck (or $staffCheck $nsfwCheck) }}
     {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
     {{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
     {{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
