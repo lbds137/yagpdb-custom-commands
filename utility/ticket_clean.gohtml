@@ -4,16 +4,18 @@
   Trigger: `.*`
 */ -}}
 
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
+{{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
+{{ $prefixRegex := joinStr "" "\\A\\Q" $prefix "\\E" }}
+
 {{ $trigger := .Message.Content }}
-{{ if not (reFind "\\Ay\\^ticket open .+\\z" $trigger) }}
-    {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-    {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-
-    {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-    {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
-    {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-
-    {{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
+{{ if not (reFind (joinStr "" $prefixRegex "ticket open .+\\z") $trigger) }}
     {{ $result := joinStr ""
         "⚠️ Please enter a valid ticket open command: `" $prefix "ticket open [reason]`\n\n"
         "Replace `[reason]` with a brief but descriptive reason for opening the ticket, "
