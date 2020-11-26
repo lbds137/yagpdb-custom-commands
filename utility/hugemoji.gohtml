@@ -56,11 +56,14 @@
     {{ if reFind $animatedEmojiRegex $emojiString }}
         {{ $fileExtension = ".gif" }}
     {{ end }}
+    {{ $emojiStringParts := split $emojiString ":" }}
+    {{ $emojiName := index $emojiStringParts 1 }}
     {{ $emojiUrl := joinStr ""
         "https://cdn.discordapp.com/emojis/"
         (reFind $emojiIDRegex $emojiString)
         $fileExtension
         "?v=1"
     }}
+    {{ sendMessage nil (joinStr "" "Emoji name: `" $emojiName "`") }}
     {{ sendMessage nil $emojiUrl }}
 {{ end }}
