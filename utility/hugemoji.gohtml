@@ -1,0 +1,66 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `hugemoji`
+*/ -}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
+
+{{ $emojiRegex := "<a?:[[:word:]]{2,}:\\d{16,}>" }}
+{{ $animatedEmojiRegex := "<a:[[:word:]]{2,}:\\d{16,}>" }}
+{{ $emojiIDRegex := "\\d{16,}" }}
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $fullURLRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
+
+{{ $args := parseArgs 1 "Usage: `[emoji]`"
+    (carg "string" "emoji")
+}}
+
+{{ $emojiArg := $args.Get 0 }}
+
+{{ $emojiString := "" }}
+{{ if reFind $emojiRegex $emojiArg }}
+    {{ $emojiString = $emojiArg }}
+{{ else if reFind $fullURLRegex $emojiArg }}
+    {{ $triggerMsgObj := .Message }}
+    {{ $triggerMsg := $triggerMsgObj.Content }}
+    {{ $trigger := reFind $fullURLRegex $triggerMsg }}
+
+    {{ $gcmString := reReplace $baseURLRegex $trigger "" }}
+    {{ $gcmSlice := split $gcmString "/" }}
+    {{ $guildID := index $gcmSlice 0 }}
+    {{ $channelID := index $gcmSlice 1 }}
+    {{ $messageID := index $gcmSlice 2 }}
+    {{ $message := getMessage $channelID $messageID }}
+
+    {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
+    {{ $staffCheck := hasRoleID $staffRoleID }}
+    {{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
+    {{ $thatChannelNSFW := "" }}
+    {{ if getChannel $channelID }}
+        {{ $thatChannelNSFW = (getChannel $channelID).NSFW }}
+    {{ end }}
+    {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
+
+    {{ if and $message $guildCheck (or $staffCheck $nsfwCheck) }}
+        {{ $emojiString = reFind $emojiRegex $message.Content }}
+    {{ end }}
+{{ end }}
+
+{{ if $emojiString }}
+    {{ $fileExtension := ".png" }}
+    {{ if reFind $animatedEmojiRegex $emojiString }}
+        {{ $fileExtension = ".gif" }}
+    {{ end }}
+    {{ $emojiUrl := joinStr ""
+        "https://cdn.discordapp.com/emojis/"
+        (reFind $emojiIDRegex $emojiString)
+        $fileExtension
+        "?v=1"
+    }}
+    {{ sendMessage nil $emojiUrl }}
+{{ end }}
