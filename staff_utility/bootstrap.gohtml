@@ -4,11 +4,13 @@
   Trigger: `bootstrap`
 */ -}}
 
-{{ $args := parseArgs 1 (joinStr "" "Please enter the ID of the `embed_exec` custom command from the YAGPDB console.")
+{{ $args := parseArgs 2 (joinStr "" "Usage: [`embed_exec` custom command ID] [staff role ID]")
     (carg "int" "`embed_exec` custom command ID")
+    (carg "int" "staff role ID")
 }}
 
 {{ $embed_exec := $args.Get 0 }}
+{{ $staffRoleID := $args.Get 1 }}
 
 {{ dbSet 0 "Category" "Index" }}
 {{ dbSet 1 "Category" "Global" }}
@@ -35,6 +37,8 @@
 {{ dbSet 1 "Delete Trigger Delay" 5 }}
 
 {{ dbSet 2 "embed_exec" $embed_exec }}
+
+{{ dbSet 4 "Staff Role ID" $staffRoleID }}
 
 {{ execCC $embed_exec nil 0 (sdict
     "Title" "Bootstrap Execution Complete"
@@ -64,6 +68,10 @@
         ) "inline" false)
         (sdict "name" "User ID: `3`" "value" "Key: `Category` \nValue: `Rules`" "inline" false)
         (sdict "name" "User ID: `4`" "value" "Key: `Category` \nValue: `Roles`" "inline" false)
+        (sdict "name" "User ID: `4`" "value" (joinStr ""
+            "Key: `Staff Role ID` \n"
+            "Value: `" $staffRoleID "`"
+        ) "inline" false)
         (sdict "name" "User ID: `5`" "value" "Key: `Category` \nValue: `Channels`" "inline" false)
         (sdict "name" "User ID: `6`" "value" "Key: `Category` \nValue: `Admin`" "inline" false)
         (sdict "name" "User ID: `7`" "value" "Key: `Category` \nValue: `Knowledge`" "inline" false)
