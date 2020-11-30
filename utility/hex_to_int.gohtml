@@ -16,12 +16,12 @@
 }}
 
 {{ $trigger := lower .Message.Content }}
-{{ $tSlice := split (slice $trigger 1) "" }}
+{{ $hexStr := split (slice $trigger 1) "" }}
 
 {{ $intVal := 0 }}
 {{ range $i, $iRevNeg := seq -5 1 }}
     {{ $iRev := mult -1 $iRevNeg }}
-    {{ $curValHexStr := index $tSlice $iRev }}
+    {{ $curValHexStr := index $hexStr $iRev }}
     {{ $curValInt := index $hexDict $curValHexStr }}
     {{ $intVal = add $intVal (mult (pow 16 $i) $curValInt) }}
 {{ end }}
