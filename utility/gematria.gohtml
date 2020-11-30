@@ -78,11 +78,19 @@
     {{ $intVal = add $intVal $curVal }}
 {{ end }}
 
-{{ $result := joinStr ""
-    "**Text provided:**\n```" $text "```\n"
-    "**Gematria value:**\n```" $intVal "```\n"
-}}
+{{ $textOutput := $text }}
+{{ $embedFieldLimit := sub 1024 4 }}
+{{ if ge (len (toRune $text)) $embedFieldLimit }}
+    {{ $textOutput = joinStr "" (slice $text 0 $embedFieldLimit) "…" }}
+{{ end }}
 
-{{ execCC $embed_exec nil 0 (sdict "Title" "Gematria Calculator" "Description" $result) }}
+{{ execCC $embed_exec nil 0 (sdict
+    "AuthorID" .User.ID
+    "Title" "Gematria Calculator"
+    "Fields" (cslice
+        (sdict "name" "Text" "value" $textOutput "inline" false)
+        (sdict "name" "Gematria" "value" (toString $intVal) "inline" false)
+    )
+) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
