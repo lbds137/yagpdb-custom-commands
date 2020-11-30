@@ -1,0 +1,61 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `gematria`
+*/ -}}
+
+{{ $args := parseArgs 1 "Usage: [text from which to compute gematria]"
+    (carg "string" "text")
+}}
+
+{{ $text := $args.Get 0 }}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
+{{ $gematriaDict := sdict
+    "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
+    "א" 1 "ב" 2 "ג" 3 "ד" 4 "ה" 5 "ו" 6 "ז" 7 "ח" 8 "ט" 9
+    "י" 10 "כ" 20 "ל" 30 "מ" 40 "נ" 50 "ס" 60 "ע" 70 "פ" 80 "צ" 90
+    "ק" 100 "ר" 200 "ש" 300 "ת" 400 "ך" 20 "ם" 40 "ן" 50 "ף" 80 "ץ" 90
+    "Α" 1 "Β" 2 "Γ" 3 "Δ" 4 "Ε" 5 "Ϝ" 6 "Ϛ" 6 "Ζ" 7 "Η" 8 "Θ" 9
+    "Ι" 10 "Κ" 20 "Λ" 30 "Μ" 40 "Ν" 50 "Ξ" 60 "Ο" 70 "Π" 80 "Ϙ" 90
+    "Ρ" 100 "Σ" 200 "Τ" 300 "Υ" 400 "Φ" 500 "Χ" 600 "Ψ" 700 "Ω" 800 "Ϡ" 900
+    "α" 1 "β" 2 "γ" 3 "δ" 4 "ε" 5 "ϝ" 6 "ϛ" 6 "ζ" 7 "η" 8 "θ" 9
+    "ι" 10 "κ" 20 "λ" 30 "μ" 40 "ν" 50 "ξ" 60 "ο" 70 "π" 80 "ϙ" 90
+    "ρ" 100 "σ" 200 "τ" 300 "υ" 400 "φ" 500 "χ" 600 "ψ" 700 "ω" 800 "ϡ" 900
+    "ا" 1 "ب" 2 "ج" 3 "د" 4 "ه" 5 "ة" 5 "و" 6 "ز" 7 "ح" 8 "ط" 9
+    "ي" 10 "ك" 20 "ل" 30 "م" 40 "ن" 50 "س" 60 "ع" 70 "ف" 80 "ص" 90
+    "ق" 100 "ر" 200 "ش" 300 "ت" 400 "ث" 500 "خ" 600 "ذ" 700 "ض" 800 "ظ" 900
+    "غ" 1000 "ى" 1 "آ" 1 "أ" 1 "إ" 1 "پ" 2 "چ" 3 "ؤ" 6 "ژ" 7 "ئ" 10 "گ" 20
+    "A" 1 "B" 2 "C" 3 "D" 4 "E" 5 "F" 6 "G" 7 "H" 8 "I" 9
+    "J" 10 "K" 20 "L" 30 "M" 40 "N" 50 "O" 60 "P" 70 "Q" 80 "R" 90
+    "S" 100 "T" 200 "U" 300 "V" 400 "W" 500 "X" 600 "Y" 700 "Z" 800
+    "a" 1 "b" 2 "c" 3 "d" 4 "e" 5 "f" 6 "g" 7 "h" 8 "i" 9
+    "j" 10 "k" 20 "l" 30 "m" 40 "n" 50 "o" 60 "p" 70 "q" 80 "r" 90
+    "s" 100 "t" 200 "u" 300 "v" 400 "w" 500 "x" 600 "y" 700 "z" 800
+    "Ă" 1 "Â" 1 "À" 1 "Â" 1 "Ç" 3 "É" 5 "È" 5 "Ê" 5 "Ë" 5 "Æ" 6
+    "Î" 10 "Ï" 10 "Ñ" 50 "Ô" 60 "Œ" 65
+    "Ș" 100 "Ț" 200 "Ù" 300 "Û" 300 "Ü" 300 "Ÿ" 700
+    "ă" 1 "â" 1 "à" 1 "â" 1 "ç" 3 "é" 5 "è" 5 "ê" 5 "ë" 5 "æ" 6
+    "î" 10 "ï" 10 "ñ" 50 "ô" 60 "œ" 65
+    "ș" 100 "ț" 200 "ù" 300 "û" 300 "ü" 300 "ÿ" 700
+}}
+
+{{ $intVal := 0 }}
+{{ range $i, $char := split $text "" }}
+    {{ $curVal := index $gematriaDict $char }}
+    {{ $intVal = add $intVal $curVal }}
+{{ end }}
+
+{{ $result := joinStr ""
+    "**Text provided:**\n```" $text "```\n"
+    "**Gematria value:**\n```" $intVal "```\n"
+}}
+
+{{ execCC $embed_exec nil 0 (sdict "Title" "Gematria Calculator" "Description" $result) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
