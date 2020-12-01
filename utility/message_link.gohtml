@@ -96,6 +96,18 @@
         "url" $userLink
         "icon_url" (or ($msgAuthor.AvatarURL "128") $defaultAvatar)
     }}
+    {{ $authorColor := 0 }}
+    {{ $position := 0 }}
+    {{ $roles := .Member.Roles }}
+    {{- range .Guild.Roles -}}
+        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+            {{- $position = .Position -}}
+            {{- $authorColor = .Color -}}
+        {{- end -}}
+    {{- end -}}
+    {{ if not $authorColor }}
+        {{ $authorColor = $embedColor }}
+    {{ end }}
 
     {{ if gt (len $msgAttachments) 0 }}
         {{ $firstAttachment := index $msgAttachments 0 }}
@@ -182,7 +194,7 @@
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
 
     {{ $output := cembed
-        "color" $embedColor
+        "color" $authorColor
         "author" $author
         "title" $title
         "description" $description
