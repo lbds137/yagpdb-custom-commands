@@ -1,0 +1,17 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `bump_reset`
+*/ -}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+
+{{ dbDel $globalCategoryID "Last Bump" }}
+
+{{ $messageID := sendMessageRetID nil "`Last Bump` reset!" }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
+{{ deleteMessage nil $messageID $deleteResponseDelay }}
