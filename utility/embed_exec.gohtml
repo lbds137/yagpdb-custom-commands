@@ -10,6 +10,7 @@
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 
 {{ $author := "" }}
+{{ $authorColor := 0 }}
 {{ $execAuthorValid := reFind "\\A\\d{16,}\\z" (toString .ExecData.AuthorID) }}
 {{ $execAuthorNotGuild := ne (toString .ExecData.AuthorID) (toString .Guild.ID) }}
 {{ if and $execAuthorValid $execAuthorNotGuild }}
@@ -20,6 +21,14 @@
     {{ end }}
     {{ $userLink := joinStr "" "https://discordapp.com/users/" $member.User.ID }}
     {{ $author = sdict "name" $userFull "url" $userLink "icon_url" ($member.User.AvatarURL "128") }}
+    {{ $position := 0 }}
+    {{ $roles := $member.Roles }}
+    {{- range .Guild.Roles -}}
+        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+            {{- $position = .Position -}}
+            {{- $authorColor = .Color -}}
+        {{- end -}}
+    {{- end -}}
 {{ else }}
     {{ $gIconExtension := ".png" }}
     {{ if ge $guildPremiumTier 1 }}
@@ -27,13 +36,14 @@
     {{ end }}
     {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
     {{ $author = sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
+    {{ $authorColor = $dbEmbedColor }}
 {{ end }}
 
 {{ $embed := cembed
     "title" .ExecData.Title
     "description" .ExecData.Description
     "fields" .ExecData.Fields
-    "color" (or .ExecData.Color $dbEmbedColor)
+    "color" (or .ExecData.Color $authorColor)
     "author" $author
     "image" (sdict "url" .ExecData.ImageURL)
     "thumbnail" (sdict "url" .ExecData.ThumbnailURL)
