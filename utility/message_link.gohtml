@@ -81,11 +81,20 @@
 
     {{ $user := userArg $msgAuthor.ID }}
     {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
-    {{ $member := getMember $msgAuthor.ID }}
-    {{ if $member }}
-        {{ if $member.Nick }}
-            {{ $usernameFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
+    {{ $authorColor := 0 }}
+    {{ $msgAuthorMember := getMember $msgAuthor.ID }}
+    {{ if $msgAuthorMember }}
+        {{ if $msgAuthorMember.Nick }}
+            {{ $usernameFull = joinStr "" $msgAuthorMember.Nick " (" $msgAuthorMember.User.String ")" }}
         {{ end }}
+        {{ $position := 0 }}
+        {{ $roles := $msgAuthorMember.Roles }}
+        {{- range .Guild.Roles -}}
+            {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+                {{- $position = .Position -}}
+                {{- $authorColor = .Color -}}
+            {{- end -}}
+        {{- end -}}
     {{ end }}
     {{ $userLink := "" }}
     {{ if $user }}
@@ -96,15 +105,6 @@
         "url" $userLink
         "icon_url" (or ($msgAuthor.AvatarURL "128") $defaultAvatar)
     }}
-    {{ $authorColor := 0 }}
-    {{ $position := 0 }}
-    {{ $roles := .Member.Roles }}
-    {{- range .Guild.Roles -}}
-        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
-            {{- $position = .Position -}}
-            {{- $authorColor = .Color -}}
-        {{- end -}}
-    {{- end -}}
     {{ if not $authorColor }}
         {{ $authorColor = $embedColor }}
     {{ end }}
