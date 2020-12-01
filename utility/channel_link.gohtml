@@ -8,7 +8,7 @@
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 
 {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
-{{ $color := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
+{{ $embedColor := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
@@ -54,13 +54,25 @@
     {{ end }}
     {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
     {{ $author := sdict "name" $userFull "url" $userLink "icon_url" (or (.User.AvatarURL "128") $defaultAvatar) }}
+    {{ $authorColor := 0 }}
+    {{ $position := 0 }}
+    {{ $roles := .Member.Roles }}
+    {{- range .Guild.Roles -}}
+        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+            {{- $position = .Position -}}
+            {{- $authorColor = .Color -}}
+        {{- end -}}
+    {{- end -}}
+    {{ if not $authorColor }}
+        {{ $authorColor = $embedColor }}
+    {{ end }}
 
     {{ editMessage nil $hereMsgID (complexMessageEdit
         "content" ""
         "embed" (cembed
             "title" $title
             "description" $hereText
-            "color" $color
+            "color" $authorColor
             "author" $author
         )
     ) }}
@@ -69,7 +81,7 @@
         "embed" (cembed
             "title" $title
             "description" $thereText
-            "color" $color
+            "color" $authorColor
             "author" $author
         )
     ) }}
