@@ -4,19 +4,18 @@
   Trigger: `gematria`
 */ -}}
 
-{{ $args := parseArgs 1 "Usage: [text from which to compute gematria]"
-    (carg "string" "text")
-}}
+{{- $args := parseArgs 1 "Usage: [text from which to compute gematria]"
+    (carg "string" "text") -}}
 
-{{ $text := $args.Get 0 }}
+{{- $text := $args.Get 0 -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{- $globalCategoryID := toInt (dbGet 0 "Global").Value -}}
+{{- $commandsCategoryID := toInt (dbGet 0 "Commands").Value -}}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{- $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 -}}
+{{- $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value -}}
 
-{{ $gematriaDict := sdict
+{{- $gematriaDict := sdict
     "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
     "א" 1 "ב" 2 "ג" 3 "ד" 4 "ה" 5 "ו" 6 "ז" 7 "ח" 8 "ט" 9
     "י" 10 "כ" 20 "ל" 30 "מ" 40 "נ" 50 "ס" 60 "ע" 70 "פ" 80 "צ" 90
@@ -77,28 +76,27 @@
     "ᚮ" 4 "ᚯ" 4 "ᚰ" 4 "ᚳ" 6 "ᚴ" 6 "ᚵ" 6 "ᚶ" 6 "ᚸ" 7 "ᚻ" 9 "ᚼ" 9
     "ᚽ" 9 "ᚿ" 10 "ᛀ" 10 "ᛂ" 11 "ᛄ" 12 "ᛅ" 12 "ᛆ" 12 "ᛡ" 12 "ᛦ" 15 "ᛧ" 15
     "ᛨ" 15 "ᛋ" 16 "ᛌ" 16 "ᛍ" 16 "ᛎ" 16 "ᛐ" 17 "ᛑ" 17 "ᛠ" 17 "ᛓ" 18 "ᛔ" 18
-    "ᛕ" 18 "ᛘ" 20 "ᛙ" 20 "ᛛ" 21 "ᛝ" 22
-}}
+    "ᛕ" 18 "ᛘ" 20 "ᛙ" 20 "ᛛ" 21 "ᛝ" 22 -}}
 
-{{ $intVal := 0 }}
-{{ range $i, $char := split $text "" }}
-    {{ $curVal := index $gematriaDict $char }}
-    {{ $intVal = add $intVal $curVal }}
-{{ end }}
+{{- $intVal := 0 -}}
+{{- range $i, $char := split $text "" -}}
+    {{- $curVal := index $gematriaDict $char -}}
+    {{- $intVal = add $intVal $curVal -}}
+{{- end -}}
 
-{{ $textOutput := $text }}
-{{ $embedFieldLimit := sub 1024 4 }}
-{{ if ge (len (toRune $text)) $embedFieldLimit }}
-    {{ $textOutput = joinStr "" (slice $text 0 $embedFieldLimit) "…" }}
-{{ end }}
+{{- $textOutput := $text -}}
+{{- $embedFieldLimit := sub 1024 4 -}}
+{{- if ge (len (toRune $text)) $embedFieldLimit -}}
+    {{- $textOutput = joinStr "" (slice $text 0 $embedFieldLimit) "…" -}}
+{{- end -}}
 
-{{ execCC $embed_exec nil 0 (sdict
+{{- execCC $embed_exec nil 0 (sdict
     "AuthorID" .User.ID
     "Title" "Gematria Calculator"
     "Fields" (cslice
         (sdict "name" "Text" "value" $textOutput "inline" false)
         (sdict "name" "Gematria" "value" (toString $intVal) "inline" false)
     )
-) }}
+) -}}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+{{- deleteTrigger $deleteTriggerDelay -}}
