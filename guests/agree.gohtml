@@ -16,6 +16,7 @@
 {{ $agreementRole := toInt (dbGet $rolesCategoryID "Agreement Role ID").Value }}
 {{ $announcementNotifyRole := toInt (dbGet $rolesCategoryID "Announcement Notify Role ID").Value }}
 {{ $discussionNotifyRole := toInt (dbGet $rolesCategoryID "Discussion Notify Role ID").Value }}
+{{ $eventNotifyRole := toInt (dbGet $rolesCategoryID "Event Notify Role ID").Value }}
 
 {{ $introduction := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
 {{ $modLog := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
@@ -27,6 +28,7 @@
     {{ giveRoleID .User.ID $agreementRole }}
     {{ giveRoleID .User.ID $announcementNotifyRole }}
     {{ giveRoleID .User.ID $discussionNotifyRole }}
+    {{ giveRoleID .User.ID $eventNotifyRole }}
 
     {{ $title := "User Agreement Record" }}
     {{ $description := (joinStr ""
