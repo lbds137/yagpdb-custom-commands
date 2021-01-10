@@ -47,7 +47,7 @@
     {{ if $guildMember }}
         {{ $reasonArg := lower ($args.Get 1) }}
         {{ $user := $guildMember.User }}
-        {{ $reason := joinStr "" "screening user " $userID " " $user.Username "_" $user.Discriminator }}
+        {{ $reason := joinStr "" "screening user " $userID }}
 
         {{ $ticketOpenResult := exec "ticket open" $reason }}
         {{ $ticketChannelID := reFind $discordIDRegex $ticketOpenResult }}
