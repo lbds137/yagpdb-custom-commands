@@ -1,0 +1,11 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Regex`
+  Trigger: `.*`
+*/ -}}
+
+{{- /* replace this with the inactive role ID in your server */ -}}
+{{ $inactiveRoleID := 0 }}
+{{ if hasRoleID $inactiveRoleID }}
+    {{ takeRoleID .User.ID $inactiveRoleID }}
+{{ end }}
