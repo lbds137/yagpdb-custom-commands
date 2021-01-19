@@ -16,7 +16,6 @@
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 
 {{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
-{{ $activeRoleID := toInt (dbGet $rolesCategoryID "Active Role ID").Value }}
 
 {{ $actionTaken := "" }}
 {{ $reason := "" }}
@@ -28,12 +27,11 @@
 {{ $userAvatar := $member.User.AvatarURL "128" }}
 
 {{ $isGuest := targetHasRoleID $userID $guestRoleID }}
-{{ $isActive := targetHasRoleID $userID $activeRoleID }}
 
 {{ $hoursSinceJoin := toInt (currentTime.Sub $member.JoinedAt.Parse).Hours }}
 {{ $hoursExceeded := sub $hoursSinceJoin $hoursCutoff }}
 
-{{ if and $isGuest (not $isActive) }}
+{{ if $isGuest }}
     {{ if gt $hoursExceeded 0 }}
         {{ $actionTaken = "kick" }}
         {{ $reason = "The user has exceeded the inactivity grace period." }}
@@ -43,11 +41,7 @@
     {{ end }}
 {{ else }}
     {{ $actionTaken = "none" }}
-    {{ if $isActive }}
-        {{ $reason = "The user is active." }}
-    {{ else }}
-        {{ $reason = "The user is not a guest." }}
-    {{ end }}
+    {{ $reason = "The user is not a guest." }}
 {{ end }}
 
 {{ $result := "" }}
