@@ -4,6 +4,12 @@
   Trigger: `.*`
 */ -}}
 
+{{- /* replace this with the active role ID in your server */ -}}
+{{ $activeRoleID := 0 }}
+{{ if not (hasRoleID $activeRoleID) }}
+    {{ giveRoleID .User.ID $activeRoleID }}
+{{ end }}
+
 {{- /* replace this with the inactive role ID in your server */ -}}
 {{ $inactiveRoleID := 0 }}
 {{ if hasRoleID $inactiveRoleID }}
