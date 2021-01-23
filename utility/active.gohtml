@@ -4,9 +4,11 @@
   Trigger: `.*`
 */ -}}
 
+{{- /* replace this with the guest role ID in your server */ -}}
+{{ $guestRoleID := 0 }}
 {{- /* replace this with the active role ID in your server */ -}}
 {{ $activeRoleID := 0 }}
-{{ if not (hasRoleID $activeRoleID) }}
+{{ if and (not (hasRoleID $guestRoleID)) (not (hasRoleID $activeRoleID)) }}
     {{ giveRoleID .User.ID $activeRoleID }}
 {{ end }}
 
