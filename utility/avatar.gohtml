@@ -7,59 +7,106 @@
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 
+{{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 
 {{ $validSizes := cslice "32" "64" "128" "256" "512" "1024" }}
-{{ $user := .Member.User }}
+{{- /* regexes */ -}}
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $snowflakeRegex := "\\d{16,}" }}
+{{ $userIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
+{{ $fullURLRegex := joinStr "" $baseURLRegex $snowflakeRegex "/" $snowflakeRegex "/" $snowflakeRegex }}
+
+{{- /* default argument values */ -}}
+{{ $avatarArg := "" }}
+{{ $sizeArg := "" }}
+
+{{- /* default result values */ -}}
+{{ $userID := "" }}
+{{ $defaultAvatarURL := (dbGet $globalCategoryID "Default Avatar").Value }}
+{{ $avatarURL := "" }}
+{{ $isMsgLink := 0 }}
 {{ $size := "1024" }}
-
-{{ $argUserID := toString $user.ID }}
-{{ $argUser := "" }}
-{{ $argSize := "" }}
-
-{{ $avatarURL := $user.AvatarURL $size }}
-{{ $avatarType := "User" }}
-{{ $avatarOwner := $user.String }}
+{{ $color := 0 }}
 
 {{ if gt (len .CmdArgs) 0 }}
-    {{ $argUserID = index .CmdArgs 0 }}
-    {{ $argUser = userArg $argUserID }}
-
-    {{ if eq (len .CmdArgs) 2 }}
-        {{ $argSize = index .CmdArgs 1 }}
-    {{ else if eq (len .CmdArgs) 1 }}
-        {{ $argSize = $size }}
+    {{ $avatarArg = index .CmdArgs 0 }}
+    {{ if reFind $fullURLRegex $avatarArg }}
+        {{ $isMsgLink = 1 }}
+    {{ else if reFind $userIDRegex $avatarArg }}
+        {{ $userID = reFind $userIDRegex $avatarArg }}
+    {{ else }}
+        {{ $userID = .User.ID }}
     {{ end }}
+
+    {{- /* use size argument if present */ -}}
+    {{ if eq (len .CmdArgs) 2 }}
+        {{ $sizeArg = index .CmdArgs 1 }}
+        {{ if in $validSizes $sizeArg }}
+            {{ $size = $sizeArg }}
+        {{ end }}
+    {{ end }}
+{{ else }}
+    {{ $userID = .User.ID }}
 {{ end }}
 
-{{ if in $validSizes $argSize }}
-    {{ $size = $argSize }}
-{{ end }}
+{{ $avatarOwner := "(Unknown)" }}
+{{ if $isMsgLink }}
+    {{ $messageLink := reFind $fullURLRegex $avatarArg }}
+    {{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
+    {{ $gcmSlice := split $gcmString "/" }}
 
-{{ if $argUser }}
-    {{ $user = $argUser }}
-    {{ $avatarURL = $user.AvatarURL $size }}
-    {{ $avatarOwner = $user.String }}
-{{ else if reFind "\\A\\d{16,}\\z" $argUserID }}
-    {{ if eq $argUserID (toString .Guild.ID) }}
-        {{ $avatarType = "Guild" }}
+    {{ $guildID := index $gcmSlice 0 }}
+    {{ $channelID := index $gcmSlice 1 }}
+    {{ $messageID := index $gcmSlice 2 }}
+
+    {{ $message := getMessage $channelID $messageID }}
+    {{ $guildCheck := eq .Guild.ID (toInt $guildID) }}
+    {{ if and $message $guildCheck }}
+        {{ $msgAuthor := $message.Author }}
+        {{ $authorUser := userArg $msgAuthor.ID }}
+        {{ $avatarOwner = or $authorUser.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
+        {{ $msgAuthorMember := getMember $msgAuthor.ID }}
+        {{ if $msgAuthorMember }}
+            {{ if $msgAuthorMember.Nick }}
+                {{ $avatarOwner = joinStr "" $msgAuthorMember.Nick " (" $msgAuthorMember.User.String ")" }}
+            {{ end }}
+            {{ $position := 0 }}
+            {{ $roles := $msgAuthorMember.Roles }}
+            {{- range .Guild.Roles -}}
+                {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+                    {{- $position = .Position -}}
+                    {{- $color = .Color -}}
+                {{- end -}}
+            {{- end -}}
+        {{ end }}
+
+        {{ $avatarURL = $msgAuthor.AvatarURL $size }}
+    {{ end }}
+{{ else }}
+    {{ $user := userArg $userID }}
+    {{ if $user }}
+        {{ $avatarURL = $user.AvatarURL $size }}
+        {{ $avatarOwner = $user.String }}
+    {{ else if eq $avatarArg (toString .Guild.ID) }}
         {{ $avatarOwner = .Guild.Name }}
 
-        {{ $gIconBaseURL := "https://cdn.discordapp.com/icons/" }}
-        {{ $gID := .Guild.ID }}
-        {{ $gIconHash := .Guild.Icon }}
-
-        {{ $avatarURL = or
-            (joinStr "" $gIconBaseURL $gID "/" $gIconHash ".gif")
-            (joinStr "" $gIconBaseURL $gID "/" $gIconHash ".png")
-            (joinStr "" $gIconBaseURL $gID "/" $gIconHash ".jpg")
+        {{ $gIconExtension := ".png" }}
+        {{ if ge $guildPremiumTier 1 }}
+            {{ $gIconExtension = ".gif" }}
+        {{ end }}
+        {{ $avatarURL = (joinStr ""
+            "https://cdn.discordapp.com/icons/"
+            (toString .Guild.ID) "/"
+            .Guild.Icon $gIconExtension
+            "?size=" $size
+        )
         }}
-        {{ $avatarURL = joinStr "" $avatarURL "?size=" $size }}
     {{ end }}
 {{ end }}
 
-{{ $title := joinStr "" $avatarType " Avatar for " $avatarOwner }}
-{{ execCC $embed_exec nil 0 (sdict "Title" $title "ImageURL" $avatarURL) }}
+{{ $title := joinStr "" "Avatar for " $avatarOwner }}
+{{ execCC $embed_exec nil 0 (sdict "Color" $color "Title" $title "ImageURL" (or $avatarURL $defaultAvatarURL)) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
