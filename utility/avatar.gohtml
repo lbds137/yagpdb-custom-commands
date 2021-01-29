@@ -24,6 +24,7 @@
 
 {{- /* default result values */ -}}
 {{ $userID := "" }}
+{{ $member := "" }}
 {{ $defaultAvatarURL := (dbGet $globalCategoryID "Default Avatar").Value }}
 {{ $avatarURL := "" }}
 {{ $isMsgLink := 0 }}
@@ -67,25 +68,13 @@
         {{ $msgAuthor := $message.Author }}
         {{ $authorUser := userArg $msgAuthor.ID }}
         {{ $avatarOwner = or $authorUser.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
-        {{ $msgAuthorMember := getMember $msgAuthor.ID }}
-        {{ if $msgAuthorMember }}
-            {{ if $msgAuthorMember.Nick }}
-                {{ $avatarOwner = joinStr "" $msgAuthorMember.Nick " (" $msgAuthorMember.User.String ")" }}
-            {{ end }}
-            {{ $position := 0 }}
-            {{ $roles := $msgAuthorMember.Roles }}
-            {{- range .Guild.Roles -}}
-                {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
-                    {{- $position = .Position -}}
-                    {{- $color = .Color -}}
-                {{- end -}}
-            {{- end -}}
-        {{ end }}
+        {{ $member = getMember $msgAuthor.ID }}
 
         {{ $avatarURL = $msgAuthor.AvatarURL $size }}
     {{ end }}
 {{ else }}
     {{ $user := userArg $userID }}
+    {{ $member = getMember $userID }}
     {{ if $user }}
         {{ $avatarURL = $user.AvatarURL $size }}
         {{ $avatarOwner = $user.String }}
@@ -104,6 +93,20 @@
         )
         }}
     {{ end }}
+{{ end }}
+
+{{ if $member }}
+    {{ if $member.Nick }}
+        {{ $avatarOwner = joinStr "" $member.Nick " (" $member.User.String ")" }}
+    {{ end }}
+    {{ $position := 0 }}
+    {{ $roles := $member.Roles }}
+    {{- range .Guild.Roles -}}
+        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+            {{- $position = .Position -}}
+            {{- $color = .Color -}}
+        {{- end -}}
+    {{- end -}}
 {{ end }}
 
 {{ $title := joinStr "" "Avatar for " $avatarOwner }}
