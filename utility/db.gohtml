@@ -95,9 +95,9 @@
 
 {{ $resultText = joinStr " " $resultEmoji $resultText }}
 
-{{ $embedFieldLimit := sub 1024 4 }}
-{{ if ge (len (toRune $value)) $embedFieldLimit }}
-    {{ $value = joinStr "" (slice $value 0 $embedFieldLimit) "…" }}
+{{ $embedDescriptionLimit := sub 2048 4 }}
+{{ if ge (len (toRune $value)) $embedDescriptionLimit }}
+    {{ $value = joinStr "" (slice $value 0 $embedDescriptionLimit) "…" }}
 {{ end }}
 
 {{ if not (and $isExec .ExecData.Title) }}
@@ -106,12 +106,12 @@
 
 {{ execCC $embed_exec nil 0 (sdict
     "Title" $title
-    "Description" $resultText
+    "Description" (joinStr "" "```" (or $value $nil) "```")
     "AuthorID" $userID
     "Fields" (cslice
-        (sdict "name" "User ID" "value" (joinStr "" "`" $userID "`") "inline" true)
-        (sdict "name" "Key" "value" (joinStr "" "`" (or $key $nil) "`") "inline" true)
-        (sdict "name" "Value" "value" (joinStr "" "`" (or $value $nil) "`") "inline" false)
+        (sdict "name" "User ID" "value" (joinStr "" "```" $userID "```") "inline" true)
+        (sdict "name" "Key" "value" (joinStr "" "```" (or $key $nil) "```") "inline" true)
+        (sdict "name" "Result" "value" (joinStr "" "```" $resultText "```") "inline" false)
     )
 ) }}
 
