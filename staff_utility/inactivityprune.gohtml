@@ -19,6 +19,7 @@
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
 {{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
+{{ $pruneThreshold := (dbGet $adminCategoryID "Prune Threshold").Value }}
 
 {{ $action := $args.Get 0 }}
 {{ $param := "" }}
@@ -52,6 +53,7 @@
 
         {{ $result = (dbGet $adminCategoryID $title).Value }}
         {{ $result = reReplace "\\#\\{date\\}" $result $nextPruneDate }}
+        {{ $result = reReplace "\\#\\{threshold\\}" $result $pruneThreshold }}
 
         {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $result) }}
 
