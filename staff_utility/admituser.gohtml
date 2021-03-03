@@ -76,6 +76,7 @@
             {{ end }}
             {{ giveRoleID $userID $memberRoleID }}
             {{ takeRoleID $userID $guestRoleID }}
+            {{ deleteAllMessageReactions $channelID $messageID }}
             {{ addMessageReactions $channelID $messageID $emoji }}
             {{ if $introductionArchiveChannelID }}
                 {{ execCC $message_link nil 0 (sdict
