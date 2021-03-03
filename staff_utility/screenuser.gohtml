@@ -4,7 +4,7 @@
   Trigger: `screenuser`
 */ -}}
 
-{{ $reasonMaxLen := 90 }}
+{{ $emoji := "🎫" }}
 
 {{ $args := parseArgs 2 "Usage: `[message link]` `[reason for screening]`"
     (carg "string" "message link")
@@ -52,6 +52,7 @@
         {{ $ticketOpenResult := exec "ticket open" $reason }}
         {{ $ticketChannelID := reFind $discordIDRegex $ticketOpenResult }}
 
+        {{ addMessageReactions $channelID $messageID $emoji }}
         {{ execCC $ticket_adduser_exec $ticketChannelID 0 (sdict "UserID" $userID) }}
         {{ $introductionText := joinStr ""
             "💬 **Introduction posted by " $guildMember.User.Mention ":**\n"
