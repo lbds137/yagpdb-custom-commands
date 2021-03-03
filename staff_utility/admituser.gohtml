@@ -50,8 +50,8 @@
 {{ if and $guildCheck $channelCheck }}
     {{ $message := getMessage $channelID $messageID }}
     {{ $userID := $message.Author.ID }}
+    {{ $user := userArg $userID }}
     {{ $guildMember := getMember $userID }}
-    {{ $user := $guildMember.User }}
     {{ if $guildMember }}
         {{ $userType := "" }}
         {{ if $args.IsSet 1 }}
