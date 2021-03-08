@@ -115,6 +115,10 @@
 
 {{ $fields := cslice }}
 {{ $fields = $fields.Append (sdict "name" "ID" "value" (toString $avatarOwnerID) "inline" false) }}
+{{ $avatarOwnerTimestamp :=
+    div $avatarOwnerID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
+}}
+{{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $avatarOwnerTimestamp) "inline" false) }}
 {{ $fields = $fields.Append (sdict "name" "Name" "value" $avatarOwner "inline" false) }}
 {{ if $avatarOwnerNickname }}
     {{ $fields = $fields.Append (sdict "name" "Nickname" "value" $avatarOwnerNickname "inline" false) }}
