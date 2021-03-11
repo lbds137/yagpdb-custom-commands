@@ -15,7 +15,7 @@
 
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
-{{ $ignoreRegex := "\\A\\\\" }}
+{{ $escapeRegex := "\\A\\\\" }}
 {{ $prefixRegex := joinStr "" "\\A\\Q" $prefix "\\E" }}
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
@@ -32,7 +32,11 @@
 {{ $message := getMessage $channelID $messageID }}
 
 {{ $execDataCheck := .ExecData.Message }}
-{{ $ignoreCheck := not (or (reFind $ignoreRegex $triggerMsg) (reFind $prefixRegex $triggerMsg)) }}
+{{ $ignoreCheck := not (or
+    (reFind $escapeRegex $triggerMsg)
+    (reFind $prefixRegex $triggerMsg)
+    (reFind (joinStr "" "`[^`]*" $trigger "[^`]*`") $triggerMsg)
+) }}
 {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
 {{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
