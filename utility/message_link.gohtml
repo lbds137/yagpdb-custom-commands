@@ -4,6 +4,15 @@
   Trigger: `https://(ptb.|canary.)?discord(?:app)?.com/channels/\d{16,}/\d{16,}/\d{16,}`
 */ -}}
 
+{{- /* constants */ -}}
+
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
+{{ $embedFieldLimit := sub 1024 2 }}
+{{ $ellipsis := "…" }}
+
+{{- /* database values */ -}}
+
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 
@@ -15,10 +24,7 @@
 
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
-{{ $escapeRegex := "\\A\\\\" }}
-{{ $prefixRegex := joinStr "" "\\A\\Q" $prefix "\\E" }}
-{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
-{{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
+{{- /* parse the message link and retrieve the linked message */ -}}
 
 {{ $triggerMsgObj := or .ExecData.Message .Message }}
 {{ $triggerMsg := $triggerMsgObj.Content }}
@@ -31,10 +37,11 @@
 {{ $messageID := index $gcmSlice 2 }}
 {{ $message := getMessage $channelID $messageID }}
 
+{{- /* perform prerequisite checks */ -}}
+
 {{ $execDataCheck := .ExecData.Message }}
 {{ $ignoreCheck := not (or
-    (reFind $escapeRegex $triggerMsg)
-    (reFind $prefixRegex $triggerMsg)
+    (reFind (joinStr "" "\\A\\Q" $prefix "\\E") $triggerMsg)
     (reFind (joinStr "" "`[^`]*" $trigger "[^`]*`") $triggerMsg)
 ) }}
 {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
@@ -46,36 +53,23 @@
 {{ end }}
 {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 
+{{- /* proceed with linking the message if the checks pass */ -}}
+
 {{ if and $message (or $execDataCheck $ignoreCheck) $guildCheck (or $staffCheck $nsfwCheck) }}
     {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
     {{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
     {{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
 
-    {{ $triggerAuthor := $triggerMsgObj.Author }}
-    {{ $triggerAuthorFull := $triggerAuthor.String }}
-    {{ $triggerMember := getMember $triggerAuthor.ID }}
-    {{ if $triggerMember.Nick }}
-        {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
-    {{ end }}
-
-    {{ $gIconExtension := ".png" }}
-    {{ if ge $guildPremiumTier 1 }}
-        {{ $gIconExtension = ".gif" }}
-    {{ end }}
-    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
-    {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
-
-    {{ $msgAuthor := $message.Author }}
-    {{ $msgAttachments := $message.Attachments }}
     {{ $msgEmbeds := $message.Embeds }}
 
     {{ $title := "Message Link" }}
-    {{ $description := $message.Content }}
+
+    {{- /* initialize variables */ -}}
+
     {{ $attachmentLinks := "" }}
     {{ $image := "" }}
     {{ $thumbnail := "" }}
 
-    {{ $embedFieldLimit := sub 1024 2 }}
     {{ $embedAuthor := "" }}
     {{ $embedProvider := "" }}
     {{ $embedTitle := "" }}
@@ -83,6 +77,9 @@
     {{ $embedFields := "" }}
     {{ $embedFooter := "" }}
 
+    {{- /* linked message author and authorColor */ -}}
+
+    {{ $msgAuthor := $message.Author }}
     {{ $user := userArg $msgAuthor.ID }}
     {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
     {{ $authorColor := 0 }}
@@ -113,6 +110,9 @@
         {{ $authorColor = $embedColor }}
     {{ end }}
 
+    {{- /* linked message attachments */ -}}
+
+    {{ $msgAttachments := $message.Attachments }}
     {{ if gt (len $msgAttachments) 0 }}
         {{ $firstAttachment := index $msgAttachments 0 }}
         {{ $image = $firstAttachment.URL }}
@@ -125,6 +125,8 @@
             {{ end }}
         {{ end }}
     {{ end }}
+
+    {{- /* linked message embeds */ -}}
 
     {{ if gt (len $msgEmbeds) 0 }}
         {{ $embed := index $msgEmbeds 0 }}
@@ -139,7 +141,7 @@
         {{ end }}
         {{ if $embed.Description }}
             {{ if ge (len (toRune $embed.Description)) $embedFieldLimit }}
-                {{ $embedDescription = joinStr "" (slice $embed.Description 0 $embedFieldLimit) "…" }}
+                {{ $embedDescription = joinStr "" (slice $embed.Description 0 $embedFieldLimit) $ellipsis }}
             {{ else }}
                 {{ $embedDescription = $embed.Description }}
             {{ end }}
@@ -197,17 +199,43 @@
     {{ $msgLink := joinStr "" "🔗 [Click or tap here to view the message.](" $trigger ")" }}
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
 
+    {{- /* footer */ -}}
+
+    {{ $gIconExtension := ".png" }}
+    {{ if ge $guildPremiumTier 1 }}
+        {{ $gIconExtension = ".gif" }}
+    {{ end }}
+    {{ $gIcon := (joinStr ""
+        "https://cdn.discordapp.com/icons/"
+        (toString .Guild.ID) "/"
+        .Guild.Icon $gIconExtension)
+    }}
+    {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
+
+    {{- /* trigger author */ -}}
+
+    {{ $triggerAuthor := $triggerMsgObj.Author }}
+    {{ $triggerAuthorFull := $triggerAuthor.String }}
+    {{ $triggerMember := getMember $triggerAuthor.ID }}
+    {{ if $triggerMember.Nick }}
+        {{ $triggerAuthorFull = joinStr "" $triggerMember.Nick " (" $triggerAuthorFull ")" }}
+    {{ end }}
+
+    {{- /* create the combined embed */ -}}
+
     {{ $output := cembed
         "color" $authorColor
         "author" $author
         "title" $title
-        "description" $description
+        "description" $message.Content
         "image" (sdict "url" $image)
         "thumbnail" (sdict "url" $thumbnail)
         "fields" $fields
         "footer" (sdict "text" $channelName "icon_url" $gIcon)
         "timestamp" $message.Timestamp
     }}
+
+    {{- /* create and send the complex message */ -}}
 
     {{ $complexMsgContent := "" }}
     {{ if and (not .ExecData.DisableQuote) $triggerMsgContent }}
