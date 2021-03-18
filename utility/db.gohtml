@@ -73,10 +73,23 @@
         {{ end }}
     {{ else if $isSet }}
         {{ $ptAction = "set" }}
+        {{ if reFind "\\A\\[[^,]+(,{1}[^,]+)*\\]\\z" $value }}
+            {{ $valueSlice := split (slice $value 1 (sub (len $value) 1)) "," }}
+            {{ $value = cslice }}
+            {{- range $i, $sliceEntry := $valueSlice -}}
+                {{- $sliceEntryTrim := reReplace "\\A[[:space:]]+" $sliceEntry "" -}}
+                {{- $sliceEntryTrim = reReplace "[[:space:]]+\\z" $sliceEntryTrim "" -}}
+                {{- $value = $value.Append $sliceEntryTrim -}}
+            {{- end -}}
+        {{ end }}
         {{ dbSet $userID $key $value }}
     {{ end }}
 
     {{ if $value }}
+        {{- /* format the value for user-friendly viewing */ -}}
+        {{ if ne "string" (printf "%T" $value) }}
+            {{ $value = json $value }}
+        {{ end }}
         {{ $resultText = joinStr "" "Value successfully " $ptAction "!" }}
     {{ else }}
         {{ $resultEmoji = "⚠️" }}

@@ -11,23 +11,23 @@
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 
 {{ $key := "" }}
-{{ $userID := "" }}
-{{ $authorID := .Guild.ID }}
+{{ $userID := .User.ID }}
+{{ $authorID := $userID }}
 {{ if .ExecData.Key }}
     {{ $key = .ExecData.Key }}
-    {{ $userID = or .ExecData.UserID .User.ID }}
+    {{ $userID = or .ExecData.UserID $userID }}
+    {{ $authorID = .Guild.ID }}
 {{ else if gt (len .CmdArgs) 0 }}
-    {{ $key = index .CmdArgs 0 }}
     {{ if gt (len .CmdArgs) 1 }}
-        {{ if reFind "\\A\\d+\\z" (index .CmdArgs 1) }}
-            {{ $userID = toInt (index .CmdArgs 1) }}
+        {{ if reFind "\\A\\d+\\z" (index .CmdArgs 0) }}
+            {{ $userID = toInt (index .CmdArgs 0) }}
             {{ if userArg $userID }}
                 {{ $authorID = $userID }}
             {{ end }}
         {{ end }}
+        {{ $key = index .CmdArgs 1 }}
     {{ else }}
-        {{ $userID = .User.ID }}
-        {{ $authorID = $userID }}
+        {{ $key = index .CmdArgs 0 }}
     {{ end }}
 {{ end }}
 
@@ -36,6 +36,10 @@
 {{ if $key }}
     {{ $title = $key }}
     {{ $result = or (dbGet $userID $key).Value "(no result found)" }}
+    {{- /* format the value for user-friendly viewing */ -}}
+    {{ if ne "string" (printf "%T" $result) }}
+        {{ $result = joinStr "" "```\n" (json $result) "\n```" }}
+    {{ end }}
 {{ else }}
     {{ $title = "Missing Argument" }}
     {{ $result = "⚠️ You did not provide a key to look up!" }}
