@@ -15,12 +15,15 @@
 {{ $trigger := .Message.Content }}
 {{ $hereChannelID := toString .Channel.ID }}
 {{ $thereChannelID := slice $trigger 2 (sub (len $trigger) 1) }}
+
 {{ $thereChannel := getChannel $thereChannelID }}
-{{ if and $thereChannel (ne $hereChannelID $thereChannelID) }}
+{{ $selfLinkCheck := ne $hereChannelID $thereChannelID }}
+{{ $validChannelCheck := ne 0 $thereChannel.LastMessageID }}
+{{ if and $thereChannel $selfLinkCheck $validChannelCheck }}
     {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
     {{ $thereMsgID := sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
 
-    {{ $cLinkBaseUrl := "https://discordapp.com/channels" }}
+    {{ $cLinkBaseUrl := "https://discord.com/channels" }}
     {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $thereChannelID "/" $thereMsgID }}
     {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $hereChannelID "/" $hereMsgID }}
 
