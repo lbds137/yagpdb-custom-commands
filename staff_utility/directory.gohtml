@@ -1,21 +1,66 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
-  Trigger type: `Command`
-  Trigger: `directory`
+  Trigger type: `Hourly interval`
+  Interval: `24`
 */ -}}
 
-{{ $args := parseArgs 1 (joinStr "" "Please enter a category to look up in the directory.")
-    (carg "string" "key")
-}}
+{{ $arrayType := "[]interface {}" }}
+{{ $channelLimit := 25 }}
 
-{{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $dbprettyget := toInt (dbGet $commandsCategoryID "dbprettyget").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
 
-{{ $key := $args.Get 0 }}
-{{ if $key }}
-    {{ execCC $dbprettyget nil 0 (sdict "UserID" $directoryCategoryID "Key" (title $key)) }}
+{{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
+{{ $directory_category := toInt (dbGet $commandsCategoryID "directory_category").Value }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $directoryChannelID := toInt (dbGet $channelsCategoryID "Directory Channel ID").Value }}
+{{ $directoryCategories := (dbGet $directoryCategoryID "Categories").Value }}
+
+{{ if $directoryCategories }}
+    {{ if eq (printf "%T" $directoryCategories) $arrayType }}
+        {{- /* clean old directory entries */ -}}
+        {{- exec "Clean" 100 -}}
+
+        {{- /* divide channel categories into "buckets" to avoid hitting Discord API limits per custom command */ -}}
+        {{ $categoryBuckets := cslice }}
+        {{ $currentBucket := cslice }}
+        {{ $counter := 0 }}
+        {{- range $i, $categoryID := $directoryCategories -}}
+            {{- $currentBucket = $currentBucket.Append $categoryID -}}
+            {{- if ne 0 (toInt $categoryID) -}}
+                {{- $counter = add $counter 1 -}}
+            {{- end -}}
+            {{- $categoryChannels := (dbGet $directoryCategoryID $categoryID).Value -}}
+            {{- $counter = add $counter (len $categoryChannels) }}
+
+            {{- /* if the current "bucket" has reached its channel limit, add it to the list and make a new one */ -}}
+            {{- if gt $counter $channelLimit -}}
+                {{ $categoryBuckets = $categoryBuckets.Append $currentBucket }}
+                {{ $currentBucket = cslice }}
+                {{ $counter = 0 }}
+            {{- end -}}
+        {{- end -}}
+
+        {{- /* run the helper command for each bucket in order to print out the directory contents */ -}}
+        {{- range $categoryBucket := $categoryBuckets }}
+            {{ execCC $directory_category nil 0 (sdict
+                "DirectoryCategoryID" $directoryCategoryID
+                "Categories" $categoryBucket
+                "Color" $dbEmbedColor
+            ) }}
+            {{- sleep 3 -}}
+        {{- end -}}
+    {{ else }}
+        {{ execCC $embed_exec nil 0 (sdict
+            "Title" "Directory Lookup Failed"
+            "Description" "⚠️ The directory categories database entry must be an array!"
+        ) }}
+    {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict "Title" "Directory Lookup Failed" "Description" "⚠️ You did not provide a category to look up!") }}
+    {{ execCC $embed_exec nil 0 (sdict
+        "Title" "Directory Lookup Failed"
+        "Description" "⚠️ You must initialize the directory categories in the database!"
+    ) }}
 {{ end }}
