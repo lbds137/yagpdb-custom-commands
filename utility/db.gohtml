@@ -58,7 +58,7 @@
 {{ $operationCheck := or $isDel $isGet $isSet }}
 {{ $valueCheck := or $value $isDel $isGet }}
 
-{{ $nil := "`(nil)`" }}
+{{ $nil := "(nil)" }}
 {{ $resultText := "" }}
 {{ $resultEmoji := "✅" }}
 {{ if and $operationCheck $key $valueCheck }}
