@@ -4,6 +4,8 @@
 */ -}}
 
 {{ $arrayType := "[]interface {}" }}
+{{ $leftDivider := "⋙ " }}
+{{ $rightDivider := " ⋘" }}
 
 {{- if and .ExecData.DirectoryCategoryID .ExecData.Categories .ExecData.Color -}}
   {{- /* store the custom command params as local variables */ -}}
@@ -18,6 +20,8 @@
     {{- if ne 0 (toInt $categoryID) -}}
       {{- $categoryChannel := getChannel $categoryID -}}
       {{- $categoryName = $categoryChannel.Name -}}
+      {{- $categoryName = reReplace $leftDivider $categoryName "" -}}
+      {{- $categoryName = reReplace $rightDivider $categoryName "" -}}
     {{- end -}}
     {{- $categoryChannels := (dbGet $directoryCategoryID $categoryID).Value -}}
 
