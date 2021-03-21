@@ -7,14 +7,15 @@
 {{ $leftDivider := "⋙ " }}
 {{ $rightDivider := " ⋘" }}
 
-{{- if and .ExecData.DirectoryCategoryID .ExecData.Categories .ExecData.Color -}}
+{{- if and .ExecData.DirectoryCategoryID .ExecData.CategoryGroup .ExecData.CategoryGroupChannels .ExecData.Color -}}
   {{- /* store the custom command params as local variables */ -}}
   {{- $directoryCategoryID := .ExecData.DirectoryCategoryID -}}
-  {{- $directoryCategories := .ExecData.Categories -}}
+  {{- $categoryGroup := .ExecData.CategoryGroup -}}
+  {{- $categoryGroupChannels := .ExecData.CategoryGroupChannels -}}
   {{- $color := .ExecData.Color -}}
 
   {{- /* iterate over the provided slice of category IDs */ -}}
-  {{- range $i, $categoryID := $directoryCategories -}}
+  {{- range $i, $categoryID := $categoryGroup -}}
     {{- /* look up the category name and child channels */ -}}
     {{- $categoryName := "❓ Uncategorized ❓" -}}
     {{- if ne 0 (toInt $categoryID) -}}
@@ -23,7 +24,7 @@
       {{- $categoryName = reReplace $leftDivider $categoryName "" -}}
       {{- $categoryName = reReplace $rightDivider $categoryName "" -}}
     {{- end -}}
-    {{- $categoryChannels := (dbGet $directoryCategoryID $categoryID).Value -}}
+    {{- $categoryChannels := index $categoryGroupChannels $i -}}
 
     {{- /* output the category if the child channels array from the database is valid */ -}}
     {{- if eq (printf "%T" $categoryChannels) $arrayType -}}

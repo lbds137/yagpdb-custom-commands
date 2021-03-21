@@ -23,33 +23,34 @@
         {{- /* clean old directory entries */ -}}
         {{- exec "Clean" 100 -}}
 
-        {{- /* divide channel categories into "buckets" to avoid hitting Discord API limits per custom command */ -}}
-        {{ $categoryBuckets := cslice }}
-        {{ $currentBucket := cslice }}
+        {{- /* divide channel categories into groups to avoid hitting Discord API limits per custom command */ -}}
+        {{ $currentGroup := cslice }}
+        {{ $currentGroupChannels := cslice }}
         {{ $counter := 0 }}
         {{- range $i, $categoryID := $directoryCategories -}}
-            {{- $currentBucket = $currentBucket.Append $categoryID -}}
+            {{- $currentGroup = $currentGroup.Append $categoryID -}}
             {{- if ne 0 (toInt $categoryID) -}}
                 {{- $counter = add $counter 1 -}}
             {{- end -}}
             {{- $categoryChannels := (dbGet $directoryCategoryID $categoryID).Value -}}
             {{- $counter = add $counter (len $categoryChannels) }}
+            {{- $currentGroupChannels = $currentGroupChannels.Append $categoryChannels -}}
 
-            {{- /* if the current "bucket" has reached its channel limit, add it to the list and make a new one */ -}}
+            {{- /* if the current group is at its channel limit, output its channels and move on to the next one */ -}}
             {{- if gt $counter $channelLimit -}}
-                {{ $categoryBuckets = $categoryBuckets.Append $currentBucket }}
-                {{ $currentBucket = cslice }}
-                {{ $counter = 0 }}
+                {{- sleep 1 -}}
+                {{- /* run the helper command for the current group to output its channels */ -}}
+                {{ execCC $directory_category nil 0 (sdict
+                    "DirectoryCategoryID" $directoryCategoryID
+                    "CategoryGroup" $currentGroup
+                    "CategoryGroupChannels" $currentGroupChannels
+                    "Color" $dbEmbedColor
+                ) }}
+                {{- /* reset the current group and its channels in preparation for the next iteration */ -}}
+                {{- $currentGroup = cslice -}}
+                {{- $currentGroupChannels = cslice -}}
+                {{- $counter = 0 -}}
             {{- end -}}
-        {{- end -}}
-
-        {{- /* run the helper command for each bucket in order to print out the directory contents */ -}}
-        {{- range $categoryBucket := $categoryBuckets }}
-            {{ execCC $directory_category nil 0 (sdict
-                "DirectoryCategoryID" $directoryCategoryID
-                "Categories" $categoryBucket
-                "Color" $dbEmbedColor
-            ) }}
         {{- end -}}
     {{ else }}
         {{ execCC $embed_exec nil 0 (sdict
