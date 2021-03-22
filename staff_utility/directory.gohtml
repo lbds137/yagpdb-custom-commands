@@ -33,8 +33,12 @@
                 {{- $counter = add $counter 1 -}}
             {{- end -}}
             {{- $categoryChannels := (dbGet $directoryCategoryID $categoryID).Value -}}
-            {{- $counter = add $counter (len $categoryChannels) }}
-            {{- $currentGroupChannels = $currentGroupChannels.Append $categoryChannels -}}
+            {{- if eq (printf "%T" $categoryChannels) $arrayType -}}
+                {{- $counter = add $counter (len $categoryChannels) }}
+                {{- $currentGroupChannels = $currentGroupChannels.Append $categoryChannels -}}
+            {{- else -}}
+                {{- $currentGroupChannels = $currentGroupChannels.Append cslice -}}
+            {{- end -}}
 
             {{- /* if the current group is at its channel limit, output its channels and move on to the next one */ -}}
             {{- if gt $counter $channelLimit -}}
