@@ -62,8 +62,9 @@
             "ℹ️ **Reason for additional screening:**\n"
             ">>> " $reasonArg
         }}
-        {{ sleep 1 }}
+        {{ sleep 2 }}
         {{ sendMessage $ticketChannelID $introductionText }}
+        {{ sleep 1 }}
         {{ sendMessage $ticketChannelID $reasonText }}
     {{ else }}
         {{ execCC $embed_exec nil 0 (sdict
