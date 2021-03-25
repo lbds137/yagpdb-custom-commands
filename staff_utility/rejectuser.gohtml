@@ -54,7 +54,7 @@
             ) }}
         {{ end }}
         {{ deleteMessage $channelID $messageID $deleteResponseDelay }}
-        {{ $silent := exec "kick" $userID $reasonArg }}
+        {{ $silent := execAdmin "kick" $userID $reasonArg }}
 
         {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
         {{ $userAvatar := $user.AvatarURL "128" }}
