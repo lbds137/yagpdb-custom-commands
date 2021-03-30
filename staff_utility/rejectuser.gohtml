@@ -65,7 +65,7 @@
             $emoji " User **" $user.String "** (ID: " $user.ID ") "
             "has been denied admission to **" .Guild.Name "** by "
             "**" $staffUser.String "** (ID: " $staffUser.ID ") "
-            "for the following reason: ```" $reasonArg "```"
+            "for the following reason: ```\n" $reasonArg "```"
         }}
         {{ execCC $embed_exec nil 0 (sdict
             "Title" $title
