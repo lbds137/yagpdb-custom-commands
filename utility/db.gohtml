@@ -119,12 +119,12 @@
 
 {{ execCC $embed_exec nil 0 (sdict
     "Title" $title
-    "Description" (joinStr "" "```" (or $value $nil) "```")
+    "Description" (joinStr "" "```\n" (or $value $nil) "```")
     "AuthorID" $userID
     "Fields" (cslice
-        (sdict "name" "User ID" "value" (joinStr "" "```" $userID "```") "inline" true)
-        (sdict "name" "Key" "value" (joinStr "" "```" (or $key $nil) "```") "inline" true)
-        (sdict "name" "Result" "value" (joinStr "" "```" $resultText "```") "inline" false)
+        (sdict "name" "User ID" "value" (joinStr "" "```\n" $userID "```") "inline" true)
+        (sdict "name" "Key" "value" (joinStr "" "```\n" (or $key $nil) "```") "inline" true)
+        (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
     )
 ) }}
 
