@@ -28,6 +28,11 @@
 
 {{ $result := (joinStr "" "The `int` value of `" $trigger "` is `" $intVal "`.") }}
 
-{{ execCC $embed_exec nil 0 (sdict "Title" "Color Conversion: `hex` to `int`" "Description" $result "Color" $intVal) }}
+{{ execCC $embed_exec nil 0 (sdict
+    "AuthorID" .Message.Author.ID
+    "Title" "Color Conversion: `hex` to `int`"
+    "Description" $result
+    "Color" $intVal
+) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
