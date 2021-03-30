@@ -12,7 +12,7 @@
 
 {{ $maxEntries := 100 }}
 {{ $maxFields := 25 }}
-{{ $valueMaxLen := 20 }}
+{{ $valueMaxLen := 25 }}
 
 {{ $entries := cslice }}
 {{ $iEnd := 0 }}
@@ -36,8 +36,8 @@
 
     {{ $result := joinStr ""
         "**User ID:** `" $entry.UserID "`\n"
-        "**Key:** `" $entry.Key "`\n"
-        "**Value:** `" $value "`\n"
+        "**Key:** ```\n" $entry.Key "```\n"
+        "**Value:** ```\n" $value "```\n"
         "**━━━━━━━━━━━━━━━━━━━━**"
     }}
     {{- $entries = $entries.Append (sdict "name" (joinStr "" "ID: `" $entry.ID "`") "value" $result "inline" false) -}}
