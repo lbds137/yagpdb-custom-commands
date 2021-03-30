@@ -89,6 +89,7 @@
         {{- /* format the value for user-friendly viewing */ -}}
         {{ if ne "string" (printf "%T" $value) }}
             {{ $value = json $value }}
+            {{ $value = reReplace "\\\"" $value "" }}
         {{ end }}
         {{ $resultText = joinStr "" "Value successfully " $ptAction "!" }}
     {{ else }}
