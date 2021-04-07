@@ -23,6 +23,8 @@
             {{ $userID = toInt (index .CmdArgs 0) }}
             {{ if userArg $userID }}
                 {{ $authorID = $userID }}
+            {{ else }}
+                {{ $authorID = .Guild.ID }}
             {{ end }}
         {{ end }}
         {{ $key = index .CmdArgs 1 }}
