@@ -6,7 +6,7 @@
 
 {{ $args := parseArgs 2 (joinStr "" "Usage: [`embed_exec` custom command ID] [staff role ID]")
     (carg "int" "`embed_exec` custom command ID")
-    (carg "int" "staff role ID")
+    (carg "string" "staff role ID")
 }}
 
 {{ $embed_exec := $args.Get 0 }}
