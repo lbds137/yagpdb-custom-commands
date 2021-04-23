@@ -10,7 +10,6 @@
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 {{ $title := "Message Link" }}
 {{ $embedFieldLimit := sub 1024 2 }}
-{{ $ellipsis := "…" }}
 
 {{- /* database values */ -}}
 
@@ -19,13 +18,13 @@
 
 {{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
 {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
-{{ $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
+{{ $defaultEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
 {{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 
-{{- /* parse the message link and retrieve the linked message */ -}}
+{{- /* retrieve the linked message */ -}}
 
 {{ $triggerMsgObj := or .ExecData.Message .Message }}
 {{ $triggerMsg := $triggerMsgObj.Content }}
@@ -36,7 +35,7 @@
 {{ $guildID := index $gcmSlice 0 }}
 {{ $channelID := index $gcmSlice 1 }}
 {{ $messageID := index $gcmSlice 2 }}
-{{ $message := getMessage $channelID $messageID }}
+{{ $msg := getMessage $channelID $messageID }}
 
 {{- /* perform prerequisite checks */ -}}
 
@@ -47,16 +46,16 @@
 ) }}
 {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
-{{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
-{{ $thatChannelNSFW := "" }}
+{{ $originNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
+{{ $targetNSFW := "" }}
 {{ if getChannel $channelID }}
-  {{ $thatChannelNSFW = (getChannel $channelID).NSFW }}
+  {{ $targetNSFW = (getChannel $channelID).NSFW }}
 {{ end }}
-{{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
+{{ $nsfwCheck := or (not $targetNSFW) (and $originNSFW $targetNSFW) }}
 
 {{- /* proceed with linking the message if the checks pass */ -}}
 
-{{ if and $message (or $execDataCheck $ignoreCheck) $guildCheck (or $staffCheck $nsfwCheck) }}
+{{ if and $msg (or $execDataCheck $ignoreCheck) $guildCheck (or $staffCheck $nsfwCheck) }}
   {{ $triggerMsgContent := reReplace $fullRegex $triggerMsg "" }}
   {{ $triggerMsgContent = reReplace "\\A\\s+" $triggerMsgContent "" }}
   {{ $triggerMsgContent = reReplace "\\s+\\z" $triggerMsgContent "" }}
@@ -65,7 +64,7 @@
 
   {{ $embed := "" }}
   {{ $embedTitle := "" }}
-  {{ $msgEmbeds := $message.Embeds }}
+  {{ $msgEmbeds := $msg.Embeds }}
   {{ if gt (len $msgEmbeds) 0 }}
     {{ $embed = index $msgEmbeds 0 }}
     {{ if $embed.Title }}
@@ -74,9 +73,10 @@
   {{ end }}
   {{ $isMessageLink := eq $embedTitle $title }}
 
-  {{- /* if the linked message is itself a message link, use the existing embed; otherwise, build a new embed */ -}}
+  {{- /* if the linked message is a message link, use its embed; otherwise, build a new embed */ -}}
 
   {{ $resultEmbed := "" }}
+  {{ $resultEmbedColor := 0 }}
   {{ if $isMessageLink }}
     {{ $resultEmbed = $embed }}
   {{ else }}
@@ -86,6 +86,7 @@
     {{ $image := "" }}
     {{ $thumbnail := "" }}
 
+    {{ $embedColor := 0 }}
     {{ $embedAuthor := "" }}
     {{ $embedProvider := "" }}
     {{ $embedDescription := "" }}
@@ -94,12 +95,12 @@
 
     {{- /* linked message author and authorColor */ -}}
 
-    {{ $msgAuthor := $message.Author }}
+    {{ $msgAuthor := $msg.Author }}
     {{ $user := userArg $msgAuthor.ID }}
     {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
     {{ $authorColor := 0 }}
     {{ $msgAuthorMember := getMember $msgAuthor.ID }}
-    {{ if $msgAuthorMember }}
+    {{ if and $msgAuthorMember (not $user.Bot) }}
       {{ if $msgAuthorMember.Nick }}
         {{ $usernameFull = joinStr "" $msgAuthorMember.Nick " (" $msgAuthorMember.User.String ")" }}
       {{ end }}
@@ -114,20 +115,17 @@
     {{ end }}
     {{ $userLink := "" }}
     {{ if $user }}
-      {{ $userLink = joinStr "" "https://discordapp.com/users/" $msgAuthor.ID }}
+      {{ $userLink = joinStr "" "https://discord.com/users/" $msgAuthor.ID }}
     {{ end }}
     {{ $author := sdict
       "name" $usernameFull
       "url" $userLink
       "icon_url" (or ($msgAuthor.AvatarURL "128") $defaultAvatar)
     }}
-    {{ if not $authorColor }}
-      {{ $authorColor = $embedColor }}
-    {{ end }}
 
     {{- /* linked message attachments */ -}}
 
-    {{ $msgAttachments := $message.Attachments }}
+    {{ $msgAttachments := $msg.Attachments }}
     {{ if gt (len $msgAttachments) 0 }}
       {{ $firstAttachment := index $msgAttachments 0 }}
       {{ $image = $firstAttachment.URL }}
@@ -144,6 +142,9 @@
     {{- /* linked message embed */ -}}
 
     {{ if $embed }}
+      {{ if $embed.Color }}
+        {{ $embedColor = $embed.Color }}
+      {{ end }}
       {{ if $embed.Author }}
         {{ $embedAuthor = $embed.Author.Name }}
       {{ end }}
@@ -152,7 +153,7 @@
       {{ end }}
       {{ if $embed.Description }}
         {{ if ge (len (toRune $embed.Description)) $embedFieldLimit }}
-          {{ $embedDescription = joinStr "" (slice $embed.Description 0 $embedFieldLimit) $ellipsis }}
+          {{ $embedDescription = joinStr "" (slice $embed.Description 0 $embedFieldLimit) "…" }}
         {{ else }}
           {{ $embedDescription = $embed.Description }}
         {{ end }}
@@ -198,13 +199,13 @@
       {{ $fields = $fields.Append (sdict "name" "Embed Description" "value" $embedDescription "inline" false) }}
     {{ end }}
     {{ if $embedFields }}
-      {{ range $field := $embedFields }}
+      {{- range $field := $embedFields -}}
         {{ $fields = $fields.Append (sdict
           "name" (joinStr " " "Embed Field:" $field.Name)
           "value" $field.Value
           "inline" false
         ) }}
-      {{ end }}
+      {{- end -}}
     {{ end }}
     {{ if $embedFooter }}
       {{ $fields = $fields.Append (sdict "name" "Embed Footer" "value" $embedFooter "inline" false) }}
@@ -225,18 +226,30 @@
     }}
     {{ $channelName := (joinStr "" "#" (getChannel $channelID).Name) }}
 
-    {{- /* create the combined embed */ -}}
+    {{- /* result embed color */ -}}
+
+    {{ if $authorColor }}
+      {{ $resultEmbedColor = $authorColor }}
+    {{ else }}
+      {{ if $embedColor }}
+        {{ $resultEmbedColor = $embedColor }}
+      {{ else }}
+        {{ $resultEmbedColor = $defaultEmbedColor }}
+      {{ end }}
+    {{ end }}
+
+    {{- /* result embed */ -}}
 
     {{ $resultEmbed = cembed
-      "color" $authorColor
+      "color" $resultEmbedColor
       "author" $author
       "title" $title
-      "description" $message.Content
+      "description" $msg.Content
       "image" (sdict "url" $image)
       "thumbnail" (sdict "url" $thumbnail)
       "fields" $fields
       "footer" (sdict "text" $channelName "icon_url" $gIcon)
-      "timestamp" $message.Timestamp
+      "timestamp" $msg.Timestamp
     }}
   {{ end }}
 
