@@ -76,7 +76,7 @@
     {{ else }}
         {{ execCC $embed_exec nil 0 (sdict
             "Title" "Invalid User"
-            "Description" joinStr "" "⚠️ The user you are trying to reject is not currently in **" .Guild.Name "**!"
+            "Description" (joinStr "" "⚠️ The user you are trying to reject is not currently in **" .Guild.Name "**!")
             "DeleteResponse" true
             "DeleteDelay" $deleteResponseDelay
         ) }}
