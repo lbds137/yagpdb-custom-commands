@@ -52,7 +52,7 @@
     {{ end }}
     {{ $kickReason := joinStr "" "exceeding the inactivity grace period by **" $hoursExceeded "** " $hoursString }}
     {{ $result = joinStr "" "🥾 **" $member.User.String "** has been kicked!" }}
-    {{ $silent := exec "kick" $userID $kickReason }}
+    {{ $silent := execAdmin "kick" $userID $kickReason }}
 {{ else }}
     {{ $result = joinStr "" "❌ No action was taken against **" $member.User.String "**." }}
 {{ end }}
