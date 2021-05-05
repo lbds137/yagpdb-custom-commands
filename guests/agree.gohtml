@@ -18,8 +18,8 @@
 {{ $discussionNotifyRole := toInt (dbGet $rolesCategoryID "Discussion Notify Role ID").Value }}
 {{ $eventNotifyRole := toInt (dbGet $rolesCategoryID "Event Notify Role ID").Value }}
 
-{{ $introduction := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
-{{ $modLog := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
+{{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
+{{ $agreementLogChannelID := toInt (dbGet $channelsCategoryID "Agreement Log Channel ID").Value }}
 
 {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
 {{ $userAvatar := .User.AvatarURL "128" }}
@@ -39,11 +39,11 @@
         "Title" $title
         "Description" $description
         "ThumbnailURL" (or $userAvatar $defaultAvatar)
-        "Channel" $modLog
+        "Channel" $agreementLogChannelID
     ) }}
 
     {{ $result := joinStr ""
-        "✅ Your agreement has been recorded! Please proceed to <#" $introduction "> "
+        "✅ Your agreement has been recorded! Please proceed to <#" $introductionChannelID "> "
         "to post a compliant introduction. Thank you!"
     }}
     {{ execCC $embed_exec nil 0 (sdict
