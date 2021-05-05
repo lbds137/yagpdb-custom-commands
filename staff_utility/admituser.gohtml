@@ -30,7 +30,7 @@
 {{ $introductionArchiveChannelID := toInt (dbGet $channelsCategoryID "Introduction Archive Channel ID").Value }}
 {{ $welcomeChannelID := toInt (dbGet $channelsCategoryID "Welcome Channel ID").Value }}
 {{ $roleAssignmentChannelID := toInt (dbGet $channelsCategoryID "Role Assignment Channel ID").Value }}
-{{ $modLogChannelID := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
+{{ $admissionLogChannelID := toInt (dbGet $channelsCategoryID "Admission Log Channel ID").Value }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 
@@ -116,7 +116,7 @@
                 "Title" $title
                 "Description" $description
                 "ThumbnailURL" (or $userAvatar $defaultAvatar)
-                "Channel" $modLogChannelID
+                "Channel" $admissionLogChannelID
             ) }}
         {{ else }}
             {{ execCC $embed_exec nil 0 (sdict
