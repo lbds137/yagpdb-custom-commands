@@ -18,17 +18,21 @@
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullURLRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 
-{{ $args := parseArgs 1 "Usage: `[emoji]`"
-    (carg "string" "emoji")
+{{ $args := parseArgs 1 "Usage: `[emoji or message link] [index of desired emoji (optional)]`"
+    (carg "string" "emoji or message link")
+    (carg "int" "index of desired emoji (optional)")
 }}
 
 {{ $emojiArg := $args.Get 0 }}
-{{ $emojiString := "" }}
+{{ $indexArg := 1 }}
+{{ if $args.IsSet 1 }}
+    {{ $indexArg = $args.Get 1 }}
+{{ end }}
+{{ $emojiStrings := "" }}
 {{ $messageLink := "" }}
 
-{{ if reFind $emojiRegex $emojiArg }}
-    {{ $emojiString = $emojiArg }}
-{{ else if reFind $fullURLRegex $emojiArg }}
+{{ $emojiStrings = reFindAll $emojiRegex $emojiArg }}
+{{ if and (not $emojiStrings) (reFind $fullURLRegex $emojiArg) }}
     {{ $triggerMsgObj := .Message }}
     {{ $triggerMsg := $triggerMsgObj.Content }}
     {{ $messageLink = reFind $fullURLRegex $triggerMsg }}
@@ -50,11 +54,12 @@
     {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 
     {{ if and $message $guildCheck (or $staffCheck $nsfwCheck) }}
-        {{ $emojiString = reFind $emojiRegex $message.Content }}
+        {{ $emojiStrings = reFindAll $emojiRegex $message.Content }}
     {{ end }}
 {{ end }}
 
-{{ if $emojiString }}
+{{ if $emojiStrings }}
+    {{ $emojiString := index $emojiStrings (sub $indexArg 1) }}
     {{ $fileExtension := ".png" }}
     {{ if reFind $animatedEmojiRegex $emojiString }}
         {{ $fileExtension = ".gif" }}
