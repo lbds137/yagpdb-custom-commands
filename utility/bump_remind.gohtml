@@ -19,7 +19,7 @@
     {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
         {{ sendMessage nil $reminderMessage }}
         {{ if $bumpRoleID }}
-            {{ exec "MentionRole" $bumpRoleID }}
+            {{ exec "MentionRoleID" $bumpRoleID }}
         {{ else }}
             {{ sendMessage nil (userArg .Guild.OwnerID).Mention }}
         {{ end }}
@@ -27,7 +27,7 @@
 {{ else }}
     {{ sendMessage nil $reminderMessage }}
     {{ if $bumpRoleID }}
-        {{ exec "MentionRole" $bumpRoleID }}
+        {{ exec "MentionRoleID" $bumpRoleID }}
     {{ else }}
         {{ sendMessage nil (userArg .Guild.OwnerID).Mention }}
     {{ end }}
