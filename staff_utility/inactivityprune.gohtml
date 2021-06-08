@@ -57,7 +57,7 @@
 
         {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $result) }}
 
-        {{ exec "MentionRoleID" $roleID }}
+        {{ exec "mentionRoleID" $roleID }}
     {{ else if $isDate }}
         {{ if $param }}
             {{ execCC $db nil 0 (sdict
