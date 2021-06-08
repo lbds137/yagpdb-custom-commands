@@ -18,7 +18,7 @@
 
 {{ $thereChannel := getChannel $thereChannelID }}
 {{ $selfLinkCheck := ne $hereChannelID $thereChannelID }}
-{{ $validChannelCheck := ne 0 $thereChannel.LastMessageID }}
+{{ $validChannelCheck := eq 0 $thereChannel.Type }}
 {{ if and $thereChannel $selfLinkCheck $validChannelCheck }}
     {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
     {{ $thereMsgID := sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
