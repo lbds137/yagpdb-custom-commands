@@ -49,22 +49,25 @@
         {{ $user := $guildMember.User }}
         {{ $reason := joinStr "" "screening user " $userID }}
 
-        {{ $ticketOpenResult := exec "ticket open" $reason }}
-        {{ $ticketChannelID := reFind $discordIDRegex $ticketOpenResult }}
-
+        {{ $ticketOpenResult := createTicket .Message.Author.ID $reason }}
+        {{ $ticketChannelID := $ticketOpenResult.ChannelID }}
         {{ addMessageReactions $channelID $messageID $emoji }}
+        {{ sleep 1 }}
+
         {{ execCC $ticket_adduser_exec $ticketChannelID 0 (sdict "UserID" $userID) }}
+        {{ sleep 1 }}
+
         {{ $introductionText := joinStr ""
             "💬 **Introduction posted by " $guildMember.User.Mention ":**\n"
             ">>> " $message.Content
         }}
+        {{ sendMessage $ticketChannelID $introductionText }}
+        {{ sleep 1 }}
+
         {{ $reasonText := joinStr ""
             "ℹ️ **Reason for additional screening:**\n"
             ">>> " $reasonArg
         }}
-        {{ sleep 2 }}
-        {{ sendMessage $ticketChannelID $introductionText }}
-        {{ sleep 1 }}
         {{ sendMessage $ticketChannelID $reasonText }}
     {{ else }}
         {{ execCC $embed_exec nil 0 (sdict
