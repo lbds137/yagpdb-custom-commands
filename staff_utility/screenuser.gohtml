@@ -49,7 +49,7 @@
         {{ $user := $guildMember.User }}
         {{ $reason := joinStr "" "screening user " $userID }}
 
-        {{ $ticketOpenResult := createTicket .Message.Author.ID $reason }}
+        {{ $ticketOpenResult := createTicket nil $reason }}
         {{ $ticketChannelID := $ticketOpenResult.ChannelID }}
         {{ addMessageReactions $channelID $messageID $emoji }}
         {{ sleep 1 }}
