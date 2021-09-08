@@ -176,11 +176,6 @@
     {{- /* fields */ -}}
 
     {{ $fields := cslice }}
-    {{ $fields = $fields.Append (sdict
-      "name" "Channel"
-      "value" (joinStr "" "#️⃣ [" $targetChannel.Name "](" (index (split $trigger $messageID) 0) ")")
-      "inline" false
-    ) }}
     {{ if $attachmentLinks }}
       {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentLinks "inline" false) }}
     {{ end }}
@@ -206,6 +201,11 @@
     {{ if $embedFooter }}
       {{ $fields = $fields.Append (sdict "name" "Embed Footer" "value" $embedFooter "inline" false) }}
     {{ end }}
+    {{ $fields = $fields.Append (sdict
+      "name" "Original Channel"
+      "value" (joinStr "" "#️⃣ [" $targetChannel.Name "](" (index (split $trigger $messageID) 0) ")")
+      "inline" false
+    ) }}
     {{ $msgLink := joinStr "" "🔗 [Click or tap here to view the message.](" $trigger ")" }}
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
 
