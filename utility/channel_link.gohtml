@@ -16,7 +16,7 @@
 {{ $hereChannelID := toString .Channel.ID }}
 {{ $thereChannelID := slice $trigger 2 (sub (len $trigger) 1) }}
 
-{{ $thereChannel := getChannel $thereChannelID }}
+{{ $thereChannel := getChannelOrThread $thereChannelID }}
 {{ $selfLinkCheck := ne $hereChannelID $thereChannelID }}
 {{ $validChannelCheck := eq 0 $thereChannel.Type }}
 {{ if and $thereChannel $selfLinkCheck $validChannelCheck }}

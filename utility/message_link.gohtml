@@ -44,8 +44,8 @@
 ) }}
 {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
-{{ $originNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
-{{ $targetChannel := getChannel $channelID }}
+{{ $originNSFW := (getChannelOrThread $triggerMsgObj.ChannelID).NSFW }}
+{{ $targetChannel := getChannelOrThread $channelID }}
 {{ $targetNSFW := "" }}
 {{ if $targetChannel }}
   {{ $targetNSFW = $targetChannel.NSFW }}
@@ -124,8 +124,8 @@
       {{ $image = $firstAttachment.URL }}
 
       {{ range $i, $attachment := $msgAttachments }}
-        {{ $attachmentLink := joinStr "" "[" $attachment.URL "]" }}
-        {{ $attachmentLinks = joinStr "" $attachmentLinks $attachmentLink }}
+        {{ $link := joinStr "" "[" $attachment.URL "]" }}
+        {{ $attachmentLinks = joinStr "" $attachmentLinks $link }}
         {{ if ne $i (sub (len $msgAttachments) 1) }}
           {{ $attachmentLinks = joinStr "" $attachmentLinks "\n\n" }}
         {{ end }}
