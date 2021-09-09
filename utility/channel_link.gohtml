@@ -18,76 +18,77 @@
 
 {{ $thereChannel := getChannelOrThread $thereChannelID }}
 {{ $selfLinkCheck := ne $hereChannelID $thereChannelID }}
-{{ $validChannelCheck := eq 0 $thereChannel.Type }}
-{{ if and $thereChannel $selfLinkCheck $validChannelCheck }}
-    {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
+{{ if and $thereChannel $selfLinkCheck }}
     {{ $thereMsgID := sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
+    {{ if $thereMsgID }}
+        {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
 
-    {{ $cLinkBaseUrl := "https://discord.com/channels" }}
-    {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $thereChannelID "/" $thereMsgID }}
-    {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $hereChannelID "/" $hereMsgID }}
+        {{ $cLinkBaseUrl := "https://discord.com/channels" }}
+        {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $thereChannelID "/" $thereMsgID }}
+        {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $hereChannelID "/" $hereMsgID }}
 
-    {{ $hereText := "" }}
-    {{ $thereText := "" }}
-    {{ if hasRoleID $staffRoleID }}
-        {{ $hereText = joinStr ""
-            "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
-            "🔗 [Click or tap here to move.](" $thereLink ")"
-        }}
-        {{ $thereText = joinStr ""
-            "A staff member has moved a conversation from **#" .Channel.Name "** to here.\n\n"
-            "🔗 [Click or tap here to return.](" $hereLink ")"
-        }}
-    {{ else }}
-        {{ $hereText = joinStr ""
-            "A server member has linked to **#" $thereChannel.Name "**.\n\n"
-            "🔗 [Click or tap here to move.](" $thereLink ")"
-        }}
-        {{ $thereText = joinStr ""
-            "A server member has linked from **#" .Channel.Name "** to here.\n\n"
-            "🔗 [Click or tap here to return.](" $hereLink ")"
-        }}
-    {{ end }}
+        {{ $hereText := "" }}
+        {{ $thereText := "" }}
+        {{ if hasRoleID $staffRoleID }}
+            {{ $hereText = joinStr ""
+                "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
+                "🔗 [Click or tap here to move.](" $thereLink ")"
+            }}
+            {{ $thereText = joinStr ""
+                "A staff member has moved a conversation from **#" .Channel.Name "** to here.\n\n"
+                "🔗 [Click or tap here to return.](" $hereLink ")"
+            }}
+        {{ else }}
+            {{ $hereText = joinStr ""
+                "A server member has linked to **#" $thereChannel.Name "**.\n\n"
+                "🔗 [Click or tap here to move.](" $thereLink ")"
+            }}
+            {{ $thereText = joinStr ""
+                "A server member has linked from **#" .Channel.Name "** to here.\n\n"
+                "🔗 [Click or tap here to return.](" $hereLink ")"
+            }}
+        {{ end }}
 
-    {{ $title := "Channel Link" }}
+        {{ $title := "Channel Link" }}
 
-    {{ $userFull := .User.String }}
-    {{ if .Member.Nick }}
-        {{ $userFull = joinStr "" .Member.Nick " (" .User.String ")" }}
-    {{ end }}
-    {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
-    {{ $author := sdict "name" $userFull "url" $userLink "icon_url" (or (.User.AvatarURL "128") $defaultAvatar) }}
-    {{ $authorColor := 0 }}
-    {{ $position := 0 }}
-    {{ $roles := .Member.Roles }}
-    {{- range .Guild.Roles -}}
-        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
-            {{- $position = .Position -}}
-            {{- $authorColor = .Color -}}
+        {{ $userFull := .User.String }}
+        {{ if .Member.Nick }}
+            {{ $userFull = joinStr "" .Member.Nick " (" .User.String ")" }}
+        {{ end }}
+        {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
+        {{ $author := sdict "name" $userFull "url" $userLink "icon_url" (or (.User.AvatarURL "128") $defaultAvatar) }}
+        {{ $authorColor := 0 }}
+        {{ $position := 0 }}
+        {{ $roles := .Member.Roles }}
+        {{- range .Guild.Roles -}}
+            {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+                {{- $position = .Position -}}
+                {{- $authorColor = .Color -}}
+            {{- end -}}
         {{- end -}}
-    {{- end -}}
-    {{ if not $authorColor }}
-        {{ $authorColor = $embedColor }}
-    {{ end }}
+        {{ if not $authorColor }}
+            {{ $authorColor = $embedColor }}
+        {{ end }}
 
-    {{ editMessage nil $hereMsgID (complexMessageEdit
-        "content" ""
-        "embed" (cembed
-            "title" $title
-            "description" $hereText
-            "color" $authorColor
-            "author" $author
-        )
-    ) }}
-    {{ editMessage $thereChannelID $thereMsgID (complexMessageEdit
-        "content" ""
-        "embed" (cembed
-            "title" $title
-            "description" $thereText
-            "color" $authorColor
-            "author" $author
-        )
-    ) }}
+        {{ editMessage nil $hereMsgID (complexMessageEdit
+            "content" ""
+            "embed" (cembed
+                "title" $title
+                "description" $hereText
+                "color" $authorColor
+                "author" $author
+            )
+        ) }}
+        {{ editMessage $thereChannelID $thereMsgID (complexMessageEdit
+            "content" ""
+            "embed" (cembed
+                "title" $title
+                "description" $thereText
+                "color" $authorColor
+                "author" $author
+            )
+        ) }}
+    {{ end }}
 
     {{ deleteTrigger $deleteTriggerDelay }}
 {{ end }}
