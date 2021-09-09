@@ -46,10 +46,10 @@
 
     {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
     {{ $staffCheck := hasRoleID $staffRoleID }}
-    {{ $thisChannelNSFW := (getChannel $triggerMsgObj.ChannelID).NSFW }}
+    {{ $thisChannelNSFW := (getChannelOrThread $triggerMsgObj.ChannelID).NSFW }}
     {{ $thatChannelNSFW := "" }}
-    {{ if getChannel $channelID }}
-        {{ $thatChannelNSFW = (getChannel $channelID).NSFW }}
+    {{ if getChannelOrThread $channelID }}
+        {{ $thatChannelNSFW = (getChannelOrThread $channelID).NSFW }}
     {{ end }}
     {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
 

@@ -19,7 +19,7 @@
     {{- /* look up the category name and child channels */ -}}
     {{- $categoryName := "❓ Uncategorized ❓" -}}
     {{- if ne 0 (toInt $categoryID) -}}
-      {{- $categoryChannel := getChannel $categoryID -}}
+      {{- $categoryChannel := getChannelOrThread $categoryID -}}
       {{- $categoryName = $categoryChannel.Name -}}
       {{- $categoryName = reReplace $leftDivider $categoryName "" -}}
       {{- $categoryName = reReplace $rightDivider $categoryName "" -}}
@@ -35,7 +35,7 @@
       {{- /* combine the category's channels as links and topics in one message (max 2000 characters) and send it */ -}}
       {{- $categoryEntry := "" -}}
       {{- range $i, $channelID := $categoryChannels -}}
-        {{- $channel := getChannel $channelID -}}
+        {{- $channel := getChannelOrThread $channelID -}}
         {{- $channelTopic := $channel.Topic -}}
         {{- if eq 0 $i -}}
             {{- $categoryEntry = joinStr "" $categoryEntry "<#" $channelID ">\n" $channelTopic -}}
