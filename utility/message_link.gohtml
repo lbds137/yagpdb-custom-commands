@@ -77,7 +77,7 @@
   {{ if $isMessageLink }}
     {{ $resultEmbed = $embed }}
   {{ else }}
-    {{ $attachmentLinks := "" }}
+    {{ $attachmentUrls := "" }}
     {{ $image := "" }}
     {{ $thumbnail := "" }}
 
@@ -92,18 +92,18 @@
 
     {{ $msgAuthor := $msg.Author }}
     {{ $user := userArg $msgAuthor.ID }}
-    {{ $usernameFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
+    {{ $authorFull := or $user.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
     {{ $authorColor := 0 }}
     {{ $msgAuthorMember := getMember $msgAuthor.ID }}
     {{ if and $msgAuthorMember (not $user.Bot) }}
       {{ if $msgAuthorMember.Nick }}
-        {{ $usernameFull = joinStr "" $msgAuthorMember.Nick " (" $msgAuthorMember.User.String ")" }}
+        {{ $authorFull = joinStr "" $msgAuthorMember.Nick " (" $msgAuthorMember.User.String ")" }}
       {{ end }}
-      {{ $position := 0 }}
+      {{ $pos := 0 }}
       {{ $roles := $msgAuthorMember.Roles }}
       {{- range .Guild.Roles -}}
-        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
-          {{- $position = .Position -}}
+        {{- if and (in $roles .ID) (.Color) (lt $pos .Position) -}}
+          {{- $pos = .Position -}}
           {{- $authorColor = .Color -}}
         {{- end -}}
       {{- end -}}
@@ -113,7 +113,7 @@
       {{ $userLink = joinStr "" "https://discord.com/users/" $msgAuthor.ID }}
     {{ end }}
     {{ $author := sdict
-      "name" $usernameFull "url" $userLink "icon_url" (or ($msgAuthor.AvatarURL "128") $defaultAvatar)
+      "name" $authorFull "url" $userLink "icon_url" (or ($msgAuthor.AvatarURL "128") $defaultAvatar)
     }}
 
     {{- /* linked message attachments */ -}}
@@ -125,9 +125,9 @@
 
       {{ range $i, $attachment := $msgAttachments }}
         {{ $link := joinStr "" "[" $attachment.URL "]" }}
-        {{ $attachmentLinks = joinStr "" $attachmentLinks $link }}
+        {{ $attachmentUrls = joinStr "" $attachmentUrls $link }}
         {{ if ne $i (sub (len $msgAttachments) 1) }}
-          {{ $attachmentLinks = joinStr "" $attachmentLinks "\n\n" }}
+          {{ $attachmentUrls = joinStr "" $attachmentUrls "\n\n" }}
         {{ end }}
       {{ end }}
     {{ end }}
@@ -176,8 +176,8 @@
     {{- /* fields */ -}}
 
     {{ $fields := cslice }}
-    {{ if $attachmentLinks }}
-      {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentLinks "inline" false) }}
+    {{ if $attachmentUrls }}
+      {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentUrls "inline" false) }}
     {{ end }}
     {{ if $embedAuthor }}
       {{ $fields = $fields.Append (sdict "name" "Embed Author" "value" $embedAuthor "inline" true) }}
@@ -211,25 +211,23 @@
 
     {{- /* footer */ -}}
 
-    {{ $gIconExtension := ".png" }}
+    {{ $gIconType := ".png" }}
     {{ if ge $guildPremiumTier 1 }}
-      {{ $gIconExtension = ".gif" }}
+      {{ $gIconType = ".gif" }}
     {{ end }}
-    {{ $gIcon := (joinStr ""
-      "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension)
-    }}
+    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconType) }}
     {{ $footerText := (joinStr "" "Author ID: " $msgAuthor.ID) }}
 
     {{- /* result embed color */ -}}
 
-    {{ if $authorColor }}
+    {{ if .ExecData.Color }}
+      {{ $resultEmbedColor = .ExecData.Color }}
+    {{ else if $authorColor }}
       {{ $resultEmbedColor = $authorColor }}
+    {{ else if $embedColor }}
+      {{ $resultEmbedColor = $embedColor }}
     {{ else }}
-      {{ if $embedColor }}
-        {{ $resultEmbedColor = $embedColor }}
-      {{ else }}
-        {{ $resultEmbedColor = $defaultEmbedColor }}
-      {{ end }}
+      {{ $resultEmbedColor = $defaultEmbedColor }}
     {{ end }}
 
     {{- /* result embed */ -}}
