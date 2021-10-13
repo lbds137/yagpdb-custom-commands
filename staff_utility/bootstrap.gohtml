@@ -40,7 +40,7 @@
 
 {{ dbSet 4 "Staff Role ID" $staffRoleID }}
 
-{{ execCC $embed_exec nil 0 (sdict
+{{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" "Bootstrap Execution Complete"
     "Description" "The bootstrapping process completed successfully! The default values that were set follow below."
     "Fields" (cslice

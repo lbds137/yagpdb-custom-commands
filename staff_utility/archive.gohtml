@@ -62,7 +62,7 @@
             {{ end }}
             {{ addMessageReactions $channelID $messageID $emoji }}
             {{ if $introductionArchiveChannelID }}
-                {{ execCC $message_link nil 0 (sdict
+                {{ execCC $message_link .Channel.ID 0 (sdict
                   "Message" .Message
                   "Color" $color
                   "ChannelID" $introductionArchiveChannelID
@@ -70,7 +70,7 @@
                 ) }}
             {{ end }}
         {{ else }}
-            {{ execCC $embed_exec nil 0 (sdict
+            {{ execCC $embed_exec .Channel.ID 0 (sdict
               "Title" "Invalid User Type"
               "Description" "⚠️ The user whose introduction you are trying to archive is neither an Adult nor a Minor!"
               "DeleteResponse" true
@@ -78,7 +78,7 @@
             ) }}
         {{ end }}
     {{ else }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
           "Title" "Invalid User"
           "Description" (joinStr ""
             "⚠️ The user whose introduction you are trying to archive is not currently in **" .Guild.Name "**!"
@@ -88,7 +88,7 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
       "Title" "Invalid Message Link"
       "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
       "DeleteResponse" true

@@ -47,6 +47,6 @@
     {{ $result = "⚠️ You did not provide a key to look up!" }}
 {{ end }}
 
-{{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $result "AuthorID" $authorID) }}
+{{ execCC $embed_exec .Channel.ID 0 (sdict "Title" $title "Description" $result "AuthorID" $authorID) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}

@@ -59,7 +59,7 @@
 
 {{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
 
-{{ execCC $embed_exec nil 0 (sdict
+{{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" $commandName
     "Description" $result
     "Fields" $fields

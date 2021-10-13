@@ -18,7 +18,7 @@
 {{ if not (reFind (joinStr "" $prefixRegex "agree\\z") $trigger) }}
     {{ $result := joinStr "" "⚠️ Please enter the correct command for agreeing to the rules: `" $prefix "agree`" }}
 
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid Agreement Command"
         "Description" $result
         "DeleteResponse" true

@@ -70,7 +70,7 @@
         }}
         {{ sendMessage $ticketChannelID $reasonText }}
     {{ else }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
             "Title" "Invalid User"
             "Description" joinStr "" "⚠️ The user you are trying to screen is not currently in **" .Guild.Name "**!"
             "DeleteResponse" true
@@ -78,7 +78,7 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true

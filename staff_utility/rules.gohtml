@@ -17,7 +17,7 @@
         {{ $key := joinStr "" "Rule #" $n }}
         {{ $result := (dbGet $rulesCategoryID $key).Value }}
 
-        {{ execCC $embed_exec nil 0 (sdict "Title" $key "Description" $result) }}
+        {{ execCC $embed_exec .Channel.ID 0 (sdict "Title" $key "Description" $result) }}
         {{ sleep 1 }}
     {{ end }}
 {{ end }}

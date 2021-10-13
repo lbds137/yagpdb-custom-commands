@@ -22,7 +22,7 @@
     {{- if and (gt $i 0) (eq 0 (toInt (mod $i $maxFields))) -}}
         {{- $iHuman := add 1 $i -}}
         {{- $lastBoundary = $iHuman -}}
-        {{- execCC $embed_exec nil 0 (sdict
+        {{- execCC $embed_exec .Channel.ID 0 (sdict
             "Title" (joinStr "" $title " (" (sub $iHuman $maxFields) "-" $i ")")
             "Fields" $entries
         ) -}}
@@ -44,7 +44,7 @@
 {{- end -}}
 
 {{ $iEndHuman := add 1 $iEnd }}
-{{ execCC $embed_exec nil 0 (sdict
+{{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" (joinStr "" $title " (" $lastBoundary "-" $iEndHuman ")")
     "Fields" $entries
 ) }}

@@ -90,13 +90,13 @@
       "inline" false
     ) }}
   {{- end -}}
-  {{ execCC $embed_exec nil 0 (sdict
+  {{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" (joinStr "" "Contrast Ratios for `" $colorArg "`")
     "Color" $colorArgVal
     "Fields" $fields
   ) }}
 {{ else }}
-  {{ execCC $embed_exec nil 0 (sdict
+  {{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" "Invalid Color"
     "Description" "⚠️ You must enter a color in the required format (e.g. `#ff0000` for red)!"
     "DeleteResponse" true

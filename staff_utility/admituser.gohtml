@@ -79,7 +79,7 @@
             {{ deleteAllMessageReactions $channelID $messageID }}
             {{ addMessageReactions $channelID $messageID $emoji }}
             {{ if $introductionArchiveChannelID }}
-                {{ execCC $message_link nil 0 (sdict
+                {{ execCC $message_link .Channel.ID 0 (sdict
                     "Message" .Message
                     "ChannelID" $introductionArchiveChannelID
                     "DisableQuote" true
@@ -112,14 +112,14 @@
                 "**" $staffUser.String "** (ID: " $staffUser.ID ")"
                 $userTypeString "!"
             }}
-            {{ execCC $embed_exec nil 0 (sdict
+            {{ execCC $embed_exec .Channel.ID 0 (sdict
                 "Title" $title
                 "Description" $description
                 "ThumbnailURL" (or $userAvatar $defaultAvatar)
                 "Channel" $admissionLogChannelID
             ) }}
         {{ else }}
-            {{ execCC $embed_exec nil 0 (sdict
+            {{ execCC $embed_exec .Channel.ID 0 (sdict
                 "Title" "Invalid User Type"
                 "Description" "⚠️ You must enter either `minor` or `adult` for the user type parameter!"
                 "DeleteResponse" true
@@ -127,7 +127,7 @@
             ) }}
         {{ end }}
     {{ else }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
             "Title" "Invalid User"
             "Description" joinStr "" "⚠️ The user you are trying to admit is not currently in **" .Guild.Name "**!"
             "DeleteResponse" true
@@ -135,7 +135,7 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true

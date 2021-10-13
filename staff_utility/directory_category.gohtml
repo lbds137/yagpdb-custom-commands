@@ -30,7 +30,7 @@
     {{- if eq (printf "%T" $categoryChannels) $arrayType -}}
       {{- /* send the category name as an embed message to visually divide the categories */ -}}
       {{- $embed := cembed "title" $categoryName "color" $color -}}
-      {{- sendMessage nil $embed -}}
+      {{- sendMessage .Channel.ID $embed -}}
 
       {{- /* combine the category's channels as links and topics in one message (max 2000 characters) and send it */ -}}
       {{- $categoryEntry := "" -}}
@@ -43,7 +43,7 @@
             {{- $categoryEntry = joinStr "" $categoryEntry "\n\n<#" $channelID ">\n" $channelTopic -}}
         {{- end -}}
       {{- end -}}
-      {{- sendMessage nil $categoryEntry -}}
+      {{- sendMessage .Channel.ID $categoryEntry -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}

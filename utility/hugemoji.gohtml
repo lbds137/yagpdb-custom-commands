@@ -79,7 +79,7 @@
         {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) }}
     {{ end }}
 
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "AuthorID" .User.ID
         "Title" "Emoji Expander"
         "ImageURL" $emojiUrl

@@ -11,7 +11,7 @@
 
 {{ dbDel $globalCategoryID "Last Bump" }}
 
-{{ $messageID := sendMessageRetID nil "`Last Bump` reset!" }}
+{{ $messageID := sendMessageRetID .Channel.ID "`Last Bump` reset!" }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
-{{ deleteMessage nil $messageID $deleteResponseDelay }}
+{{ deleteMessage .Channel.ID $messageID $deleteResponseDelay }}

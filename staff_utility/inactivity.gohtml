@@ -55,12 +55,12 @@
         {{ $result = reReplace "\\#\\{date\\}" $result $nextPruneDate }}
         {{ $result = reReplace "\\#\\{threshold\\}" $result $pruneThreshold }}
 
-        {{ execCC $embed_exec nil 0 (sdict "Title" $title "Description" $result) }}
+        {{ execCC $embed_exec .Channel.ID 0 (sdict "Title" $title "Description" $result) }}
 
         {{ mentionRoleID $roleID }}
     {{ else if $isDate }}
         {{ if $param }}
-            {{ execCC $db nil 0 (sdict
+            {{ execCC $db .Channel.ID 0 (sdict
                 "UserID" $adminCategoryID
                 "Operation" "set"
                 "Key" "Next Prune Date"
@@ -68,7 +68,7 @@
                 "Title" "Inactivity Prune Date Editing"
             ) }}
         {{ else }}
-            {{ execCC $embed_exec nil 0 (sdict
+            {{ execCC $embed_exec .Channel.ID 0 (sdict
                 "Title" "Missing Date Parameter"
                 "Description" "⚠️ You must enter a non-empty date parameter!"
                 "DeleteResponse" true
@@ -102,14 +102,14 @@
             {{ end }}
 
             {{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
-            {{ execCC $embed_exec nil 0 (sdict
+            {{ execCC $embed_exec .Channel.ID 0 (sdict
                 "Title" "Inactivity Prune"
                 "Description" $result
                 "Fields" $fields
                 "ThumbnailURL" (or $userAvatar $defaultAvatar)
             ) }}
         {{ else }}
-            {{ execCC $embed_exec nil 0 (sdict
+            {{ execCC $embed_exec .Channel.ID 0 (sdict
                 "Title" "Invalid User Parameter"
                 "Description" "⚠️ You must enter a valid user parameter!"
                 "DeleteResponse" true
@@ -118,7 +118,7 @@
         {{ end }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid Action Specified"
         "Description" "⚠️ You must enter a valid action parameter!"
         "DeleteResponse" true
