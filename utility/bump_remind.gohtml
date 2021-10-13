@@ -17,18 +17,18 @@
 {{ if $lastBumpTime }}
     {{ $minutesSinceBump := toInt ($now.Sub $lastBumpTime).Minutes }}
     {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
-        {{ sendMessage nil $reminderMessage }}
+        {{ sendMessage .Channel.ID $reminderMessage }}
         {{ if $bumpRoleID }}
             {{ mentionRoleID $bumpRoleID }}
         {{ else }}
-            {{ sendMessage nil (userArg .Guild.OwnerID).Mention }}
+            {{ sendMessage .Channel.ID (userArg .Guild.OwnerID).Mention }}
         {{ end }}
     {{ end }}
 {{ else }}
-    {{ sendMessage nil $reminderMessage }}
+    {{ sendMessage .Channel.ID $reminderMessage }}
     {{ if $bumpRoleID }}
         {{ mentionRoleID $bumpRoleID }}
     {{ else }}
-        {{ sendMessage nil (userArg .Guild.OwnerID).Mention }}
+        {{ sendMessage .Channel.ID (userArg .Guild.OwnerID).Mention }}
     {{ end }}
 {{ end }}

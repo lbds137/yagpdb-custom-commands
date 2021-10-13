@@ -29,7 +29,7 @@
     {{ $operation = "del" }}
 {{ end }}
 
-{{ execCC $db nil 0 (sdict
+{{ execCC $db .Channel.ID 0 (sdict
     "UserID" $knowledgeCategoryID
     "Operation" $operation
     "Key" $key

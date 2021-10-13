@@ -15,7 +15,7 @@
 
 {{ $key := $args.Get 0 }}
 {{ if $key }}
-    {{ execCC $dbprettyget nil 0 (sdict "UserID" $knowledgeCategoryID "Key" (title $key)) }}
+    {{ execCC $dbprettyget .Channel.ID 0 (sdict "UserID" $knowledgeCategoryID "Key" (title $key)) }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict "Title" "Knowledge Base Lookup Failed" "Description" "⚠️ You did not provide a topic to look up!") }}
+    {{ execCC $embed_exec .Channel.ID 0 (sdict "Title" "Knowledge Base Lookup Failed" "Description" "⚠️ You did not provide a topic to look up!") }}
 {{ end }}

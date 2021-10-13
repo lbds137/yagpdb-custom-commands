@@ -21,7 +21,7 @@
 {{ if and $thereChannel $selfLinkCheck }}
     {{ $thereMsgID := sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
     {{ if $thereMsgID }}
-        {{ $hereMsgID := sendMessageRetID nil (complexMessage "content" "Loading...") }}
+        {{ $hereMsgID := sendMessageRetID .Channel.ID (complexMessage "content" "Loading...") }}
 
         {{ $cLinkBaseUrl := "https://discord.com/channels" }}
         {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $thereChannelID "/" $thereMsgID }}
@@ -70,7 +70,7 @@
             {{ $authorColor = $embedColor }}
         {{ end }}
 
-        {{ editMessage nil $hereMsgID (complexMessageEdit
+        {{ editMessage .Channel.ID $hereMsgID (complexMessageEdit
             "content" ""
             "embed" (cembed
                 "title" $title

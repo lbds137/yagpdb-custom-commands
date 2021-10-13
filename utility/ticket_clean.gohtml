@@ -24,7 +24,7 @@
         "submitting a longer reason will cause the ticket submission to fail.*"
     }}
 
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid Ticket Command"
         "Description" $result
         "DeleteResponse" true

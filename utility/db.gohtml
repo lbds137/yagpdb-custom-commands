@@ -118,7 +118,7 @@
     {{ $title = joinStr "" "Database Operation: `" $operation "`" }}
 {{ end }}
 
-{{ execCC $embed_exec nil 0 (sdict
+{{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" $title
     "Description" (joinStr "" "```\n" (or $value $nil) "\n```")
     "AuthorID" $userID

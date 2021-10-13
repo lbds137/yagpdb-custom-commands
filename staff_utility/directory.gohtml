@@ -43,7 +43,7 @@
             {{- /* if the current group is at its channel limit, output its channels and move on to the next one */ -}}
             {{- if gt $counter $channelLimit -}}
                 {{- /* run the helper command for the current group to output its channels */ -}}
-                {{ execCC $directory_category nil 0 (sdict
+                {{ execCC $directory_category .Channel.ID 0 (sdict
                     "DirectoryCategoryID" $directoryCategoryID
                     "CategoryGroup" $currentGroup
                     "CategoryGroupChannels" $currentGroupChannels
@@ -57,13 +57,13 @@
             {{- end -}}
         {{- end -}}
     {{ else }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
             "Title" "Directory Lookup Failed"
             "Description" "⚠️ The directory categories database entry must be an array!"
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Directory Lookup Failed"
         "Description" "⚠️ You must initialize the directory categories in the database!"
     ) }}

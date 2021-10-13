@@ -46,14 +46,14 @@
             "has been granted the <@&" (toString $adultRoleID) "> role in **" .Guild.Name "** by "
             "**" $staffUser.String "** (ID: " $staffUser.ID ")!"
         }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
             "Title" $title
             "Description" $description
             "ThumbnailURL" (or $userAvatar $defaultAvatar)
             "Channel" $modLogChannelID
         ) }}
     {{ else }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid User Type"
             "Description" (joinStr ""
                 "⚠️ The user you are trying to modify is not currently a <@&" (toString $minorRoleID) ">!"
@@ -63,7 +63,7 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid User"
         "Description" (joinStr "" "⚠️ The user you are trying to modify is not currently in **" .Guild.Name "**!")
         "DeleteResponse" true

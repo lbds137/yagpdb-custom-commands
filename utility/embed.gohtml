@@ -50,7 +50,7 @@
     {{ end }}
 {{ end }}
 
-{{ execCC $embed_exec nil 0 (sdict
+{{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" ($args.Get 0)
     "Description" ($args.Get 1)
     "ImageURL" $imageURL

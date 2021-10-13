@@ -47,7 +47,7 @@
     {{ $guildMember := getMember $userID }}
     {{ if $guildMember }}
         {{ if $rejectionLogChannelID }}
-            {{ execCC $message_link nil 0 (sdict
+            {{ execCC $message_link .Channel.ID 0 (sdict
                 "Message" .Message
                 "ChannelID" $rejectionLogChannelID
                 "DisableQuote" true
@@ -67,14 +67,14 @@
             "**" $staffUser.String "** (ID: " $staffUser.ID ") "
             "for the following reason: ```\n" $reasonArg "```"
         }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
             "Title" $title
             "Description" $description
             "ThumbnailURL" (or $userAvatar $defaultAvatar)
             "Channel" $rejectionLogChannelID
         ) }}
     {{ else }}
-        {{ execCC $embed_exec nil 0 (sdict
+        {{ execCC $embed_exec .Channel.ID 0 (sdict
             "Title" "Invalid User"
             "Description" (joinStr "" "⚠️ The user you are trying to reject is not currently in **" .Guild.Name "**!")
             "DeleteResponse" true
@@ -82,7 +82,7 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec nil 0 (sdict
+    {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true

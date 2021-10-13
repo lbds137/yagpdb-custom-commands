@@ -92,7 +92,7 @@
     {{- $textOutput = joinStr "" (slice $text 0 $embedFieldLimit) "…" -}}
 {{- end -}}
 
-{{- execCC $embed_exec nil 0 (sdict
+{{- execCC $embed_exec .Channel.ID 0 (sdict
     "AuthorID" .User.ID
     "Title" "Gematria Calculator"
     "Fields" (cslice
