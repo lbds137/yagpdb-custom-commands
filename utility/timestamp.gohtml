@@ -1,0 +1,44 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `timestamp`
+*/ -}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+
+{{- /* regex */ -}}
+{{ $snowflakeRegex := "\\d{16,}" }}
+{{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
+
+{{- /* default value */ -}}
+{{ $entityID := "" }}
+
+{{ if gt (len .CmdArgs) 0 }}
+    {{ $entityIDArg := index .CmdArgs 0 }}
+    {{ if reFind $entityIDRegex $entityIDArg }}
+        {{ $entityID = reFind $entityIDRegex $entityIDArg }}
+    {{ else }}
+        {{ $entityID = .User.ID }}
+    {{ end }}
+{{ else }}
+    {{ $entityID = .User.ID }}
+{{ end }}
+
+{{ $fields := cslice }}
+{{ $fields = $fields.Append (sdict "name" "ID" "value" (toString $entityID) "inline" false) }}
+{{ $timestamp :=
+    div $entityID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
+}}
+{{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $timestamp) "inline" false) }}
+
+{{ execCC $embed_exec .Channel.ID 0 (sdict
+    "AuthorID" .User.ID
+    "Title" "Timestamp Parser"
+    "Fields" $fields
+) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
