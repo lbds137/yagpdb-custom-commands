@@ -33,7 +33,7 @@
     {{- end -}}
     {{ execCC $embed_exec .Channel.ID 0 (sdict
       "AuthorID" .User.ID
-      "Title" (joinStr "" "Dice Roller: " $diceArg)
+      "Title" (joinStr "" "Dice Roller: " $diceArg " 🎲")
       "Description" $randRolls
       "Fields" (cslice
         (sdict "name" "Total" "value" (toString $totalValue) "inline" false)
