@@ -98,7 +98,7 @@
 {{ else }}
     {{ execCC $embed_exec .Channel.ID 0 (sdict
         "Title" "Invalid Argument"
-        "Description" joinStr "" "⚠️ The argument provided does not match the required format. Please try again."
+        "Description" (joinStr "" "⚠️ The argument provided does not match the required format. Please try again.")
         "DeleteResponse" true
         "DeleteDelay" $deleteResponseDelay
     ) }}
