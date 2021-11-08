@@ -95,8 +95,8 @@
 {{- execCC $embed_exec .Channel.ID 0 (sdict
     "AuthorID" .User.ID
     "Title" "Gematria Calculator"
+    "Description" $textOutput
     "Fields" (cslice
-        (sdict "name" "Text" "value" $textOutput "inline" false)
         (sdict "name" "Gematria" "value" (toString $intVal) "inline" false)
     )
 ) -}}
