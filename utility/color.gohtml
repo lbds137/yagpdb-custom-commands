@@ -1,0 +1,36 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `color`
+  Dependencies: `hex_to_int`
+*/ -}}
+
+{{ $hexDict := sdict
+    "0" "0" "1" "1" "2" "2" "3" "3" "4" "4" "5" "5" "6" "6" "7" "7" "8" "8" "9" "9"
+    "10" "a" "11" "b" "12" "c" "13" "d" "14" "e" "15" "f"
+}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+{{ $hex_to_int := toInt (dbGet $commandsCategoryID "hex_to_int").Value }}
+
+{{ $randHex := "" }}
+{{- range $i := seq 0 3 -}}
+    {{- $curGroup := "" -}}
+    {{- range $j := seq 0 2 -}}
+        {{- $randVal := toString (randInt 0 16) -}}
+        {{- $randDigit := index $hexDict $randVal -}}
+        {{- $curGroup = joinStr "" $curGroup $randDigit -}}
+    {{- end -}}
+    {{- $randHex = joinStr "" $randHex $curGroup -}}
+{{- end -}}
+{{ $randHex = joinStr "" "#" $randHex }}
+{{ execCC $hex_to_int .Channel.ID 0 (sdict
+    "Hex" $randHex
+    "Title" "Color Generator"
+) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
