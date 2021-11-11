@@ -2,7 +2,13 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Regex`
   Trigger: `\A#[\d|A-F]{6}\z`
+  Dependencies: `embed_exec`
 */ -}}
+
+{{ $hexDict := sdict
+    "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
+    "a" 10 "b" 11 "c" 12 "d" 13 "e" 14 "f" 15
+}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
@@ -10,13 +16,8 @@
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 
-{{ $hexDict := sdict
-    "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
-    "a" 10 "b" 11 "c" 12 "d" 13 "e" 14 "f" 15
-}}
-
-{{ $trigger := lower .Message.Content }}
-{{ $hexStr := split (slice $trigger 1) "" }}
+{{ $trigger := lower (or .ExecData.Hex .Message.Content) }}
+{{ $hexStr := split (reReplace "#" $trigger "") "" }}
 
 {{ $intVal := 0 }}
 {{ range $i, $iRevNeg := seq -5 1 }}
@@ -26,12 +27,13 @@
     {{ $intVal = add $intVal (mult (pow 16 $i) $curValInt) }}
 {{ end }}
 
-{{ $result := (joinStr "" "The `int` value of `" $trigger "` is `" $intVal "`.") }}
-
 {{ execCC $embed_exec .Channel.ID 0 (sdict
     "AuthorID" .Message.Author.ID
-    "Title" "Color Conversion: `hex` to `int`"
-    "Description" $result
+    "Title" (or .ExecData.Title "Color Inspector")
+    "Description" (joinStr "" "`" $trigger "`")
+    "Fields" (cslice
+        (sdict "name" "Integer Value" "value" (joinStr "" "`" $intVal "`") "inline" false)
+    )
     "Color" $intVal
 ) }}
 
