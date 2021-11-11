@@ -48,7 +48,7 @@
         {{- range $j := seq 0 $numLetters -}}
             {{- $randVal := toString (randInt 0 22) -}}
             {{- $randLetter := index $hebrewDict $randVal -}}
-            {{- if eq $j (sub $numLetters 1) -}}
+            {{- if and (gt $numLetters 1) (eq $j (sub $numLetters 1)) -}}
                 {{- $randLetter = index $sofitDict $randLetter -}}
             {{- end -}}
             {{- $curGroup = joinStr "" $curGroup $randLetter -}}
@@ -76,7 +76,7 @@
     {{- range $i := seq 0 $numLetters -}}
         {{- $randVal := toString (randInt 0 22) -}}
         {{- $randLetter := index $hebrewDict $randVal -}}
-        {{- if eq $i (sub $numLetters 1) -}}
+        {{- if and (gt $numLetters 1) (eq $i (sub $numLetters 1)) -}}
             {{- $randLetter = index $sofitDict $randLetter -}}
         {{- end -}}
         {{- $randString = joinStr "" $randString $randLetter -}}
