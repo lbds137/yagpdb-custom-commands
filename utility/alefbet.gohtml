@@ -25,10 +25,12 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $arg := $args.Get 0 }}
 {{ $trimmedArg := reReplace "\\A[[:space:]]+" $arg "" }}
@@ -62,8 +64,9 @@
         {{- $gematriaString = joinStr " " $gematriaString $intVal -}}
         {{- $totalGematria = add $totalGematria $intVal -}}
     {{- end -}}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
+        "Channel" .Channel.ID
         "Title" "Hebrew Generator"
         "Description" $randString
         "Fields" (cslice
@@ -87,8 +90,9 @@
         {{- $intVal = add $intVal $curVal -}}
     {{- end -}}
     {{- $gematriaString = joinStr " " $gematriaString $intVal -}}
-    {{- execCC $embed_exec .Channel.ID 0 (sdict
+    {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
+        "Channel" .Channel.ID
         "Title" "Hebrew Generator"
         "Description" $randString
         "Fields" (cslice
@@ -96,7 +100,8 @@
         )
     ) -}}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
         "Title" "Invalid Argument"
         "Description" (joinStr "" "⚠️ The argument provided does not match the required format. Please try again.")
         "DeleteResponse" true

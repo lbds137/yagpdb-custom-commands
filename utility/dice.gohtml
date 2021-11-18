@@ -10,10 +10,12 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $arg := $args.Get 0 }}
 {{ $trimmedArg := reReplace "\\A[[:space:]]+" $arg "" }}
@@ -31,20 +33,22 @@
         {{- $randRolls = joinStr " " $randRolls $randRoll -}}
         {{- $totalValue = add $totalValue $randRoll -}}
     {{- end -}}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
-      "AuthorID" .User.ID
-      "Title" (joinStr "" "Dice Roller: " $diceArg " 🎲")
-      "Description" $randRolls
-      "Fields" (cslice
-        (sdict "name" "Total" "value" (toString $totalValue) "inline" false)
-      )
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "AuthorID" .User.ID
+        "ChannelID" .Channel.ID
+        "Title" (joinStr "" "Dice Roller: " $diceArg " 🎲")
+        "Description" $randRolls
+        "Fields" (cslice
+          (sdict "name" "Total" "value" (toString $totalValue) "inline" false)
+        )
     ) }}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
-      "Title" "Invalid Argument"
-      "Description" (joinStr "" "⚠️ The argument provided does not match the required format. Please try again.")
-      "DeleteResponse" true
-      "DeleteDelay" $deleteResponseDelay
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Invalid Argument"
+        "Description" (joinStr "" "⚠️ The argument provided does not match the required format. Please try again.")
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
     ) }}
 {{ end }}
 

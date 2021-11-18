@@ -12,10 +12,12 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $hex_to_int := toInt (dbGet $commandsCategoryID "hex_to_int").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $randHex := "" }}
 {{- range $i := seq 0 3 -}}
@@ -28,7 +30,8 @@
     {{- $randHex = joinStr "" $randHex $curGroup -}}
 {{- end -}}
 {{ $randHex = joinStr "" "#" $randHex }}
-{{ execCC $hex_to_int .Channel.ID 0 (sdict
+{{ execCC $hex_to_int $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
     "Hex" $randHex
     "Title" "Color Generator"
 ) }}

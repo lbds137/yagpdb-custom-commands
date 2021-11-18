@@ -8,10 +8,12 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $validSizes := cslice "32" "64" "128" "256" "512" "1024" }}
 {{ $modActions := cslice "Muted" "Kicked" "Banned" "Unmuted" "Unbanned" }}
@@ -179,8 +181,9 @@
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) }}
 {{ end }}
 
-{{ execCC $embed_exec .Channel.ID 0 (sdict
+{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "AuthorID" .User.ID
+    "ChannelID" .Channel.ID
     "Title" "Avatar Expander"
     "ImageURL" (or $avatarURL $defaultAvatarURL)
     "Fields" $fields
