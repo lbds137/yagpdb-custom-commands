@@ -49,7 +49,8 @@
     "thumbnail" (sdict "url" .ExecData.ThumbnailURL)
 }}
 
-{{ $messageID := sendMessageRetID .ExecData.Channel $embed }}
+{{ $targetChannel := or .ExecData.ChannelID .Channel.ID }}
+{{ $messageID := sendMessageRetID $targetChannel $embed }}
 {{ if .ExecData.DeleteResponse }}
-    {{ deleteMessage .ExecData.Channel $messageID (or .ExecData.DeleteDelay $deleteResponseDelay) }}
+    {{ deleteMessage $targetChannel $messageID (or .ExecData.DeleteDelay $deleteResponseDelay) }}
 {{ end }}

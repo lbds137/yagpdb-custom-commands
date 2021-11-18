@@ -8,14 +8,25 @@
     (carg "string" "key")
 }}
 
-{{ $knowledgeCategoryID := toInt (dbGet 0 "Knowledge").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $knowledgeCategoryID := toInt (dbGet 0 "Knowledge").Value }}
+
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $dbprettyget := toInt (dbGet $commandsCategoryID "dbprettyget").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $key := $args.Get 0 }}
 {{ if $key }}
-    {{ execCC $dbprettyget .Channel.ID 0 (sdict "UserID" $knowledgeCategoryID "Key" (title $key)) }}
+    {{ execCC $dbprettyget $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "UserID" $knowledgeCategoryID
+        "Key" (title $key)
+    ) }}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict "Title" "Knowledge Base Lookup Failed" "Description" "⚠️ You did not provide a topic to look up!") }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Knowledge Base Lookup Failed"
+        "Description" "⚠️ You did not provide a topic to look up!"
+    ) }}
 {{ end }}

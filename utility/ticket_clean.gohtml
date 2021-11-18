@@ -6,10 +6,12 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
 {{ $prefixRegex := joinStr "" "\\A\\Q" $prefix "\\E" }}
@@ -24,7 +26,8 @@
         "submitting a longer reason will cause the ticket submission to fail.*"
     }}
 
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
         "Title" "Invalid Ticket Command"
         "Description" $result
         "DeleteResponse" true

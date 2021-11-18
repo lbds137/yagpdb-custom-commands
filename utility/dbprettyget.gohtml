@@ -6,9 +6,11 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $key := "" }}
 {{ $userID := .User.ID }}
@@ -47,6 +49,11 @@
     {{ $result = "⚠️ You did not provide a key to look up!" }}
 {{ end }}
 
-{{ execCC $embed_exec .Channel.ID 0 (sdict "Title" $title "Description" $result "AuthorID" $authorID) }}
+{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" (or .ExecData.ChannelID .Channel.ID)
+    "Title" $title
+    "Description" $result
+    "AuthorID" $authorID
+) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
