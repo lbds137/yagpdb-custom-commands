@@ -2,6 +2,7 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `alefbet`
+  Dependencies: `embed_exec`, `gematria`
 */ -}}
 
 {{ $hebrewDict := sdict
@@ -11,12 +12,6 @@
 {{ $sofitDict := sdict
     "א" "א" "ב" "ב" "ג" "ג" "ד" "ד" "ה" "ה" "ו" "ו" "ז" "ז" "ח" "ח" "ט" "ט" "י" "י" "כ" "ך"
     "ל" "ל" "מ" "ם" "נ" "ן" "ס" "ס" "ע" "ע" "פ" "ף" "צ" "ץ" "ק" "ק" "ר" "ר" "ש" "ש" "ת" "ת"
-}}
-{{ $gematriaDict := sdict
-    "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
-    "א" 1 "ב" 2 "ג" 3 "ד" 4 "ה" 5 "ו" 6 "ז" 7 "ח" 8 "ט" 9
-    "י" 10 "כ" 20 "ל" 30 "מ" 40 "נ" 50 "ס" 60 "ע" 70 "פ" 80 "צ" 90
-    "ק" 100 "ר" 200 "ש" 300 "ת" 400 "ך" 20 "ם" 40 "ן" 50 "ף" 80 "ץ" 90
 }}
 
 {{ $args := parseArgs 1 "Usage: [number of letters] OR [number of groups]x[number of letters per group]"
@@ -30,6 +25,7 @@
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $gematria := toInt (dbGet $commandsCategoryID "gematria").Value }}
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $arg := $args.Get 0 }}
@@ -56,23 +52,13 @@
             {{- $curGroup = joinStr "" $curGroup $randLetter -}}
         {{- end -}}
         {{- $randString = joinStr " " $randString $curGroup -}}
-        {{- $intVal := 0 -}}
-        {{- range $k, $char := split $curGroup "" -}}
-            {{- $curVal := index $gematriaDict $char -}}
-            {{- $intVal = add $intVal $curVal -}}
-        {{- end -}}
-        {{- $gematriaString = joinStr " " $gematriaString $intVal -}}
-        {{- $totalGematria = add $totalGematria $intVal -}}
     {{- end -}}
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+
+    {{ execCC $gematria $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
-        "Channel" .Channel.ID
+        "ChannelID" .Channel.ID
         "Title" "Hebrew Generator"
         "Description" $randString
-        "Fields" (cslice
-            (sdict "name" "Gematria" "value" $gematriaString "inline" false)
-            (sdict "name" "Total Gematria" "value" (toString $totalGematria) "inline" false)
-        )
     ) }}
 {{ else if $singleModeArg }}
     {{ $numLetters := toInt $singleModeArg }}
@@ -84,20 +70,12 @@
         {{- end -}}
         {{- $randString = joinStr "" $randString $randLetter -}}
     {{- end -}}
-    {{- $intVal := 0 -}}
-    {{- range $i, $char := split $randString "" -}}
-        {{- $curVal := index $gematriaDict $char -}}
-        {{- $intVal = add $intVal $curVal -}}
-    {{- end -}}
-    {{- $gematriaString = joinStr " " $gematriaString $intVal -}}
-    {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
+
+    {{- execCC $gematria $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
-        "Channel" .Channel.ID
+        "ChannelID" .Channel.ID
         "Title" "Hebrew Generator"
         "Description" $randString
-        "Fields" (cslice
-            (sdict "name" "Gematria" "value" $gematriaString "inline" false)
-        )
     ) -}}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
