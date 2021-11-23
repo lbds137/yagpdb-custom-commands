@@ -116,7 +116,7 @@
                 "Title" $title
                 "Description" $description
                 "ThumbnailURL" (or $userAvatar $defaultAvatar)
-                "Channel" $admissionLogChannelID
+                "ChannelID" $admissionLogChannelID
             ) }}
         {{ else }}
             {{ execCC $embed_exec .Channel.ID 0 (sdict

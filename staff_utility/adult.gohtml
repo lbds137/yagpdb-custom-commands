@@ -50,7 +50,7 @@
             "Title" $title
             "Description" $description
             "ThumbnailURL" (or $userAvatar $defaultAvatar)
-            "Channel" $modLogChannelID
+            "ChannelID" $modLogChannelID
         ) }}
     {{ else }}
         {{ execCC $embed_exec .Channel.ID 0 (sdict
