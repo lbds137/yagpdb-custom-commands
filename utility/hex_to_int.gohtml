@@ -31,7 +31,7 @@
 
 {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "AuthorID" .Message.Author.ID
-    "ChannelID" (or .ExecData.Channel .Channel.ID)
+    "ChannelID" (or .ExecData.ChannelID .Channel.ID)
     "Title" (or .ExecData.Title "Color Inspector")
     "Description" (joinStr "" "`" $trigger "`")
     "Fields" (cslice
