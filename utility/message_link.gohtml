@@ -256,7 +256,7 @@
   {{ else if not .ExecData.DisableAuthor }}
     {{ $complexMsgContent = joinStr "" "> 🔗 **" $triggerAuthorFull "** linked a message:" }}
   {{ end }}
-  {{ sendMessage .ExecData.ChannelID (complexMessage "content" $complexMsgContent "embed" $resultEmbed) }}
+  {{ sendMessage (or .ExecData.ChannelID .Channel.ID) (complexMessage "content" $complexMsgContent "embed" $resultEmbed) }}
   {{ if not .ExecData.KeepTrigger }}
     {{ deleteTrigger $deleteTriggerDelay }}
   {{ end }}
