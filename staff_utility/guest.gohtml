@@ -10,13 +10,14 @@
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $hoursCutoff := (toInt (dbGet $globalCategoryID "Guest Grace Period Hours").Value) }}
 {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-
 {{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $actionTaken := "" }}
 {{ $reason := "" }}
@@ -60,7 +61,8 @@
 
 {{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
 
-{{ execCC $embed_exec .Channel.ID 0 (sdict
+{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
     "Title" $commandName
     "Description" $result
     "Fields" $fields
