@@ -24,6 +24,7 @@
 
 {{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
 {{ $ticketSubmissionChannelID := toInt (dbGet $channelsCategoryID "Ticket Submission Channel ID").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 
@@ -71,7 +72,8 @@
         }}
         {{ sendMessage $ticketChannelID $reasonText }}
     {{ else }}
-        {{ execCC $embed_exec .Channel.ID 0 (sdict
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
             "Title" "Invalid User"
             "Description" joinStr "" "⚠️ The user you are trying to screen is not currently in **" .Guild.Name "**!"
             "DeleteResponse" true
@@ -79,7 +81,8 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true

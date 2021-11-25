@@ -32,6 +32,7 @@
 {{ $welcomeChannelID := toInt (dbGet $channelsCategoryID "Welcome Channel ID").Value }}
 {{ $roleAssignmentChannelID := toInt (dbGet $channelsCategoryID "Role Assignment Channel ID").Value }}
 {{ $admissionLogChannelID := toInt (dbGet $channelsCategoryID "Admission Log Channel ID").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 
@@ -80,7 +81,8 @@
             {{ deleteAllMessageReactions $channelID $messageID }}
             {{ addMessageReactions $channelID $messageID $emoji }}
             {{ if $introductionArchiveChannelID }}
-                {{ execCC $message_link .Channel.ID 0 (sdict
+                {{ execCC $message_link $yagpdbChannelID 0 (sdict
+                    "ChannelID" .Channel.ID
                     "Message" .Message
                     "ChannelID" $introductionArchiveChannelID
                     "DisableQuote" true
@@ -113,14 +115,15 @@
                 "**" $staffUser.String "** (ID: " $staffUser.ID ")"
                 $userTypeString "!"
             }}
-            {{ execCC $embed_exec .Channel.ID 0 (sdict
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" $admissionLogChannelID
                 "Title" $title
                 "Description" $description
                 "ThumbnailURL" (or $userAvatar $defaultAvatar)
-                "ChannelID" $admissionLogChannelID
             ) }}
         {{ else }}
-            {{ execCC $embed_exec .Channel.ID 0 (sdict
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
                 "Title" "Invalid User Type"
                 "Description" "⚠️ You must enter either `minor` or `adult` for the user type parameter!"
                 "DeleteResponse" true
@@ -128,7 +131,8 @@
             ) }}
         {{ end }}
     {{ else }}
-        {{ execCC $embed_exec .Channel.ID 0 (sdict
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
             "Title" "Invalid User"
             "Description" joinStr "" "⚠️ The user you are trying to admit is not currently in **" .Guild.Name "**!"
             "DeleteResponse" true
@@ -136,7 +140,8 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true

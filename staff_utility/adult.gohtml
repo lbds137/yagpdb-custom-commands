@@ -28,6 +28,7 @@
 {{ $adultRoleID := toInt (dbGet $rolesCategoryID "Adult Role ID").Value }}
 
 {{ $modLogChannelID := toInt (dbGet $channelsCategoryID "Mod Log Channel ID").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $guildMember := getMember $userID }}
 {{ if $guildMember }}
@@ -47,15 +48,16 @@
             "has been granted the <@&" (toString $adultRoleID) "> role in **" .Guild.Name "** by "
             "**" $staffUser.String "** (ID: " $staffUser.ID ")!"
         }}
-        {{ execCC $embed_exec .Channel.ID 0 (sdict
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" $modLogChannelID
             "Title" $title
             "Description" $description
             "ThumbnailURL" (or $userAvatar $defaultAvatar)
-            "ChannelID" $modLogChannelID
         ) }}
     {{ else }}
-        {{ execCC $embed_exec .Channel.ID 0 (sdict
-        "Title" "Invalid User Type"
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "Invalid User Type"
             "Description" (joinStr ""
                 "⚠️ The user you are trying to modify is not currently a <@&" (toString $minorRoleID) ">!"
             )
@@ -64,7 +66,8 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
         "Title" "Invalid User"
         "Description" (joinStr "" "⚠️ The user you are trying to modify is not currently in **" .Guild.Name "**!")
         "DeleteResponse" true
