@@ -13,19 +13,6 @@
     "א" "א" "ב" "ב" "ג" "ג" "ד" "ד" "ה" "ה" "ו" "ו" "ז" "ז" "ח" "ח" "ט" "ט" "י" "י" "כ" "ך"
     "ל" "ל" "מ" "ם" "נ" "ן" "ס" "ס" "ע" "ע" "פ" "ף" "צ" "ץ" "ק" "ק" "ר" "ר" "ש" "ש" "ת" "ת"
 }}
-{{ $tarotDict := sdict
-    "א" "The Fool" "ב" "The Magician"
-    "ג" "The High Priestess" "ד" "The Empress"
-    "ה" "The Emperor" "ו" "The Hierophant"
-    "ז" "The Lovers" "ח" "The Chariot"
-    "ט" "Strength" "י" "The Hermit"
-    "כ" "The Wheel of Fortune" "ל" "Justice"
-    "מ" "The Hanged Man" "נ" "Death"
-    "ס" "Temperance" "ע" "The Devil"
-    "פ" "The Tower" "צ" "The Star"
-    "ק" "The Moon" "ר" "The Sun"
-    "ש" "Judgement" "ת" "The World"
-}}
 
 {{ $args := parseArgs 1 "Usage: [number of letters] OR [number of groups]x[number of letters per group]"
     (carg "string" "argument")
@@ -50,7 +37,6 @@
 {{ $randString := "" }}
 {{ $gematriaString := "" }}
 {{ $totalGematria := 0 }}
-{{ $fields := false }}
 {{ if $groupModeArg }}
     {{ $subArgs := split $groupModeArg "x" }}
     {{ $numGroups := toInt (index $subArgs 0) }}
@@ -60,10 +46,6 @@
         {{- range $j := seq 0 $numLetters -}}
             {{- $randVal := toString (randInt 0 22) -}}
             {{- $randLetter := index $hebrewDict $randVal -}}
-            {{- if and (eq 1 $numGroups) (eq 1 $numLetters) -}}
-                {{- $tarotCard := index $tarotDict $randLetter -}}
-                {{- $fields = cslice (sdict "name" "Tarot Card" "value" $tarotCard "inline" false) -}}
-            {{- end -}}
             {{- if and (gt $numLetters 1) (eq $j (sub $numLetters 1)) -}}
                 {{- $randLetter = index $sofitDict $randLetter -}}
             {{- end -}}
@@ -77,17 +59,12 @@
         "ChannelID" .Channel.ID
         "Title" "Hebrew Generator"
         "Description" $randString
-        "Fields" $fields
     ) }}
 {{ else if $singleModeArg }}
     {{ $numLetters := toInt $singleModeArg }}
     {{- range $i := seq 0 $numLetters -}}
         {{- $randVal := toString (randInt 0 22) -}}
         {{- $randLetter := index $hebrewDict $randVal -}}
-        {{- if eq 1 $numLetters -}}
-            {{- $tarotCard := index $tarotDict $randLetter -}}
-            {{- $fields = cslice (sdict "name" "Tarot Card" "value" $tarotCard "inline" false) -}}
-        {{- end -}}
         {{- if and (gt $numLetters 1) (eq $i (sub $numLetters 1)) -}}
             {{- $randLetter = index $sofitDict $randLetter -}}
         {{- end -}}
@@ -99,7 +76,6 @@
         "ChannelID" .Channel.ID
         "Title" "Hebrew Generator"
         "Description" $randString
-        "Fields" $fields
     ) -}}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
