@@ -5,12 +5,16 @@
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
 {{ $embedColor := (toInt (dbGet $globalCategoryID "Embed Color").Value) }}
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $trigger := .Message.Content }}
 {{ $hereChannelID := toString .Channel.ID }}
@@ -89,6 +93,30 @@
             )
         ) }}
     {{ end }}
+{{ else }}
+    {{ $type := "Normal" }}
+    {{ if .Channel.NSFW }}
+        {{ $type = "NSFW" }}
+    {{ else if .Channel.IsThread }}
+        {{ $type = "Thread" }}
+    {{ end }}
+    {{ $topic := .Channel.Topic }}
 
-    {{ deleteTrigger $deleteTriggerDelay }}
+    {{ $fields := cslice }}
+    {{ $fields = $fields.Append (sdict "name" "ID" "value" $hereChannelID "inline" true) }}
+    {{ $fields = $fields.Append (sdict "name" "Type" "value" $type "inline" true) }}
+    {{ if $topic }}
+        {{ $fields = $fields.Append (sdict "name" "Topic" "value" $topic "inline" false) }}
+    {{ end }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "AuthorID" .User.ID
+        "ChannelID" $hereChannelID
+        "Title" "Channel Details"
+        "Description" (joinStr ""
+            "#️⃣ [" .Channel.Name "](" "https://discord.com/channels/" .Channel.GuildID "/" $hereChannelID "/" ")"
+        )
+        "Fields" $fields
+    ) }}
 {{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
