@@ -96,26 +96,38 @@
 {{- $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value -}}
 {{- $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value -}}
 
-{{- $gematriaString := "" -}}
+{{- $wordLengthValues := "" -}}
+{{- $totalLength := 0 -}}
+{{- $gematriaValues := "" -}}
 {{- $totalGematria := 0 -}}
 {{- $words := reSplit "[[:space:]]+" $text }}
 {{- range $i, $word := $words -}}
-    {{- $intVal := 0 -}}
+    {{- $wordLength := (len (toRune $word)) -}}
+    {{- $wordLengthValues = joinStr " " $wordLengthValues $wordLength -}}
+    {{- $totalLength = add $totalLength $wordLength -}}
+    {{- $gematriaValue := 0 -}}
     {{- range $j, $char := split $word "" -}}
         {{- $curVal := index $gematriaDict $char -}}
-        {{- $intVal = add $intVal $curVal -}}
+        {{- $gematriaValue = add $gematriaValue $curVal -}}
     {{- end -}}
-    {{- $gematriaString = joinStr " " $gematriaString $intVal -}}
-    {{- $totalGematria = add $totalGematria $intVal -}}
+    {{- $gematriaValues = joinStr " " $gematriaValues $gematriaValue -}}
+    {{- $totalGematria = add $totalGematria $gematriaValue -}}
 {{- end -}}
 
-{{- $fields := cslice (sdict "name" "Gematria" "value" $gematriaString "inline" false) }}
-{{- if gt (len $words) 1 -}}
-    {{- $fields = $fields.Append (sdict "name" "Total Gematria" "value" (toString $totalGematria) "inline" false) -}}
-{{- else if eq 1 (len (toRune (index $words 0))) }}
+{{- $fields := cslice -}}
+{{- if and (eq 1 (len $words)) (eq 1 (len (toRune (index $words 0)))) }}
+    {{- $fields = $fields.Append (sdict "name" "Letter Gematria" "value" (toString $totalGematria) "inline" false) }}
     {{- $tarotCard := index $tarotDict (index $words 0) -}}
     {{- if $tarotCard -}}
         {{- $fields = $fields.Append (sdict "name" "Tarot Card" "value" $tarotCard "inline" false) -}}
+    {{- end -}}
+{{- else -}}
+    {{- $fields = $fields.Append (sdict "name" "Word Count" "value" (toString (len $words)) "inline" false) }}
+    {{- $fields = $fields.Append (sdict "name" "Word Length" "value" $wordLengthValues "inline" false) }}
+    {{- $fields = $fields.Append (sdict "name" "Word Gematria" "value" $gematriaValues "inline" false) }}
+    {{- if gt (len $words) 1 -}}
+        {{- $fields = $fields.Append (sdict "name" "Total Length" "value" (toString $totalLength) "inline" false) -}}
+        {{- $fields = $fields.Append (sdict "name" "Total Gematria" "value" (toString $totalGematria) "inline" false) -}}
     {{- end -}}
 {{- end -}}
 {{- if .ExecData.Fields -}}
