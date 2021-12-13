@@ -69,7 +69,7 @@
     "ᚽ" 9 "ᚿ" 10 "ᛀ" 10 "ᛂ" 11 "ᛄ" 12 "ᛅ" 12 "ᛆ" 12 "ᛡ" 12 "ᛦ" 15 "ᛧ" 15
     "ᛨ" 15 "ᛋ" 16 "ᛌ" 16 "ᛍ" 16 "ᛎ" 16 "ᛐ" 17 "ᛑ" 17 "ᛠ" 17 "ᛓ" 18 "ᛔ" 18
     "ᛕ" 18 "ᛘ" 20 "ᛙ" 20 "ᛛ" 21 "ᛝ" 22 -}}
-{{ $tarotDict := sdict
+{{- $tarotDict := sdict
     "א" "0 - The Fool" "ב" "I - The Magician"
     "ג" "II - The High Priestess" "ד" "III - The Empress"
     "ה" "IV - The Emperor" "ו" "V - The Hierophant"
@@ -80,8 +80,7 @@
     "ס" "XIV - Temperance" "ע" "XV - The Devil"
     "פ" "XVI - The Tower" "צ" "XVII - The Star"
     "ק" "XVIII - The Moon" "ר" "XIX - The Sun"
-    "ש" "XX - Judgement" "ת" "XXI - The World"
-}}
+    "ש" "XX - Judgement" "ת" "XXI - The World" -}}
 
 {{- $args := parseArgs 1 "Usage: [text from which to compute gematria]"
     (carg "string" "text") -}}
@@ -100,7 +99,9 @@
 {{- $totalLength := 0 -}}
 {{- $gematriaValues := "" -}}
 {{- $totalGematria := 0 -}}
-{{- $words := reSplit "[[:space:]]+" $text }}
+{{- $words := reSplit "[[:space:]]+" $text -}}
+{{- $numWords := len $words -}}
+{{- $firstWord := index $words 0 -}}
 {{- range $i, $word := $words -}}
     {{- $wordLength := (len (toRune $word)) -}}
     {{- $wordLengthValues = joinStr " " $wordLengthValues $wordLength -}}
@@ -115,17 +116,19 @@
 {{- end -}}
 
 {{- $fields := cslice -}}
-{{- if and (eq 1 (len $words)) (eq 1 (len (toRune (index $words 0)))) }}
-    {{- $fields = $fields.Append (sdict "name" "Letter Gematria" "value" (toString $totalGematria) "inline" false) }}
-    {{- $tarotCard := index $tarotDict (index $words 0) -}}
+{{- if and (eq 1 $numWords) (eq 1 (len (toRune $firstWord))) -}}
+    {{- $fields = $fields.Append (sdict "name" "Letter Gematria" "value" (toString $totalGematria) "inline" false) -}}
+    {{- $tarotCard := index $tarotDict $firstWord -}}
     {{- if $tarotCard -}}
         {{- $fields = $fields.Append (sdict "name" "Tarot Card" "value" $tarotCard "inline" false) -}}
     {{- end -}}
 {{- else -}}
-    {{- $fields = $fields.Append (sdict "name" "Word Count" "value" (toString (len $words)) "inline" false) }}
-    {{- $fields = $fields.Append (sdict "name" "Word Length" "value" $wordLengthValues "inline" false) }}
-    {{- $fields = $fields.Append (sdict "name" "Word Gematria" "value" $gematriaValues "inline" false) }}
-    {{- if gt (len $words) 1 -}}
+    {{- if gt $numWords 1 -}}
+        {{- $fields = $fields.Append (sdict "name" "Word Count" "value" (toString (len $words)) "inline" false) -}}
+    {{- end -}}
+    {{- $fields = $fields.Append (sdict "name" "Word Length" "value" $wordLengthValues "inline" false) -}}
+    {{- $fields = $fields.Append (sdict "name" "Word Gematria" "value" $gematriaValues "inline" false) -}}
+    {{- if gt $numWords 1 -}}
         {{- $fields = $fields.Append (sdict "name" "Total Length" "value" (toString $totalLength) "inline" false) -}}
         {{- $fields = $fields.Append (sdict "name" "Total Gematria" "value" (toString $totalGematria) "inline" false) -}}
     {{- end -}}
