@@ -34,7 +34,12 @@
     {{ if ge $guildPremiumTier 1 }}
         {{ $gIconExtension = ".gif" }}
     {{ end }}
-    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
+    {{ $gIcon := "" }}
+    {{ if .Guild.Icon }}
+        {{ $gIcon = (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
+    {{ else }}
+        {{ $gIcon = (dbGet $globalCategoryID "Default Avatar").Value }}
+    {{ end }}
     {{ $author = sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
     {{ $authorColor = $dbEmbedColor }}
 {{ end }}
