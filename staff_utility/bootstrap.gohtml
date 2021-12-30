@@ -12,6 +12,7 @@
 
 {{ $embed_exec := $args.Get 0 }}
 {{ $staffRoleID := $args.Get 1 }}
+{{ $yagpdbChannelID := (toString .Channel.ID) }}
 
 {{ dbSet 0 "Category" "Index" }}
 {{ dbSet 1 "Category" "Global" }}
@@ -40,6 +41,8 @@
 {{ dbSet 2 "embed_exec" $embed_exec }}
 
 {{ dbSet 4 "Staff Role ID" $staffRoleID }}
+
+{{ dbSet 5 "YAGPDB Channel ID" $yagpdbChannelID }}
 
 {{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" "Bootstrap Execution Complete"
@@ -74,6 +77,10 @@
             "Value: `" $staffRoleID "`"
         ) "inline" false)
         (sdict "name" "User ID: `5`" "value" "Key: `Category` \nValue: `Channels`" "inline" false)
+        (sdict "name" "User ID: `5`" "value" (joinStr ""
+            "Key: `YAGPDB Channel ID` \n"
+            "Value: `" $yagpdbChannelID "`"
+        ) "inline" false)
         (sdict "name" "User ID: `6`" "value" "Key: `Category` \nValue: `Admin`" "inline" false)
         (sdict "name" "User ID: `7`" "value" "Key: `Category` \nValue: `Knowledge`" "inline" false)
         (sdict "name" "User ID: `8`" "value" "Key: `Category` \nValue: `Directory`" "inline" false)
