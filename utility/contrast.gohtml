@@ -2,6 +2,7 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `contrast`
+  Dependencies: `embed_exec`
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
@@ -25,7 +26,7 @@
   (carg "string" "color as hex")
 }}
 
-{{ $colorArg := reFind $colorRegex ($args.Get 0) }}
+{{ $colorArg := lower (reFind $colorRegex ($args.Get 0)) }}
 {{ if $colorArg }}
   {{ $colors := cslice
     (sdict "Name" "User" "Hex" $colorArg)
