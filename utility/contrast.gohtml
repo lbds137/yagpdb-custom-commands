@@ -22,7 +22,9 @@
 {{ $colorPositions := cslice "R" "R" "G" "G" "B" "B" }}
 {{ $lumCoefficients := dict "R" 0.2126 "G" 0.7152 "B" 0.0722 }}
 {{ $passRatio := 7.0 }}
+{{ $warningRatio := 4.5 }}
 {{ $passEmoji := "✅" }}
+{{ $warningEmoji := "⚠️" }}
 {{ $failEmoji := "❌" }}
 
 {{ $args := parseArgs 1 "Usage: `[color as hex]`"
@@ -93,6 +95,8 @@
     {{ $resultEmoji := "" }}
     {{ if ge $contrastRatio $passRatio }}
         {{ $resultEmoji = $passEmoji }}
+    {{ else if ge $contrastRatio $warningRatio }}
+        {{ $resultEmoji = $warningEmoji }}
     {{ else }}
         {{ $resultEmoji = $failEmoji }}
     {{ end }}
