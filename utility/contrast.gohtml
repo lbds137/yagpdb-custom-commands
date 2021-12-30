@@ -23,11 +23,6 @@
 {{ $hexSlice := cslice "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "a" "b" "c" "d" "e" "f" }}
 {{ $colorPositions := cslice "R" "R" "G" "G" "B" "B" }}
 {{ $lumCoefficients := dict "R" 0.2126 "G" 0.7152 "B" 0.0722 }}
-{{ $passRatio := 7.0 }}
-{{ $warningRatio := 4.5 }}
-{{ $passEmoji := "✅" }}
-{{ $warningEmoji := "⚠️" }}
-{{ $failEmoji := "❌" }}
 
 {{ $args := parseArgs 1 "Usage: `[color as hex]` OR `[role ID]`"
   (carg "string" "color as hex OR role ID")
@@ -121,12 +116,16 @@
       {{- $contrastRatio = fdiv $lum2 $lum1 -}}
     {{- end -}}
     {{- $resultEmoji := "" -}}
-    {{- if ge $contrastRatio $passRatio -}}
-      {{- $resultEmoji = $passEmoji -}}
-    {{- else if ge $contrastRatio $warningRatio -}}
-      {{- $resultEmoji = $warningEmoji -}}
+    {{- if ge $contrastRatio 7.0 -}}
+      {{- $resultEmoji = "🟢" -}}
+    {{- else if ge $contrastRatio 4.5 -}}
+      {{- $resultEmoji = "🟡" -}}
+    {{- else if ge $contrastRatio 3.0 -}}
+      {{- $resultEmoji = "🟠" }}
+    {{- else if ge $contrastRatio 2.5 -}}
+      {{- $resultEmoji = "🔴" }}
     {{- else -}}
-      {{- $resultEmoji = $failEmoji -}}
+      {{- $resultEmoji = "⚫" -}}
     {{- end -}}
     {{- $fields = $fields.Append (sdict
       "name" (joinStr "" $colorName ": `" $colorHex "`")
