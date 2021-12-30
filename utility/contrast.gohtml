@@ -15,10 +15,12 @@
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $colorRegex := "\\A#(\\d|[A-F]|[a-f]){6}\\z" }}
+{{ $discordIDRegex := "\\A\\d{16,}\\z" }}
 {{ $hexDict := sdict
   "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
   "a" 10 "b" 11 "c" 12 "d" 13 "e" 14 "f" 15
 }}
+{{ $hexSlice := cslice "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "a" "b" "c" "d" "e" "f" }}
 {{ $colorPositions := cslice "R" "R" "G" "G" "B" "B" }}
 {{ $lumCoefficients := dict "R" 0.2126 "G" 0.7152 "B" 0.0722 }}
 {{ $passRatio := 7.0 }}
@@ -27,14 +29,40 @@
 {{ $warningEmoji := "⚠️" }}
 {{ $failEmoji := "❌" }}
 
-{{ $args := parseArgs 1 "Usage: `[color as hex]`"
-  (carg "string" "color as hex")
+{{ $args := parseArgs 1 "Usage: `[color as hex]` OR `[role ID]`"
+  (carg "string" "color as hex OR role ID")
 }}
 
-{{ $colorArg := lower (reFind $colorRegex ($args.Get 0)) }}
-{{ if $colorArg }}
+{{ $arg := $args.Get 0 }}
+{{ $validArgPresent := false }}
+{{ $colorHexArg := lower (reFind $colorRegex $arg) }}
+{{ if $colorHexArg }}
+  {{ $validArgPresent = true }}
+{{ end }}
+{{ $roleIDArg := reFind $discordIDRegex $arg }}
+{{ $role := "" }}
+{{ if $roleIDArg }}
+  {{ $role = .Guild.GetRole (toInt $roleIDArg) }}
+  {{ if $role }}
+    {{ $validArgPresent = true }}
+  {{ end }}
+{{ end }}
+
+{{ if $validArgPresent }}
+  {{ if $role }}
+    {{ $colorHexArg = "" }}
+    {{ $roleColor := $role.Color }}
+    {{ $curVal := $roleColor }}
+    {{- range $i := seq 0 6 -}}
+      {{- $modVal := mod $curVal 16 -}}
+      {{- $hexVal := index $hexSlice (toInt $modVal) -}}
+      {{- $colorHexArg = joinStr "" $hexVal $colorHexArg -}}
+      {{- $curVal = div $curVal 16 -}}
+    {{- end -}}
+    {{ $colorHexArg = joinStr "" "#" $colorHexArg }}
+  {{ end }}
   {{ $colors := cslice
-    (sdict "Name" "User" "Hex" $colorArg)
+    (sdict "Name" "User" "Hex" $colorHexArg)
     (sdict "Name" "AMOLED Dark" "Hex" "#000000")
     (sdict "Name" "Dark" "Hex" "#36393f")
     (sdict "Name" "Light" "Hex" "#ffffff")
@@ -42,73 +70,73 @@
   {{ $colorArgVal := 0 }}
   {{ $lumValues := cslice }}
   {{- range $i, $color := $colors -}}
-    {{ $curHex := index $color "Hex" }}
-    {{ $curHexArr := split (slice $curHex 1) "" }}
-    {{ $curDict := dict "R" 0 "G" 0 "B" 0 }}
+    {{- $curHex := index $color "Hex" -}}
+    {{- $curHexArr := split (slice $curHex 1) "" -}}
+    {{- $curDict := dict "R" 0 "G" 0 "B" 0 -}}
     {{- /* calculate the int value of the user provided color (to be used in the results embed later) */ -}}
-    {{ if eq $curHex $colorArg }}
+    {{- if eq $curHex $colorHexArg -}}
       {{- range $j, $jRevNeg := seq -5 1 -}}
-        {{ $jRev := mult -1 $jRevNeg }}
-        {{ $curValHexStr := index $curHexArr $jRev }}
-        {{ $curValInt := index $hexDict $curValHexStr }}
-        {{ $colorArgVal = add $colorArgVal (mult (pow 16 $j) $curValInt) }}
+        {{- $jRev := mult -1 $jRevNeg -}}
+        {{- $curValHexStr := index $curHexArr $jRev -}}
+        {{- $curValInt := index $hexDict $curValHexStr -}}
+        {{- $colorArgVal = add $colorArgVal (mult (pow 16 $j) $curValInt) -}}
       {{- end -}}
-    {{ end }}
+    {{- end -}}
     {{- /* populate the current dictionary with int values for the individual RGB components of the current color */ -}}
     {{- range $j, $curValHex := $curHexArr -}}
-      {{ $curDictKey := index $colorPositions $j }}
-      {{ $curDictVal := index $curDict $curDictKey }}
-      {{ $curValInt := index $hexDict $curValHex }}
-      {{ $curPower := mod (add $j 1) 2 }}
-      {{ $curDict.Set $curDictKey (add $curDictVal (mult (pow 16 $curPower) $curValInt)) }}
+      {{- $curDictKey := index $colorPositions $j -}}
+      {{- $curDictVal := index $curDict $curDictKey -}}
+      {{- $curValInt := index $hexDict $curValHex -}}
+      {{- $curPower := mod (add $j 1) 2 -}}
+      {{- $curDict.Set $curDictKey (add $curDictVal (mult (pow 16 $curPower) $curValInt)) -}}
     {{- end -}}
     {{- /* compute the luminance value (using the formulas provided at https://planetcalc.com/7779/) */ -}}
-    {{ $luminance := 0 }}
+    {{- $luminance := 0 -}}
     {{- range $k, $v := $curDict -}}
-      {{ $realVal := fdiv $v 255 }}
-      {{ $linearVal := 0 }}
-      {{ if gt $realVal 0.03928 }}
-        {{ $linearVal = pow (fdiv (add $realVal 0.055) 1.055) 2.4 }}
-      {{ else }}
-        {{ $linearVal = fdiv $realVal 12.92 }}
-      {{ end }}
-      {{ $lumCoefficient := index $lumCoefficients $k }}
-      {{ $luminance = add (mult $lumCoefficient $linearVal) $luminance }}
+      {{- $realVal := fdiv $v 255 -}}
+      {{- $linearVal := 0 -}}
+      {{- if gt $realVal 0.03928 -}}
+        {{- $linearVal = pow (fdiv (add $realVal 0.055) 1.055) 2.4 -}}
+      {{- else -}}
+        {{- $linearVal = fdiv $realVal 12.92 -}}
+      {{- end -}}
+      {{- $lumCoefficient := index $lumCoefficients $k -}}
+      {{- $luminance = add (mult $lumCoefficient $linearVal) $luminance -}}
     {{- end -}}
     {{- /* save the computed luminance */ -}}
-    {{ $lumValues = $lumValues.Append $luminance }}
+    {{- $lumValues = $lumValues.Append $luminance -}}
   {{- end -}}
 
   {{ $lumUser := index $lumValues 0 }}
   {{ $fields := cslice }}
   {{- range $i, $color := (slice $colors 1) -}}
-    {{ $colorName := index $color "Name" }}
-    {{ $colorHex := index $color "Hex" }}
-    {{ $lum1 := add 0.05 $lumUser }}
-    {{ $lum2 := add 0.05 (index $lumValues (add $i 1)) }}
-    {{ $contrastRatio := 0 }}
-    {{ if gt $lum1 $lum2 }}
-        {{ $contrastRatio = fdiv $lum1 $lum2 }}
-    {{ else }}
-        {{ $contrastRatio = fdiv $lum2 $lum1 }}
-    {{ end }}
-    {{ $resultEmoji := "" }}
-    {{ if ge $contrastRatio $passRatio }}
-        {{ $resultEmoji = $passEmoji }}
-    {{ else if ge $contrastRatio $warningRatio }}
-        {{ $resultEmoji = $warningEmoji }}
-    {{ else }}
-        {{ $resultEmoji = $failEmoji }}
-    {{ end }}
-    {{ $fields = $fields.Append (sdict
+    {{- $colorName := index $color "Name" -}}
+    {{- $colorHex := index $color "Hex" -}}
+    {{- $lum1 := add 0.05 $lumUser -}}
+    {{- $lum2 := add 0.05 (index $lumValues (add $i 1)) -}}
+    {{- $contrastRatio := 0 -}}
+    {{- if gt $lum1 $lum2 -}}
+      {{- $contrastRatio = fdiv $lum1 $lum2 -}}
+    {{- else -}}
+      {{- $contrastRatio = fdiv $lum2 $lum1 -}}
+    {{- end -}}
+    {{- $resultEmoji := "" -}}
+    {{- if ge $contrastRatio $passRatio -}}
+      {{- $resultEmoji = $passEmoji -}}
+    {{- else if ge $contrastRatio $warningRatio -}}
+      {{- $resultEmoji = $warningEmoji -}}
+    {{- else -}}
+      {{- $resultEmoji = $failEmoji -}}
+    {{- end -}}
+    {{- $fields = $fields.Append (sdict
       "name" (joinStr "" $colorName ": `" $colorHex "`")
       "value" (joinStr "" $resultEmoji " Ratio: `" $contrastRatio "`")
       "inline" false
-    ) }}
+    ) -}}
   {{- end -}}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
-    "Title" (joinStr "" "Contrast Ratios for `" $colorArg "`")
+    "Title" (joinStr "" "Contrast Ratios for `" $colorHexArg "`")
     "Color" $colorArgVal
     "Fields" $fields
   ) }}
@@ -116,7 +144,7 @@
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "Title" "Invalid Color"
-    "Description" "⚠️ You must enter a color in the required format (e.g. `#ff0000` for red)!"
+    "Description" "⚠️ You must enter a role ID **OR** a color in the required format (e.g. `#ff0000` for red)!"
     "DeleteResponse" true
     "DeleteDelay" $deleteResponseDelay
   ) }}
