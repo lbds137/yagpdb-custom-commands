@@ -21,6 +21,9 @@
 }}
 {{ $colorPositions := cslice "R" "R" "G" "G" "B" "B" }}
 {{ $lumCoefficients := dict "R" 0.2126 "G" 0.7152 "B" 0.0722 }}
+{{ $passRatio := 7.0 }}
+{{ $passEmoji := "✅" }}
+{{ $failEmoji := "❌" }}
 
 {{ $args := parseArgs 1 "Usage: `[color as hex]`"
   (carg "string" "color as hex")
@@ -87,9 +90,15 @@
     {{ else }}
         {{ $contrastRatio = fdiv $lum2 $lum1 }}
     {{ end }}
+    {{ $resultEmoji := "" }}
+    {{ if ge $contrastRatio $passRatio }}
+        {{ $resultEmoji = $passEmoji }}
+    {{ else }}
+        {{ $resultEmoji = $failEmoji }}
+    {{ end }}
     {{ $fields = $fields.Append (sdict
       "name" (joinStr "" $colorName ": `" $colorHex "`")
-      "value" (joinStr "" "Ratio: `" $contrastRatio "`")
+      "value" (joinStr "" $resultEmoji " Ratio: `" $contrastRatio "`")
       "inline" false
     ) }}
   {{- end -}}
