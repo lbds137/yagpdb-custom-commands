@@ -121,33 +121,22 @@
 {{ $totalFirstReduction := 0 }}
 {{ $totalFinalReduction := 0 }}
 {{- range $i, $gematriaValue := $allGematriaValues -}}
-  {{- /* we reuse this loop for both word and total gematria values */ -}}
-  {{- $isTotalGematria := eq $i $numWords -}}
-
   {{- $firstReductionValue := 0 -}}
-  {{- $gematriaValueArr := split $gematriaValue "" }}
-  {{- if gt (len $gematriaValueArr) 1 }}
-    {{- range $j, $digit := $gematriaValueArr -}}
-      {{- $firstReductionValue = add $firstReductionValue (toInt $digit) -}}
-    {{- end -}}
-    {{- if $isTotalGematria -}}
-      {{- $totalFirstReduction = $firstReductionValue -}}
-    {{- else -}}
-      {{- $firstReductionValues = $firstReductionValues.Append (toString $firstReductionValue) -}}
-    {{- end -}}
+  {{- range $j, $digit := split $gematriaValue "" -}}
+    {{- $firstReductionValue = add $firstReductionValue (toInt $digit) -}}
   {{- end -}}
 
   {{- $finalReductionValue := 0 -}}
-  {{- $firstRedValArr := split (toString $firstReductionValue) "" -}}
-  {{- if gt (len $firstRedValArr) 1 }}
-    {{- range $j, $digit := $firstRedValArr -}}
-      {{- $finalReductionValue = add $finalReductionValue (toInt $digit) -}}
-    {{- end -}}
-    {{- if $isTotalGematria -}}
-      {{- $totalFinalReduction = $finalReductionValue -}}
-    {{- else -}}
-      {{- $finalReductionValues = $finalReductionValues.Append (toString $finalReductionValue) -}}
-    {{- end -}}
+  {{- range $j, $digit := split (toString $firstReductionValue) "" -}}
+    {{- $finalReductionValue = add $finalReductionValue (toInt $digit) -}}
+  {{- end -}}
+
+  {{- if eq $i $numWords -}}
+    {{- $totalFirstReduction = $firstReductionValue -}}
+    {{- $totalFinalReduction = $finalReductionValue -}}
+  {{- else -}}
+    {{- $firstReductionValues = $firstReductionValues.Append (toString $firstReductionValue) -}}
+    {{- $finalReductionValues = $finalReductionValues.Append (toString $finalReductionValue) -}}
   {{- end -}}
 {{- end -}}
 {{ $openBrace := "" }}
@@ -162,20 +151,20 @@
 {{ $wordGematriaReduction := joinStr ""
   $openBrace (joinStr " " $gematriaValues.StringSlice) $closeBrace
 }}
-{{ if gt (len $firstReductionValues) 0 }}
+{{ if ne (json $gematriaValues) (json $firstReductionValues) }}
   {{ $wordGematriaReduction = joinStr "" $wordGematriaReduction " > "
     $openBrace (joinStr " " $firstReductionValues.StringSlice) $closeBrace
   }}
-  {{ if gt (len $finalReductionValues) 0 }}
+  {{ if ne (json $firstReductionValues) (json $finalReductionValues) }}
     {{ $wordGematriaReduction = joinStr "" $wordGematriaReduction " > "
       $openBrace (joinStr " " $finalReductionValues.StringSlice) $closeBrace
     }}
   {{ end }}
 {{ end }}
 {{ $totalGematriaReduction := (toString $totalGematria) }}
-{{ if gt $totalFirstReduction 0 }}
+{{ if ne $totalGematria $totalFirstReduction }}
   {{ $totalGematriaReduction = joinStr "" $totalGematriaReduction " > " $totalFirstReduction }}
-  {{ if gt $totalFinalReduction 0 }}
+  {{ if ne $totalFirstReduction $totalFinalReduction }}
     {{ $totalGematriaReduction = joinStr "" $totalGematriaReduction " > " $totalFinalReduction }}
   {{ end }}
 {{ end }}
