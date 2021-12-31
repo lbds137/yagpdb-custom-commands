@@ -1,7 +1,7 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Regex`
-  Trigger: `\A#[\d|A-F]{6}\z`
+  Trigger: `\A#?(\d|[A-F]|[a-f]){6}\z`
   Dependencies: `embed_exec`
 */ -}}
 
@@ -19,6 +19,9 @@
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $trigger := lower (or .ExecData.Hex .Message.Content) }}
+{{ if not (reFind "#" $trigger) }}
+    {{ $trigger = joinStr "" "#" $trigger }}
+{{ end }}
 {{ $hexStr := split (reReplace "#" $trigger "") "" }}
 
 {{ $intVal := 0 }}
