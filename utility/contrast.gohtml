@@ -14,7 +14,7 @@
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
-{{ $colorRegex := "\\A#(\\d|[A-F]|[a-f]){6}\\z" }}
+{{ $colorRegex := "\\A#?(\\d|[A-F]|[a-f]){6}\\z" }}
 {{ $discordIDRegex := "\\A\\d{16,}\\z" }}
 {{ $hexDict := sdict
   "0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
@@ -54,6 +54,8 @@
       {{- $colorHexArg = joinStr "" $hexVal $colorHexArg -}}
       {{- $curVal = div $curVal 16 -}}
     {{- end -}}
+  {{ end }}
+  {{ if not (reFind "#" $colorHexArg) }}
     {{ $colorHexArg = joinStr "" "#" $colorHexArg }}
   {{ end }}
   {{ $colors := cslice
