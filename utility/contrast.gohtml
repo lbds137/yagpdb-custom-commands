@@ -55,7 +55,7 @@
       {{- $curVal = div $curVal 16 -}}
     {{- end -}}
   {{ end }}
-  {{ if not (reFind "#" $colorHexArg) }}
+  {{ if not (hasPrefix $colorHexArg "#") }}
     {{ $colorHexArg = joinStr "" "#" $colorHexArg }}
   {{ end }}
   {{ $colors := cslice

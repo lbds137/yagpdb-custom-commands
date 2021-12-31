@@ -19,7 +19,7 @@
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $trigger := lower (or .ExecData.Hex .Message.Content) }}
-{{ if not (reFind "#" $trigger) }}
+{{ if not (hasPrefix $trigger "#") }}
     {{ $trigger = joinStr "" "#" $trigger }}
 {{ end }}
 {{ $hexStr := split (reReplace "#" $trigger "") "" }}
