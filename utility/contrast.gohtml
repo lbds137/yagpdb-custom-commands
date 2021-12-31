@@ -115,6 +115,7 @@
     {{- else -}}
       {{- $contrastRatio = fdiv $lum2 $lum1 -}}
     {{- end -}}
+    {{- $contrastRatio = div (round (mult $contrastRatio 100)) 100 -}}
     {{- $resultEmoji := "" -}}
     {{- if ge $contrastRatio 7.0 -}}
       {{- $resultEmoji = "🟢" -}}
