@@ -1,7 +1,9 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
+  Attribution: `channel_link` is an independent reimplementation of the ChanLink bot by @Rose22
   Trigger type: `Regex`
   Trigger: `\A<#\d{16,}>\z`
+  Dependencies: `embed_exec` 
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
