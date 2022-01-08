@@ -28,7 +28,7 @@
   (carg "string" "color as hex OR role ID")
 }}
 
-{{ $arg := $args.Get 0 }}
+{{ $arg := or (toString .ExecData.Parameter) ($args.Get 0) }}
 {{ $validArgPresent := false }}
 {{ $colorHexArg := lower (reFind $colorRegex $arg) }}
 {{ if $colorHexArg }}
@@ -158,15 +158,15 @@
     "inline" false
   ) }}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-    "ChannelID" .Channel.ID
+    "ChannelID" (or .ExecData.ChannelID .Channel.ID)
     "Title" (joinStr "" "Contrast Ratios for `" $colorHexArg "`")
     "Color" $colorArgVal
     "Fields" $fields
   ) }}
 {{ else }}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-    "ChannelID" .Channel.ID
-    "Title" "Invalid Color"
+    "ChannelID" (or .ExecData.ChannelID .Channel.ID)
+    "Title" "Invalid Argument"
     "Description" "⚠️ You must enter a role ID **OR** a color in the required format (e.g. `#ff0000` for red)!"
     "DeleteResponse" true
     "DeleteDelay" $deleteResponseDelay
