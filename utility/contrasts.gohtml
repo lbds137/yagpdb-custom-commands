@@ -1,0 +1,63 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `contrasts`
+  Dependencies: `embed_exec`, `contrast`
+*/ -}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $contrast := toInt (dbGet $commandsCategoryID "contrast").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+
+{{ $colorRegex := "#?(\\d|[A-F]|[a-f]){6}" }}
+{{ $discordIDRegex := "\\d{16,}" }}
+{{- /* assuming YAGPDB premium subscription is active */ -}}
+{{ $maxArgs := 10 }}
+
+{{ $args := parseArgs 1 "Usage: `[colors as hex codes]` OR `[role IDs]`"
+  (carg "string" "colors as hex codes OR role IDs")
+}}
+
+{{ $arg := $args.Get 0 }}
+{{ $chosenArg := cslice }}
+{{ $validArgPresent := false }}
+{{ $colorHexArg := reFindAll $colorRegex $arg $maxArgs }}
+{{ if gt (len ($colorHexArg)) 0 }}
+  {{ $validArgPresent = true }}
+  {{ $chosenArg = $colorHexArg }}
+{{ end }}
+{{ $roleIDArg := reFindAll $discordIDRegex $arg $maxArgs }}
+{{ $role := "" }}
+{{ if gt (len ($roleIDArg)) 0 }}
+  {{ $role = .Guild.GetRole (toInt $roleIDArg) }}
+  {{ if $role }}
+    {{ $validArgPresent = true }}
+    {{ $chosenArg = $roleIDArg }}
+  {{ end }}
+{{ end }}
+
+{{ if $validArgPresent }}
+  {{ $channelID := .Channel.ID }}
+  {{- range $i, $curArg := $chosenArg -}}
+    {{- execCC $contrast $yagpdbChannelID 0 (sdict
+      "ChannelID" $channelID
+      "Parameter" $curArg
+    ) -}}
+  {{- end -}}
+{{ else }}
+  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "Title" "Invalid Argument"
+    "Description" "⚠️ You must enter one or more role IDs **OR** colors in the required format (e.g. `#ff0000` for red)!"
+    "DeleteResponse" true
+    "DeleteDelay" $deleteResponseDelay
+  ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
