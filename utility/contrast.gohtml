@@ -104,9 +104,12 @@
     {{- $lumValues = $lumValues.Append $luminance -}}
   {{- end -}}
 
+  {{ $contrastRatioSum := 0.0 }}
   {{ $lumUser := index $lumValues 0 }}
+  {{ $comparisonColors := slice $colors 1 }}
+  {{ $resultEmoji := "" }}
   {{ $fields := cslice }}
-  {{- range $i, $color := (slice $colors 1) -}}
+  {{- range $i, $color := $comparisonColors -}}
     {{- $colorName := index $color "Name" -}}
     {{- $colorHex := index $color "Hex" -}}
     {{- $lum1 := add 0.05 $lumUser -}}
@@ -117,8 +120,8 @@
     {{- else -}}
       {{- $contrastRatio = fdiv $lum2 $lum1 -}}
     {{- end -}}
+    {{- $contrastRatioSum = add $contrastRatioSum $contrastRatio -}}
     {{- $contrastRatio = div (round (mult $contrastRatio 100)) 100 -}}
-    {{- $resultEmoji := "" -}}
     {{- if ge $contrastRatio 7.0 -}}
       {{- $resultEmoji = "🟢" -}}
     {{- else if ge $contrastRatio 4.5 -}}
@@ -136,6 +139,24 @@
       "inline" false
     ) -}}
   {{- end -}}
+  {{ $averageContrastRatio := fdiv $contrastRatioSum (len $comparisonColors) }}
+  {{ $averageContrastRatio = div (round (mult $averageContrastRatio 100)) 100 }}
+  {{- if ge $averageContrastRatio 7.0 -}}
+      {{- $resultEmoji = "🟢" -}}
+  {{- else if ge $averageContrastRatio 4.5 -}}
+      {{- $resultEmoji = "🟡" -}}
+  {{- else if ge $averageContrastRatio 3.0 -}}
+      {{- $resultEmoji = "🟠" }}
+  {{- else if ge $averageContrastRatio 2.5 -}}
+      {{- $resultEmoji = "🔴" }}
+  {{- else -}}
+      {{- $resultEmoji = "⚫" -}}
+  {{- end -}}
+  {{ $fields = $fields.Append (sdict
+    "name" "Average"
+    "value" (joinStr "" $resultEmoji " Ratio: `" $averageContrastRatio "`")
+    "inline" false
+  ) }}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "Title" (joinStr "" "Contrast Ratios for `" $colorHexArg "`")
