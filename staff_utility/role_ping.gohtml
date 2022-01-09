@@ -1,0 +1,51 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `role_ping`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+
+{{- /* replace zeros with correct role IDs for your server; edit dictionary entries for custom role types */ -}}
+{{ $roleDict := sdict
+  "Announcement" 0 "Bump" 0 "Chat" 0
+  "Discussion" 0 "Event" 0 "Member" 0
+}}
+
+{{ $args := parseArgs 1 "Usage: `[role to ping][:][optional message to include with ping]`"
+  (carg "string" "[role type][:][optional message]")
+}}
+
+{{ $arg := $args.Get 0 }}
+{{ $roleIDArg := $arg }}
+{{ $messageArg := "" }}
+{{ $argArray := split $arg ":" }}
+{{ if eq 2 (len $argArray) }}
+  {{ $roleIDArg = index $argArray 0 }}
+  {{ $messageArg = index $argArray 1 }}
+{{ end }}
+
+{{ $roleID := index $roleDict (title $roleIDArg) }}
+{{ if $roleID }}
+  {{ if $messageArg }}
+    {{ sendMessage .Channel.ID $messageArg }}
+  {{ end }}
+  {{ mentionRoleID $roleID }}
+{{ else }}
+  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "Title" "Invalid Argument"
+    "Description" "⚠️ You must enter a valid role type to ping!"
+    "DeleteResponse" true
+    "DeleteDelay" $deleteResponseDelay
+  ) }}
+{{ end }}
+
+{{ deleteTrigger 0 }}
