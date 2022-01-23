@@ -9,7 +9,8 @@
 {{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
 
 {{ $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
-{{ $excludeCategories := (dbGet $directoryCategoryID "Exclude Categories").Value }}
+{{ $excludeCategories := or (dbGet $directoryCategoryID "Exclude Categories").Value cslice }}
+{{ $excludeChannels := or (dbGet $directoryCategoryID "Exclude Channels").Value cslice }}
 
 {{ $yagpdbUserID := 204255221017214977 }}
 
@@ -32,7 +33,7 @@
 {{ $directory := dict }}
 {{ $directory.Set 0 cslice }}
 
-{{ $excludes := dict }}
+{{ $exclude := dict }}
 
 {{- /* iterate through all guild channels and build out data structures */ -}}
 {{- range $channel := .Guild.Channels -}}
@@ -75,8 +76,12 @@
   {{- $directory.Set $cidParent $csliceCurrent -}}
 {{- end -}}
 
+{{- /* exclude categories and channels as necessary */ -}}
 {{- range $cid := $excludeCategories -}}
-  {{- $excludes.Set (toInt $cid) true -}}
+  {{- $exclude.Set (toInt $cid) true -}}
+{{- end -}}
+{{- range $cid := $excludeChannels -}}
+    {{- $exclude.Set (toInt $cid) true -}}
 {{- end -}}
 
 {{- /* clean old directory entries */ -}}
@@ -84,48 +89,59 @@
 
 {{- /* iterate through the directory and print out channel details */ -}}
 {{- range $cidCategory := $csliceCategory -}}
-  {{- /* look up the category name and child channels */ -}}
-  {{- $categoryName := "❓ Uncategorized ❓" -}}
-  {{- if ne 0 $cidCategory -}}
-    {{- $categoryChannel := $cdictCategory.Get $cidCategory -}}
-    {{- $categoryName = $categoryChannel.Name -}}
-    {{- /* strip out dividers from category name */ -}}
-    {{- $nameArr := split $categoryName $leftDivider -}}
-    {{- if gt (len $nameArr) 1 -}}
-      {{- $categoryName = reReplace $leftDivider $categoryName "" -}}
+  {{- if not ($exclude.Get $cidCategory) -}}
+    {{- /* look up the category name and child channels */ -}}
+    {{- $categoryName := "❓ Uncategorized ❓" -}}
+    {{- if ne 0 $cidCategory -}}
+      {{- $categoryChannel := $cdictCategory.Get $cidCategory -}}
+      {{- $categoryName = $categoryChannel.Name -}}
+      {{- /* strip out dividers from category name */ -}}
+      {{- $nameArr := split $categoryName $leftDivider -}}
+      {{- if gt (len $nameArr) 1 -}}
+        {{- $categoryName = reReplace $leftDivider $categoryName "" -}}
+      {{- end -}}
+      {{- $nameArr = split $categoryName $rightDivider -}}
+      {{- if gt (len $nameArr) 1 -}}
+        {{- $categoryName = reReplace $rightDivider $categoryName "" -}}
+      {{- end -}}
     {{- end -}}
-    {{- $nameArr = split $categoryName $rightDivider -}}
-    {{- if gt (len $nameArr) 1 -}}
-      {{- $categoryName = reReplace $rightDivider $categoryName "" -}}
-    {{- end -}}
-  {{- end -}}
-  {{- $categoryChannels := $directory.Get $cidCategory -}}
+    {{- $categoryChannels := $directory.Get $cidCategory -}}
 
-  {{- /* use category name as an embed message to visually divide the categories */ -}}
-  {{- $embed := cembed "title" $categoryName "color" $embedColor -}}
+    {{- /* use category name as an embed message to visually divide the categories */ -}}
+    {{- $embed := cembed "title" $categoryName "color" $embedColor -}}
 
-  {{- /* combine the category's channels as links and topics in one message (max 2000 characters) and send it */ -}}
-  {{- $categoryEntry := "" -}}
-  {{- range $i, $cidChild := $categoryChannels -}}
-    {{- $channel := $cdictText.Get $cidChild -}}
-    {{- if not $channel -}}
-      {{- $channel = $cdictVoice.Get $cidChild -}}
-    {{- end -}}
-    {{- $channelTopic := $channel.Topic -}}
-    {{- if not $channelTopic -}}
-      {{- $channelTopic = "(no topic set)" -}}
-    {{- end -}}
-    {{- if eq 0 $i -}}
-      {{- $categoryEntry = joinStr "" $categoryEntry "<#" $cidChild ">\n" $channelTopic -}}
-    {{- else -}}
-      {{- $categoryEntry = joinStr "" $categoryEntry "\n\n<#" $cidChild ">\n" $channelTopic -}}
-    {{- end -}}
-  {{- end -}}
-  {{- if ge (len (toRune $categoryEntry)) $messageMaxLen -}}
-    {{- $categoryEntry = joinStr "" (slice $categoryEntry 0 $messageMaxLen) "…" -}}
-  {{- end -}}
+    {{- /* combine the category's channels as links and topics in one message (max 2000 characters) and send it */ -}}
+    {{- $categoryEntry := "" -}}
+    {{- range $i, $cidChild := $categoryChannels -}}
+      {{- if not ($exclude.Get $cidChild) -}}
+        {{- $channel := $cdictText.Get $cidChild -}}
+        {{- if not $channel -}}
+          {{- $channel = $cdictVoice.Get $cidChild -}}
+        {{- end -}}
+        {{- /* handle missing topics */ -}}
+        {{- $channelTopic := $channel.Topic -}}
+        {{- if not $channelTopic -}}
+          {{- $channelTopic = "(no topic set)" -}}
+        {{- end -}}
+        {{- /* voice channels do not have topics */ -}}
+        {{- $ctype := $channel.Type -}}
+        {{- if eq $ctype $ctypeVoice -}}
+          {{- $channelTopic = "" -}}
+        {{- else -}}
+          {{- $channelTopic = joinStr "" "\n" $channelTopic }}
+        {{- end -}}
 
-  {{- if not ($excludes.Get $cidCategory) -}}
+        {{- $spacer := "\n\n" -}}
+        {{- if eq 0 $i -}}
+          {{- $spacer = "" -}}
+        {{- end -}}
+        {{- $categoryEntry = joinStr "" $categoryEntry $spacer "<#" $cidChild ">" $channelTopic -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if ge (len (toRune $categoryEntry)) $messageMaxLen -}}
+      {{- $categoryEntry = joinStr "" (slice $categoryEntry 0 $messageMaxLen) "…" -}}
+    {{- end -}}
+
     {{- sendMessage nil $embed -}}
     {{- sendMessage nil $categoryEntry -}}
   {{- end -}}
