@@ -9,7 +9,10 @@
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $maxEntries := 100 }}
 {{ $maxFields := 25 }}
@@ -18,12 +21,16 @@
 {{ $entries := cslice }}
 {{ $iEnd := 0 }}
 {{ $lastBoundary := 0 }}
+
+{{ $channelID := .Channel.ID }}
+
 {{- range $i, $entry := dbTopEntries "%" $maxEntries 0 -}}
     {{- $iEnd = $i -}}
     {{- if and (gt $i 0) (eq 0 (toInt (mod $i $maxFields))) -}}
         {{- $iHuman := add 1 $i -}}
         {{- $lastBoundary = $iHuman -}}
-        {{- execCC $embed_exec .Channel.ID 0 (sdict
+        {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" $channelID
             "Title" (joinStr "" $title " (" (sub $iHuman $maxFields) "-" $i ")")
             "Fields" $entries
         ) -}}
@@ -45,7 +52,8 @@
 {{- end -}}
 
 {{ $iEndHuman := add 1 $iEnd }}
-{{ execCC $embed_exec .Channel.ID 0 (sdict
+{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" $channelID
     "Title" (joinStr "" $title " (" $lastBoundary "-" $iEndHuman ")")
     "Fields" $entries
 ) }}
