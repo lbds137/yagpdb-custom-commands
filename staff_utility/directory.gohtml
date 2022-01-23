@@ -118,19 +118,10 @@
         {{- if not $channel -}}
           {{- $channel = $cdictVoice.Get $cidChild -}}
         {{- end -}}
-        {{- /* handle missing topics */ -}}
         {{- $channelTopic := $channel.Topic -}}
-        {{- if not $channelTopic -}}
-          {{- $channelTopic = "(no topic set)" -}}
-        {{- end -}}
-        {{- /* voice channels do not have topics */ -}}
-        {{- $ctype := $channel.Type -}}
-        {{- if eq $ctype $ctypeVoice -}}
-          {{- $channelTopic = "" -}}
-        {{- else -}}
+        {{- if $channelTopic -}}
           {{- $channelTopic = joinStr "" "\n" $channelTopic }}
         {{- end -}}
-
         {{- $spacer := "\n\n" -}}
         {{- if eq 0 $i -}}
           {{- $spacer = "" -}}
