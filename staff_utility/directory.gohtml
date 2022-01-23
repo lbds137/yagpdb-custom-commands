@@ -1,71 +1,135 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
-  Trigger type: `Hourly interval`
-  Interval: `24`
-  Dependencies: `embed_exec`, `directory_category`
+  Trigger type: `Command`
+  Trigger: `directory`
+  Dependencies: none
 */ -}}
 
-{{ $arrayType := "[]interface {}" }}
-{{ $channelLimit := 25 }}
-
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 {{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
 
-{{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
-{{ $directory_category := toInt (dbGet $commandsCategoryID "directory_category").Value }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $directoryChannelID := toInt (dbGet $channelsCategoryID "Directory Channel ID").Value }}
-{{ $directoryCategories := (dbGet $directoryCategoryID "Categories").Value }}
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
+{{ $excludeCategories := (dbGet $directoryCategoryID "Exclude Categories").Value }}
 
-{{ if $directoryCategories }}
-    {{ if eq (printf "%T" $directoryCategories) $arrayType }}
-        {{- /* clean old directory entries */ -}}
-        {{- exec "Clean" 100 -}}
+{{ $yagpdbUserID := 204255221017214977 }}
 
-        {{- /* divide channel categories into groups to avoid hitting Discord API limits per custom command */ -}}
-        {{ $currentGroup := cslice }}
-        {{ $currentGroupChannels := cslice }}
-        {{ $counter := 0 }}
-        {{- range $i, $categoryID := $directoryCategories -}}
-            {{- $currentGroup = $currentGroup.Append $categoryID -}}
-            {{- if ne 0 (toInt $categoryID) -}}
-                {{- $counter = add $counter 1 -}}
-            {{- end -}}
-            {{- $categoryChannels := (dbGet $directoryCategoryID $categoryID).Value -}}
-            {{- if eq (printf "%T" $categoryChannels) $arrayType -}}
-                {{- $counter = add $counter (len $categoryChannels) }}
-                {{- $currentGroupChannels = $currentGroupChannels.Append $categoryChannels -}}
-            {{- else -}}
-                {{- $currentGroupChannels = $currentGroupChannels.Append cslice -}}
-            {{- end -}}
+{{ $leftDivider := "⋙ " }}
+{{ $rightDivider := " ⋘" }}
+{{ $messageMaxLen := sub 2000 1 }}
 
-            {{- /* if the current group is at its channel limit, output its channels and move on to the next one */ -}}
-            {{- if gt $counter $channelLimit -}}
-                {{- /* run the helper command for the current group to output its channels */ -}}
-                {{ execCC $directory_category .Channel.ID 0 (sdict
-                    "DirectoryCategoryID" $directoryCategoryID
-                    "CategoryGroup" $currentGroup
-                    "CategoryGroupChannels" $currentGroupChannels
-                    "Color" $dbEmbedColor
-                ) }}
-                {{- sleep 2 -}}
-                {{- /* reset the current group and its channels in preparation for the next iteration */ -}}
-                {{- $currentGroup = cslice -}}
-                {{- $currentGroupChannels = cslice -}}
-                {{- $counter = 0 -}}
-            {{- end -}}
-        {{- end -}}
-    {{ else }}
-        {{ execCC $embed_exec .Channel.ID 0 (sdict
-            "Title" "Directory Lookup Failed"
-            "Description" "⚠️ The directory categories database entry must be an array!"
-        ) }}
-    {{ end }}
-{{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
-        "Title" "Directory Lookup Failed"
-        "Description" "⚠️ You must initialize the directory categories in the database!"
-    ) }}
-{{ end }}
+{{ $ctypeText := 0 }}
+{{ $ctypeVoice := 2 }}
+{{ $ctypeCategory := 4 }}
+
+{{ $csliceText := cslice }}
+{{ $csliceVoice := cslice }}
+{{ $csliceCategory := cslice 0 }}
+
+{{ $cdictText := dict }}
+{{ $cdictVoice := dict }}
+{{ $cdictCategory := dict }}
+
+{{ $directory := dict }}
+{{ $directory.Set 0 cslice }}
+
+{{ $excludes := dict }}
+
+{{- /* iterate through all guild channels and build out data structures */ -}}
+{{- range $channel := .Guild.Channels -}}
+  {{- $ctype := $channel.Type -}}
+  {{- $cid := $channel.ID -}}
+  {{- if eq $ctype $ctypeText -}}
+    {{- $csliceText = $csliceText.Append $cid -}}
+    {{- $cdictText.Set $cid $channel -}}
+  {{- else if eq $ctype $ctypeVoice -}}
+    {{- $csliceVoice = $csliceVoice.Append $cid -}}
+    {{- $cdictVoice.Set $cid $channel -}}
+  {{- else if eq $ctype $ctypeCategory -}}
+    {{- $csliceCategory = $csliceCategory.Append $cid -}}
+    {{- $cdictCategory.Set $cid $channel -}}
+    {{- $directory.Set $cid cslice -}}
+  {{- end -}}
+{{- end -}}
+
+{{- /* populate text channels in directory dictionary */ -}}
+{{- range $cid := $csliceText -}}
+  {{- $channel := $cdictText.Get $cid -}}
+  {{- $cidParent := $channel.ParentID -}}
+  {{- if not $cidParent -}}
+    {{- $cidParent = 0 -}}
+  {{- end -}}
+  {{- $csliceCurrent := $directory.Get $cidParent -}}
+  {{- $csliceCurrent = $csliceCurrent.Append $cid -}}
+  {{- $directory.Set $cidParent $csliceCurrent -}}
+{{- end -}}
+
+{{- /* populate voice channels in directory dictionary */ -}}
+{{- range $cid := $csliceVoice -}}
+  {{- $channel := $cdictVoice.Get $cid -}}
+  {{- $cidParent := $channel.ParentID -}}
+  {{- if not $cidParent -}}
+    {{- $cidParent = 0 -}}
+  {{- end -}}
+  {{- $csliceCurrent := $directory.Get $cidParent -}}
+  {{- $csliceCurrent = $csliceCurrent.Append $cid -}}
+  {{- $directory.Set $cidParent $csliceCurrent -}}
+{{- end -}}
+
+{{- range $cid := $excludeCategories -}}
+  {{- $excludes.Set (toInt $cid) true -}}
+{{- end -}}
+
+{{- /* clean old directory entries */ -}}
+{{- exec "Clean" 100 (getMember $yagpdbUserID).User.Mention -}}
+
+{{- /* iterate through the directory and print out channel details */ -}}
+{{- range $cidCategory := $csliceCategory -}}
+  {{- /* look up the category name and child channels */ -}}
+  {{- $categoryName := "❓ Uncategorized ❓" -}}
+  {{- if ne 0 $cidCategory -}}
+    {{- $categoryChannel := $cdictCategory.Get $cidCategory -}}
+    {{- $categoryName = $categoryChannel.Name -}}
+    {{- /* strip out dividers from category name */ -}}
+    {{- $nameArr := split $categoryName $leftDivider -}}
+    {{- if gt (len $nameArr) 1 -}}
+      {{- $categoryName = reReplace $leftDivider $categoryName "" -}}
+    {{- end -}}
+    {{- $nameArr = split $categoryName $rightDivider -}}
+    {{- if gt (len $nameArr) 1 -}}
+      {{- $categoryName = reReplace $rightDivider $categoryName "" -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $categoryChannels := $directory.Get $cidCategory -}}
+
+  {{- /* use category name as an embed message to visually divide the categories */ -}}
+  {{- $embed := cembed "title" $categoryName "color" $embedColor -}}
+
+  {{- /* combine the category's channels as links and topics in one message (max 2000 characters) and send it */ -}}
+  {{- $categoryEntry := "" -}}
+  {{- range $i, $cidChild := $categoryChannels -}}
+    {{- $channel := $cdictText.Get $cidChild -}}
+    {{- if not $channel -}}
+      {{- $channel = $cdictVoice.Get $cidChild -}}
+    {{- end -}}
+    {{- $channelTopic := $channel.Topic -}}
+    {{- if not $channelTopic -}}
+      {{- $channelTopic = "(no topic set)" -}}
+    {{- end -}}
+    {{- if eq 0 $i -}}
+      {{- $categoryEntry = joinStr "" $categoryEntry "<#" $cidChild ">\n" $channelTopic -}}
+    {{- else -}}
+      {{- $categoryEntry = joinStr "" $categoryEntry "\n\n<#" $cidChild ">\n" $channelTopic -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if ge (len (toRune $categoryEntry)) $messageMaxLen -}}
+    {{- $categoryEntry = joinStr "" (slice $categoryEntry 0 $messageMaxLen) "…" -}}
+  {{- end -}}
+
+  {{- if not ($excludes.Get $cidCategory) -}}
+    {{- sendMessage nil $embed -}}
+    {{- sendMessage nil $categoryEntry -}}
+  {{- end -}}
+{{- end -}}
+
+{{ deleteTrigger $deleteTriggerDelay }}
