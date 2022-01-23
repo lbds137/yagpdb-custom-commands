@@ -1,14 +1,13 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
-  Trigger type: `Command`
-  Trigger: `directory`
+  Trigger type: `Hourly interval`
+  Interval: `168`
   Dependencies: none
 */ -}}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
 {{ $excludeCategories := (dbGet $directoryCategoryID "Exclude Categories").Value }}
 
@@ -131,5 +130,3 @@
     {{- sendMessage nil $categoryEntry -}}
   {{- end -}}
 {{- end -}}
-
-{{ deleteTrigger $deleteTriggerDelay }}
