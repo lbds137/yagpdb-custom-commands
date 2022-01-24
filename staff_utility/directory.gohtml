@@ -5,35 +5,38 @@
   Dependencies: none
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $directoryCategoryID := toInt (dbGet 0 "Directory").Value }}
+{{- $globalCategoryID := toInt (dbGet 0 "Global").Value -}}
+{{- $directoryCategoryID := toInt (dbGet 0 "Directory").Value -}}
 
-{{ $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
-{{ $excludeCategories := or (dbGet $directoryCategoryID "Exclude Categories").Value cslice }}
-{{ $excludeChannels := or (dbGet $directoryCategoryID "Exclude Channels").Value cslice }}
+{{- $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value -}}
+{{- $excludeCategories := or (dbGet $directoryCategoryID "Exclude Categories").Value cslice -}}
+{{- $excludeChannels := or (dbGet $directoryCategoryID "Exclude Channels").Value cslice -}}
 
-{{ $yagpdbUserID := 204255221017214977 }}
+{{- $yagpdbUserID := 204255221017214977 -}}
 
-{{ $leftDivider := "⋙ " }}
-{{ $rightDivider := " ⋘" }}
-{{ $messageMaxLen := sub 2000 1 }}
+{{- $leftDivider := "⋙ " -}}
+{{- $rightDivider := " ⋘" -}}
+{{- $messageMaxLen := sub 2000 1 -}}
 
-{{ $ctypeText := 0 }}
-{{ $ctypeVoice := 2 }}
-{{ $ctypeCategory := 4 }}
+{{- $ctypeText := 0 -}}
+{{- $ctypeVoice := 2 -}}
+{{- $ctypeCategory := 4 -}}
 
-{{ $csliceText := cslice }}
-{{ $csliceVoice := cslice }}
-{{ $csliceCategory := cslice 0 }}
+{{- $csliceText := cslice -}}
+{{- $csliceVoice := cslice -}}
+{{- $csliceCategory := cslice 0 -}}
 
-{{ $cdictText := dict }}
-{{ $cdictVoice := dict }}
-{{ $cdictCategory := dict }}
+{{- $cdictText := dict -}}
+{{- $cdictVoice := dict -}}
+{{- $cdictCategory := dict -}}
 
-{{ $directory := dict }}
-{{ $directory.Set 0 cslice }}
+{{- $directory := dict -}}
+{{- $directory.Set 0 cslice -}}
 
-{{ $exclude := dict }}
+{{- $exclude := dict -}}
+{{- $backToTopLink := "" -}}
+
+{{- $channelID := .Channel.ID -}}
 
 {{- /* iterate through all guild channels and build out data structures */ -}}
 {{- range $channel := .Guild.Channels -}}
@@ -81,13 +84,14 @@
   {{- $exclude.Set (toInt $cid) true -}}
 {{- end -}}
 {{- range $cid := $excludeChannels -}}
-    {{- $exclude.Set (toInt $cid) true -}}
+  {{- $exclude.Set (toInt $cid) true -}}
 {{- end -}}
 
 {{- /* clean old directory entries */ -}}
 {{- exec "Clean" 100 (getMember $yagpdbUserID).User.Mention -}}
 
 {{- /* iterate through the directory and print out channel details */ -}}
+{{- $i := 0 -}}
 {{- range $cidCategory := $csliceCategory -}}
   {{- if not ($exclude.Get $cidCategory) -}}
     {{- /* look up the category name and child channels */ -}}
@@ -112,7 +116,8 @@
 
     {{- /* combine the category's channels as links and topics in one message (max 2000 characters) and send it */ -}}
     {{- $categoryEntry := "" -}}
-    {{- range $i, $cidChild := $categoryChannels -}}
+    {{- $j := 0 -}}
+    {{- range $cidChild := $categoryChannels -}}
       {{- if not ($exclude.Get $cidChild) -}}
         {{- $channel := $cdictText.Get $cidChild -}}
         {{- if not $channel -}}
@@ -123,17 +128,38 @@
           {{- $channelTopic = joinStr "" "\n" $channelTopic }}
         {{- end -}}
         {{- $spacer := "\n\n" -}}
-        {{- if eq 0 $i -}}
+        {{- if eq 0 $j -}}
           {{- $spacer = "" -}}
         {{- end -}}
         {{- $categoryEntry = joinStr "" $categoryEntry $spacer "<#" $cidChild ">" $channelTopic -}}
+
+        {{- $j = add 1 $j -}}
       {{- end -}}
     {{- end -}}
     {{- if ge (len (toRune $categoryEntry)) $messageMaxLen -}}
       {{- $categoryEntry = joinStr "" (slice $categoryEntry 0 $messageMaxLen) "…" -}}
     {{- end -}}
 
-    {{- sendMessage nil $embed -}}
-    {{- sendMessage nil $categoryEntry -}}
+    {{- /* grab first message link for Back to Top link */ -}}
+    {{- if eq 0 $i -}}
+      {{- $firstMessageID := sendMessageRetID $channelID $embed -}}
+      {{- $firstMessage := getMessage $channelID $firstMessageID -}}
+      {{- $backToTopLink = $firstMessage.Link -}}
+    {{- else -}}
+      {{- sendMessage $channelID $embed -}}
+    {{- end -}}
+    {{- sendMessage $channelID $categoryEntry -}}
+
+    {{- $i = add 1 $i -}}
   {{- end -}}
 {{- end -}}
+
+{{- /* workaround for a stupid YAGPDB bug */ -}}
+{{ $backToTopLink = reReplace "/0/" $backToTopLink (printf "/%d/" .Guild.ID) }}
+{{- $embed := cembed
+  "description" (joinStr ""
+    "[⏫](" $backToTopLink ") "
+    "[Back to Top](" $backToTopLink ") "
+    "[⏫](" $backToTopLink ") ")
+  "color" $embedColor -}}
+{{- sendMessage $channelID $embed -}}
