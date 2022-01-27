@@ -177,29 +177,29 @@
 
     {{ $fields := cslice }}
     {{ if $attachmentUrls }}
-      {{ $fields = $fields.Append (sdict "name" "Attachments" "value" $attachmentUrls "inline" false) }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Attachments" "value" $attachmentUrls "inline" false) }}
     {{ end }}
     {{ if $embedAuthor }}
-      {{ $fields = $fields.Append (sdict "name" "Embed Author" "value" $embedAuthor "inline" true) }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Author" "value" $embedAuthor "inline" true) }}
     {{ end }}
     {{ if $embedProvider }}
-      {{ $fields = $fields.Append (sdict "name" "Embed Provider" "value" $embedProvider "inline" true) }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Provider" "value" $embedProvider "inline" true) }}
     {{ end }}
     {{ if $embedTitle }}
-      {{ $fields = $fields.Append (sdict "name" "Embed Title" "value" $embedTitle "inline" false) }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Title" "value" $embedTitle "inline" false) }}
     {{ end }}
     {{ if $embedDescription }}
-      {{ $fields = $fields.Append (sdict "name" "Embed Description" "value" $embedDescription "inline" false) }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Description" "value" $embedDescription "inline" false) }}
     {{ end }}
     {{ if $embedFields }}
       {{- range $field := $embedFields -}}
         {{ $fields = $fields.Append (sdict
-          "name" (joinStr " " "Embed Field:" $field.Name) "value" $field.Value "inline" false
+          "name" (joinStr "" "📎 " $field.Name) "value" $field.Value "inline" false
         ) }}
       {{- end -}}
     {{ end }}
     {{ if $embedFooter }}
-      {{ $fields = $fields.Append (sdict "name" "Embed Footer" "value" $embedFooter "inline" false) }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Footer" "value" $embedFooter "inline" false) }}
     {{ end }}
     {{ $fields = $fields.Append (sdict
       "name" "Original Channel"
