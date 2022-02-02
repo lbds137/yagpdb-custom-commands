@@ -11,6 +11,7 @@
 {{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
@@ -20,6 +21,7 @@
 {{ $emojiIDRegex := "\\d{16,}" }}
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullURLRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
+{{ $ccExecLimit := 10 }}
 
 {{ $args := parseArgs 1 "Usage: `[emoji(s) and / or message link(s)]`"
   (carg "string" "emoji(s) and / or message link(s)")
@@ -65,6 +67,7 @@
   {{- end -}}
 {{- end -}}
 
+{{ $tooManyEmojis := false }}
 {{- range $i, $emojiString := $emojiStrings -}}
   {{- $fileExtension := ".png" -}}
   {{- if reFind $animatedEmojiRegex $emojiString -}}
@@ -85,13 +88,26 @@
     {{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
   {{ end }}
 
-  {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
-    "AuthorID" $userID
-    "ChannelID" $channelID
-    "Title" "Emoji Expander"
-    "ImageURL" $emojiUrl
-    "Fields" $fields
-  ) -}}
+  {{- if or $tooManyEmojis (lt $i $ccExecLimit) -}}
+    {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
+      "AuthorID" $userID
+      "ChannelID" $channelID
+      "Title" "Emoji Expander"
+      "ImageURL" $emojiUrl
+      "Fields" $fields
+    ) -}}
+  {{- else -}}
+    {{- $tooManyEmojis = true -}}
+  {{- end -}}
 {{- end -}}
 
 {{ deleteTrigger $deleteTriggerDelay }}
+
+{{ if $tooManyEmojis }}
+  {{- /* timing is notoriously unreliable with `execCC` so wait a while before sending the error message */ -}}
+  {{ sleep 10 }}
+  {{ $errorMsgID := sendMessageRetID $channelID (joinStr ""
+    "⚠️ Only the first " $ccExecLimit " emojis can be displayed. Please try again with fewer emojis."
+  ) }}
+  {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
+{{ end }}
