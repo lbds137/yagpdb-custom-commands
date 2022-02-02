@@ -21,74 +21,77 @@
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullURLRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 
-{{ $args := parseArgs 1 "Usage: `[emoji or message link] [index of desired emoji (optional)]`"
-    (carg "string" "emoji or message link")
-    (carg "int" "index of desired emoji (optional)")
+{{ $args := parseArgs 1 "Usage: `[emoji(s) and / or message link(s)]`"
+  (carg "string" "emoji(s) and / or message link(s)")
 }}
 
-{{ $emojiArg := $args.Get 0 }}
-{{ $indexArg := 1 }}
-{{ if $args.IsSet 1 }}
-    {{ $indexArg = $args.Get 1 }}
-{{ end }}
-{{ $emojiStrings := "" }}
-{{ $messageLink := "" }}
+{{ $arg := $args.Get 0 }}
 
-{{ $emojiStrings = reFindAll $emojiRegex $emojiArg }}
-{{ if and (not $emojiStrings) (reFind $fullURLRegex $emojiArg) }}
-    {{ $triggerMsgObj := .Message }}
-    {{ $triggerMsg := $triggerMsgObj.Content }}
-    {{ $messageLink = reFind $fullURLRegex $triggerMsg }}
+{{ $emojiStrings := cslice }}
+{{ $messageLinks := cslice }}
+{{ $emojiMessageLinkDict := sdict }}
 
-    {{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
-    {{ $gcmSlice := split $gcmString "/" }}
-    {{ $guildID := index $gcmSlice 0 }}
-    {{ $channelID := index $gcmSlice 1 }}
-    {{ $messageID := index $gcmSlice 2 }}
-    {{ $message := getMessage $channelID $messageID }}
+{{ $emojiStrings = $emojiStrings.AppendSlice (reFindAll $emojiRegex $arg) }}
+{{ $messageLinks = $messageLinks.AppendSlice (reFindAll $fullURLRegex $arg) }}
 
-    {{ $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) }}
-    {{ $staffCheck := hasRoleID $staffRoleID }}
-    {{ $thisChannelNSFW := (getChannelOrThread $triggerMsgObj.ChannelID).NSFW }}
-    {{ $thatChannelNSFW := "" }}
-    {{ if getChannelOrThread $channelID }}
-        {{ $thatChannelNSFW = (getChannelOrThread $channelID).NSFW }}
-    {{ end }}
-    {{ $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) }}
+{{ $userID := .User.ID }}
+{{ $channelID := .Channel.ID }}
+{{ $triggerMsgObj := .Message }}
+{{ $triggerMsg := $triggerMsgObj.Content }}
+{{ $staffCheck := hasRoleID $staffRoleID }}
+{{ $thisChannelNSFW := (getChannelOrThread $triggerMsgObj.ChannelID).NSFW }}
 
-    {{ if and $message $guildCheck (or $staffCheck $nsfwCheck) }}
-        {{ $emojiStrings = reFindAll $emojiRegex $message.Content }}
-    {{ end }}
-{{ end }}
+{{- range $i, $messageLink := $messageLinks -}}
+  {{- $msgLinkSlice := split $messageLink "/" -}}
+  {{- $mlsLen := len $msgLinkSlice -}}
+  {{- $guildID := index $msgLinkSlice (sub $mlsLen 3) -}}
+  {{- $channelID := index $msgLinkSlice (sub $mlsLen 2) -}}
+  {{- $messageID := index $msgLinkSlice (sub $mlsLen 1) -}}
+  {{- $message := getMessage $channelID $messageID -}}
 
-{{ if $emojiStrings }}
-    {{ $emojiString := index $emojiStrings (sub $indexArg 1) }}
-    {{ $fileExtension := ".png" }}
-    {{ if reFind $animatedEmojiRegex $emojiString }}
-        {{ $fileExtension = ".gif" }}
-    {{ end }}
-    {{ $emojiStringParts := split $emojiString ":" }}
-    {{ $emojiName := index $emojiStringParts 1 }}
-    {{ $emojiUrl := joinStr ""
-        "https://cdn.discordapp.com/emojis/"
-        (reFind $emojiIDRegex $emojiString)
-        $fileExtension
-        "?v=1"
-    }}
+  {{- $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) -}}
+  {{- $thatChannelNSFW := "" -}}
+  {{- if getChannelOrThread $channelID -}}
+    {{- $thatChannelNSFW = (getChannelOrThread $channelID).NSFW -}}
+  {{- end -}}
+  {{- $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) -}}
 
-    {{ $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) }}
-    {{ if $messageLink }}
-        {{ $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $messageLink ")" }}
-        {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) }}
-    {{ end }}
+  {{- if and $message $guildCheck (or $staffCheck $nsfwCheck) -}}
+    {{- $newEmojiStrings := reFindAll $emojiRegex $message.Content -}}
+    {{- range $newEmojiString := $newEmojiStrings -}}
+      {{- $emojiMessageLinkDict.Set $newEmojiString $messageLink -}}
+      {{- $emojiStrings = $emojiStrings.Append $newEmojiString -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
 
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "AuthorID" .User.ID
-        "ChannelID" .Channel.ID
-        "Title" "Emoji Expander"
-        "ImageURL" $emojiUrl
-        "Fields" $fields
-    ) }}
-{{ end }}
+{{- range $i, $emojiString := $emojiStrings -}}
+  {{- $fileExtension := ".png" -}}
+  {{- if reFind $animatedEmojiRegex $emojiString -}}
+    {{- $fileExtension = ".gif" -}}
+  {{- end -}}
+  {{- $emojiStringParts := split $emojiString ":" -}}
+  {{- $emojiName := index $emojiStringParts 1 -}}
+  {{- $emojiUrl := joinStr ""
+    "https://cdn.discordapp.com/emojis/"
+    (reFind $emojiIDRegex $emojiString)
+    $fileExtension
+    "?v=1" -}}
+
+  {{- $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) -}}
+  {{- $messageLink := $emojiMessageLinkDict.Get $emojiString -}}
+  {{- if $messageLink -}}
+    {{- $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $messageLink ")" -}}
+    {{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
+  {{ end }}
+
+  {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "AuthorID" $userID
+    "ChannelID" $channelID
+    "Title" "Emoji Expander"
+    "ImageURL" $emojiUrl
+    "Fields" $fields
+  ) -}}
+{{- end -}}
 
 {{ deleteTrigger $deleteTriggerDelay }}
