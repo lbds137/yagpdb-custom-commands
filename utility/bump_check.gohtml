@@ -1,20 +1,30 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
-  Trigger type: `Exact Match`
-  Trigger: `!d bump`
+  Trigger type: `Regex`
+  Trigger: `(:thumbsup:)|(👍)`
 */ -}}
 
 {{ $bumpCooldownMinutes := 120 }}
 {{ $now := currentTime }}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $lastBumpTime := (dbGet $globalCategoryID "Last Bump").Value }}
 
+{{ $messageID := 0 }}
 {{ if $lastBumpTime }}
     {{ $minutesSinceBump := toInt ($now.Sub $lastBumpTime).Minutes }}
     {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
         {{ dbSet $globalCategoryID "Last Bump" $now }}
+        {{ $messageID = sendMessageRetID nil "`Last Bump` updated!" }}
+    {{ else }}
+        {{ $messageID = sendMessageRetID nil "It is not time to bump yet!" }}
     {{ end }}
 {{ else }}
     {{ dbSet $globalCategoryID "Last Bump" $now }}
+    {{ $messageID = sendMessageRetID nil "`Last Bump` updated!" }}
 {{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
+{{ deleteMessage nil $messageID $deleteResponseDelay }}
