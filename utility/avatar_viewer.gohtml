@@ -1,7 +1,7 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
-  Trigger: `avatar`
+  Trigger: `avatar_viewer`
   Dependencies: `embed_exec`
 */ -}}
 
@@ -185,7 +185,7 @@
 {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "AuthorID" .User.ID
     "ChannelID" .Channel.ID
-    "Title" "Avatar Expander"
+    "Title" "Avatar Viewer"
     "ImageURL" (or $avatarURL $defaultAvatarURL)
     "Fields" $fields
 ) }}
