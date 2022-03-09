@@ -54,6 +54,7 @@
         {{- $randString = joinStr " " $randString $curGroup -}}
     {{- end -}}
 
+    {{ $randString = joinStr "" "‎" $randString }}
     {{ execCC $gematria $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
         "ChannelID" .Channel.ID
@@ -71,12 +72,13 @@
         {{- $randString = joinStr "" $randString $randLetter -}}
     {{- end -}}
 
-    {{- execCC $gematria $yagpdbChannelID 0 (sdict
+    {{ $randString = joinStr "" "‎" $randString }}
+    {{ execCC $gematria $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
         "ChannelID" .Channel.ID
         "Title" "Hebrew Generator"
         "Description" $randString
-    ) -}}
+    ) }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID
