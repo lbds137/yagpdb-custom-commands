@@ -9,6 +9,7 @@
 {{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 
+{{ $descriptionMaxLen := sub 2000 2 }}
 {{ $author := "" }}
 {{ $authorColor := 0 }}
 {{ $execAuthorValid := reFind "\\A\\d{16,}\\z" (toString .ExecData.AuthorID) }}
@@ -44,9 +45,13 @@
     {{ $authorColor = $dbEmbedColor }}
 {{ end }}
 
+{{ $description := (joinStr "" "‎" .ExecData.Description) }}
+{{ if ge (len (toRune $description)) $descriptionMaxLen }}
+    {{ $description = joinStr "" (slice $description 0 $descriptionMaxLen) "…" }}
+{{ end }}
 {{ $embed := cembed
     "title" .ExecData.Title
-    "description" .ExecData.Description
+    "description" $description
     "fields" .ExecData.Fields
     "color" (or .ExecData.Color $authorColor)
     "author" $author
