@@ -110,7 +110,6 @@
   {{- $atbashString = joinStr " " $atbashString $atbashWord -}}
 {{- end -}}
 
-{{ $atbashString = joinStr "" "‎" $atbashString }}
 {{ $text = joinStr "" "‎" $text }}
 {{ execCC $gematria $yagpdbChannelID 0 (sdict
   "AuthorID" .User.ID

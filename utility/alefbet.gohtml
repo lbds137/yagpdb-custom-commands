@@ -54,7 +54,6 @@
         {{- $randString = joinStr " " $randString $curGroup -}}
     {{- end -}}
 
-    {{ $randString = joinStr "" "‎" $randString }}
     {{ execCC $gematria $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
         "ChannelID" .Channel.ID
@@ -72,7 +71,6 @@
         {{- $randString = joinStr "" $randString $randLetter -}}
     {{- end -}}
 
-    {{ $randString = joinStr "" "‎" $randString }}
     {{ execCC $gematria $yagpdbChannelID 0 (sdict
         "AuthorID" .User.ID
         "ChannelID" .Channel.ID

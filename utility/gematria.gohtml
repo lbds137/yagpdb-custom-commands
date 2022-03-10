@@ -191,7 +191,6 @@
   {{ $fields = $fields.AppendSlice .ExecData.Fields }}
 {{ end }}
 
-{{ $text = joinStr "" "‎" $text }}
 {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
   "AuthorID" .User.ID
   "ChannelID" (or .ExecData.ChannelID .Channel.ID)
