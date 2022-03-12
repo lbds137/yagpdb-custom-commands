@@ -89,9 +89,11 @@
 
 {{- $atbashString := "" -}}
 {{- $words := reSplit "[[:space:]]+" $text }}
+{{- $spaces := reSplit "[^[:space:]]+" $text }}
 {{- range $i, $word := $words -}}
   {{- $atbashWord := "" -}}
-  {{- $wordChars := split $word "" }}
+  {{- $cleanedWord := reReplace `‎` $word "" }}
+  {{- $wordChars := split $cleanedWord "" }}
   {{- $wordLength := len $wordChars -}}
   {{- range $j, $char := $wordChars -}}
     {{- $atbashLetter := index $atbashDict $char -}}
@@ -107,10 +109,11 @@
     {{- end -}}
     {{- $atbashWord = joinStr "" $atbashWord $atbashLetter -}}
   {{- end -}}
-  {{- $atbashString = joinStr " " $atbashString $atbashWord -}}
+  {{- $atbashString = joinStr (index $spaces $i) $atbashString $atbashWord -}}
 {{- end -}}
 
 {{ $text = joinStr "" "‎" $text }}
+{{ $text = reReplace `\n` $text "\n‎" }}
 {{ execCC $gematria $yagpdbChannelID 0 (sdict
   "AuthorID" .User.ID
   "ChannelID" .Channel.ID

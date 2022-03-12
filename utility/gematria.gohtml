@@ -86,6 +86,7 @@
   (carg "string" "text") }}
 
 {{ $text := or .ExecData.Description ($args.Get 0) }}
+{{ $text = reReplace `‎` $text "" }}
 
 {{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}

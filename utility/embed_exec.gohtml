@@ -46,6 +46,7 @@
 {{ end }}
 
 {{ $description := (joinStr "" "‎" .ExecData.Description) }}
+{{ $description = reReplace `\n` $description "\n‎" }}
 {{ if ge (len (toRune $description)) $descriptionMaxLen }}
     {{ $description = joinStr "" (slice $description 0 $descriptionMaxLen) "…" }}
 {{ end }}
