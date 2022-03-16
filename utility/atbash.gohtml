@@ -86,14 +86,14 @@
 {{- $args := parseArgs 1 "Usage: [text from which to generate atbash]"
   (carg "string" "text") -}}
 {{- $text := $args.Get 0 -}}
+{{- $text = reReplace `‎` $text "" -}}
 
 {{- $atbashString := "" -}}
 {{- $words := reSplit "[[:space:]]+" $text }}
 {{- $spaces := reSplit "[^[:space:]]+" $text }}
 {{- range $i, $word := $words -}}
   {{- $atbashWord := "" -}}
-  {{- $cleanedWord := reReplace `‎` $word "" }}
-  {{- $wordChars := split $cleanedWord "" }}
+  {{- $wordChars := split $word "" }}
   {{- $wordLength := len $wordChars -}}
   {{- range $j, $char := $wordChars -}}
     {{- $atbashLetter := index $atbashDict $char -}}

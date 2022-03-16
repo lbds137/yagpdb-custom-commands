@@ -45,10 +45,13 @@
     {{ $authorColor = $dbEmbedColor }}
 {{ end }}
 
-{{ $description := (joinStr "" "‎" .ExecData.Description) }}
-{{ $description = reReplace `\n` $description "\n‎" }}
-{{ if ge (len (toRune $description)) $descriptionMaxLen }}
-    {{ $description = joinStr "" (slice $description 0 $descriptionMaxLen) "…" }}
+{{ $description := .ExecData.Description }}
+{{ if $description }}
+    {{ $description = (joinStr "" "‎" $description) }}
+    {{ $description = reReplace `\n` $description "\n‎" }}
+    {{ if ge (len (toRune $description)) $descriptionMaxLen }}
+        {{ $description = joinStr "" (slice $description 0 $descriptionMaxLen) "…" }}
+    {{ end }}
 {{ end }}
 {{ $embed := cembed
     "title" .ExecData.Title
