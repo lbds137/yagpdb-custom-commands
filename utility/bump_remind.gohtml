@@ -13,7 +13,11 @@
 
 {{ $bumpCooldownMinutes := 120 }}
 {{ $now := currentTime }}
-{{ $reminderMessage := joinStr "" "It is now time to bump **" .Guild.Name "**!" }}
+{{ $reminderMessage := joinStr ""
+    "It's time to bump **" .Guild.Name "**! \n"
+    "To bump the server, use the `/bump` command in this channel. \n"
+    "**Then, __send a message__ with a :thumbsup: to confirm the bump.**"
+}}
 
 {{ if $lastBumpTime }}
     {{ $minutesSinceBump := toInt ($now.Sub $lastBumpTime).Minutes }}
