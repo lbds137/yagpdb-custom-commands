@@ -49,6 +49,8 @@
 {{ if $description }}
     {{ $description = (joinStr "" "‎" $description) }}
     {{ $description = reReplace `\n` $description "\n‎" }}
+    {{- /* undo LRM hack for DB lookups */ -}}
+    {{ $description = reReplace "‎```" $description "```" }}
     {{ if ge (len (toRune $description)) $descriptionMaxLen }}
         {{ $description = joinStr "" (slice $description 0 $descriptionMaxLen) "…" }}
     {{ end }}
