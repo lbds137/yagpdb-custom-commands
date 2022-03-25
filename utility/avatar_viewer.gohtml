@@ -29,8 +29,8 @@
 {{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
 {{ $fullURLRegex := joinStr "" $baseURLRegex $snowflakeRegex "/" $snowflakeRegex "/" $snowflakeRegex }}
 
-{{ $modActionRegex := joinStr "" "(\\*){2}.{1,}(" (joinStr "|" $modActions.StringSlice) ") "}}
-{{ $usernameRegex := "[^#]{1,}(\\*){2}#\\d{4}" }} {{- /* yes, it's annoying that there are stars in the middle */ -}}
+{{ $modActionRegex := joinStr "" "(" (joinStr "|" $modActions.StringSlice) ")(\\*){2}"}}
+{{ $usernameRegex := " [^#]{1,}#\\d{4}" }}
 {{ $modActionLogRegex := joinStr "" $modActionRegex $usernameRegex " \\*\\(ID " $snowflakeRegex "\\)\\*" }}
 
 {{- /* default argument values */ -}}
@@ -113,10 +113,8 @@
                     {{- /* we found a mod action log entry, so let's grab the info */ -}}
                     {{ if reFind $modActionLogRegex $embedDescription }}
                         {{ $usernameAndID := reReplace $modActionRegex $embedDescription "" }}
-                        {{ $usernameWithStars := reFind $usernameRegex $usernameAndID }}
-
+                        {{ $avatarOwner = reFind $usernameRegex $usernameAndID }}
                         {{ $avatarOwnerID = reFind $snowflakeRegex $embedDescription }}
-                        {{ $avatarOwner = reReplace "\\*\\*#" $usernameWithStars "#" }}
                         {{ $avatarURL = joinStr "" $embed.Thumbnail.URL "?size=" $size }}
                     {{ end }}
                 {{ end }}
