@@ -29,8 +29,8 @@
 {{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
 {{ $fullURLRegex := joinStr "" $baseURLRegex $snowflakeRegex "/" $snowflakeRegex "/" $snowflakeRegex }}
 
-{{ $modActionRegex := joinStr "" "(\\*){2}.{1,}(" (joinStr "|" $modActions.StringSlice) ") "}}
-{{ $usernameRegex := "[^#]{1,}(\\*){2}#\\d{4}" }} {{- /* yes, it's annoying that there are stars in the middle */ -}}
+{{ $modActionRegex := joinStr "" "(\\*){2}[^\\w]{1,}(" (joinStr "|" $modActions.StringSlice) ")(\\*\\*)? "}}
+{{ $usernameRegex := "[^#]{1,}(\\*\\*)?#\\d{4}" }} {{- /* yes, it's annoying that there are stars in the middle */ -}}
 {{ $modActionLogRegex := joinStr "" $modActionRegex $usernameRegex " \\*\\(ID " $snowflakeRegex "\\)\\*" }}
 
 {{- /* default argument values */ -}}
