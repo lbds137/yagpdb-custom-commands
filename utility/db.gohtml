@@ -90,9 +90,14 @@
 
     {{ if $value }}
         {{- /* format the value for user-friendly viewing */ -}}
-        {{ if ne "string" (printf "%T" $value) }}
-            {{ $value = json $value }}
-            {{ $value = reReplace "\\\"" $value "" }}
+        {{ $valueType := printf "%T" $value }}
+        {{ if ne "string" $valueType }}
+            {{ try }}
+                {{ $value = json $value }}
+                {{ $value = reReplace "\\\"" $value "" }}
+            {{ catch }}
+                {{ $value = joinStr "" "(unable to render type " $valueType ")" }}
+            {{ end }}
         {{ end }}
         {{ $resultText = joinStr "" "Value successfully " $ptAction "!" }}
     {{ else }}
