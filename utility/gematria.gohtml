@@ -16,7 +16,7 @@
 {{ $chanCatID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $gemDict := (dbGet $gCatID "Gematria Dictionary").Value }}
-{{ $hebIndDict := (dbGet $gCatID "Hebrew Index Dictionary").Value }}
+{{ $hebIdxDict := (dbGet $gCatID "Hebrew Index Dictionary").Value }}
 {{ $delTrigDelay := or (toInt (dbGet $gCatID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commCatID "embed_exec").Value }}
 {{ $yagChanID := toInt (dbGet $chanCatID "YAGPDB Channel ID").Value }}
@@ -35,18 +35,23 @@
 {{ $maxDepWord := 0 }}
 
 {{ $lines := split $text "\n" }}
-{{- range $line := $lines -}}
+{{- range $i, $line := $lines -}}
   {{- $lenLine := 0 -}}
   {{- $valLine := 0 -}}
   {{- $redLine := cslice -}}
   {{- $depLine := 0 -}}
 
   {{- $words := split $line " " -}}
-  {{- range $word := $words -}}
+  {{- range $j, $word := $words -}}
     {{- $lenWord := 0 -}}
     {{- $valWord := 0 -}}
     {{- $redWord := cslice -}}
     {{- $depWord := 0 -}}
+
+    {{- $lSep := "" }}
+    {{- if and (ne $i (sub (len $lines) 1)) (eq $j (sub (len $words) 1)) -}}
+      {{- $lSep = " |" }}
+    {{- end -}}
 
     {{- range $letter := split $word "" -}}
       {{- $valLetter := $gemDict.Get $letter -}}
@@ -62,7 +67,7 @@
       {{- range $digit := split (toString $red) "" -}}
         {{- $redStep = add $redStep (toInt $digit) -}}
       {{- end -}}
-      {{- $redWord = $redWord.Append (toString $redStep) -}}
+      {{- $redWord = $redWord.Append (joinStr "" $redStep $lSep) -}}
       {{- $red = $redStep -}}
       {{- $depWord = add $depWord 1 -}}
     {{- end -}}
@@ -72,11 +77,11 @@
     {{- $textDict.Set "w" $textWords -}}
 
     {{- $lenWords := $lenDict.Get "w" -}}
-    {{- $lenWords = $lenWords.Append (toString $lenWord) -}}
+    {{- $lenWords = $lenWords.Append (joinStr "" $lenWord $lSep) -}}
     {{- $lenDict.Set "w" $lenWords -}}
 
     {{- $valWords := $valDict.Get "w" -}}
-    {{- $valWords = $valWords.Append (toString $valWord) -}}
+    {{- $valWords = $valWords.Append (joinStr "" $valWord $lSep) -}}
     {{- $valDict.Set "w" $valWords -}}
 
     {{- $redWords := $redDict.Get "w" -}}
@@ -228,8 +233,8 @@
 {{ $f := cslice }}
 {{ if and (eq 1 $nWords) (eq 1 (len (toRune $firstWord))) }}
   {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" $tGem "inline" false) }}
-  {{ if $hebIndDict.HasKey $firstWord }}
-    {{ $iLetter := $hebIndDict.Get $firstWord }}
+  {{ if $hebIdxDict.HasKey $firstWord }}
+    {{ $iLetter := $hebIdxDict.Get $firstWord }}
     {{ $nLetter := add 1 $iLetter }}
     {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" $nLetter "`") "inline" false) }}
 
