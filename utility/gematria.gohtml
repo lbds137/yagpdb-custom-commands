@@ -11,153 +11,268 @@
 {{ $text := or .ExecData.Description ($args.Get 0) }}
 {{ $text = reReplace `‎` $text "" }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $gCatID := toInt (dbGet 0 "Global").Value }}
+{{ $commCatID := toInt (dbGet 0 "Commands").Value }}
+{{ $chanCatID := toInt (dbGet 0 "Channels").Value }}
 
-{{ $gematriaDict := (dbGet $globalCategoryID "Gematria Dictionary").Value }}
-{{ $hebrewIndexDict := (dbGet $globalCategoryID "Hebrew Index Dictionary").Value }}
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $gemDict := (dbGet $gCatID "Gematria Dictionary").Value }}
+{{ $hebIndDict := (dbGet $gCatID "Hebrew Index Dictionary").Value }}
+{{ $delTrigDelay := or (toInt (dbGet $gCatID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commCatID "embed_exec").Value }}
+{{ $yagChanID := toInt (dbGet $chanCatID "YAGPDB Channel ID").Value }}
 
-{{ $wordLengthValues := cslice }}
-{{ $totalLength := 0 }}
-{{ $gematriaValues := cslice }}
-{{ $totalGematria := 0 }}
-{{ $words := reSplit "[[:space:]]+" $text }}
-{{ $numWords := len $words }}
-{{ $firstWord := index $words 0 }}
-{{- range $i, $word := $words -}}
-  {{- $wordLength := (len (toRune $word)) -}}
-  {{- $wordLengthValues = $wordLengthValues.Append (toString $wordLength) -}}
-  {{- $totalLength = add $totalLength $wordLength -}}
-  {{- $gematriaValue := 0 -}}
-  {{- range $j, $char := split $word "" -}}
-    {{- $curVal := index $gematriaDict $char -}}
-    {{- $gematriaValue = add $gematriaValue $curVal -}}
+{{ $textDict := sdict "t" "" "l" cslice "w" cslice }}
+{{ $lenDict := sdict "t" 0 "l" cslice "w" cslice }}
+{{ $valDict := sdict "t" 0 "l" cslice "w" cslice }}
+{{ $redDict := sdict "t" cslice "l" cslice "w" cslice }}
+
+{{ $lenTotal := 0 }}
+{{ $valTotal := 0 }}
+{{ $redTotal := cslice }}
+{{ $depTotal := 0 }}
+
+{{ $maxDepLine := 0 }}
+{{ $maxDepWord := 0 }}
+
+{{ $lines := split $text "\n" }}
+{{- range $line := $lines -}}
+  {{- $lenLine := 0 -}}
+  {{- $valLine := 0 -}}
+  {{- $redLine := cslice -}}
+  {{- $depLine := 0 -}}
+
+  {{- $words := split $line " " -}}
+  {{- range $word := $words -}}
+    {{- $lenWord := 0 -}}
+    {{- $valWord := 0 -}}
+    {{- $redWord := cslice -}}
+    {{- $depWord := 0 -}}
+
+    {{- range $letter := split $word "" -}}
+      {{- $valLetter := $gemDict.Get $letter -}}
+      {{- if $valLetter -}}
+        {{- $lenWord = add $lenWord 1 -}}
+        {{- $valWord = add $valWord $valLetter -}}
+      {{- end -}}
+    {{- end -}}
+
+    {{- $red := $valWord -}}
+    {{- while ge $red 10 -}}
+      {{- $redStep := 0 -}}
+      {{- range $digit := split (toString $red) "" -}}
+        {{- $redStep = add $redStep (toInt $digit) -}}
+      {{- end -}}
+      {{- $redWord = $redWord.Append (toString $redStep) -}}
+      {{- $red = $redStep -}}
+      {{- $depWord = add $depWord 1 -}}
+    {{- end -}}
+
+    {{- $textWords := $textDict.Get "w" -}}
+    {{- $textWords = $textWords.Append $word -}}
+    {{- $textDict.Set "w" $textWords -}}
+
+    {{- $lenWords := $lenDict.Get "w" -}}
+    {{- $lenWords = $lenWords.Append (toString $lenWord) -}}
+    {{- $lenDict.Set "w" $lenWords -}}
+
+    {{- $valWords := $valDict.Get "w" -}}
+    {{- $valWords = $valWords.Append (toString $valWord) -}}
+    {{- $valDict.Set "w" $valWords -}}
+
+    {{- $redWords := $redDict.Get "w" -}}
+    {{- $redWords = $redWords.Append $redWord -}}
+    {{- $redDict.Set "w" $redWords -}}
+
+    {{- if gt $depWord $maxDepWord -}}
+      {{- $maxDepWord = $depWord -}}
+    {{- end -}}
+
+    {{- $lenLine = add $lenLine $lenWord -}}
+    {{- $valLine = add $valLine $valWord -}}
   {{- end -}}
-  {{- $gematriaValues = $gematriaValues.Append (toString $gematriaValue) -}}
-  {{- $totalGematria = add $totalGematria $gematriaValue -}}
+
+  {{- $red := $valLine -}}
+  {{- while ge $red 10 -}}
+    {{- $redStep := 0 -}}
+    {{- range $digit := split (toString $red) "" -}}
+      {{- $redStep = add $redStep (toInt $digit) -}}
+    {{- end -}}
+    {{- $redLine = $redLine.Append (toString $redStep) -}}
+    {{- $red = $redStep -}}
+    {{- $depLine = add $depLine 1 -}}
+  {{- end -}}
+
+  {{- $textLines := $textDict.Get "l" -}}
+  {{- $textLines = $textLines.Append $line -}}
+  {{- $textDict.Set "l" $textLines -}}
+
+  {{- $lenLines := $lenDict.Get "l" -}}
+  {{- $lenLines = $lenLines.Append (toString $lenLine) -}}
+  {{- $lenDict.Set "l" $lenLines -}}
+
+  {{- $valLines := $valDict.Get "l" -}}
+  {{- $valLines = $valLines.Append (toString $valLine) -}}
+  {{- $valDict.Set "l" $valLines -}}
+
+  {{- $redLines := $redDict.Get "l" -}}
+  {{- $redLines = $redLines.Append $redLine -}}
+  {{- $redDict.Set "l" $redLines -}}
+
+  {{- if gt $depLine $maxDepLine -}}
+    {{- $maxDepLine = $depLine -}}
+  {{- end -}}
+
+  {{- $lenTotal = add $lenTotal $lenLine -}}
+  {{- $valTotal = add $valTotal $valLine -}}
 {{- end -}}
 
-{{ $allGematriaValues := $gematriaValues.Append (toString $totalGematria) }}
-{{ $firstReductionValues := cslice }}
-{{ $secondReductionValues := cslice }}
-{{ $finalReductionValues := cslice }}
-{{ $totalFirstReduction := 0 }}
-{{ $totalSecondReduction := 0 }}
-{{ $totalFinalReduction := 0 }}
-
-{{- range $i, $gematriaValue := $allGematriaValues -}}
-  {{- $firstReductionValue := 0 -}}
-  {{- range $j, $digit := split $gematriaValue "" -}}
-    {{- $firstReductionValue = add $firstReductionValue (toInt $digit) -}}
+{{- $red := $valTotal -}}
+{{- while ge $red 10 -}}
+  {{- $redStep := 0 -}}
+  {{- range $digit := split (toString $red) "" -}}
+    {{- $redStep = add $redStep (toInt $digit) -}}
   {{- end -}}
+  {{- $redTotal = $redTotal.Append (toString $redStep) -}}
+  {{- $red = $redStep -}}
+  {{- $depTotal = add $depTotal 1 -}}
+{{- end -}}
 
-  {{- $secondReductionValue := 0 -}}
-  {{- range $j, $digit := split (toString $firstReductionValue) "" -}}
-      {{- $secondReductionValue = add $secondReductionValue (toInt $digit) -}}
-  {{- end -}}
+{{ $textDict.Set "t" $text }}
+{{ $lenDict.Set "t" $lenTotal }}
+{{ $valDict.Set "t" $valTotal }}
+{{ $redDict.Set "t" $redTotal }}
 
-  {{- $finalReductionValue := 0 -}}
-  {{- range $j, $digit := split (toString $secondReductionValue) "" -}}
-    {{- $finalReductionValue = add $finalReductionValue (toInt $digit) -}}
-  {{- end -}}
+{{ $nWords := len ($textDict.Get "w") }}
+{{ $nLines := len ($textDict.Get "l") }}
+{{ $firstWord := index ($textDict.Get "w") 0 }}
 
-  {{- if eq $i $numWords -}}
-    {{- $totalFirstReduction = $firstReductionValue -}}
-    {{- $totalSecondReduction = $secondReductionValue -}}
-    {{- $totalFinalReduction = $finalReductionValue -}}
+{{ $wSepL := "`" }}
+{{ $wSepR := "`" }}
+{{ if gt $nWords 1 }}
+  {{ $wSepL = "`[" }}
+  {{ $wSepR = "]`" }}
+{{ end }}
+{{ $wLen := joinStr "" $wSepL (joinStr " " ($lenDict.Get "w").StringSlice) $wSepR }}
+
+{{ $lSepL := "`" }}
+{{ $lSepR := "`" }}
+{{ if gt $nLines 1 }}
+  {{ $lSepL = "`[" }}
+  {{ $lSepR = "]`" }}
+{{ end }}
+{{ $lLen := joinStr "" $lSepL (joinStr " " ($lenDict.Get "l").StringSlice) $lSepR }}
+
+{{ $wGem := "" }}
+{{ $wRedPrev := cslice }}
+{{- range $i := seq -1 $maxDepWord -}}
+  {{- $iVal := "" -}}
+  {{- $join := "" -}}
+  {{- if lt $i 0 -}}
+    {{- $wRedPrev = $valDict.Get "w" -}}
+    {{- $iVal = joinStr "" $wSepL (joinStr " " $wRedPrev.StringSlice) $wSepR -}}
   {{- else -}}
-    {{- $firstReductionValues = $firstReductionValues.Append (toString $firstReductionValue) -}}
-    {{- $secondReductionValues = $secondReductionValues.Append (toString $secondReductionValue) -}}
-    {{- $finalReductionValues = $finalReductionValues.Append (toString $finalReductionValue) -}}
+    {{- $wRedCur := cslice -}}
+    {{- range $j := seq 0 $nWords -}}
+      {{- $wReds := index ($redDict.Get "w") $j -}}
+      {{- if gt (len $wReds) $i -}}
+        {{- $wRedCur = $wRedCur.Append (index $wReds $i) -}}
+      {{- else -}}
+        {{- $wRedCur = $wRedCur.Append (index $wRedPrev $j) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $iVal = joinStr "" $wSepL (joinStr " " $wRedCur.StringSlice) $wSepR -}}
+    {{- $join = " > " -}}
+    {{- $wRedPrev = $wRedCur -}}
   {{- end -}}
+  {{- $wGem = joinStr $join $wGem $iVal -}}
 {{- end -}}
 
-{{ $openGroup := "" }}
-{{ $closeGroup := "" }}
-{{ $connector := " > " }}
-{{ if gt $numWords 1 }}
-  {{ $openGroup = "[" }}
-  {{ $closeGroup = "]" }}
-{{ end }}
-{{ $wordLength := joinStr ""
-  $openGroup (joinStr " " $wordLengthValues.StringSlice) $closeGroup
-}}
-{{ $wordGematriaReduction := joinStr ""
-  $openGroup (joinStr " " $gematriaValues.StringSlice) $closeGroup
-}}
-{{ if ne (json $gematriaValues) (json $firstReductionValues) }}
-  {{ $wordGematriaReduction = joinStr "" $wordGematriaReduction $connector
-    $openGroup (joinStr " " $firstReductionValues.StringSlice) $closeGroup
-  }}
-  {{ if ne (json $firstReductionValues) (json $secondReductionValues) }}
-    {{ $wordGematriaReduction = joinStr "" $wordGematriaReduction $connector
-      $openGroup (joinStr " " $secondReductionValues.StringSlice) $closeGroup
-    }}
-    {{ if ne (json $secondReductionValues) (json $finalReductionValues) }}
-      {{ $wordGematriaReduction = joinStr "" $wordGematriaReduction $connector
-        $openGroup (joinStr " " $finalReductionValues.StringSlice) $closeGroup
-      }}
-    {{ end }}
-  {{ end }}
-{{ end }}
-{{ $totalGematriaReduction := (toString $totalGematria) }}
-{{ if ne $totalGematria $totalFirstReduction }}
-  {{ $totalGematriaReduction = joinStr "" $totalGematriaReduction $connector $totalFirstReduction }}
-  {{ if ne $totalFirstReduction $totalSecondReduction }}
-    {{ $totalGematriaReduction = joinStr "" $totalGematriaReduction $connector $totalSecondReduction }}
-    {{ if ne $totalSecondReduction $totalFinalReduction }}
-      {{ $totalGematriaReduction = joinStr "" $totalGematriaReduction $connector $totalFinalReduction }}
-    {{ end }}
-  {{ end }}
-{{ end }}
+{{ $lGem := "" }}
+{{ $lRedPrev := cslice }}
+{{- range $i := seq -1 $maxDepLine -}}
+  {{- $iVal := "" -}}
+  {{- $join := "" -}}
+  {{- if lt $i 0 -}}
+    {{- $lRedPrev = $valDict.Get "l" -}}
+    {{- $iVal = joinStr "" $lSepL (joinStr " " $lRedPrev.StringSlice) $lSepR -}}
+  {{- else -}}
+    {{- $lRedCur := cslice -}}
+    {{- range $j := seq 0 $nLines -}}
+      {{- $lReds := index ($redDict.Get "l") $j -}}
+      {{- if gt (len $lReds) $i -}}
+        {{- $lRedCur = $lRedCur.Append (index $lReds $i) -}}
+      {{- else -}}
+        {{- $lRedCur = $lRedCur.Append (index $lRedPrev $j) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $iVal = joinStr "" $lSepL (joinStr " " $lRedCur.StringSlice) $lSepR -}}
+    {{- $join = " > " -}}
+    {{- $lRedPrev = $lRedCur -}}
+  {{- end -}}
+  {{- $lGem = joinStr $join $lGem $iVal -}}
+{{- end -}}
 
-{{ $fields := cslice }}
-{{ if and (eq 1 $numWords) (eq 1 (len (toRune $firstWord))) }}
-  {{ $fields = $fields.Append (sdict "name" "Letter Gematria" "value" (toString $totalGematria) "inline" false) }}
-  {{ if $hebrewIndexDict.HasKey $firstWord }}
-    {{ $letterIndex := $hebrewIndexDict.Get $firstWord }}
-    {{ $letterNumber := add 1 $letterIndex }}
-    {{ $fields = $fields.Append (sdict "name" "Letter Number" "value" (toString $letterNumber) "inline" false) }}
+{{ $tGem := "" }}
+{{- range $i := seq -1 $depTotal -}}
+  {{- $iVal := "" -}}
+  {{- $join := "" -}}
+  {{- if lt $i 0 -}}
+    {{- $iVal = toString $valTotal -}}
+  {{- else -}}
+    {{- $iVal = index ($redDict.Get "t") $i -}}
+    {{- $join = " > " -}}
+  {{- end -}}
+  {{- $tGem = joinStr $join $tGem (joinStr "" "`" $iVal "`") -}}
+{{- end -}}
 
-    {{ $rwsNumeralDict := (dbGet $globalCategoryID "RWS Numeral Dictionary").Value }}
-    {{ $thothNumeralDict := (dbGet $globalCategoryID "Thoth Numeral Dictionary").Value }}
-    {{ $rwsTarotDict := (dbGet $globalCategoryID "RWS Tarot Dictionary").Value }}
-    {{ $thothTarotDict := (dbGet $globalCategoryID "Thoth Tarot Dictionary").Value }}
+{{ $f := cslice }}
+{{ if and (eq 1 $nWords) (eq 1 (len (toRune $firstWord))) }}
+  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" (joinStr "" "`" $tGem "`") "inline" false) }}
+  {{ if $hebIndDict.HasKey $firstWord }}
+    {{ $iLetter := $hebIndDict.Get $firstWord }}
+    {{ $nLetter := add 1 $iLetter }}
+    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" $nLetter "`") "inline" false) }}
 
-    {{ $rwsTarotCard := joinStr " - " ($rwsNumeralDict.Get $letterIndex) ($rwsTarotDict.Get $letterIndex) }}
-    {{ $thothTarotCard := joinStr " - " ($thothNumeralDict.Get $letterIndex) ($thothTarotDict.Get $letterIndex) }}
-    {{ if eq $rwsTarotCard $thothTarotCard }}
-      {{ $fields = $fields.Append (sdict "name" "Major Arcana" "value" $rwsTarotCard "inline" false) }}
+    {{ $rwsNumDict := (dbGet $gCatID "RWS Numeral Dictionary").Value }}
+    {{ $thothNumDict := (dbGet $gCatID "Thoth Numeral Dictionary").Value }}
+    {{ $rwsCardDict := (dbGet $gCatID "RWS Tarot Dictionary").Value }}
+    {{ $thothCardDict := (dbGet $gCatID "Thoth Tarot Dictionary").Value }}
+
+    {{ $rwsCard := joinStr " - " ($rwsNumDict.Get $iLetter) ($rwsCardDict.Get $iLetter) }}
+    {{ $thothCard := joinStr " - " ($thothNumDict.Get $iLetter) ($thothCardDict.Get $iLetter) }}
+    {{ if eq $rwsCard $thothCard }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsCard "inline" false) }}
     {{ else }}
-      {{ $fields = $fields.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsTarotCard "inline" false) }}
-      {{ $fields = $fields.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothTarotCard "inline" false) }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsCard "inline" false) }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothCard "inline" false) }}
     {{ end }}
   {{ end }}
 {{ else }}
-  {{ if gt $numWords 1 }}
-    {{ $fields = $fields.Append (sdict "name" "Word Count" "value" (toString $numWords) "inline" false) }}
+  {{ if gt $nWords 1 }}
+    {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $nWords "`") "inline" false) }}
   {{ end }}
-  {{ $fields = $fields.Append (sdict "name" "Word Length" "value" $wordLength "inline" false) }}
-  {{ $fields = $fields.Append (sdict "name" "Word Gematria" "value" $wordGematriaReduction "inline" false) }}
-  {{ if gt $numWords 1 }}
-    {{ $fields = $fields.Append (sdict "name" "Total Length" "value" (toString $totalLength) "inline" false) }}
-    {{ $fields = $fields.Append (sdict "name" "Total Gematria" "value" $totalGematriaReduction "inline" false) }}
+  {{ $f = $f.Append (sdict "name" "Word Length" "value" $wLen "inline" false) }}
+  {{ $f = $f.Append (sdict "name" "Word Gematria" "value" $wGem "inline" false) }}
+  {{ if and (gt $nLines 1) (ne $nWords $nLines) }}
+    {{ $f = $f.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $nLines "`") "inline" false) }}
+    {{ $f = $f.Append (sdict "name" "Line Length" "value" $lLen "inline" false) }}
+    {{ $f = $f.Append (sdict "name" "Line Gematria" "value" $lGem "inline" false) }}
+  {{ end }}
+  {{ if gt $nWords 1 }}
+    {{ $f = $f.Append (sdict "name" "Total Length" "value" (joinStr "" "`" $lenTotal "`") "inline" false) }}
+    {{ $f = $f.Append (sdict "name" "Total Gematria" "value" $tGem "inline" false) }}
   {{ end }}
 {{ end }}
 {{ if .ExecData.Fields }}
-  {{ $fields = $fields.AppendSlice .ExecData.Fields }}
+  {{ $f = $f.AppendSlice .ExecData.Fields }}
 {{ end }}
 
-{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+{{ execCC $embed_exec $yagChanID 0 (sdict
   "AuthorID" .User.ID
   "ChannelID" (or .ExecData.ChannelID .Channel.ID)
   "Title" (or .ExecData.Title "Gematria Calculator")
   "Description" $text
-  "Fields" $fields
+  "Fields" $f
 ) }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+{{ deleteTrigger $delTrigDelay }}
