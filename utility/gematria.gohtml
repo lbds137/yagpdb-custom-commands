@@ -154,16 +154,16 @@
 {{ $wSepL := "`" }}
 {{ $wSepR := "`" }}
 {{ if gt $nWords 1 }}
-  {{ $wSepL = "`[" }}
-  {{ $wSepR = "]`" }}
+  {{ $wSepL = "`[ " }}
+  {{ $wSepR = " ]`" }}
 {{ end }}
 {{ $wLen := joinStr "" $wSepL (joinStr " " ($lenDict.Get "w").StringSlice) $wSepR }}
 
 {{ $lSepL := "`" }}
 {{ $lSepR := "`" }}
 {{ if gt $nLines 1 }}
-  {{ $lSepL = "`[" }}
-  {{ $lSepR = "]`" }}
+  {{ $lSepL = "`[ " }}
+  {{ $lSepR = " ]`" }}
 {{ end }}
 {{ $lLen := joinStr "" $lSepL (joinStr " " ($lenDict.Get "l").StringSlice) $lSepR }}
 
