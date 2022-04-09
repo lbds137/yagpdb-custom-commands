@@ -227,7 +227,7 @@
 
 {{ $f := cslice }}
 {{ if and (eq 1 $nWords) (eq 1 (len (toRune $firstWord))) }}
-  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" (joinStr "" "`" $tGem "`") "inline" false) }}
+  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" $tGem "inline" false) }}
   {{ if $hebIndDict.HasKey $firstWord }}
     {{ $iLetter := $hebIndDict.Get $firstWord }}
     {{ $nLetter := add 1 $iLetter }}
