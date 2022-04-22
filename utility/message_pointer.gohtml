@@ -1,0 +1,78 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `message_pointer`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
+{{ $title := "Message Pointer" }}
+{{ $embedFieldLimit := sub 1024 2 }}
+
+{{ $args := parseArgs 1 "Usage: [message link] [comment (optional)]"
+  (carg "string" "message link")
+  (carg "string" "comment (optional)")
+}}
+{{ $linkArg := $args.Get 0 }}
+{{ $commentArg := $args.Get 1 }}
+
+{{ $messageLink := reFind $fullRegex $linkArg }}
+{{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
+{{ $gcmSlice := split $gcmString "/" }}
+{{ $guildID := index $gcmSlice 0 }}
+{{ $channelID := index $gcmSlice 1 }}
+{{ $messageID := index $gcmSlice 2 }}
+{{ $targetChannel := getChannelOrThread $channelID }}
+{{ $msg := getMessage $channelID $messageID }}
+
+{{ if $msg }}
+  {{ $fields := cslice }}
+  {{ if $commentArg }}
+    {{ $trimmedComment := $commentArg }}
+    {{ if ge (len (toRune $commentArg)) $embedFieldLimit }}
+      {{ $trimmedComment = joinStr "" (slice $commentArg 0 $embedFieldLimit) "…" }}
+    {{ end }}
+    {{ $fields = $fields.Append (sdict
+      "name" "Comment"
+      "value" $trimmedComment
+      "inline" false
+    ) }}
+  {{ end }}
+  {{ $fields = $fields.Append (sdict
+    "name" "Original Channel"
+    "value" (joinStr "" "#️⃣ [" $targetChannel.Name "](" (index (split $messageLink $messageID) 0) ")")
+    "inline" false
+  ) }}
+  {{ $fields = $fields.Append (sdict
+    "name" "Original Message"
+    "value" (joinStr "" "🔗 [Click or tap here to view the message.](" $messageLink ")")
+    "inline" false
+  ) }}
+
+  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "AuthorID" .User.ID
+    "ChannelID" .Channel.ID
+    "Title" $title
+    "Description" ""
+    "Fields" $fields
+  ) }}
+{{ else }}
+  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "Title" "Invalid Message Link"
+    "Description" (joinStr "" "⚠️ The message link argument does not match any valid message sent within the server.")
+    "DeleteResponse" true
+    "DeleteDelay" $deleteResponseDelay
+  ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
