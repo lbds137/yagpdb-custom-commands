@@ -26,10 +26,14 @@
 {{ if and (ge $n $min) (le $n $max) }}
     {{ $key := joinStr "" "Rule #" $n }}
     {{ $result := (dbGet $rulesCategoryID $key).Value }}
+    {{ $title := $key }}
+    {{ if eq $count 1 }}
+        {{ $title = "Rules" }}
+    {{ end }}
 
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID
-        "Title" $key
+        "Title" $title
         "Description" $result
     ) }}
 {{ else }}
