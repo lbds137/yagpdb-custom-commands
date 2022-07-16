@@ -10,6 +10,7 @@
 {{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $gematriaDict := (dbGet $globalCategoryID "Gematria Dictionary").Value }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $gematria := toInt (dbGet $commandsCategoryID "gematria").Value }}
 {{ $pyramid := toInt (dbGet $commandsCategoryID "pyramid").Value }}
@@ -40,9 +41,12 @@
   {{- end -}}
 {{- else -}}
   {{- range $i, $letter := split (index $words 0) "" -}}
-    {{- $curLine := joinStr "" $prevLine $letter -}}
-    {{- $pyramidString = joinStr "\n" $pyramidString $curLine -}}
-    {{- $prevLine = $curLine -}}
+    {{- $valLetter := $gematriaDict.Get $letter -}}
+    {{- if $valLetter -}}
+      {{- $curLine := joinStr "" $prevLine $letter -}}
+      {{- $pyramidString = joinStr "\n" $pyramidString $curLine -}}
+      {{- $prevLine = $curLine -}}
+    {{- end -}}
   {{- end -}}
 
   {{ $text = joinStr "" "‎" $text }}
