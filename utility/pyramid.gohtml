@@ -5,37 +5,55 @@
   Dependencies: `embed_exec`, `gematria`
 */ -}}
 
-{{- $globalCategoryID := toInt (dbGet 0 "Global").Value -}}
-{{- $commandsCategoryID := toInt (dbGet 0 "Commands").Value -}}
-{{- $channelsCategoryID := toInt (dbGet 0 "Channels").Value -}}
+{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
+{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
 
-{{- $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 -}}
-{{- $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value -}}
-{{- $gematria := toInt (dbGet $commandsCategoryID "gematria").Value -}}
-{{- $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value -}}
+{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
+{{ $gematria := toInt (dbGet $commandsCategoryID "gematria").Value }}
+{{ $pyramid := toInt (dbGet $commandsCategoryID "pyramid").Value }}
+{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
-{{- $args := parseArgs 1 "Usage: [text from which to generate pyramid gematria]"
-  (carg "string" "text") -}}
-{{- $text := $args.Get 0 -}}
-{{- $text = reReplace `‎` $text "" -}}
+{{ $args := parseArgs 1 "Usage: [text from which to generate pyramid gematria]"
+  (carg "string" "text") }}
+{{ $text := or .ExecData.Description ($args.Get 0) }}
+{{ $text = reReplace `‎` $text "" }}
+{{ $ccExecLimit := 10 }}
+{{ $userID := (or .ExecData.AuthorID .User.ID) }}
+{{ $channelID := (or .ExecData.ChannelID .Channel.ID) }}
 
-{{- $pyramidString := "" -}}
-{{- $prevLine := "" -}}
-{{- $words := reSplit "[[:space:]]+" $text }}
-{{- range $i, $letter := split (index $words 0) "" -}}
-  {{- $curLine := joinStr "" $prevLine $letter -}}
-  {{- $pyramidString = joinStr "\n" $pyramidString $curLine -}}
-  {{- $prevLine = $curLine -}}
+{{ $pyramidString := "" }}
+{{ $prevLine := "" }}
+{{ $words := reSplit "[[:space:]]+" $text }}
+{{- if gt (len $words) 1 -}}
+  {{- range $i, $word := $words -}}
+    {{- if lt $i $ccExecLimit -}}
+      {{- execCC $pyramid $yagpdbChannelID 1 (sdict
+        "AuthorID" $userID
+        "ChannelID" $channelID
+        "Description" $word
+      ) -}}
+    {{- else -}}
+      {{- sendMessage $channelID (joinStr "" "CC can only be executed " $ccExecLimit " times!") -}}
+    {{- end -}}
+  {{- end -}}
+{{- else -}}
+  {{- range $i, $letter := split (index $words 0) "" -}}
+    {{- $curLine := joinStr "" $prevLine $letter -}}
+    {{- $pyramidString = joinStr "\n" $pyramidString $curLine -}}
+    {{- $prevLine = $curLine -}}
+  {{- end -}}
+
+  {{ $text = joinStr "" "‎" $text }}
+  {{ $text = reReplace `\n` $text "\n‎" }}
+  {{ execCC $gematria $yagpdbChannelID 0 (sdict
+    "AuthorID" $userID
+    "ChannelID" $channelID
+    "Title" "Pyramid Gematria"
+    "Description" $pyramidString
+    "Fields" (cslice (sdict "name" "Word" "value" $text "inline" false))
+  ) }}
 {{- end -}}
-
-{{ $text = joinStr "" "‎" $text }}
-{{ $text = reReplace `\n` $text "\n‎" }}
-{{ execCC $gematria $yagpdbChannelID 0 (sdict
-  "AuthorID" .User.ID
-  "ChannelID" .Channel.ID
-  "Title" "Pyramid Gematria"
-  "Description" $pyramidString
-  "Fields" (cslice (sdict "name" "Word" "value" $text "inline" false))
-) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
