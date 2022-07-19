@@ -5,8 +5,7 @@
   Dependencies: `embed_exec`, `gematria_bootstrap`
 */ -}}
 
-{{ $args := parseArgs 1 "Usage: [text from which to compute gematria]"
-  (carg "string" "text") }}
+{{ $args := parseArgs 1 "Usage: [text]" (carg "string" "text") }}
 
 {{ $text := or .ExecData.Description ($args.Get 0) }}
 {{ $text = reReplace `‎` $text "" }}
@@ -131,7 +130,7 @@
   {{- $valTotal = add $valTotal $valLine -}}
 {{- end -}}
 
-{{- $red := $valTotal -}}
+{{ $red := $valTotal }}
 {{- while ge $red 10 -}}
   {{- $redStep := 0 -}}
   {{- range $digit := split (toString $red) "" -}}
@@ -232,11 +231,11 @@
 
 {{ $f := cslice }}
 {{ if and (eq 1 $nWords) (eq 1 (len (toRune $firstWord))) }}
-  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" $tGem "inline" false) }}
+  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" $tGem) }}
   {{ if $hebIdxDict.HasKey $firstWord }}
     {{ $iLetter := $hebIdxDict.Get $firstWord }}
     {{ $nLetter := add 1 $iLetter }}
-    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" $nLetter "`") "inline" false) }}
+    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" $nLetter "`")) }}
 
     {{ $rwsNumDict := (dbGet $gCatID "RWS Numeral Dictionary").Value }}
     {{ $thothNumDict := (dbGet $gCatID "Thoth Numeral Dictionary").Value }}
@@ -246,26 +245,26 @@
     {{ $rwsCard := joinStr " - " ($rwsNumDict.Get $iLetter) ($rwsCardDict.Get $iLetter) }}
     {{ $thothCard := joinStr " - " ($thothNumDict.Get $iLetter) ($thothCardDict.Get $iLetter) }}
     {{ if eq $rwsCard $thothCard }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsCard "inline" false) }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsCard) }}
     {{ else }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsCard "inline" false) }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothCard "inline" false) }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsCard) }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothCard) }}
     {{ end }}
   {{ end }}
 {{ else }}
   {{ if gt $nWords 1 }}
-    {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $nWords "`") "inline" false) }}
+    {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $nWords "`")) }}
   {{ end }}
-  {{ $f = $f.Append (sdict "name" "Word Length" "value" $wLen "inline" false) }}
-  {{ $f = $f.Append (sdict "name" "Word Gematria" "value" $wGem "inline" false) }}
+  {{ $f = $f.Append (sdict "name" "Word Length" "value" $wLen) }}
+  {{ $f = $f.Append (sdict "name" "Word Gematria" "value" $wGem) }}
   {{ if and (gt $nLines 1) (ne $nWords $nLines) }}
-    {{ $f = $f.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $nLines "`") "inline" false) }}
-    {{ $f = $f.Append (sdict "name" "Line Length" "value" $lLen "inline" false) }}
-    {{ $f = $f.Append (sdict "name" "Line Gematria" "value" $lGem "inline" false) }}
+    {{ $f = $f.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $nLines "`")) }}
+    {{ $f = $f.Append (sdict "name" "Line Length" "value" $lLen) }}
+    {{ $f = $f.Append (sdict "name" "Line Gematria" "value" $lGem) }}
   {{ end }}
   {{ if gt $nWords 1 }}
-    {{ $f = $f.Append (sdict "name" "Total Length" "value" (joinStr "" "`" $lenTotal "`") "inline" false) }}
-    {{ $f = $f.Append (sdict "name" "Total Gematria" "value" $tGem "inline" false) }}
+    {{ $f = $f.Append (sdict "name" "Total Length" "value" (joinStr "" "`" $lenTotal "`")) }}
+    {{ $f = $f.Append (sdict "name" "Total Gematria" "value" $tGem) }}
   {{ end }}
 {{ end }}
 {{ if .ExecData.Fields }}
