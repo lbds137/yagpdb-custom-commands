@@ -14,172 +14,176 @@
 {{ $commCatID := toInt (dbGet 0 "Commands").Value }}
 {{ $chanCatID := toInt (dbGet 0 "Channels").Value }}
 
-{{ $gemDict := (dbGet $gCatID "Gematria Dictionary").Value }}
-{{ $hebIdxDict := (dbGet $gCatID "Hebrew Index Dictionary").Value }}
+{{ $dGem := (dbGet $gCatID "Gematria Dictionary").Value }}
+{{ $dHebIdx := (dbGet $gCatID "Hebrew Index Dictionary").Value }}
 {{ $delTrigDelay := or (toInt (dbGet $gCatID "Delete Trigger Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commCatID "embed_exec").Value }}
 {{ $yagChanID := toInt (dbGet $chanCatID "YAGPDB Channel ID").Value }}
 
-{{ $textDict := sdict "t" "" "l" cslice "w" cslice }}
-{{ $lenDict := sdict "t" 0 "l" cslice "w" cslice }}
-{{ $valDict := sdict "t" 0 "l" cslice "w" cslice }}
-{{ $redDict := sdict "t" cslice "l" cslice "w" cslice }}
+{{ $dText := sdict "t" "" "l" cslice "w" cslice }}
+{{ $dLen := sdict "t" 0 "l" cslice "w" cslice }}
+{{ $dVal := sdict "t" 0 "l" cslice "w" cslice }}
+{{ $dRed := sdict "t" cslice "l" cslice "w" cslice }}
 
-{{ $lenTotal := 0 }}
-{{ $valTotal := 0 }}
-{{ $redTotal := cslice }}
-{{ $depTotal := 0 }}
+{{ $tLen := 0 }}
+{{ $tVal := 0 }}
+{{ $tRed := cslice }}
+{{ $tDep := 0 }}
 
-{{ $maxDepLine := 0 }}
-{{ $maxDepWord := 0 }}
+{{ $lMaxDep := 0 }}
+{{ $wMaxDep := 0 }}
 
 {{ $lines := split $text "\n" }}
-{{- range $i, $line := $lines -}}
-  {{- $lenLine := 0 -}}
-  {{- $valLine := 0 -}}
-  {{- $redLine := cslice -}}
-  {{- $depLine := 0 -}}
+{{- range $i, $l := $lines -}}
+  {{- $lLen := 0 -}}
+  {{- $lVal := 0 -}}
+  {{- $lRed := cslice -}}
+  {{- $lDep := 0 -}}
 
-  {{- $words := split $line " " -}}
-  {{- range $j, $word := $words -}}
-    {{- $lenWord := 0 -}}
-    {{- $valWord := 0 -}}
-    {{- $redWord := cslice -}}
-    {{- $depWord := 0 -}}
+  {{- $words := split $l " " -}}
+  {{- range $j, $w := $words -}}
+    {{- $wLen := 0 -}}
+    {{- $wVal := 0 -}}
+    {{- $wRed := cslice -}}
+    {{- $wDep := 0 -}}
 
     {{- $lSep := "" }}
     {{- if and (ne $i (sub (len $lines) 1)) (eq $j (sub (len $words) 1)) -}}
       {{- $lSep = " |" }}
     {{- end -}}
 
-    {{- range $letter := split $word "" -}}
-      {{- $valLetter := $gemDict.Get $letter -}}
-      {{- if $valLetter -}}
-        {{- $lenWord = add $lenWord 1 -}}
-        {{- $valWord = add $valWord $valLetter -}}
+    {{- $chars := split $w "" -}}
+    {{- range $c := $chars -}}
+      {{- $cVal := $dGem.Get $c -}}
+      {{- if $cVal -}}
+        {{- $wLen = add $wLen 1 -}}
+        {{- $wVal = add $wVal $cVal -}}
       {{- end -}}
     {{- end -}}
 
-    {{- $red := $valWord -}}
+    {{- $red := $wVal -}}
     {{- while ge $red 10 -}}
       {{- $redStep := 0 -}}
-      {{- range $digit := split (toString $red) "" -}}
-        {{- $redStep = add $redStep (toInt $digit) -}}
+      {{- $digits := split (toString $red) "" -}}
+      {{- range $d := $digits -}}
+        {{- $redStep = add $redStep (toInt $d) -}}
       {{- end -}}
-      {{- $redWord = $redWord.Append (joinStr "" $redStep $lSep) -}}
+      {{- $wRed = $wRed.Append (joinStr "" $redStep $lSep) -}}
       {{- $red = $redStep -}}
-      {{- $depWord = add $depWord 1 -}}
+      {{- $wDep = add $wDep 1 -}}
     {{- end -}}
 
-    {{- $textWords := $textDict.Get "w" -}}
-    {{- $textWords = $textWords.Append $word -}}
-    {{- $textDict.Set "w" $textWords -}}
+    {{- $wsText := $dText.Get "w" -}}
+    {{- $wsText = $wsText.Append $w -}}
+    {{- $dText.Set "w" $wsText -}}
 
-    {{- $lenWords := $lenDict.Get "w" -}}
-    {{- $lenWords = $lenWords.Append (joinStr "" $lenWord $lSep) -}}
-    {{- $lenDict.Set "w" $lenWords -}}
+    {{- $wsLen := $dLen.Get "w" -}}
+    {{- $wsLen = $wsLen.Append (joinStr "" $wLen $lSep) -}}
+    {{- $dLen.Set "w" $wsLen -}}
 
-    {{- $valWords := $valDict.Get "w" -}}
-    {{- $valWords = $valWords.Append (joinStr "" $valWord $lSep) -}}
-    {{- $valDict.Set "w" $valWords -}}
+    {{- $wsVal := $dVal.Get "w" -}}
+    {{- $wsVal = $wsVal.Append (joinStr "" $wVal $lSep) -}}
+    {{- $dVal.Set "w" $wsVal -}}
 
-    {{- $redWords := $redDict.Get "w" -}}
-    {{- $redWords = $redWords.Append $redWord -}}
-    {{- $redDict.Set "w" $redWords -}}
+    {{- $wsRed := $dRed.Get "w" -}}
+    {{- $wsRed = $wsRed.Append $wRed -}}
+    {{- $dRed.Set "w" $wsRed -}}
 
-    {{- if gt $depWord $maxDepWord -}}
-      {{- $maxDepWord = $depWord -}}
+    {{- if gt $wDep $wMaxDep -}}
+      {{- $wMaxDep = $wDep -}}
     {{- end -}}
 
-    {{- $lenLine = add $lenLine $lenWord -}}
-    {{- $valLine = add $valLine $valWord -}}
+    {{- $lLen = add $lLen $wLen -}}
+    {{- $lVal = add $lVal $wVal -}}
   {{- end -}}
 
-  {{- $red := $valLine -}}
+  {{- $red := $lVal -}}
   {{- while ge $red 10 -}}
     {{- $redStep := 0 -}}
-    {{- range $digit := split (toString $red) "" -}}
-      {{- $redStep = add $redStep (toInt $digit) -}}
+    {{- $digits := split (toString $red) "" -}}
+    {{- range $d := $digits -}}
+      {{- $redStep = add $redStep (toInt $d) -}}
     {{- end -}}
-    {{- $redLine = $redLine.Append (toString $redStep) -}}
+    {{- $lRed = $lRed.Append (toString $redStep) -}}
     {{- $red = $redStep -}}
-    {{- $depLine = add $depLine 1 -}}
+    {{- $lDep = add $lDep 1 -}}
   {{- end -}}
 
-  {{- $textLines := $textDict.Get "l" -}}
-  {{- $textLines = $textLines.Append $line -}}
-  {{- $textDict.Set "l" $textLines -}}
+  {{- $lsText := $dText.Get "l" -}}
+  {{- $lsText = $lsText.Append $l -}}
+  {{- $dText.Set "l" $lsText -}}
 
-  {{- $lenLines := $lenDict.Get "l" -}}
-  {{- $lenLines = $lenLines.Append (toString $lenLine) -}}
-  {{- $lenDict.Set "l" $lenLines -}}
+  {{- $lsLen := $dLen.Get "l" -}}
+  {{- $lsLen = $lsLen.Append (toString $lLen) -}}
+  {{- $dLen.Set "l" $lsLen -}}
 
-  {{- $valLines := $valDict.Get "l" -}}
-  {{- $valLines = $valLines.Append (toString $valLine) -}}
-  {{- $valDict.Set "l" $valLines -}}
+  {{- $lsVal := $dVal.Get "l" -}}
+  {{- $lsVal = $lsVal.Append (toString $lVal) -}}
+  {{- $dVal.Set "l" $lsVal -}}
 
-  {{- $redLines := $redDict.Get "l" -}}
-  {{- $redLines = $redLines.Append $redLine -}}
-  {{- $redDict.Set "l" $redLines -}}
+  {{- $lsRed := $dRed.Get "l" -}}
+  {{- $lsRed = $lsRed.Append $lRed -}}
+  {{- $dRed.Set "l" $lsRed -}}
 
-  {{- if gt $depLine $maxDepLine -}}
-    {{- $maxDepLine = $depLine -}}
+  {{- if gt $lDep $lMaxDep -}}
+    {{- $lMaxDep = $lDep -}}
   {{- end -}}
 
-  {{- $lenTotal = add $lenTotal $lenLine -}}
-  {{- $valTotal = add $valTotal $valLine -}}
+  {{- $tLen = add $tLen $lLen -}}
+  {{- $tVal = add $tVal $lVal -}}
 {{- end -}}
 
-{{ $red := $valTotal }}
+{{ $red := $tVal }}
 {{- while ge $red 10 -}}
   {{- $redStep := 0 -}}
-  {{- range $digit := split (toString $red) "" -}}
-    {{- $redStep = add $redStep (toInt $digit) -}}
+  {{- $digits := split (toString $red) "" -}}
+  {{- range $d := $digits -}}
+    {{- $redStep = add $redStep (toInt $d) -}}
   {{- end -}}
-  {{- $redTotal = $redTotal.Append (toString $redStep) -}}
+  {{- $tRed = $tRed.Append (toString $redStep) -}}
   {{- $red = $redStep -}}
-  {{- $depTotal = add $depTotal 1 -}}
+  {{- $tDep = add $tDep 1 -}}
 {{- end -}}
 
-{{ $textDict.Set "t" $text }}
-{{ $lenDict.Set "t" $lenTotal }}
-{{ $valDict.Set "t" $valTotal }}
-{{ $redDict.Set "t" $redTotal }}
+{{ $dText.Set "t" $text }}
+{{ $dLen.Set "t" $tLen }}
+{{ $dVal.Set "t" $tVal }}
+{{ $dRed.Set "t" $tRed }}
 
-{{ $nWords := len ($textDict.Get "w") }}
-{{ $nLines := len ($textDict.Get "l") }}
-{{ $firstWord := index ($textDict.Get "w") 0 }}
+{{ $wsNum := len ($dText.Get "w") }}
+{{ $lsNum := len ($dText.Get "l") }}
+{{ $wFirst := index ($dText.Get "w") 0 }}
 
 {{ $wSepL := "`" }}
 {{ $wSepR := "`" }}
-{{ if gt $nWords 1 }}
+{{ if gt $wsNum 1 }}
   {{ $wSepL = "`[ " }}
   {{ $wSepR = " ]`" }}
 {{ end }}
-{{ $wLen := joinStr "" $wSepL (joinStr " " ($lenDict.Get "w").StringSlice) $wSepR }}
+{{ $wLen := joinStr "" $wSepL (joinStr " " ($dLen.Get "w").StringSlice) $wSepR }}
 
 {{ $lSepL := "`" }}
 {{ $lSepR := "`" }}
-{{ if gt $nLines 1 }}
+{{ if gt $lsNum 1 }}
   {{ $lSepL = "`[ " }}
   {{ $lSepR = " ]`" }}
 {{ end }}
-{{ $lLen := joinStr "" $lSepL (joinStr " " ($lenDict.Get "l").StringSlice) $lSepR }}
+{{ $lLen := joinStr "" $lSepL (joinStr " " ($dLen.Get "l").StringSlice) $lSepR }}
 
 {{ $wGem := "" }}
 {{ $wRedPrev := cslice }}
-{{- range $i := seq -1 $maxDepWord -}}
+{{- range $i := seq -1 $wMaxDep -}}
   {{- $iVal := "" -}}
   {{- $join := "" -}}
   {{- if lt $i 0 -}}
-    {{- $wRedPrev = $valDict.Get "w" -}}
+    {{- $wRedPrev = $dVal.Get "w" -}}
     {{- $iVal = joinStr "" $wSepL (joinStr " " $wRedPrev.StringSlice) $wSepR -}}
   {{- else -}}
     {{- $wRedCur := cslice -}}
-    {{- range $j := seq 0 $nWords -}}
-      {{- $wReds := index ($redDict.Get "w") $j -}}
-      {{- if gt (len $wReds) $i -}}
-        {{- $wRedCur = $wRedCur.Append (index $wReds $i) -}}
+    {{- range $j := seq 0 $wsNum -}}
+      {{- $wsRed := index ($dRed.Get "w") $j -}}
+      {{- if gt (len $wsRed) $i -}}
+        {{- $wRedCur = $wRedCur.Append (index $wsRed $i) -}}
       {{- else -}}
         {{- $wRedCur = $wRedCur.Append (index $wRedPrev $j) -}}
       {{- end -}}
@@ -193,18 +197,18 @@
 
 {{ $lGem := "" }}
 {{ $lRedPrev := cslice }}
-{{- range $i := seq -1 $maxDepLine -}}
+{{- range $i := seq -1 $lMaxDep -}}
   {{- $iVal := "" -}}
   {{- $join := "" -}}
   {{- if lt $i 0 -}}
-    {{- $lRedPrev = $valDict.Get "l" -}}
+    {{- $lRedPrev = $dVal.Get "l" -}}
     {{- $iVal = joinStr "" $lSepL (joinStr " " $lRedPrev.StringSlice) $lSepR -}}
   {{- else -}}
     {{- $lRedCur := cslice -}}
-    {{- range $j := seq 0 $nLines -}}
-      {{- $lReds := index ($redDict.Get "l") $j -}}
-      {{- if gt (len $lReds) $i -}}
-        {{- $lRedCur = $lRedCur.Append (index $lReds $i) -}}
+    {{- range $j := seq 0 $lsNum -}}
+      {{- $lsRed := index ($dRed.Get "l") $j -}}
+      {{- if gt (len $lsRed) $i -}}
+        {{- $lRedCur = $lRedCur.Append (index $lsRed $i) -}}
       {{- else -}}
         {{- $lRedCur = $lRedCur.Append (index $lRedPrev $j) -}}
       {{- end -}}
@@ -217,33 +221,33 @@
 {{- end -}}
 
 {{ $tGem := "" }}
-{{- range $i := seq -1 $depTotal -}}
+{{- range $i := seq -1 $tDep -}}
   {{- $iVal := "" -}}
   {{- $join := "" -}}
   {{- if lt $i 0 -}}
-    {{- $iVal = toString $valTotal -}}
+    {{- $iVal = toString $tVal -}}
   {{- else -}}
-    {{- $iVal = index ($redDict.Get "t") $i -}}
+    {{- $iVal = index ($dRed.Get "t") $i -}}
     {{- $join = " > " -}}
   {{- end -}}
   {{- $tGem = joinStr $join $tGem (joinStr "" "`" $iVal "`") -}}
 {{- end -}}
 
 {{ $f := cslice }}
-{{ if and (eq 1 $nWords) (eq 1 (len (toRune $firstWord))) }}
+{{ if and (eq 1 $wsNum) (eq 1 (len (toRune $wFirst))) }}
   {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" $tGem) }}
-  {{ if $hebIdxDict.HasKey $firstWord }}
-    {{ $iLetter := $hebIdxDict.Get $firstWord }}
-    {{ $nLetter := add 1 $iLetter }}
-    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" $nLetter "`")) }}
+  {{ if $dHebIdx.HasKey $wFirst }}
+    {{ $cIdx := $dHebIdx.Get $wFirst }}
+    {{ $cNum := add 1 $cIdx }}
+    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" $cNum "`")) }}
 
-    {{ $rwsNumDict := (dbGet $gCatID "RWS Numeral Dictionary").Value }}
-    {{ $thothNumDict := (dbGet $gCatID "Thoth Numeral Dictionary").Value }}
-    {{ $rwsCardDict := (dbGet $gCatID "RWS Tarot Dictionary").Value }}
-    {{ $thothCardDict := (dbGet $gCatID "Thoth Tarot Dictionary").Value }}
+    {{ $dRwsNum := (dbGet $gCatID "RWS Numeral Dictionary").Value }}
+    {{ $dThothNum := (dbGet $gCatID "Thoth Numeral Dictionary").Value }}
+    {{ $dRwsCard := (dbGet $gCatID "RWS Tarot Dictionary").Value }}
+    {{ $dThothCard := (dbGet $gCatID "Thoth Tarot Dictionary").Value }}
 
-    {{ $rwsCard := joinStr " - " ($rwsNumDict.Get $iLetter) ($rwsCardDict.Get $iLetter) }}
-    {{ $thothCard := joinStr " - " ($thothNumDict.Get $iLetter) ($thothCardDict.Get $iLetter) }}
+    {{ $rwsCard := joinStr " - " ($dRwsNum.Get $cIdx) ($dRwsCard.Get $cIdx) }}
+    {{ $thothCard := joinStr " - " ($dThothNum.Get $cIdx) ($dThothCard.Get $cIdx) }}
     {{ if eq $rwsCard $thothCard }}
       {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsCard) }}
     {{ else }}
@@ -252,18 +256,18 @@
     {{ end }}
   {{ end }}
 {{ else }}
-  {{ if gt $nWords 1 }}
-    {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $nWords "`")) }}
+  {{ if gt $wsNum 1 }}
+    {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $wsNum "`")) }}
   {{ end }}
   {{ $f = $f.Append (sdict "name" "Word Length" "value" $wLen) }}
   {{ $f = $f.Append (sdict "name" "Word Gematria" "value" $wGem) }}
-  {{ if and (gt $nLines 1) (ne $nWords $nLines) }}
-    {{ $f = $f.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $nLines "`")) }}
+  {{ if and (gt $lsNum 1) (ne $wsNum $lsNum) }}
+    {{ $f = $f.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $lsNum "`")) }}
     {{ $f = $f.Append (sdict "name" "Line Length" "value" $lLen) }}
     {{ $f = $f.Append (sdict "name" "Line Gematria" "value" $lGem) }}
   {{ end }}
-  {{ if gt $nWords 1 }}
-    {{ $f = $f.Append (sdict "name" "Total Length" "value" (joinStr "" "`" $lenTotal "`")) }}
+  {{ if gt $wsNum 1 }}
+    {{ $f = $f.Append (sdict "name" "Total Length" "value" (joinStr "" "`" $tLen "`")) }}
     {{ $f = $f.Append (sdict "name" "Total Gematria" "value" $tGem) }}
   {{ end }}
 {{ end }}
