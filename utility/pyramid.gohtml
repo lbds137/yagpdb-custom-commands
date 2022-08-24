@@ -19,7 +19,6 @@
 {{ $args := parseArgs 1 "Usage: [text from which to generate pyramid gematria]"
   (carg "string" "text") }}
 {{ $text := or .ExecData.Description ($args.Get 0) }}
-{{ $text = reReplace `‎` $text "" }}
 {{ $ccExecLimit := 10 }}
 {{ $userID := (or .ExecData.AuthorID .User.ID) }}
 {{ $channelID := (or .ExecData.ChannelID .Channel.ID) }}
@@ -49,8 +48,6 @@
     {{- end -}}
   {{- end -}}
 
-  {{ $text = joinStr "" "‎" $text }}
-  {{ $text = reReplace `\n` $text "\n‎" }}
   {{ execCC $gematria $yagpdbChannelID 0 (sdict
     "AuthorID" $userID
     "ChannelID" $channelID

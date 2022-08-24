@@ -8,7 +8,6 @@
 {{ $args := parseArgs 1 "Usage: [text]" (carg "string" "text") }}
 
 {{ $text := or .ExecData.Description ($args.Get 0) }}
-{{ $text = reReplace `‎` $text "" }}
 
 {{ $gCatID := toInt (dbGet 0 "Global").Value }}
 {{ $commCatID := toInt (dbGet 0 "Commands").Value }}
