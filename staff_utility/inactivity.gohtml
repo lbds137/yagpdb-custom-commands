@@ -19,6 +19,7 @@
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
+{{ $prevPruneDate := (dbGet $adminCategoryID "Previous Prune Date").Value }}
 {{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
 {{ $pruneThreshold := (dbGet $adminCategoryID "Prune Threshold").Value }}
 
@@ -53,7 +54,8 @@
         {{ end }}
 
         {{ $result = (dbGet $adminCategoryID $title).Value }}
-        {{ $result = reReplace "\\#\\{date\\}" $result $nextPruneDate }}
+        {{ $result = reReplace "\\#\\{previous_date\\}" $result $prevPruneDate }}
+        {{ $result = reReplace "\\#\\{next_date\\}" $result $nextPruneDate }}
         {{ $result = reReplace "\\#\\{threshold\\}" $result $pruneThreshold }}
 
         {{ execCC $embed_exec .Channel.ID 0 (sdict "Title" $title "Description" $result) }}
@@ -61,6 +63,13 @@
         {{ mentionRoleID $roleID }}
     {{ else if $isDate }}
         {{ if $param }}
+            {{ execCC $db .Channel.ID 0 (sdict
+                "UserID" $adminCategoryID
+                "Operation" "set"
+                "Key" "Previous Prune Date"
+                "Value" $nextPruneDate
+                "Title" "Inactivity Prune Date Editing"
+            ) }}
             {{ execCC $db .Channel.ID 0 (sdict
                 "UserID" $adminCategoryID
                 "Operation" "set"
