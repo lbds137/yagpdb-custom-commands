@@ -21,6 +21,7 @@
 {{- $ctypeText := 0 -}}
 {{- $ctypeVoice := 2 -}}
 {{- $ctypeCategory := 4 -}}
+{{- $ctypeForum := 15 -}}
 
 {{- $csliceText := cslice -}}
 {{- $csliceVoice := cslice -}}
@@ -42,7 +43,7 @@
 {{- range $channel := .Guild.Channels -}}
   {{- $ctype := $channel.Type -}}
   {{- $cid := $channel.ID -}}
-  {{- if eq $ctype $ctypeText -}}
+  {{- if or (eq $ctype $ctypeText) (eq $ctype $ctypeForum) -}}
     {{- $csliceText = $csliceText.Append $cid -}}
     {{- $cdictText.Set $cid $channel -}}
   {{- else if eq $ctype $ctypeVoice -}}
