@@ -18,10 +18,16 @@
 {{- $rightDivider := " ⋘" -}}
 {{- $messageMaxLen := sub 2000 1 -}}
 
-{{- $ctypeText := 0 -}}
 {{- $ctypeVoice := 2 -}}
 {{- $ctypeCategory := 4 -}}
-{{- $ctypeForum := 15 -}}
+{{- /*
+  the following types are treated as text channels for the purposes of the directory command
+  reference: https://discord.com/developers/docs/resources/channel#channel-object-channel-types
+*/ -}}
+{{- $ctypeTextDict := sdict
+  "0" "GUILD_TEXT"
+  "5" "GUILD_ANNOUNCEMENT"
+  "15" "GUILD_FORUM" -}}
 
 {{- $csliceText := cslice -}}
 {{- $csliceVoice := cslice -}}
@@ -43,7 +49,7 @@
 {{- range $channel := .Guild.Channels -}}
   {{- $ctype := $channel.Type -}}
   {{- $cid := $channel.ID -}}
-  {{- if or (eq $ctype $ctypeText) (eq $ctype $ctypeForum) -}}
+  {{- if $ctypeTextDict.HasKey (json $ctype) -}}
     {{- $csliceText = $csliceText.Append $cid -}}
     {{- $cdictText.Set $cid $channel -}}
   {{- else if eq $ctype $ctypeVoice -}}
