@@ -47,7 +47,7 @@
     {{ $userID := $message.Author.ID }}
     {{ $guildMember := getMember $userID }}
     {{ if $guildMember }}
-        {{ $reasonArg := lower ($args.Get 1) }}
+        {{ $reasonArg := $args.Get 1 }}
         {{ $user := $guildMember.User }}
         {{ $reason := joinStr "" "screening user " $userID }}
 
