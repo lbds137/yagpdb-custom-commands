@@ -23,7 +23,6 @@
 {{ $ticket_adduser_exec := toInt (dbGet $commandsCategoryID "ticket_adduser_exec").Value }}
 
 {{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
-{{ $ticketSubmissionChannelID := toInt (dbGet $channelsCategoryID "Ticket Submission Channel ID").Value }}
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $messageLinkArg := $args.Get 0 }}
