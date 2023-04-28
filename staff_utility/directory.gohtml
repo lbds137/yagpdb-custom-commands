@@ -164,9 +164,6 @@
 {{- /* workaround for a stupid YAGPDB bug */ -}}
 {{ $backToTopLink = reReplace "/0/" $backToTopLink (printf "/%d/" .Guild.ID) }}
 {{- $embed := cembed
-  "description" (joinStr ""
-    "[⏫](" $backToTopLink ") "
-    "[Back to Top](" $backToTopLink ") "
-    "[⏫](" $backToTopLink ") ")
+  "description" (joinStr "" "⏫ [Back to Top](" $backToTopLink ") ⏫")
   "color" $embedColor -}}
 {{- sendMessage $channelID $embed -}}
