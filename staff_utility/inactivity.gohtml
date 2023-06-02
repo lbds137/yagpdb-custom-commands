@@ -21,7 +21,8 @@
 {{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
 {{ $prevPruneDate := (dbGet $adminCategoryID "Previous Prune Date").Value }}
 {{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
-{{ $pruneThreshold := (dbGet $adminCategoryID "Prune Threshold").Value }}
+{{ $pruneMessageThreshold := (dbGet $adminCategoryID "Prune Message Threshold").Value }}
+{{ $pruneMinuteThreshold := (dbGet $adminCategoryID "Prune Minute Threshold").Value }}
 
 {{ $action := $args.Get 0 }}
 {{ $param := "" }}
@@ -56,7 +57,8 @@
         {{ $result = (dbGet $adminCategoryID $title).Value }}
         {{ $result = reReplace "\\#\\{previous_date\\}" $result $prevPruneDate }}
         {{ $result = reReplace "\\#\\{next_date\\}" $result $nextPruneDate }}
-        {{ $result = reReplace "\\#\\{threshold\\}" $result $pruneThreshold }}
+        {{ $result = reReplace "\\#\\{message_threshold\\}" $result $pruneMessageThreshold }}
+        {{ $result = reReplace "\\#\\{minute_threshold\\}" $result $pruneMinuteThreshold }}
 
         {{ execCC $embed_exec .Channel.ID 0 (sdict "Title" $title "Description" $result) }}
 
