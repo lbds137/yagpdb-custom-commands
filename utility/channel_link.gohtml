@@ -94,6 +94,8 @@
                 "author" $author
             )
         ) }}
+
+        {{ deleteTrigger $deleteTriggerDelay }}
     {{ end }}
 {{ else }}
     {{ $type := "Normal" }}
@@ -119,6 +121,6 @@
         )
         "Fields" $fields
     ) }}
-{{ end }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+    {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}
