@@ -27,11 +27,12 @@
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $snowflakeRegex := "\\d{16,}" }}
 {{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
+{{ $modLogUserIDRegex := joinStr "" " \\*\\(ID " $snowflakeRegex "\\)\\*" }}
 {{ $fullURLRegex := joinStr "" $baseURLRegex $snowflakeRegex "/" $snowflakeRegex "/" $snowflakeRegex }}
 
 {{ $modActionRegex := joinStr "" "(\\*){2}[^\\w]{1,}(" (joinStr "|" $modActions.StringSlice) ")(\\*\\*)? " }}
-{{ $usernameRegex := "[^#]{1,}(\\*\\*)?#\\d{4}" }} {{- /* yes, it's annoying that there are stars in the middle */ -}}
-{{ $modActionLogRegex := joinStr "" $modActionRegex $usernameRegex " \\*\\(ID " $snowflakeRegex "\\)\\*" }}
+{{ $usernameRegex := "[^#]{1,}(\\*\\*)?(#\\d{4})?" }} {{- /* yes, it's annoying that there are stars in the middle */ -}}
+{{ $modActionLogRegex := joinStr "" $modActionRegex $usernameRegex $modLogUserIDRegex }}
 
 {{- /* default argument values */ -}}
 {{ $avatarArg := "" }}
@@ -110,10 +111,11 @@
                 {{- /* mod action logs do not have embed fields; let's check those too */ -}}
                 {{ else }}
                     {{ $embedDescription := $embed.Description }}
-                    {{- /* we found a mod action log entry, so let's grab the info */ -}}
-                    {{ if reFind $modActionLogRegex $embedDescription }}
-                        {{ $usernameAndID := reReplace $modActionRegex $embedDescription "" }}
-                        {{ $usernameWithStars := reFind $usernameRegex $usernameAndID }}
+                    {{- /* if present, we found a mod action log entry, so let's grab the info */ -}}
+                    {{ $modActionLog := reFind $modActionLogRegex $embedDescription }}
+                    {{ if $modActionLog }}
+                        {{ $usernameAndID := reReplace $modActionRegex $modActionLog "" }}
+                        {{ $usernameWithStars := reReplace $modLogUserIDRegex $usernameAndID "" }}
 
                         {{ $avatarOwnerID = reFind $snowflakeRegex $embedDescription }}
                         {{ $avatarOwner = reReplace "\\*\\*#" $usernameWithStars "#" }}
