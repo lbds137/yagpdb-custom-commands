@@ -16,6 +16,7 @@
 {{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
 {{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
 {{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $adminCategoryID := toInt (dbGet 0 "Admin").Value }}
 
 {{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
 {{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
@@ -27,10 +28,11 @@
 {{ $minorRoleID := toInt (dbGet $rolesCategoryID "Minor Role ID").Value }}
 {{ $adultRoleID := toInt (dbGet $rolesCategoryID "Adult Role ID").Value }}
 
+{{ $welcomeMessage := (dbGet $adminCategoryID "Welcome Message").Value }}
+
 {{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
 {{ $introductionArchiveChannelID := toInt (dbGet $channelsCategoryID "Introduction Archive Channel ID").Value }}
 {{ $welcomeChannelID := toInt (dbGet $channelsCategoryID "Welcome Channel ID").Value }}
-{{ $roleAssignmentChannelID := toInt (dbGet $channelsCategoryID "Role Assignment Channel ID").Value }}
 {{ $admissionLogChannelID := toInt (dbGet $channelsCategoryID "Admission Log Channel ID").Value }}
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
@@ -90,18 +92,9 @@
             {{ end }}
 
             {{ if $welcomeChannelID }}
-                {{ $welcomeString := joinStr ""
-                    "Welcome to **" .Guild.Name "**, "
-                    $user.Mention "!"
-                }}
-                {{ if $roleAssignmentChannelID }}
-                    {{ $welcomeString = joinStr ""
-                        $welcomeString " Feel free to visit <#" $roleAssignmentChannelID "> "
-                        "and assign yourself some optional roles to improve your experience in the server. "
-                        "We hope you have a pleasant stay!"
-                    }}
-                {{ end }}
-                {{ sendMessage $welcomeChannelID $welcomeString }}
+                {{ $welcomeMessage = reReplace "\\#\\{guild_name\\}" $welcomeMessage .Guild.Name }}
+                {{ $welcomeMessage = reReplace "\\#\\{user_mention\\}" $welcomeMessage $user.Mention }}
+                {{ sendMessage $welcomeChannelID $welcomeMessage }}
             {{ end }}
 
             {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
