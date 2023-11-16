@@ -169,12 +169,10 @@
       {{- end -}}
     {{- end -}}
 
-    {{- $wRedParam := sdict
-      "redStep" $wVal "reds" $wReds "dep" $wDep "sep" $sep -}}
+    {{- $wRedParam := sdict "redStep" $wVal "reds" $wReds "dep" $wDep "sep" $sep -}}
     {{- $wRedRes := execTemplate "reduce" $wRedParam -}}
 
-    {{- $wUdParam := sdict
-      "dict" ($dData.Get "w") "sep" $sep "tok" $w "len" $wLen "val" $wVal
+    {{- $wUdParam := sdict "dict" ($dData.Get "w") "sep" $sep "tok" $w "len" $wLen "val" $wVal
       "reds" ($wRedRes.Get "reds") "dep" ($wRedRes.Get "dep") -}}
     {{- $wUdRes := execTemplate "updateData" $wUdParam -}}
     {{- $dData.Set "w" ($wUdRes.Get "dict") -}}
@@ -183,8 +181,7 @@
     {{- $lVal = add $lVal $wVal -}}
   {{- end -}}
 
-  {{- $lRedParam := sdict
-    "redStep" $lVal "reds" $lReds "dep" $lDep "sep" "" -}}
+  {{- $lRedParam := sdict "redStep" $lVal "reds" $lReds "dep" $lDep "sep" "" -}}
   {{- $lRedRes := execTemplate "reduce" $lRedParam -}}
 
   {{- $lUdParam := sdict
@@ -197,8 +194,7 @@
   {{- $tVal = add $tVal $lVal -}}
 {{- end -}}
 
-{{ $tRedParam := sdict
-  "redStep" $tVal "reds" $tReds "dep" $tDep "sep" "" }}
+{{ $tRedParam := sdict "redStep" $tVal "reds" $tReds "dep" $tDep "sep" "" }}
 {{ $tRedRes := execTemplate "reduce" $tRedParam }}
 
 {{ $tUdParam := sdict
