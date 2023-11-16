@@ -20,25 +20,20 @@
 
 {{ define "reduce" }}
   {{ $dData := . }}
-  {{ $redStep := $dData.Get "redStep" }}
-  {{ if lt $redStep 10 }}
+  {{ if lt ($dData.Get "redStep") 10 }}
     {{ return $dData }}
   {{ else }}
-    {{ $reds := $dData.Get "reds" }}
-    {{ $dep := $dData.Get "dep" }}
-    {{ $sep := $dData.Get "sep" }}
-
     {{ $redNextStep := 0 }}
-    {{ $digs := split (toString $redStep) "" }}
+    {{ $digs := split (toString ($dData.Get "redStep")) "" }}
     {{- range $d := $digs -}}
       {{- $redNextStep = add $redNextStep (toInt $d) -}}
     {{- end -}}
-    {{ $reds = $reds.Append (joinStr "" $redNextStep $sep) }}
-    {{ $dep = add $dep 1 }}
 
     {{ $dData.Set "redStep" $redNextStep }}
-    {{ $dData.Set "reds" $reds }}
-    {{ $dData.Set "dep" $dep }}
+    {{ $dData.Set "reds" (
+      ($dData.Get "reds").Append (joinStr "" $redNextStep ($dData.Get "sep"))
+    ) }}
+    {{ $dData.Set "dep" (add ($dData.Get "dep") 1) }}
 
     {{ return (execTemplate "reduce" $dData) }}
   {{ end }}
@@ -47,41 +42,29 @@
 {{ define "updateData" }}
   {{ $dData := . }}
   {{ $dToUpdate := $dData.Get "dict" }}
-  {{ $sep := $dData.Get "sep" }}
-  {{ $tNew := $dData.Get "tok" }}
-  {{ $lNew := $dData.Get "len" }}
-  {{ $vNew := $dData.Get "val" }}
-  {{ $redsNew := $dData.Get "reds" }}
-  {{ $depNew := $dData.Get "dep" }}
 
-  {{ $toks := $dToUpdate.Get "toks" }}
-  {{ $toks = $toks.Append $tNew }}
-  {{ $dToUpdate.Set "toks" $toks }}
+  {{ $dToUpdate.Set "toks" (
+    ($dToUpdate.Get "toks").Append ($dData.Get "tok")
+  ) }}
+  {{ $dToUpdate.Set "lens" (
+    ($dToUpdate.Get "lens").Append (joinStr "" ($dData.Get "len") ($dData.Get "sep"))
+  ) }}
+  {{ $dToUpdate.Set "vals" (
+    ($dToUpdate.Get "vals").Append (joinStr "" ($dData.Get "val") ($dData.Get "sep"))
+  ) }}
+  {{ $dToUpdate.Set "reds" (
+    ($dToUpdate.Get "reds").Append ($dData.Get "reds")
+  ) }}
 
-  {{ $lens := $dToUpdate.Get "lens" }}
-  {{ $lens = $lens.Append (joinStr "" $lNew $sep) }}
-  {{ $dToUpdate.Set "lens" $lens }}
-
-  {{ $vals := $dToUpdate.Get "vals" }}
-  {{ $vals = $vals.Append (joinStr "" $vNew $sep) }}
-  {{ $dToUpdate.Set "vals" $vals }}
-
-  {{ $reds := $dToUpdate.Get "reds" }}
-  {{ $reds = $reds.Append $redsNew }}
-  {{ $dToUpdate.Set "reds" $reds }}
-
-  {{ $dep := $dToUpdate.Get "dep" }}
-  {{ if le $depNew $dep }}
-    {{ $depNew = $dep }}
-  {{ end }}
-  {{ $dToUpdate.Set "dep" $depNew }}
+  {{ $dToUpdate.Set "dep" (
+    toInt (max ($dData.Get "dep") ($dToUpdate.Get "dep"))
+  ) }}
 
   {{ return $dData }}
 {{ end }}
 
 {{ define "buildGemStrs" }}
   {{ $dData := . }}
-  {{ $reds := $dData.Get "reds" }}
 
   {{ $tokCt := len ($dData.Get "toks") }}
   {{ $sepL := "`" }}
@@ -98,12 +81,12 @@
     {{- $iVal := "" -}}
     {{- $join := "" -}}
     {{- if lt $i 0 -}}
-      {{- $redsPrev = ($dData.Get "vals") -}}
+      {{- $redsPrev = $dData.Get "vals" -}}
       {{- $iVal = joinStr "" $sepL (joinStr " " $redsPrev.StringSlice) $sepR -}}
     {{- else -}}
       {{- $redsCur := cslice -}}
       {{- range $j := seq 0 $tokCt -}}
-        {{- $tokReds := index $reds $j -}}
+        {{- $tokReds := index ($dData.Get "reds") $j -}}
         {{- if gt (len $tokReds) $i -}}
           {{- $redsCur = $redsCur.Append (index $tokReds $i) -}}
         {{- else -}}
@@ -168,8 +151,9 @@
 
     {{- $wUdParam := sdict "dict" ($dData.Get "w") "sep" $sep "tok" $w "len" $wLen "val" $wVal
       "reds" ($wRedRes.Get "reds") "dep" ($wRedRes.Get "dep") -}}
-    {{- $wUdRes := execTemplate "updateData" $wUdParam -}}
-    {{- $dData.Set "w" ($wUdRes.Get "dict") -}}
+    {{- $dData.Set "w" (
+      (execTemplate "updateData" $wUdParam).Get "dict"
+    ) -}}
 
     {{- $lLen = add $lLen $wLen -}}
     {{- $lVal = add $lVal $wVal -}}
@@ -181,8 +165,9 @@
   {{- $lUdParam := sdict
     "dict" ($dData.Get "l") "sep" "" "tok" $l "len" $lLen "val" $lVal
     "reds" ($lRedRes.Get "reds") "dep" ($lRedRes.Get "dep") -}}
-  {{- $lUdRes := execTemplate "updateData" $lUdParam -}}
-  {{- $dData.Set "l" ($lUdRes.Get "dict") -}}
+  {{- $dData.Set "l" (
+    (execTemplate "updateData" $lUdParam).Get "dict"
+  ) -}}
 
   {{- $tLen = add $tLen $lLen -}}
   {{- $tVal = add $tVal $lVal -}}
@@ -194,30 +179,24 @@
 {{ $tUdParam := sdict
   "dict" ($dData.Get "t") "sep" "" "tok" $text "len" $tLen "val" $tVal
   "reds" ($tRedRes.Get "reds") "dep" ($tRedRes.Get "dep") }}
-{{ $tUdRes := execTemplate "updateData" $tUdParam }}
-{{ $dData.Set "t" ($tUdRes.Get "dict") }}
+{{ $dData.Set "t" (
+  (execTemplate "updateData" $tUdParam).Get "dict"
+) }}
 
 {{ $wBgsRes := execTemplate "buildGemStrs" ($dData.Get "w") }}
-{{ $wCt := $wBgsRes.Get "ct" }}
-{{ $wLen := $wBgsRes.Get "lenStr" }}
-{{ $wGem := $wBgsRes.Get "gemStr" }}
-
 {{ $lBgsRes := execTemplate "buildGemStrs" ($dData.Get "l") }}
-{{ $lCt := $lBgsRes.Get "ct" }}
-{{ $lLen := $lBgsRes.Get "lenStr" }}
-{{ $lGem := $lBgsRes.Get "gemStr" }}
-
 {{ $tBgsRes := execTemplate "buildGemStrs" ($dData.Get "t") }}
-{{ $tGem := $tBgsRes.Get "gemStr" }}
+
+{{ $wCt := $wBgsRes.Get "ct" }}
+{{ $lCt := $lBgsRes.Get "ct" }}
 
 {{ $f := cslice }}
 {{ $wFirst := index (($dData.Get "w").Get "toks") 0 }}
 {{ if and (eq 1 $wCt) (eq 1 (len (toRune $wFirst))) }}
-  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" $tGem) }}
+  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" ($tBgsRes.Get "gemStr")) }}
   {{ if $dHebIdx.HasKey $wFirst }}
     {{ $cIdx := $dHebIdx.Get $wFirst }}
-    {{ $cNum := add 1 $cIdx }}
-    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" $cNum "`")) }}
+    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $cIdx) "`")) }}
 
     {{ $dRwsNum := (dbGet $gCatID "RWS Numeral Dictionary").Value }}
     {{ $dThothNum := (dbGet $gCatID "Thoth Numeral Dictionary").Value }}
@@ -237,16 +216,16 @@
   {{ if gt $wCt 1 }}
     {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $wCt "`")) }}
   {{ end }}
-  {{ $f = $f.Append (sdict "name" "Word Length" "value" $wLen) }}
-  {{ $f = $f.Append (sdict "name" "Word Gematria" "value" $wGem) }}
+  {{ $f = $f.Append (sdict "name" "Word Length" "value" ($wBgsRes.Get "lenStr")) }}
+  {{ $f = $f.Append (sdict "name" "Word Gematria" "value" ($wBgsRes.Get "gemStr")) }}
   {{ if and (gt $lCt 1) (ne $wCt $lCt) }}
     {{ $f = $f.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $lCt "`")) }}
-    {{ $f = $f.Append (sdict "name" "Line Length" "value" $lLen) }}
-    {{ $f = $f.Append (sdict "name" "Line Gematria" "value" $lGem) }}
+    {{ $f = $f.Append (sdict "name" "Line Length" "value" ($lBgsRes.Get "lenStr")) }}
+    {{ $f = $f.Append (sdict "name" "Line Gematria" "value" ($lBgsRes.Get "gemStr")) }}
   {{ end }}
   {{ if gt $wCt 1 }}
-    {{ $f = $f.Append (sdict "name" "Total Length" "value" (joinStr "" "`" $tLen "`")) }}
-    {{ $f = $f.Append (sdict "name" "Total Gematria" "value" $tGem) }}
+    {{ $f = $f.Append (sdict "name" "Total Length" "value" ($tBgsRes.Get "lenStr")) }}
+    {{ $f = $f.Append (sdict "name" "Total Gematria" "value" ($tBgsRes.Get "gemStr")) }}
   {{ end }}
 {{ end }}
 {{ if .ExecData.Fields }}
