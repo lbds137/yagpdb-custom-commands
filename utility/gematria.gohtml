@@ -33,13 +33,7 @@
     {{- range $d := $digs -}}
       {{- $redNextStep = add $redNextStep (toInt $d) -}}
     {{- end -}}
-    {{ $redToAdd := "" }}
-    {{ if $sep }}
-      {{ $redToAdd = joinStr "" $redNextStep $sep }}
-    {{ else }}
-      {{ $redToAdd = toString $redNextStep }}
-    {{ end }}
-    {{ $reds = $reds.Append $redToAdd }}
+    {{ $reds = $reds.Append (joinStr "" $redNextStep $sep) }}
     {{ $dep = add $dep 1 }}
 
     {{ $dData.Set "redStep" $redNextStep }}
