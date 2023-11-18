@@ -29,6 +29,12 @@
 {{ $arg := $args.Get 0 }}
 
 {{ $emojiStrMsgLinkDict := sdict }}
+{{ $index := 0 }}
+{{- range $emojiStr := reFindAll $emojiRegex $arg -}}
+  {{- $emojiStrMsgLinkDict.Set $emojiStr (sdict "index" $index "emojiString" $emojiStr "messageLink" "") -}}
+  {{- $index = add 1 $index -}}
+{{- end -}}
+
 {{ $msgLinks := reFindAll $fullURLRegex $arg }}
 {{ $triggerMsgObj := .Message }}
 {{ $triggerMsg := $triggerMsgObj.Content }}
@@ -43,7 +49,7 @@
   {{- $msg := getMessage $channelID $messageID -}}
 
   {{- $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) -}}
-  {{- $thatChannelNSFW := "" -}}
+  {{- $thatChannelNSFW := false -}}
   {{- if getChannelOrThread $channelID -}}
     {{- $thatChannelNSFW = (getChannelOrThread $channelID).NSFW -}}
   {{- end -}}
@@ -51,20 +57,24 @@
 
   {{- if and $msg $guildCheck (or $staffCheck $nsfwCheck) -}}
     {{- range $emojiStr := reFindAll $emojiRegex $msg.Content -}}
-      {{- $emojiStrMsgLinkDict.Set $emojiStr $msgLink -}}
+      {{- $emojiStrMsgLinkDict.Set $emojiStr (sdict "index" $index "emojiString" $emojiStr "messageLink" $msgLink) -}}
+      {{- $index = add 1 $index -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
 
-{{- range $emojiStr := reFindAll $emojiRegex $arg -}}
-  {{- $emojiStrMsgLinkDict.Set $emojiStr "" -}}
+{{ $dictSortHelper := cslice }}
+{{- range $k, $v := $emojiStrMsgLinkDict -}}
+  {{- $dictSortHelper = $dictSortHelper.Append $v -}}
 {{- end -}}
+{{ $dictSortHelper = sort $dictSortHelper (sdict "key" "index" "reverse" false) }}
 
 {{ $userID := .User.ID }}
 {{ $channelID := .Channel.ID }}
-{{ $i := 0 }}
 {{ $tooManyEmojis := false }}
-{{- range $emojiStr, $msgLink := $emojiStrMsgLinkDict -}}
+{{- range $i, $entry := $dictSortHelper -}}
+  {{- $emojiStr := $entry.Get "emojiString" -}}
+  {{- $msgLink := $entry.Get "messageLink" }}
   {{- if lt $i $ccExecLimit -}}
     {{- $fileExtension := ".png" -}}
     {{- if reFind $animatedEmojiRegex $emojiStr -}}
@@ -91,7 +101,6 @@
   {{- else if not $tooManyEmojis -}}
     {{- $tooManyEmojis = true -}}
   {{- end -}}
-  {{- $i = add 1 $i -}}
 {{- end -}}
 
 {{ deleteTrigger $deleteTriggerDelay }}
@@ -99,7 +108,7 @@
 {{ if $tooManyEmojis }}
   {{- /* timing is notoriously unreliable with `execCC` so wait a while before sending the error message */ -}}
   {{ sleep 10 }}
-  {{ $emojiIgnoredCount := sub $i $ccExecLimit }}
+  {{ $emojiIgnoredCount := sub (len $dictSortHelper) $ccExecLimit }}
   {{ $subjectAndVerb := "" }}
   {{ if eq 1 $emojiIgnoredCount }}
     {{ $subjectAndVerb = "emoji was" }}
