@@ -26,30 +26,21 @@
 {{ $args := parseArgs 1 "Usage: `[emoji(s) and / or message link(s)]`"
   (carg "string" "emoji(s) and / or message link(s)")
 }}
-
 {{ $arg := $args.Get 0 }}
 
-{{ $emojiStrings := cslice }}
-{{ $messageLinks := cslice }}
-{{ $emojiMessageLinkDict := sdict }}
-
-{{ $emojiStrings = $emojiStrings.AppendSlice (reFindAll $emojiRegex $arg) }}
-{{ $messageLinks = $messageLinks.AppendSlice (reFindAll $fullURLRegex $arg) }}
-
-{{ $userID := .User.ID }}
-{{ $channelID := .Channel.ID }}
+{{ $emojiStrMsgLinkDict := sdict }}
+{{ $msgLinks := reFindAll $fullURLRegex $arg }}
 {{ $triggerMsgObj := .Message }}
 {{ $triggerMsg := $triggerMsgObj.Content }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
 {{ $thisChannelNSFW := (getChannelOrThread $triggerMsgObj.ChannelID).NSFW }}
-
-{{- range $i, $messageLink := $messageLinks -}}
-  {{- $msgLinkSlice := split $messageLink "/" -}}
+{{- range $msgLink := $msgLinks -}}
+  {{- $msgLinkSlice := split $msgLink "/" -}}
   {{- $mlsLen := len $msgLinkSlice -}}
   {{- $guildID := index $msgLinkSlice (sub $mlsLen 3) -}}
   {{- $channelID := index $msgLinkSlice (sub $mlsLen 2) -}}
   {{- $messageID := index $msgLinkSlice (sub $mlsLen 1) -}}
-  {{- $message := getMessage $channelID $messageID -}}
+  {{- $msg := getMessage $channelID $messageID -}}
 
   {{- $guildCheck := eq $triggerMsgObj.GuildID (toInt $guildID) -}}
   {{- $thatChannelNSFW := "" -}}
@@ -58,37 +49,38 @@
   {{- end -}}
   {{- $nsfwCheck := or (not $thatChannelNSFW) (and $thisChannelNSFW $thatChannelNSFW) -}}
 
-  {{- if and $message $guildCheck (or $staffCheck $nsfwCheck) -}}
-    {{- $newEmojiStrings := reFindAll $emojiRegex $message.Content -}}
-    {{- range $newEmojiString := $newEmojiStrings -}}
-      {{- $emojiMessageLinkDict.Set $newEmojiString $messageLink -}}
-      {{- $emojiStrings = $emojiStrings.Append $newEmojiString -}}
+  {{- if and $msg $guildCheck (or $staffCheck $nsfwCheck) -}}
+    {{- range $emojiStr := reFindAll $emojiRegex $msg.Content -}}
+      {{- $emojiStrMsgLinkDict.Set $emojiStr $msgLink -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
 
+{{- range $emojiStr := reFindAll $emojiRegex $arg -}}
+  {{- $emojiStrMsgLinkDict.Set $emojiStr "" -}}
+{{- end -}}
+
+{{ $userID := .User.ID }}
+{{ $channelID := .Channel.ID }}
+{{ $i := 0 }}
 {{ $tooManyEmojis := false }}
-{{- range $i, $emojiString := $emojiStrings -}}
-  {{- $fileExtension := ".png" -}}
-  {{- if reFind $animatedEmojiRegex $emojiString -}}
-    {{- $fileExtension = ".gif" -}}
-  {{- end -}}
-  {{- $emojiStringParts := split $emojiString ":" -}}
-  {{- $emojiName := index $emojiStringParts 1 -}}
-  {{- $emojiUrl := joinStr ""
-    "https://cdn.discordapp.com/emojis/"
-    (reFind $emojiIDRegex $emojiString)
-    $fileExtension
-    "?v=1" -}}
+{{- range $emojiStr, $msgLink := $emojiStrMsgLinkDict -}}
+  {{- if lt $i $ccExecLimit -}}
+    {{- $fileExtension := ".png" -}}
+    {{- if reFind $animatedEmojiRegex $emojiStr -}}
+      {{- $fileExtension = ".gif" -}}
+    {{- end -}}
+    {{- $emojiStrParts := split $emojiStr ":" -}}
+    {{- $emojiName := index $emojiStrParts 1 -}}
+    {{- $emojiUrl := joinStr ""
+      "https://cdn.discordapp.com/emojis/" (reFind $emojiIDRegex $emojiStr) $fileExtension "?v=1" -}}
 
-  {{- $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) -}}
-  {{- $messageLink := $emojiMessageLinkDict.Get $emojiString -}}
-  {{- if $messageLink -}}
-    {{- $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $messageLink ")" -}}
-    {{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
-  {{ end }}
+    {{- $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) -}}
+    {{- if $msgLink -}}
+      {{- $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $msgLink ")" -}}
+      {{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
+    {{ end }}
 
-  {{- if or $tooManyEmojis (lt $i $ccExecLimit) -}}
     {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
       "AuthorID" $userID
       "ChannelID" $channelID
@@ -96,9 +88,10 @@
       "ImageURL" $emojiUrl
       "Fields" $fields
     ) -}}
-  {{- else -}}
+  {{- else if not $tooManyEmojis -}}
     {{- $tooManyEmojis = true -}}
   {{- end -}}
+  {{- $i = add 1 $i -}}
 {{- end -}}
 
 {{ deleteTrigger $deleteTriggerDelay }}
@@ -106,8 +99,15 @@
 {{ if $tooManyEmojis }}
   {{- /* timing is notoriously unreliable with `execCC` so wait a while before sending the error message */ -}}
   {{ sleep 10 }}
-  {{ $errorMsgID := sendMessageRetID $channelID (joinStr ""
-    "⚠️ Only the first " $ccExecLimit " emojis can be displayed. Please try again with fewer emojis."
+  {{ $emojiIgnoredCount := sub $i $ccExecLimit }}
+  {{ $subjectAndVerb := "" }}
+  {{ if eq 1 $emojiIgnoredCount }}
+    {{ $subjectAndVerb = "emoji was" }}
+  {{ else }}
+    {{ $subjectAndVerb = "emojis were" }}
+  {{ end }}
+  {{ $errorMsgID := sendMessageRetID $channelID (joinStr " "
+    "⚠️ Warning:" $emojiIgnoredCount $subjectAndVerb "not displayed because only" $ccExecLimit "emojis can be expanded at a time."
   ) }}
   {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
 {{ end }}
