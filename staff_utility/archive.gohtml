@@ -21,6 +21,7 @@
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
 {{ $message_link := toInt (dbGet $commandsCategoryID "message_link").Value }}
 
+{{ $memberRoleID := toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
 {{ $minorRoleID := toInt (dbGet $rolesCategoryID "Minor Role ID").Value }}
 {{ $adultRoleID := toInt (dbGet $rolesCategoryID "Adult Role ID").Value }}
 
@@ -52,14 +53,23 @@
         {{ if $args.IsSet 1 }}
             {{ $userType = lower ($args.Get 1) }}
         {{ end }}
-        {{ $isMinor := targetHasRoleID $userID $minorRoleID }}
-        {{ $isAdult := targetHasRoleID $userID $adultRoleID }}
-        {{ if or $isMinor $isAdult }}
+        {{ $ignoreUserType := and (not $minorRoleID) (not $adultRoleID) }}
+        {{ $hasUserType := false }}
+        {{ $isMinor := false }}
+        {{ $isAdult := false }}
+        {{ if not $ignoreUserType }}
+          {{ $isMinor = targetHasRoleID $userID $minorRoleID }}
+          {{ $isAdult = targetHasRoleID $userID $adultRoleID }}
+          {{ $hasUserType = or $isMinor $isAdult }}
+        {{ end }}
+        {{ if or $hasUserType $ignoreUserType }}
             {{ $color := 0 }}
             {{ if $isMinor }}
                 {{ $color = (getRole $minorRoleID).Color }}
-            {{ else }}
+            {{ else if $isAdult }}
                 {{ $color = (getRole $adultRoleID).Color }}
+            {{ else }}
+                {{ $color = (getRole $memberRoleID).Color }}
             {{ end }}
             {{ addMessageReactions $channelID $messageID $emoji }}
             {{ if $introductionArchiveChannelID }}
