@@ -2,7 +2,7 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `kb`
-  Dependencies: `embed_exec`, `dbprettyget`
+  Dependencies: `embed_exec`, `db_get_embed`
 */ -}}
 
 {{ $args := parseArgs 1 (joinStr "" "Please enter a topic to look up in the knowledge base.")
@@ -14,12 +14,12 @@
 {{ $knowledgeCategoryID := toInt (dbGet 0 "Knowledge").Value }}
 
 {{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $dbprettyget := toInt (dbGet $commandsCategoryID "dbprettyget").Value }}
+{{ $db_get_embed := toInt (dbGet $commandsCategoryID "db_get_embed").Value }}
 {{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
 
 {{ $key := $args.Get 0 }}
 {{ if $key }}
-    {{ execCC $dbprettyget $yagpdbChannelID 0 (sdict
+    {{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID
         "UserID" $knowledgeCategoryID
         "Key" (title $key)
