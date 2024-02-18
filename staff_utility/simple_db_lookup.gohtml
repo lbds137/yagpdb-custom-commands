@@ -30,7 +30,7 @@
 {{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "UserID" 0
-    "Title" $key
+    "Title" (title $key)
     "Key" (joinStr ":" $category (title $key))
 ) }}
 
