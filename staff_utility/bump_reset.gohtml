@@ -5,12 +5,12 @@
   Dependencies: none
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
-
-{{ dbDel $globalCategoryID "Last Bump" }}
+{{ $globalDict.Del "Last Bump" }}
+{{ dbSet 0 "Global" $globalDict }}
 
 {{ $messageID := sendMessageRetID .Channel.ID "`Last Bump` reset!" }}
 

@@ -8,15 +8,18 @@
 {{ $args := parseArgs 1 "Usage: [text]" (carg "string" "text") }}
 {{ $text := or .ExecData.Description ($args.Get 0) }}
 
-{{ $gCatID := toInt (dbGet 0 "Global").Value }}
-{{ $commCatID := toInt (dbGet 0 "Commands").Value }}
-{{ $chanCatID := toInt (dbGet 0 "Channels").Value }}
+{{ $dGlob := (dbGet 0 "Global").Value }}
+{{ $delTrigDelay := toInt ($dGlob.Get "Delete Trigger Delay") }}
 
-{{ $dGem := (dbGet $gCatID "Gematria Dictionary").Value }}
-{{ $dHebIdx := (dbGet $gCatID "Hebrew Index Dictionary").Value }}
-{{ $delTrigDelay := or (toInt (dbGet $gCatID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commCatID "embed_exec").Value }}
-{{ $yagChanID := toInt (dbGet $chanCatID "YAGPDB Channel ID").Value }}
+{{ $dGem := (dbGet 0 "Gematria").Value }}
+{{ $dVals := $dGem.Get "Values Dictionary" }}
+{{ $dHebIdx := $dGem.Get "Hebrew Index Dictionary" }}
+
+{{ $dComm := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($dComm.Get "embed_exec") }}
+
+{{ $dChan := (dbGet 0 "Channels").Value }}
+{{ $yagChanID := toInt ($dChan.Get "YAGPDB Channel ID") }}
 
 {{ define "reduce" }}
   {{ $dData := . }}
@@ -117,7 +120,7 @@
     {{- end -}}
     {{- $chars := split $w "" -}}
     {{- range $c := $chars -}}
-      {{- $cVal := $dGem.Get $c -}}
+      {{- $cVal := $dVals.Get $c -}}
       {{- if $cVal -}}
         {{- $wLen = add $wLen 1 -}}
         {{- $wVal = add $wVal $cVal -}}
@@ -163,10 +166,10 @@
   {{ if $dHebIdx.HasKey $wFirst }}
     {{ $cIdx := $dHebIdx.Get $wFirst }}
     {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $cIdx) "`")) }}
-    {{ $dRwsNum := (dbGet $gCatID "RWS Numeral Dictionary").Value }}
-    {{ $dThothNum := (dbGet $gCatID "Thoth Numeral Dictionary").Value }}
-    {{ $dRwsCard := (dbGet $gCatID "RWS Tarot Dictionary").Value }}
-    {{ $dThothCard := (dbGet $gCatID "Thoth Tarot Dictionary").Value }}
+    {{ $dRwsNum := $dGem.Get "RWS Numeral Dictionary" }}
+    {{ $dThothNum := $dGem.Get "Thoth Numeral Dictionary" }}
+    {{ $dRwsCard := $dGem.Get "RWS Tarot Dictionary" }}
+    {{ $dThothCard := $dGem.Get "Thoth Tarot Dictionary" }}
     {{ $rwsCard := joinStr " - " ($dRwsNum.Get $cIdx) ($dRwsCard.Get $cIdx) }}
     {{ $thothCard := joinStr " - " ($dThothNum.Get $cIdx) ($dThothCard.Get $cIdx) }}
     {{ if eq $rwsCard $thothCard }}

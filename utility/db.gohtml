@@ -5,20 +5,26 @@
   Dependencies: `embed_exec`
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $staffRoleID := toInt ($rolesDict.Get "Staff Role ID") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $sDictType := "*templates.SDict" }}
+{{ $stringType := "string" }}
 
 {{ $userID := .Member.User.ID }}
 {{ $operation := "" }}
 {{ $key := "" }}
 {{ $value := "" }}
+{{ $valueType := "" }}
 {{ $title := "" }}
 
 {{ $isExec := or .ExecData.UserID .ExecData.Operation .ExecData.Key .ExecData.Value .ExecData.Title }}
@@ -28,6 +34,7 @@
     {{ $operation = .ExecData.Operation }}
     {{ $key = .ExecData.Key }}
     {{ $value = .ExecData.Value }}
+    {{ $valueType = printf "%T" $value }}
     {{ $title = .ExecData.Title }}
 {{ else }}
     {{ if ge (len .CmdArgs) 1 }}
@@ -37,12 +44,12 @@
     {{ $opArray := split $operation ":" }}
     {{ if eq 2 (len $opArray) }}
         {{ $operation = index $opArray 0 }}
-        {{ $opPartTwo := index $opArray 1 }}
+        {{ $userIDArg := index $opArray 1 }}
 
-        {{ $numberCheck := or (eq "0" $opPartTwo) (gt (toInt $opPartTwo) 0) }}
+        {{ $numberCheck := or (eq "0" $userIDArg) (gt (toInt $userIDArg) 0) }}
         {{ $permissionCheck := hasRoleID $staffRoleID }}
         {{ if and $numberCheck $permissionCheck }}
-            {{ $userID = toInt $opPartTwo }}
+            {{ $userID = toInt $userIDArg }}
         {{ end }}
     {{ end }}
 
@@ -52,62 +59,161 @@
 
     {{ if ge (len .CmdArgs) 3 }}
         {{ $value = index .CmdArgs 2 }}
+        {{ $valueType = printf "%T" $value }}
     {{ end }}
 {{ end }}
 
-{{ $isDel := eq "del" $operation }}
+{{ $isKeys := eq "keys" $operation }}
+{{ $isDelete := eq "delete" $operation }}
 {{ $isGet := eq "get" $operation }}
 {{ $isSet := eq "set" $operation }}
-{{ $operationCheck := or $isDel $isGet $isSet }}
-{{ $valueCheck := or $value $isDel $isGet }}
+{{ $isAdd := eq "add" $operation }}
+{{ $isRemove := eq "remove" $operation }}
+{{ $operationCheck := or $isKeys $isDelete $isGet $isSet $isAdd $isRemove }}
+{{ $valueCheck := or $value $isKeys $isDelete $isGet }}
 
 {{ $nil := "(nil)" }}
 {{ $resultText := "" }}
 {{ $resultEmoji := "✅" }}
 {{ if and $operationCheck $key $valueCheck }}
-    {{ $ptAction := "" }}
-    {{ if or $isDel $isGet }}
-        {{ $value = (dbGet $userID $key).Value }}
-        {{ if $isDel }}
-            {{ $ptAction = "deleted" }}
-            {{ dbDel $userID $key }}
-        {{ else if $isGet }}
-            {{ $ptAction = "retrieved" }}
-        {{ end }}
-    {{ else if $isSet }}
-        {{ $ptAction = "set" }}
-        {{ if reFind "\\A\\[[^,]+(,{1}[^,]+)*\\]\\z" $value }}
-            {{ $valueSlice := split (slice $value 1 (sub (len $value) 1)) "," }}
-            {{ $value = cslice }}
-            {{- range $i, $sliceEntry := $valueSlice -}}
-                {{- $sliceEntryTrim := reReplace "\\A[[:space:]]+" $sliceEntry "" -}}
-                {{- $sliceEntryTrim = reReplace "[[:space:]]+\\z" $sliceEntryTrim "" -}}
-                {{- $value = $value.Append $sliceEntryTrim -}}
+    {{ $existingValue := "" }}
+    {{ $existingType := "" }}
+
+    {{ $keyArray := split $key ":" }}
+    {{ $parentExistingValue := "" }}
+    {{ $parentExistingType := "" }}
+    {{ $lastParentExistingValue := "" }}
+    {{ $firstSubkey := index $keyArray 0 }}
+    {{ $lastSubkey := index $keyArray (sub (len $keyArray) 1) }}
+    {{ if ge (len $keyArray) 2 }}
+        {{ $parentExistingValue = (dbGet $userID $firstSubkey).Value }}
+        {{ $parentExistingType = printf "%T" $parentExistingValue }}
+        {{ if eq $sDictType $parentExistingType }}
+            {{ $key = "" }}
+            {{- range $subkey := $keyArray -}}
+                {{ $key = joinStr " > " $key $subkey }}
+                {{ if not $existingValue }}
+                    {{ if eq $firstSubkey $subkey }}
+                        {{ $existingValue = $parentExistingValue }}
+                        {{ $existingType = $parentExistingType }}
+                    {{ else }}
+                        {{ $existingValue = "" }}
+                        {{ $existingType = "" }}
+                    {{ end }}
+                {{ else if eq $sDictType $existingType }}
+                    {{ $lastParentExistingValue = $existingValue }}
+                    {{ $existingValue = $existingValue.Get $subkey }}
+                    {{ $existingType = printf "%T" $existingValue }}
+                {{ end }}
             {{- end -}}
         {{ end }}
-        {{ dbSet $userID $key $value }}
+    {{ else }}
+        {{ $existingValue = (dbGet $userID $key).Value }}
+        {{ $existingType = printf "%T" $existingValue }}
+        {{ $lastParentExistingValue = $existingValue }}
     {{ end }}
 
-    {{ if $value }}
+    {{ $ptAction := "" }}
+    {{ if $isKeys }}
+        {{ if eq $sDictType $existingType }}
+            {{ $ptAction = "inspected" }}
+            {{ $value = cslice }}
+            {{- range $k, $v := $existingValue -}}
+                {{- $value = $value.Append $k -}}
+            {{- end -}}
+        {{ end }}
+    {{ else if or $isDelete $isGet }}
+        {{ if or $existingValue (eq $sDictType $existingType) }}
+            {{ $value = $existingValue }}
+            {{ if $isDelete }}
+                {{ $ptAction = "deleted" }}
+                {{ if ge (len $keyArray) 2 }}
+                    {{ $lastParentExistingValue.Del $lastSubkey }}
+                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
+                {{ else }}
+                    {{ dbDel $userID $key }}
+                {{ end }}
+            {{ else if $isGet }}
+                {{ $ptAction = "retrieved" }}
+            {{ end }}
+        {{ end }}
+    {{ else if or $isAdd $isRemove }}
+        {{ try }}
+            {{ if eq $stringType $valueType }}
+                {{ $value = jsonToSdict $value }}
+            {{ end }}
+            {{ if $isAdd }}
+                {{ $ptAction = "added" }}
+            {{ else }}
+                {{ $ptAction = "removed" }}
+            {{ end }}
+            {{ $lastParentExistingType := printf "%T" $lastParentExistingValue }}
+            {{ if eq $sDictType $lastParentExistingType }}
+                {{- range $k, $v := $value -}}
+                    {{- if $isAdd -}}
+                        {{- $lastParentExistingValue.Set $k $v -}}
+                    {{- else -}}
+                        {{- $value.Set $k ($lastParentExistingValue.Get $k) -}}
+                        {{- $lastParentExistingValue.Del $k -}}
+                    {{- end -}}
+                {{- end -}}
+
+                {{ if ge (len $keyArray) 2 }}
+                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
+                {{ else }}
+                    {{ dbSet $userID $key $existingValue }}
+                {{ end }}
+            {{ end }}
+        {{ catch }}
+            {{ sendMessage nil (joinStr "" "```\n" $value "\n```" ) }}
+            {{ sendMessage nil .Error }}
+            {{ $value = "" }}
+        {{ end }}
+    {{ else }}
+        {{ try }}
+            {{ if eq $stringType $valueType }}
+                {{ $value = jsonToSdict $value }}
+            {{ end }}
+            {{ $ptAction = "set" }}
+            {{ if ge (len $keyArray) 2 }}
+                {{ sendMessage nil (json $keyArray true) }}
+                {{ $lastParentExistingValue.Set $lastSubkey $value }}
+                {{ dbSet $userID $firstSubkey $parentExistingValue }}
+            {{ else }}
+                {{ dbSet $userID $key $value }}
+            {{ end }}
+        {{ catch }}
+            {{ $value = "" }}
+        {{ end }}
+    {{ end }}
+
+    {{ $valueType = printf "%T" $value }}
+
+    {{ if and $isKeys (and (not $value) (eq $stringType $valueType)) }}
+        {{ $resultEmoji = "⚠️" }}
+        {{ $resultText = "No dictionary found for the given key!" }}
+    {{ else if and (or $isDelete $isGet) (and (not $value) (eq $stringType $valueType)) }}
+        {{ $resultEmoji = "⚠️" }}
+        {{ $resultText = "No value found!" }}
+    {{ else if and (or $isSet $isAdd $isRemove) (and (not $value) (eq $stringType $valueType)) }}
+        {{ $resultEmoji = "⚠️" }}
+        {{ $resultText = "Invalid value provided! Please double check your input and try again." }}
+    {{ else }}
         {{- /* format the value for user-friendly viewing */ -}}
-        {{ $valueType := printf "%T" $value }}
-        {{ if ne "string" $valueType }}
+        {{ if ne $stringType $valueType }}
             {{ try }}
-                {{ $value = json $value }}
-                {{ $value = reReplace "\\\"" $value "" }}
+                {{ $value = json $value true }}
             {{ catch }}
                 {{ $value = joinStr "" "(unable to render type " $valueType ")" }}
             {{ end }}
         {{ end }}
         {{ $resultText = joinStr "" "Value successfully " $ptAction "!" }}
-    {{ else }}
-        {{ $resultEmoji = "⚠️" }}
-        {{ $resultText = "No value found!" }}
+        {{ deleteTrigger $deleteTriggerDelay }}
     {{ end }}
 {{ else }}
     {{ $resultEmoji = "⚠️" }}
     {{ if not $operationCheck }}
-        {{ $resultText = joinStr "" "Invalid operation provided: `" (or $operation $nil) "`" }}
+        {{ $resultText = joinStr "" "Invalid operation provided: " (or $operation $nil) "" }}
     {{ else if not $key }}
         {{ $resultText = "You must provide a key!" }}
     {{ else if not $valueCheck }}
@@ -127,7 +233,7 @@
 {{ end }}
 
 {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-    "ChannelID" .Channel.ID
+    "ChannelID" (or .ExecData.ChannelID .Channel.ID)
     "Title" $title
     "Description" (joinStr "" "```\n" (or $value $nil) "\n```")
     "AuthorID" $userID
@@ -137,5 +243,3 @@
         (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
     )
 ) }}
-
-{{ deleteTrigger $deleteTriggerDelay }}

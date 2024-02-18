@@ -5,12 +5,12 @@
   Dependencies: none
 */ -}}
 
-{{- $globalCategoryID := toInt (dbGet 0 "Global").Value -}}
-{{- $directoryCategoryID := toInt (dbGet 0 "Directory").Value -}}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
 
-{{- $embedColor := toInt (dbGet $globalCategoryID "Embed Color").Value -}}
-{{- $excludeCategories := or (dbGet $directoryCategoryID "Exclude Categories").Value cslice -}}
-{{- $excludeChannels := or (dbGet $directoryCategoryID "Exclude Channels").Value cslice -}}
+{{ $directoryDict := (dbGet 0 "Directory").Value }}
+{{ $excludeCategories := or ($directoryDict.Get "Exclude Categories") cslice }}
+{{ $excludeChannels := or ($directoryDict.Get "Exclude Channels") cslice }}
 
 {{- $yagpdbUserID := 204255221017214977 -}}
 

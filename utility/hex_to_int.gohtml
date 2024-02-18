@@ -10,13 +10,14 @@
     "a" 10 "b" 11 "c" 12 "d" 13 "e" 14 "f" 15
 }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $trigger := lower (or .ExecData.Hex .Message.Content) }}
 {{ if not (hasPrefix $trigger "#") }}

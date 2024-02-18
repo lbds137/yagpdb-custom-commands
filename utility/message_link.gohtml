@@ -12,20 +12,21 @@
 
 {{- /* DB */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $prefix := $globalDict.Get "Command Prefix" }}
+{{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
+{{ $defaultEmbedColor := toInt ($globalDict.Get "Embed Color") }}
+{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $prefix := or (dbGet $globalCategoryID "Command Prefix").Value "-" }}
-{{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
-{{ $defaultEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
-{{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $staffRoleID := toInt (dbGet $rolesCategoryID "Staff Role ID").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $staffRoleID := toInt ($rolesDict.Get "Staff Role ID") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{- /* get message */ -}}
 
