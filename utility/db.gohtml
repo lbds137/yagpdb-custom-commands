@@ -165,8 +165,6 @@
                 {{ end }}
             {{ end }}
         {{ catch }}
-            {{ sendMessage nil (joinStr "" "```\n" $value "\n```" ) }}
-            {{ sendMessage nil .Error }}
             {{ $value = "" }}
         {{ end }}
     {{ else }}
@@ -176,7 +174,6 @@
             {{ end }}
             {{ $ptAction = "set" }}
             {{ if ge (len $keyArray) 2 }}
-                {{ sendMessage nil (json $keyArray true) }}
                 {{ $lastParentExistingValue.Set $lastSubkey $value }}
                 {{ dbSet $userID $firstSubkey $parentExistingValue }}
             {{ else }}
