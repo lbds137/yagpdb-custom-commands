@@ -3,11 +3,11 @@
   Trigger type: `None`
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $serverURL := or (dbGet $globalCategoryID "Server URL").Value "" }}
-{{ $dbEmbedColor := toInt (dbGet $globalCategoryID "Embed Color").Value }}
-{{ $guildPremiumTier := toInt (dbGet $globalCategoryID "Guild Premium Tier").Value }}
-{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $serverURL := or ($globalDict.Get "Server URL") "" }}
+{{ $dbEmbedColor := toInt ($globalDict.Get "Embed Color") }}
+{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
 {{ $descriptionMaxLen := sub 2000 2 }}
 {{ $author := "" }}
@@ -32,14 +32,14 @@
     {{- end -}}
 {{ else }}
     {{ $gIconExtension := ".png" }}
-    {{ if ge $guildPremiumTier 1 }}
+    {{ if ge (toInt $guildPremiumTier) 1 }}
         {{ $gIconExtension = ".gif" }}
     {{ end }}
     {{ $gIcon := "" }}
     {{ if .Guild.Icon }}
         {{ $gIcon = (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
     {{ else }}
-        {{ $gIcon = (dbGet $globalCategoryID "Default Avatar").Value }}
+        {{ $gIcon = $globalDict.Get "Default Avatar" }}
     {{ end }}
     {{ $author = sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
     {{ $authorColor = $dbEmbedColor }}

@@ -5,16 +5,20 @@
   Dependencies: `embed_exec`, `gematria`
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $gematriaDict := (dbGet $globalCategoryID "Gematria Dictionary").Value }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $gematria := toInt (dbGet $commandsCategoryID "gematria").Value }}
-{{ $pyramid := toInt (dbGet $commandsCategoryID "pyramid").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $gematria := toInt ($commandsDict.Get "gematria") }}
+{{ $pyramid := toInt ($commandsDict.Get "pyramid") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $gematriaDict := (dbGet 0 "Gematria").Value }}
+{{ $valuesDict := $gematriaDict.Get "Values Dictionary" }}
 
 {{ $args := parseArgs 1 "Usage: [text from which to generate pyramid gematria]"
   (carg "string" "text") }}
@@ -40,7 +44,7 @@
   {{- end -}}
 {{- else -}}
   {{- range $i, $letter := split (index $words 0) "" -}}
-    {{- $valLetter := $gematriaDict.Get $letter -}}
+    {{- $valLetter := $valuesDict.Get $letter -}}
     {{- if $valLetter -}}
       {{- $curLine := joinStr "" $prevLine $letter -}}
       {{- $pyramidString = joinStr "\n" $pyramidString $curLine -}}

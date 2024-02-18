@@ -2,35 +2,37 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `rules`
-  Dependencies: `embed_exec`
+  Dependencies: `embed_exec`, `rule`
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $count := toInt (dbGet $rulesCategoryID "Count").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $rule := toInt ($commandsDict.Get "rule") }}
 
+{{ $rulesDict := (dbGet 0 "Rules").Value }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $count := len $rulesDict }}
 {{ $channelID := .Channel.ID }}
-{{ if $count }}
-    {{ range $n := seq 1 (add 1 $count) }}
-        {{ $key := joinStr "" "Rule #" $n }}
-        {{ $result := (dbGet $rulesCategoryID $key).Value }}
-        {{ $title := $key }}
-        {{ if eq $count 1 }}
-            {{ $title = "Rules" }}
-        {{ end }}
-
-        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+{{ if gt $count 0 }}
+    {{- range $i := seq 0 $count -}}
+        {{- execCC $rule $yagpdbChannelID 0 (sdict
             "ChannelID" $channelID
-            "Title" $title
-            "Description" $result
-        ) }}
-        {{ sleep 1 }}
-    {{ end }}
+            "RuleNumber" (add 1 $i)
+        ) -}}
+        {{- sleep 2 -}}
+    {{- end -}}
+{{ else }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" $channelID
+        "Title" "Rules Lookup Failed"
+        "Description" "⚠️ No rules configured in the server!"
+    ) }}
 {{ end }}
+
 {{ deleteTrigger $deleteTriggerDelay }}

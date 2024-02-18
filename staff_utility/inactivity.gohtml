@@ -10,19 +10,25 @@
     (carg "string" "param (optional)")
 }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-{{ $adminCategoryID := toInt (dbGet 0 "Admin").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
-{{ $prevPruneDate := (dbGet $adminCategoryID "Previous Prune Date").Value }}
-{{ $nextPruneDate := (dbGet $adminCategoryID "Next Prune Date").Value }}
-{{ $pruneMessageThreshold := (dbGet $adminCategoryID "Prune Message Threshold").Value }}
-{{ $pruneMinuteThreshold := (dbGet $adminCategoryID "Prune Minute Threshold").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $db := toInt ($commandsDict.Get "db") }}
+
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $pruneCategory := "Inactivity Prune" }}
+{{ $pruneDict := (dbGet 0 $pruneCategory).Value }}
+{{ $prevDate := $pruneDict.Get "Previous Date" }}
+{{ $nextDate := $pruneDict.Get "Next Date" }}
+{{ $messageThreshold := $pruneDict.Get "Message Threshold" }}
+{{ $minuteThreshold := $pruneDict.Get "Minute Threshold" }}
 
 {{ $action := $args.Get 0 }}
 {{ $param := "" }}
@@ -37,50 +43,56 @@
 {{ $isStart := eq $action "start" }}
 
 {{ if or $isDate $isEnd $isPrune $isRemind $isStart }}
-    {{ $title := "" }}
+    {{ $heading := "" }}
     {{ $result := "" }}
-
     {{ if or $isEnd $isRemind $isStart }}
         {{ $roleID := "" }}
-
         {{ if $isStart }}
-            {{ $title = "Inactivity Prune Opening Announcement" }}
-            {{ $roleID = toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
+            {{ $heading = "Opening Announcement" }}
+            {{ $roleID = toInt ($rolesDict.Get "Member Role ID") }}
         {{ else if $isEnd }}
-            {{ $title = "Inactivity Prune Closing Announcement" }}
-            {{ $roleID = toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
+            {{ $heading = "Closing Announcement" }}
+            {{ $roleID = toInt ($rolesDict.Get "Member Role ID") }}
         {{ else }}
-            {{ $title = "Inactivity Prune Reminder" }}
-            {{ $roleID = toInt (dbGet $rolesCategoryID "Inactive Role ID").Value }}
+            {{ $heading = "Reminder" }}
+            {{ $roleID = toInt ($rolesDict.Get "Inactive Role ID") }}
         {{ end }}
 
-        {{ $result = (dbGet $adminCategoryID $title).Value }}
-        {{ $result = reReplace "\\#\\{previous_date\\}" $result $prevPruneDate }}
-        {{ $result = reReplace "\\#\\{next_date\\}" $result $nextPruneDate }}
-        {{ $result = reReplace "\\#\\{message_threshold\\}" $result $pruneMessageThreshold }}
-        {{ $result = reReplace "\\#\\{minute_threshold\\}" $result $pruneMinuteThreshold }}
+        {{ $result = $pruneDict.Get $heading }}
+        {{ $result = reReplace "\\#\\{previous_date\\}" $result $prevDate }}
+        {{ $result = reReplace "\\#\\{next_date\\}" $result $nextDate }}
+        {{ $result = reReplace "\\#\\{message_threshold\\}" $result $messageThreshold }}
+        {{ $result = reReplace "\\#\\{minute_threshold\\}" $result $minuteThreshold }}
 
-        {{ execCC $embed_exec .Channel.ID 0 (sdict "Title" $title "Description" $result) }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" (joinStr " " $pruneCategory $heading)
+            "Description" $result
+        ) }}
 
         {{ mentionRoleID $roleID }}
     {{ else if $isDate }}
         {{ if $param }}
-            {{ execCC $db .Channel.ID 0 (sdict
-                "UserID" $adminCategoryID
-                "Operation" "set"
-                "Key" "Previous Prune Date"
-                "Value" $nextPruneDate
-                "Title" "Inactivity Prune Date Editing"
+            {{ $heading = "Date Editing" }}
+            {{ execCC $db $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
+                "UserID" 0
+                "Operation" "add"
+                "Key" $pruneCategory
+                "Value" (joinStr "" "{\"Previous Date\":\"" $nextDate "\"}")
+                "Title" (joinStr " " $pruneCategory $heading)
             ) }}
-            {{ execCC $db .Channel.ID 0 (sdict
-                "UserID" $adminCategoryID
-                "Operation" "set"
-                "Key" "Next Prune Date"
-                "Value" $param
-                "Title" "Inactivity Prune Date Editing"
+            {{ execCC $db $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
+                "UserID" 0
+                "Operation" "add"
+                "Key" $pruneCategory
+                "Value" (joinStr "" "{\"Next Date\":\"" $param "\"}")
+                "Title" (joinStr " " $pruneCategory $heading)
             ) }}
         {{ else }}
-            {{ execCC $embed_exec .Channel.ID 0 (sdict
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
                 "Title" "Missing Date Parameter"
                 "Description" "⚠️ You must enter a non-empty date parameter!"
                 "DeleteResponse" true
@@ -93,11 +105,11 @@
             {{ $userID := $userArg.ID }}
             {{ $member := getMember $userID }}
 
-            {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+            {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
             {{ $userAvatar := $member.User.AvatarURL "128" }}
 
-            {{ $activeRoleID := toInt (dbGet $rolesCategoryID "Active Role ID").Value }}
-            {{ $inactiveRoleID := toInt (dbGet $rolesCategoryID "Inactive Role ID").Value }}
+            {{ $activeRoleID := toInt ($rolesDict.Get "Active Role ID") }}
+            {{ $inactiveRoleID := toInt ($rolesDict.Get "Inactive Role ID") }}
 
             {{ $isActive := targetHasRoleID $userID $activeRoleID }}
             {{ $isInactive := targetHasRoleID $userID $inactiveRoleID }}
@@ -114,14 +126,16 @@
             {{ end }}
 
             {{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
-            {{ execCC $embed_exec .Channel.ID 0 (sdict
-                "Title" "Inactivity Prune"
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
+                "Title" $pruneCategory
                 "Description" $result
                 "Fields" $fields
                 "ThumbnailURL" (or $userAvatar $defaultAvatar)
             ) }}
         {{ else }}
-            {{ execCC $embed_exec .Channel.ID 0 (sdict
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
                 "Title" "Invalid User Parameter"
                 "Description" "⚠️ You must enter a valid user parameter!"
                 "DeleteResponse" true
@@ -130,7 +144,8 @@
         {{ end }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
         "Title" "Invalid Action Specified"
         "Description" "⚠️ You must enter a valid action parameter!"
         "DeleteResponse" true

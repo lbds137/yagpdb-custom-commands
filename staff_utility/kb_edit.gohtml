@@ -15,26 +15,29 @@
     (carg "string" "value")
 }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $knowledgeCategoryID := toInt (dbGet 0 "Knowledge").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $db := toInt ($commandsDict.Get "db") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $key := $args.Get 0 }}
 {{ $value := $args.Get 1 }}
-{{ $operation := "set" }}
+{{ $operation := "add" }}
 {{ if eq $value "(nil)" }}
     {{ $value = "" }}
-    {{ $operation = "del" }}
+    {{ $operation = "remove" }}
 {{ end }}
 
-{{ execCC $db .Channel.ID 0 (sdict
-    "UserID" $knowledgeCategoryID
+{{ execCC $db $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "UserID" 0
     "Operation" $operation
-    "Key" $key
-    "Value" $value
+    "Key" "Knowledge"
+    "Value" (sdict $key $value)
     "Title" "Knowledge Base Entry Editing"
 ) }}
 

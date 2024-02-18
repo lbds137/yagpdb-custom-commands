@@ -12,29 +12,29 @@
     (carg "string" "minor or adult (optional for 18+ only servers)")
 }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
-{{ $adminCategoryID := toInt (dbGet 0 "Admin").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $message_link := toInt (dbGet $commandsCategoryID "message_link").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $message_link := toInt ($commandsDict.Get "message_link") }}
 
-{{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
-{{ $memberRoleID := toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
-{{ $minorRoleID := toInt (dbGet $rolesCategoryID "Minor Role ID").Value }}
-{{ $adultRoleID := toInt (dbGet $rolesCategoryID "Adult Role ID").Value }}
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $guestRoleID := toInt ($rolesDict.Get "Guest Role ID") }}
+{{ $memberRoleID := toInt ($rolesDict.Get "Member Role ID") }}
+{{ $minorRoleID := toInt ($rolesDict.Get "Minor Role ID") }}
+{{ $adultRoleID := toInt ($rolesDict.Get "Adult Role ID") }}
 
-{{ $welcomeMessage := (dbGet $adminCategoryID "Welcome Message").Value }}
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction Channel ID") }}
+{{ $introductionArchiveChannelID := toInt ($channelsDict.Get "Introduction Archive Channel ID") }}
+{{ $welcomeChannelID := toInt ($channelsDict.Get "Welcome Channel ID") }}
+{{ $admissionLogChannelID := toInt ($channelsDict.Get "Admission Log Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
-{{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
-{{ $introductionArchiveChannelID := toInt (dbGet $channelsCategoryID "Introduction Archive Channel ID").Value }}
-{{ $welcomeChannelID := toInt (dbGet $channelsCategoryID "Welcome Channel ID").Value }}
-{{ $admissionLogChannelID := toInt (dbGet $channelsCategoryID "Admission Log Channel ID").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $adminDict := (dbGet 0 "Admin").Value }}
+{{ $welcomeMessage := $adminDict.Get "Welcome Message" }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 
@@ -97,7 +97,7 @@
                 {{ sendMessage $welcomeChannelID $welcomeMessage }}
             {{ end }}
 
-            {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+            {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
             {{ $userAvatar := $user.AvatarURL "128" }}
             {{ $staffUser := .User }}
 

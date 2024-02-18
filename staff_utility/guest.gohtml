@@ -7,17 +7,19 @@
 
 {{ $commandName := "Guest User Check" }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $hoursCutoff := toInt ($globalDict.Get "Guest Grace Period Hours") }}
+{{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $hoursCutoff := (toInt (dbGet $globalCategoryID "Guest Grace Period Hours").Value) }}
-{{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $guestRoleID := toInt (dbGet $rolesCategoryID "Guest Role ID").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $guestRoleID := toInt ($rolesDict.Get "Guest Role ID") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $actionTaken := "" }}
 {{ $reason := "" }}

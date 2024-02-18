@@ -9,20 +9,23 @@
     (carg "string" "key")
 }}
 
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
-{{ $knowledgeCategoryID := toInt (dbGet 0 "Knowledge").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $db_get_embed := toInt (dbGet $commandsCategoryID "db_get_embed").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $db_get_embed := toInt ($commandsDict.Get "db_get_embed") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $key := $args.Get 0 }}
 {{ if $key }}
     {{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID
-        "UserID" $knowledgeCategoryID
-        "Key" (title $key)
+        "UserID" 0
+        "Title" $key
+        "Key" (joinStr ":" "Knowledge" (title $key))
     ) }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict

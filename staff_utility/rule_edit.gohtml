@@ -14,17 +14,16 @@
     (carg "string" "text")
 }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $db := toInt (dbGet $commandsCategoryID "db").Value }}
-{{ $count := toInt (dbGet $rulesCategoryID "Count").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $db := toInt ($commandsDict.Get "db") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $ruleArg := $args.Get 0 }}
 {{ $isValid := and (reFind "\\A\\d+\\z" $ruleArg) (ne "0" $ruleArg) }}
@@ -32,24 +31,18 @@
     {{ $ruleNumber := toInt $ruleArg }}
     {{ $key := joinStr "" "Rule #" $ruleNumber }}
     {{ $value := $args.Get 1 }}
-    {{ $operation := "set" }}
+    {{ $operation := "add" }}
     {{ if eq $value "(nil)" }}
         {{ $value = "" }}
-        {{ $operation = "del" }}
-        {{ if eq $ruleNumber $count }}
-            {{ dbSet $rulesCategoryID "Count" (sub $count 1) }}
-        {{ end }}
-    {{ else }}
-        {{ if eq $ruleNumber (add 1 $count) }}
-            {{ dbSet $rulesCategoryID "Count" (add 1 $count) }}
-        {{ end }}
+        {{ $operation = "remove" }}
     {{ end }}
 
-    {{ execCC $db .Channel.ID 0 (sdict
-        "UserID" $rulesCategoryID
+    {{ execCC $db $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "UserID" 0
         "Operation" $operation
-        "Key" $key
-        "Value" $value
+        "Key" "Rules"
+        "Value" (sdict $key $value)
         "Title" "Rule Editing"
     ) }}
 {{ else }}

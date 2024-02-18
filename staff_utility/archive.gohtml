@@ -11,22 +11,23 @@
   (carg "string" "message link")
 }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $message_link := toInt (dbGet $commandsCategoryID "message_link").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $message_link := toInt ($commandsDict.Get "message_link") }}
 
-{{ $memberRoleID := toInt (dbGet $rolesCategoryID "Member Role ID").Value }}
-{{ $minorRoleID := toInt (dbGet $rolesCategoryID "Minor Role ID").Value }}
-{{ $adultRoleID := toInt (dbGet $rolesCategoryID "Adult Role ID").Value }}
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $memberRoleID := toInt ($rolesDict.Get "Member Role ID") }}
+{{ $minorRoleID := toInt ($rolesDict.Get "Minor Role ID") }}
+{{ $adultRoleID := toInt ($rolesDict.Get "Adult Role ID") }}
 
-{{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
-{{ $introductionArchiveChannelID := toInt (dbGet $channelsCategoryID "Introduction Archive Channel ID").Value }}
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction Channel ID") }}
+{{ $introductionArchiveChannelID := toInt ($channelsDict.Get "Introduction Archive Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 
@@ -73,7 +74,8 @@
             {{ end }}
             {{ addMessageReactions $channelID $messageID $emoji }}
             {{ if $introductionArchiveChannelID }}
-                {{ execCC $message_link .Channel.ID 0 (sdict
+                {{ execCC $message_link $yagpdbChannelID 0 (sdict
+                  "ChannelID" .Channel.ID
                   "Message" .Message
                   "Color" $color
                   "ChannelID" $introductionArchiveChannelID
@@ -81,7 +83,8 @@
                 ) }}
             {{ end }}
         {{ else }}
-            {{ execCC $embed_exec .Channel.ID 0 (sdict
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+              "ChannelID" .Channel.ID
               "Title" "Invalid User Type"
               "Description" "⚠️ The user whose introduction you are trying to archive is neither an Adult nor a Minor!"
               "DeleteResponse" true
@@ -89,7 +92,8 @@
             ) }}
         {{ end }}
     {{ else }}
-        {{ execCC $embed_exec .Channel.ID 0 (sdict
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+          "ChannelID" .Channel.ID
           "Title" "Invalid User"
           "Description" (joinStr ""
             "⚠️ The user whose introduction you are trying to archive is not currently in **" .Guild.Name "**!"
@@ -99,7 +103,8 @@
         ) }}
     {{ end }}
 {{ else }}
-    {{ execCC $embed_exec .Channel.ID 0 (sdict
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+      "ChannelID" .Channel.ID
       "Title" "Invalid Message Link"
       "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
       "DeleteResponse" true

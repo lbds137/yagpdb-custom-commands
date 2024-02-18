@@ -5,11 +5,11 @@
   Dependencies: none
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $lastBumpTime := $globalDict.Get "Last Bump" }}
 
-{{ $lastBumpTime := (dbGet $globalCategoryID "Last Bump").Value }}
-{{ $bumpRoleID := toInt (dbGet $rolesCategoryID "Bump Role ID").Value }}
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $bumpRoleID := toInt ($rolesDict.Get "Bump Role ID") }}
 
 {{ $bumpCooldownMinutes := 120 }}
 {{ $now := currentTime }}

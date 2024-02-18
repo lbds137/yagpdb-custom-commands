@@ -2,42 +2,48 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `rule`
+  Dependencies: `embed_exec`
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rulesCategoryID := toInt (dbGet 0 "Rules").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $count := toInt (dbGet $rulesCategoryID "Count").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $rulesDict := (dbGet 0 "Rules").Value }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $min := 1 }}
-{{ $max := or $count 10 }}
+{{ $max := len $rulesDict }}
 
 {{ $args := parseArgs 1 (joinStr "" "Please enter a valid rule number (" $min "-" $max ").")
     (carg "int" "rule number to view")
 }}
  
-{{ $n := $args.Get 0 }}
+{{ $n := or .ExecData.RuleNumber ($args.Get 0) }}
  
 {{ if and (ge $n $min) (le $n $max) }}
     {{ $key := joinStr "" "Rule #" $n }}
-    {{ $result := (dbGet $rulesCategoryID $key).Value }}
+    {{ $result := $rulesDict.Get $key }}
     {{ $title := $key }}
-    {{ if eq $count 1 }}
+    {{ if eq $max 1 }}
         {{ $title = "Rules" }}
     {{ end }}
 
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" .Channel.ID
+        "ChannelID" (or .ExecData.ChannelID .Channel.ID)
         "Title" $title
         "Description" $result
     ) }}
 {{ else }}
-    ⚠️ Could not find the requested rule number: {{ joinStr "" "`" $n "`" }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" (or .ExecData.ChannelID .Channel.ID)
+        "Title" "Rule Lookup Failed"
+        "Description" (joinStr "" "⚠️ Could not find the requested rule number: `" $n "`")
+    ) }}
 {{ end }}
  
 {{ deleteTrigger $deleteTriggerDelay }}

@@ -12,19 +12,18 @@
     (carg "string" "reason for rejection")
 }}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $rolesCategoryID := toInt (dbGet 0 "Roles").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $deleteResponseDelay := or (toInt (dbGet $globalCategoryID "Delete Response Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $message_link := toInt (dbGet $commandsCategoryID "message_link").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $message_link := toInt ($commandsDict.Get "message_link") }}
 
-{{ $introductionChannelID := toInt (dbGet $channelsCategoryID "Introduction Channel ID").Value }}
-{{ $rejectionLogChannelID := toInt (dbGet $channelsCategoryID "Rejection Log Channel ID").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction Channel ID") }}
+{{ $rejectionLogChannelID := toInt ($channelsDict.Get "Rejection Log Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 {{ $reasonArg := $args.Get 1 }}
@@ -58,7 +57,7 @@
         {{ deleteMessage $channelID $messageID $deleteResponseDelay }}
         {{ $silent := execAdmin "kick" $userID $reasonArg }}
 
-        {{ $defaultAvatar := (dbGet $globalCategoryID "Default Avatar").Value }}
+        {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
         {{ $userAvatar := $user.AvatarURL "128" }}
         {{ $staffUser := .User }}
 

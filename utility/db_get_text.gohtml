@@ -5,13 +5,18 @@
   Dependencies: `embed_exec`
 */ -}}
 
-{{ $globalCategoryID := toInt (dbGet 0 "Global").Value }}
-{{ $commandsCategoryID := toInt (dbGet 0 "Commands").Value }}
-{{ $channelsCategoryID := toInt (dbGet 0 "Channels").Value }}
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
-{{ $deleteTriggerDelay := or (toInt (dbGet $globalCategoryID "Delete Trigger Delay").Value) 5 }}
-{{ $embed_exec := toInt (dbGet $commandsCategoryID "embed_exec").Value }}
-{{ $yagpdbChannelID := toInt (dbGet $channelsCategoryID "YAGPDB Channel ID").Value }}
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $sDictType := "*templates.SDict" }}
+{{ $stringType := "string" }}
+{{ $noResult := "(no result found)" }}
 
 {{ $key := "" }}
 {{ $userID := .User.ID }}
@@ -32,11 +37,46 @@
 {{ $title := "" }}
 {{ $result := "" }}
 {{ if $key }}
-    {{ $title = $key }}
-    {{ $result = or (dbGet $userID $key).Value "(no result found)" }}
+    {{ $value := "" }}
+    {{ $type := "" }}
+
+    {{ $keyArray := split $key ":" }}
+    {{ $parentValue := "" }}
+    {{ $parentType := "" }}
+    {{ $lastParentValue := "" }}
+    {{ $firstSubkey := index $keyArray 0 }}
+    {{ $lastSubkey := index $keyArray (sub (len $keyArray) 1) }}
+    {{ if ge (len $keyArray) 2 }}
+        {{ $parentValue = (dbGet $userID $firstSubkey).Value }}
+        {{ $parentType = printf "%T" $parentValue }}
+        {{ if and $parentValue (eq $sDictType $parentType) }}
+            {{- range $subkey := $keyArray -}}
+                {{ $title = joinStr " > " $title $subkey }}
+                {{ if not $value }}
+                    {{ if eq $firstSubkey $subkey }}
+                        {{ $value = $parentValue }}
+                        {{ $type = $parentType }}
+                    {{ else }}
+                        {{ $value = "" }}
+                    {{ end }}
+                {{ else if eq $sDictType $type }}
+                    {{ $lastParentValue = $value }}
+                    {{ $value = $value.Get $subkey }}
+                    {{ $type = printf "%T" $value }}
+                {{ end }}
+            {{- end -}}
+        {{ end }}
+    {{ else }}
+        {{ $title = $key }}
+        {{ $value = (dbGet $userID $key).Value }}
+    {{ end }}
+
+    {{ $result = or $value $noResult }}
+    {{ $type = printf "%T" $result }}
+
     {{- /* format the value for user-friendly viewing */ -}}
-    {{ if ne "string" (printf "%T" $result) }}
-        {{ $result = joinStr "" "```\n" (json $result) "\n```" }}
+    {{ if ne $stringType $type }}
+        {{ $result = joinStr "" "```\n" (json $result true) "\n```" }}
     {{ end }}
 {{ else }}
     {{ $title = "Missing Argument" }}
