@@ -19,18 +19,12 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
-{{ $key := $args.Get 0 }}
-{{ if $key }}
-    {{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
-        "ChannelID" .Channel.ID
-        "UserID" 0
-        "Title" $key
-        "Key" (joinStr ":" "Knowledge" (title $key))
-    ) }}
-{{ else }}
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" .Channel.ID
-        "Title" "Knowledge Base Lookup Failed"
-        "Description" "⚠️ You did not provide a topic to look up!"
-    ) }}
-{{ end }}
+{{ $key := title ($args.Get 0) }}
+{{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "UserID" 0
+    "Title" $key
+    "Key" (joinStr ":" "Knowledge" $key)
+) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
