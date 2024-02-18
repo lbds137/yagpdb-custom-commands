@@ -1,0 +1,37 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `simple_db_lookup`
+  Dependencies: `embed_exec`, `db_get_embed`
+*/ -}}
+
+{{ $args := parseArgs 2
+    (joinStr ""
+        "Usage: `[Category]` `[Key]`\n\n"
+        "The category is the section of the database that you want to look at (e.g. \"Admin\" or \"Knowledge\"), "
+        "and the key is the name of the entry to retrieve."
+    )
+    (carg "string" "category")
+    (carg "string" "key")
+}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $db_get_embed := toInt ($commandsDict.Get "db_get_embed") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $category := $args.Get 0 }}
+{{ $key := $args.Get 1 }}
+{{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "UserID" 0
+    "Title" $key
+    "Key" (joinStr ":" $category (title $key))
+) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
