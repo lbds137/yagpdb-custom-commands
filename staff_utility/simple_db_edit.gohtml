@@ -1,16 +1,18 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
-  Trigger: `kb_edit`
+  Trigger: `simple_db_edit`
   Dependencies: `db`
 */ -}}
 
-{{ $args := parseArgs 2
-    (joinStr "\n"
-        "Usage: `[Key]` `[Value]`"
-        "The key is the name of the knowledge base entry to update, and the value is the text that goes with it."
+{{ $args := parseArgs 3
+    (joinStr ""
+        "Usage: `[Category]` `[Key]` `[Value]`\n\n"
+        "The category is the section of the database that you want to update (e.g. \"Admin\" or \"Knowledge\"), "
+        "the key is the name of the entry to edit, and the value is the text that goes with it.\n\n"
         "In order to __delete__ an entry, please use `(nil)` for the value."
     )
+    (carg "string" "category")
     (carg "string" "key")
     (carg "string" "value")
 }}
@@ -24,8 +26,9 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
-{{ $key := $args.Get 0 }}
-{{ $value := $args.Get 1 }}
+{{ $category := $args.Get 0 }}
+{{ $key := $args.Get 1 }}
+{{ $value := $args.Get 2 }}
 {{ $operation := "add" }}
 {{ if eq $value "(nil)" }}
     {{ $value = "" }}
@@ -36,9 +39,9 @@
     "ChannelID" .Channel.ID
     "UserID" 0
     "Operation" $operation
-    "Key" "Knowledge"
+    "Key" $category
     "Value" (sdict $key $value)
-    "Title" "Knowledge Base Entry Editing"
+    "Title" (joinStr " " $category "Entry Editing")
 ) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
