@@ -26,8 +26,8 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
-{{ $category := $args.Get 0 }}
-{{ $key := $args.Get 1 }}
+{{ $category := title ($args.Get 0) }}
+{{ $key := title ($args.Get 1) }}
 {{ $value := $args.Get 2 }}
 {{ $operation := "add" }}
 {{ if eq $value "(nil)" }}
@@ -40,7 +40,7 @@
     "UserID" 0
     "Operation" $operation
     "Key" $category
-    "Value" (sdict (title $key) $value)
+    "Value" (sdict $key $value)
     "Title" (joinStr " " $category "Entry Editing")
 ) }}
 

@@ -25,13 +25,13 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
 
-{{ $category := $args.Get 0 }}
-{{ $key := $args.Get 1 }}
+{{ $category := title ($args.Get 0) }}
+{{ $key := title ($args.Get 1) }}
 {{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "UserID" 0
-    "Title" (title $key)
-    "Key" (joinStr ":" $category (title $key))
+    "Title" $key
+    "Key" (joinStr ":" $category $key)
 ) }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
