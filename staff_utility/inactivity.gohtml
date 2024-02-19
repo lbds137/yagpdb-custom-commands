@@ -73,13 +73,13 @@
         {{ mentionRoleID $roleID }}
     {{ else if $isDate }}
         {{ if $param }}
-            {{ $heading = "Date Editing" }}
+            {{ $heading = "Inactivity Prune Date Editing" }}
             {{ execCC $db $yagpdbChannelID 0 (sdict
                 "ChannelID" .Channel.ID
                 "UserID" 0
                 "Operation" "add"
                 "Key" $pruneCategory
-                "Value" (joinStr "" "{\"Previous Date\":\"" $nextDate "\"}")
+                "Value" (sdict "Previous Date" $nextDate)
                 "Title" (joinStr " " $pruneCategory $heading)
             ) }}
             {{ execCC $db $yagpdbChannelID 0 (sdict
@@ -87,7 +87,7 @@
                 "UserID" 0
                 "Operation" "add"
                 "Key" $pruneCategory
-                "Value" (joinStr "" "{\"Next Date\":\"" $param "\"}")
+                "Value" (sdict "Next Date" $param)
                 "Title" (joinStr " " $pruneCategory $heading)
             ) }}
         {{ else }}
