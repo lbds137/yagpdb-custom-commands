@@ -20,9 +20,9 @@
 {{ $message_link := toInt ($commandsDict.Get "message_link") }}
 
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
-{{ $memberRoleID := toInt ($rolesDict.Get "Member Role ID") }}
-{{ $minorRoleID := toInt ($rolesDict.Get "Minor Role ID") }}
-{{ $adultRoleID := toInt ($rolesDict.Get "Adult Role ID") }}
+{{ $memberRoleID := toInt ($rolesDict.Get "Member") }}
+{{ $minorRoleID := toInt ($rolesDict.Get "Minor") }}
+{{ $adultRoleID := toInt ($rolesDict.Get "Adult") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $introductionChannelID := toInt ($channelsDict.Get "Introduction") }}

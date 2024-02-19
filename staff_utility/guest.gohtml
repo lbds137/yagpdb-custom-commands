@@ -16,7 +16,7 @@
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
-{{ $guestRoleID := toInt ($rolesDict.Get "Guest Role ID") }}
+{{ $guestRoleID := toInt ($rolesDict.Get "Guest") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}

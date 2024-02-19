@@ -9,7 +9,7 @@
 {{ $lastBumpTime := $globalDict.Get "Last Bump" }}
 
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
-{{ $bumpRoleID := toInt ($rolesDict.Get "Bump Role ID") }}
+{{ $bumpRoleID := toInt ($rolesDict.Get "Bump") }}
 
 {{ $bumpCooldownMinutes := 120 }}
 {{ $now := currentTime }}
