@@ -26,7 +26,7 @@
 {{ $messageArg := "" }}
 {{ $argArray := reSplit ":" $arg 2 }}
 {{ if eq 2 (len $argArray) }}
-  {{ $roleIDArg = title (index $argArray 0) }}
+  {{ $roleIDArg = lower (index $argArray 0) }}
   {{ $messageArg = index $argArray 1 }}
 {{ end }}
 
