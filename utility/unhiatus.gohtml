@@ -1,0 +1,65 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `unhiatus`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+{{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $modLogChannelID := toInt ($channelsDict.Get "Mod Log Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $staffDict := (dbGet 0 "Staff").Value }}
+{{ $staffRoleIDs := or ($staffDict.Get "Roles") cslice }}
+{{ $hiatusDict := or ($staffDict.Get "Hiatus") sdict }}
+
+{{ $userID := .User.ID }}
+{{ if gt (len $staffRoleIDs) 0 }}
+    {{ $userHiatusSlice := $hiatusDict.Get (toString $userID) }}
+    {{ if $userHiatusSlice }}
+        {{- range $roleID := $userHiatusSlice -}}
+            {{ giveRoleID $userID $roleID }}
+        {{- end -}}
+        {{ $hiatusDict.Del (toString $userID) }}
+        {{ $staffDict.Set "Hiatus" $hiatusDict }}
+        {{ dbSet 0 "Staff" $staffDict }}
+
+        {{ $userAvatar := .User.AvatarURL "128" }}
+        {{ $title := "Staff Unhiatus Record" }}
+        {{ $description := (joinStr ""
+            "👋 Staff member **" .User.String "** (ID: " .User.ID ") has elected to return from hiatus and resume staff duties."
+        ) }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" $modLogChannelID
+            "Title" $title
+            "Description" $description
+            "ThumbnailURL" (or $userAvatar $defaultAvatar)
+        ) }}
+    {{ else }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "Staff Unhiatus Operation Failed"
+            "Description" "⚠️ You are not a staff member on hiatus!"
+            "DeleteResponse" true
+            "DeleteDelay" $deleteResponseDelay
+        ) }}
+    {{ end }}
+{{ else }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Missing Staff Role IDs"
+        "Description" "⚠️ Staff role IDs must be defined before using this command!"
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
+    ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

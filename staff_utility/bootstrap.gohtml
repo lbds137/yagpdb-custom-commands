@@ -23,7 +23,7 @@
 {{ $knowledgeDict := or (dbGet 0 "Knowledge").Value sdict }}
 {{ $directoryDict := or (dbGet 0 "Directory").Value sdict }}
 {{ $inactivityDict := or (dbGet 0 "Inactivity Prune").Value sdict }}
-{{ $testDict := or (dbGet 0 "Test").Value sdict }}
+{{ $staffDict := or (dbGet 0 "Staff").Value sdict }}
 
 {{ if not ($globalDict.Get "Embed Color") }}
     {{ $globalDict.Set "Embed Color" "16777214" }}
@@ -62,7 +62,7 @@
 {{ dbSet 0 "Knowledge" $knowledgeDict }}
 {{ dbSet 0 "Directory" $directoryDict }}
 {{ dbSet 0 "Inactivity Prune" $inactivityDict }}
-{{ dbSet 0 "Test" $testDict }}
+{{ dbSet 0 "Staff" $staffDict }}
 
 {{ execCC $embed_exec .Channel.ID 0 (sdict
     "Title" "Bootstrap Execution Complete"
