@@ -1,0 +1,58 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `hiatus`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+{{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $modLogChannelID := toInt ($channelsDict.Get "Mod Log Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $staffDict := (dbGet 0 "Staff").Value }}
+{{ $staffRoleIDs := or ($staffDict.Get "Roles") cslice }}
+{{ $hiatusDict := or ($staffDict.Get "Hiatus") sdict }}
+
+{{ $userID := .User.ID }}
+{{ if gt (len $staffRoleIDs) 0 }}
+    {{ $userHiatusSlice := cslice }}
+    {{- range $roleID := $staffRoleIDs -}}
+        {{ if targetHasRoleID $userID $roleID }}
+            {{ $userHiatusSlice = $userHiatusSlice.Append $roleID }}
+            {{ takeRoleID $userID $roleID }}
+        {{ end }}
+    {{- end -}}
+    {{ $hiatusDict.Set (toString $userID) $userHiatusSlice }}
+    {{ $staffDict.Set "Hiatus" $hiatusDict }}
+    {{ dbSet 0 "Staff" $staffDict }}
+
+    {{ $userAvatar := .User.AvatarURL "128" }}
+    {{ $title := "Staff Hiatus Record" }}
+    {{ $description := (joinStr ""
+        "💤 Staff member **" .User.String "** (ID: " .User.ID ") has elected to take a hiatus from staff duties."
+    ) }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" $modLogChannelID
+        "Title" $title
+        "Description" $description
+        "ThumbnailURL" (or $userAvatar $defaultAvatar)
+    ) }}
+{{ else }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Missing Staff Role IDs"
+        "Description" "⚠️ Staff role IDs must be defined before using this command!"
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
+    ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

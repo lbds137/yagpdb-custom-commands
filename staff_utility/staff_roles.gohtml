@@ -1,0 +1,76 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `staff_roles`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $staffRoleID := $rolesDict.Get "Staff Role ID" }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+
+{{ $staffDict := (dbGet 0 "Staff").Value }}
+
+{{ $trigger := .Message.Content }}
+{{ if not (reFind $staffRoleID $trigger) }}
+    {{ $trigger = joinStr " " $trigger $staffRoleID }}
+{{ end }}
+{{ $roleIDs := reFindAll "\\d{16,}" $trigger }}
+{{ $count := len $roleIDs }}
+
+{{ if gt $count 0 }}
+    {{ $guildRoleIDs := sdict }}
+    {{- range $guildRole := .Guild.Roles -}}
+        {{- $guildRoleIDs.Set (toString $guildRole.ID) true -}}
+    {{- end -}}
+
+    {{ $validRoleIDs := cslice }}
+    {{ $ignoredRoleIDs := cslice }}
+    {{- range $roleID := $roleIDs -}}
+        {{- if $guildRoleIDs.Get $roleID -}}
+            {{- $validRoleIDs = $validRoleIDs.Append $roleID -}}
+        {{- else -}}
+            {{- $ignoredRoleIDs = $ignoredRoleIDs.Append $roleID -}}
+        {{- end -}}
+    {{- end -}}
+
+    {{ $staffDict.Set "Roles" $validRoleIDs }}
+    {{ dbSet 0 "Staff" $staffDict }}
+    {{ $result := "The following roles have been designated as staff roles: " }}
+    {{- range $validRoleID := $validRoleIDs -}}
+        {{- $result = joinStr "" $result "\n- <@&" $validRoleID ">" -}}
+    {{- end -}}
+
+    {{ if gt (len $ignoredRoleIDs) 0 }}
+        {{- $result = joinStr "\n\n" $result "The following role IDs provided were invalid: " -}}
+        {{- range $ignoredRoleID := $ignoredRoleIDs -}}
+            {{- $result = joinStr "" $result "\n- `" $ignoredRoleID "`" -}}
+        {{- end -}}
+    {{ end }}
+
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Staff Roles Configuration"
+        "Description" $result
+        "AuthorID" .Member.User.ID
+    ) }}
+{{ else }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Missing Role IDs"
+        "Description" "⚠️ You must provide at least one role ID!"
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
+    ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
