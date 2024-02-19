@@ -14,8 +14,8 @@
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $modLogChannelID := toInt ($channelsDict.Get "Mod Log Channel ID") }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $modLogChannelID := toInt ($channelsDict.Get "Mod Log") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $staffDict := (dbGet 0 "Staff").Value }}
 {{ $staffRoleIDs := or ($staffDict.Get "Roles") cslice }}

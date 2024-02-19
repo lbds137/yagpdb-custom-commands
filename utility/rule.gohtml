@@ -14,7 +14,7 @@
 {{ $rulesDict := (dbGet 0 "Rules").Value }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $min := 1 }}
 {{ $max := len $rulesDict }}

@@ -15,7 +15,7 @@
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $validSizes := cslice "32" "64" "128" "256" "512" "1024" }}
 {{ $modActions := cslice "Muted" "Kicked" "Banned" "Unmuted" "Unbanned" }}

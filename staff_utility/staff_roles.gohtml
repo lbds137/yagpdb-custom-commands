@@ -16,7 +16,7 @@
 {{ $staffRoleID := $rolesDict.Get "Staff Role ID" }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $staffDict := (dbGet 0 "Staff").Value }}
 

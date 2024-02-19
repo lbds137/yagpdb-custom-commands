@@ -27,11 +27,11 @@
 {{ $adultRoleID := toInt ($rolesDict.Get "Adult Role ID") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction Channel ID") }}
-{{ $introductionArchiveChannelID := toInt ($channelsDict.Get "Introduction Archive Channel ID") }}
-{{ $welcomeChannelID := toInt ($channelsDict.Get "Welcome Channel ID") }}
-{{ $admissionLogChannelID := toInt ($channelsDict.Get "Admission Log Channel ID") }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction") }}
+{{ $introductionArchiveChannelID := toInt ($channelsDict.Get "Introduction Archive") }}
+{{ $welcomeChannelID := toInt ($channelsDict.Get "Welcome") }}
+{{ $admissionLogChannelID := toInt ($channelsDict.Get "Admission Log") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $adminDict := (dbGet 0 "Admin").Value }}
 {{ $welcomeMessage := $adminDict.Get "Welcome Message" }}

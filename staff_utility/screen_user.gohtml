@@ -21,8 +21,8 @@
 {{ $ticket_adduser_exec := toInt ($commandsDict.Get "ticket_adduser_exec") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction Channel ID") }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 

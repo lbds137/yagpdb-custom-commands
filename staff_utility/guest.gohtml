@@ -19,7 +19,7 @@
 {{ $guestRoleID := toInt ($rolesDict.Get "Guest Role ID") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $actionTaken := "" }}
 {{ $reason := "" }}

@@ -20,9 +20,9 @@
 {{ $eventNotifyRole := toInt ($rolesDict.Get "Event Notify Role ID") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $agreementLogChannelID := toInt ($channelsDict.Get "Agreement Log Channel ID") }}
-{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction Channel ID") }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $agreementLogChannelID := toInt ($channelsDict.Get "Agreement Log") }}
+{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $userAvatar := .User.AvatarURL "128" }}
 
