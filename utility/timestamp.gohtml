@@ -12,7 +12,7 @@
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{- /* regex */ -}}
 {{ $snowflakeRegex := "\\d{16,}" }}

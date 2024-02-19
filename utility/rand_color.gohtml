@@ -18,7 +18,7 @@
 {{ $hex_to_int := toInt ($commandsDict.Get "hex_to_int") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $randHex := "" }}
 {{- range $i := seq 0 3 -}}

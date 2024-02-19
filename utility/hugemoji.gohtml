@@ -16,7 +16,7 @@
 {{ $staffRoleID := toInt ($rolesDict.Get "Staff Role ID") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $emojiRegex := "<a?:[[:word:]]{2,}:\\d{16,}>" }}
 {{ $animatedEmojiRegex := "<a:[[:word:]]{2,}:\\d{16,}>" }}

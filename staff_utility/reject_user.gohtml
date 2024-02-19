@@ -21,9 +21,9 @@
 {{ $message_link := toInt ($commandsDict.Get "message_link") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction Channel ID") }}
-{{ $rejectionLogChannelID := toInt ($channelsDict.Get "Rejection Log Channel ID") }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $introductionChannelID := toInt ($channelsDict.Get "Introduction") }}
+{{ $rejectionLogChannelID := toInt ($channelsDict.Get "Rejection Log") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $messageLinkArg := $args.Get 0 }}
 {{ $reasonArg := $args.Get 1 }}

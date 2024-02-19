@@ -19,7 +19,7 @@
 {{ $embed_exec := toInt ($dComm.Get "embed_exec") }}
 
 {{ $dChan := (dbGet 0 "Channels").Value }}
-{{ $yagChanID := toInt ($dChan.Get "YAGPDB Channel ID") }}
+{{ $yagChanID := toInt ($dChan.Get "YAGPDB") }}
 
 {{ define "reduce" }}
   {{ $dData := . }}

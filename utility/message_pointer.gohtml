@@ -13,7 +13,7 @@
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}

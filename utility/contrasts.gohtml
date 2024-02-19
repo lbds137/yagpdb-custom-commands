@@ -14,7 +14,7 @@
 {{ $contrast := toInt ($commandsDict.Get "contrast") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $colorRegex := "#?(\\d|[A-F]|[a-f]){6}" }}
 {{ $discordIDRegex := "\\d{16,}" }}

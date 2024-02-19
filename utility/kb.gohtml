@@ -17,7 +17,7 @@
 {{ $db_get_embed := toInt ($commandsDict.Get "db_get_embed") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $key := title ($args.Get 0) }}
 {{ execCC $db_get_embed $yagpdbChannelID 0 (sdict

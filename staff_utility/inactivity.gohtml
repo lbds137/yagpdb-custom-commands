@@ -21,7 +21,7 @@
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $pruneCategory := "Inactivity Prune" }}
 {{ $pruneDict := (dbGet 0 $pruneCategory).Value }}

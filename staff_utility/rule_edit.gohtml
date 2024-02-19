@@ -23,7 +23,7 @@
 {{ $db := toInt ($commandsDict.Get "db") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $ruleArg := $args.Get 0 }}
 {{ $isValid := and (reFind "\\A\\d+\\z" $ruleArg) (ne "0" $ruleArg) }}
