@@ -17,7 +17,7 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
-{{ $args := parseArgs 1 "Usage: `[role to ping][:][optional message to include with ping]`"
+{{ $args := parseArgs 1 "Usage: `[role to ping or (nil)][:][optional message to include with ping]`"
   (carg "string" "[role name][:][optional message]")
 }}
 
@@ -36,7 +36,7 @@
 {{ $roleID := index $rolesDict $roleIDArg }}
 {{ if $roleID }}
   {{ mentionRoleID $roleID }}
-{{ else if (ne $roleIDArg "None") }}
+{{ else if (ne $roleIDArg "(nil)") }}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "Title" "Invalid Argument"
