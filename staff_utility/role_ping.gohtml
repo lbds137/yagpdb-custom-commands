@@ -12,17 +12,13 @@
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
-{{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB Channel ID") }}
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
 
-{{- /* replace zeros with correct role IDs for your server; edit dictionary entries for custom role types */ -}}
-{{ $roleDict := sdict
-  "Announcement" 0 "Bump" 0 "Chat" 0
-  "Discussion" 0 "Event" 0 "Member" 0
-}}
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $args := parseArgs 1 "Usage: `[role to ping][:][optional message to include with ping]`"
-  (carg "string" "[role type][:][optional message]")
+  (carg "string" "[role name][:][optional message]")
 }}
 
 {{ $arg := $args.Get 0 }}
@@ -37,7 +33,7 @@
 {{ if $messageArg }}
   {{ sendMessage .Channel.ID $messageArg }}
 {{ end }}
-{{ $roleID := index $roleDict $roleIDArg }}
+{{ $roleID := index $rolesDict $roleIDArg }}
 {{ if $roleID }}
   {{ mentionRoleID $roleID }}
 {{ else if (ne $roleIDArg "None") }}
