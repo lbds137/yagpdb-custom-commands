@@ -13,7 +13,7 @@
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
-{{ $staffRoleID := $rolesDict.Get "Staff Role ID" }}
+{{ $staffRoleID := $rolesDict.Get "Staff" }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}

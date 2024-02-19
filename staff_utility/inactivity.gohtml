@@ -49,13 +49,13 @@
         {{ $roleID := "" }}
         {{ if $isStart }}
             {{ $heading = "Opening Announcement" }}
-            {{ $roleID = toInt ($rolesDict.Get "Member Role ID") }}
+            {{ $roleID = toInt ($rolesDict.Get "Member") }}
         {{ else if $isEnd }}
             {{ $heading = "Closing Announcement" }}
-            {{ $roleID = toInt ($rolesDict.Get "Member Role ID") }}
+            {{ $roleID = toInt ($rolesDict.Get "Member") }}
         {{ else }}
             {{ $heading = "Reminder" }}
-            {{ $roleID = toInt ($rolesDict.Get "Inactive Role ID") }}
+            {{ $roleID = toInt ($rolesDict.Get "Inactive") }}
         {{ end }}
 
         {{ $result = $pruneDict.Get $heading }}
@@ -108,8 +108,8 @@
             {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
             {{ $userAvatar := $member.User.AvatarURL "128" }}
 
-            {{ $activeRoleID := toInt ($rolesDict.Get "Active Role ID") }}
-            {{ $inactiveRoleID := toInt ($rolesDict.Get "Inactive Role ID") }}
+            {{ $activeRoleID := toInt ($rolesDict.Get "Active") }}
+            {{ $inactiveRoleID := toInt ($rolesDict.Get "Inactive") }}
 
             {{ $isActive := targetHasRoleID $userID $activeRoleID }}
             {{ $isInactive := targetHasRoleID $userID $inactiveRoleID }}

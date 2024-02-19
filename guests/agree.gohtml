@@ -14,10 +14,10 @@
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
-{{ $agreementRole := toInt ($rolesDict.Get "Agreement Role ID") }}
-{{ $announcementNotifyRole := toInt ($rolesDict.Get "Announcement Notify Role ID") }}
-{{ $discussionNotifyRole := toInt ($rolesDict.Get "Discussion Notify Role ID") }}
-{{ $eventNotifyRole := toInt ($rolesDict.Get "Event Notify Role ID") }}
+{{ $agreementRole := toInt ($rolesDict.Get "Agreement") }}
+{{ $announcementNotifyRole := toInt ($rolesDict.Get "Announcement Notify") }}
+{{ $discussionNotifyRole := toInt ($rolesDict.Get "Discussion Notify") }}
+{{ $eventNotifyRole := toInt ($rolesDict.Get "Event Notify") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $agreementLogChannelID := toInt ($channelsDict.Get "Agreement Log") }}
