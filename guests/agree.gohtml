@@ -26,11 +26,24 @@
 
 {{ $userAvatar := .User.AvatarURL "128" }}
 
-{{ if not (hasRoleID $agreementRole) }}
+{{ if not $agreementRole }}
+    {{ $result := "❌ The agreement role is not defined - please contact server administrators for further guidance." }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Agreement Failure"
+        "Description" $result
+    ) }}
+{{ else if not (hasRoleID $agreementRole) }}
     {{ giveRoleID .User.ID $agreementRole }}
-    {{ giveRoleID .User.ID $announcementNotifyRole }}
-    {{ giveRoleID .User.ID $discussionNotifyRole }}
-    {{ giveRoleID .User.ID $eventNotifyRole }}
+    {{ if $announcementNotifyRole }}
+        {{ giveRoleID .User.ID $announcementNotifyRole }}
+    {{ end }}
+    {{ if $discussionNotifyRole }}
+        {{ giveRoleID .User.ID $discussionNotifyRole }}
+    {{ end }}
+    {{ if $eventNotifyRole }}
+        {{ giveRoleID .User.ID $eventNotifyRole }}
+    {{ end }}
 
     {{ $title := "User Agreement Record" }}
     {{ $description := (joinStr ""
@@ -55,8 +68,6 @@
         "DeleteResponse" true
         "DeleteDelay" $deleteResponseDelay
     ) }}
-
-    {{ deleteTrigger $deleteTriggerDelay }}
 {{ else }}
     {{ $result := "❌ You have already agreed to the rules!" }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
@@ -66,6 +77,6 @@
         "DeleteResponse" true
         "DeleteDelay" $deleteResponseDelay
     ) }}
-
-    {{ deleteTrigger $deleteTriggerDelay }}
 {{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
