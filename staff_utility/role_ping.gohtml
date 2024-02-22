@@ -26,14 +26,14 @@
 {{ $messageArg := "" }}
 {{ $argArray := reSplit ":" $arg 2 }}
 {{ if eq 2 (len $argArray) }}
-  {{ $roleIDArg = lower (index $argArray 0) }}
+  {{ $roleIDArg = title (index $argArray 0) }}
   {{ $messageArg = index $argArray 1 }}
 {{ end }}
 
 {{ if $messageArg }}
   {{ sendMessage .Channel.ID $messageArg }}
 {{ end }}
-{{ $roleID := index $rolesDict $roleIDArg }}
+{{ $roleID := $rolesDict.Get $roleIDArg }}
 {{ if $roleID }}
   {{ mentionRoleID $roleID }}
 {{ else if (ne $roleIDArg "(nil)") }}
