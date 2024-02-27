@@ -8,6 +8,7 @@
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 {{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+{{ $execCCLimit := toInt ($globalDict.Get "ExecCC Limit") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -23,7 +24,6 @@
 {{ $args := parseArgs 1 "Usage: [text from which to generate pyramid gematria]"
   (carg "string" "text") }}
 {{ $text := or .ExecData.Description ($args.Get 0) }}
-{{ $ccExecLimit := 10 }}
 {{ $userID := (or .ExecData.AuthorID .User.ID) }}
 {{ $channelID := (or .ExecData.ChannelID .Channel.ID) }}
 
@@ -32,14 +32,14 @@
 {{ $words := reSplit "[[:space:]]+" $text }}
 {{- if gt (len $words) 1 -}}
   {{- range $i, $word := $words -}}
-    {{- if lt $i $ccExecLimit -}}
+    {{- if lt $i $execCCLimit -}}
       {{- execCC $pyramid $yagpdbChannelID 1 (sdict
         "AuthorID" $userID
         "ChannelID" $channelID
         "Description" $word
       ) -}}
     {{- else -}}
-      {{- sendMessage $channelID (joinStr "" "CC can only be executed " $ccExecLimit " times!") -}}
+      {{- sendMessage $channelID (joinStr "" "CC can only be executed " $execCCLimit " times!") -}}
     {{- end -}}
   {{- end -}}
 {{- else -}}

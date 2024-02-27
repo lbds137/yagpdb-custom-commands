@@ -47,6 +47,11 @@
     {{ $globalDict.Set "Guild Premium Tier" "0" }}
 {{ end }}
 
+{{- /* assuming YAGPDB premium */ -}}
+{{ if not ($globalDict.Get "ExecCC Limit") }}
+    {{ $globalDict.Set "ExecCC Limit" "10" }}
+{{ end }}
+
 {{ $commandsDict.Set "embed_exec" $embed_exec }}
 
 {{ $rolesDict.Set "Staff" $staffRoleID }}

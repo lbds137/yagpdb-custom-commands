@@ -8,6 +8,7 @@
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 {{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+{{ $execCCLimit := toInt ($globalDict.Get "ExecCC Limit") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -18,8 +19,6 @@
 
 {{ $colorRegex := "#?(\\d|[A-F]|[a-f]){6}" }}
 {{ $discordIDRegex := "\\d{16,}" }}
-{{- /* assuming YAGPDB premium subscription is active */ -}}
-{{ $maxArgs := 10 }}
 
 {{ $args := parseArgs 1 "Usage: `[colors as hex codes]` OR `[role IDs]`"
   (carg "string" "colors as hex codes OR role IDs")
@@ -28,12 +27,12 @@
 {{ $arg := $args.Get 0 }}
 {{ $chosenArg := cslice }}
 {{ $validArgPresent := false }}
-{{ $colorHexArg := reFindAll $colorRegex $arg $maxArgs }}
+{{ $colorHexArg := reFindAll $colorRegex $arg $execCCLimit }}
 {{ if gt (len ($colorHexArg)) 0 }}
   {{ $validArgPresent = true }}
   {{ $chosenArg = $colorHexArg }}
 {{ end }}
-{{ $roleIDArg := reFindAll $discordIDRegex $arg $maxArgs }}
+{{ $roleIDArg := reFindAll $discordIDRegex $arg $execCCLimit }}
 {{ $role := "" }}
 {{ if gt (len ($roleIDArg)) 0 }}
   {{ $role = .Guild.GetRole (toInt $roleIDArg) }}
