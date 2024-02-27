@@ -39,7 +39,9 @@
         "Description" $word
       ) -}}
     {{- else -}}
-      {{- sendMessage $channelID (joinStr "" "CC can only be executed " $execCCLimit " times!") -}}
+      {{- sendMessage $channelID (joinStr ""
+        "Skipping execCC call #" (add 1 $i) " due to having exceeded the limit of " $execCCLimit " calls!"
+      ) -}}
     {{- end -}}
   {{- end -}}
 {{- else -}}

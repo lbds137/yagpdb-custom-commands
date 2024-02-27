@@ -7,6 +7,7 @@
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $execCCLimit := toInt ($globalDict.Get "ExecCC Limit") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -17,15 +18,43 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
+{{ $args := parseArgs 0 "Usage: `[rule to start at (inclusive)] (optional)` `[rule to end at (inclusive)] (optional)`"
+    (carg "int" "starting rule")
+    (carg "int" "ending rule")
+}}
+
 {{ $count := len $rulesDict }}
 {{ $channelID := .Channel.ID }}
 {{ if gt $count 0 }}
-    {{- range $i := seq 0 $count -}}
-        {{- execCC $rule $yagpdbChannelID 0 (sdict
-            "ChannelID" $channelID
-            "RuleNumber" (add 1 $i)
-        ) -}}
-        {{- sleep 2 -}}
+    {{ $startingRule := 1 }}
+    {{ if $args.IsSet 0 }}
+        {{ $startArg := $args.Get 0 }}
+        {{ if and (ge $startArg 1) (le $startArg $count) }}
+            {{ $startingRule = $startArg }}
+        {{ end }}
+    {{ end }}
+    {{ $endingRule := $count }}
+    {{ if $args.IsSet 1 }}
+        {{ $endArg := $args.Get 1 }}
+        {{ if and (ge $endArg 1) (le $endArg $count) (ge $endArg $startingRule) }}
+            {{ $endingRule = $endArg }}
+        {{ end }}
+    {{ end }}
+    {{ $execCCCount := 0 }}
+    {{- range $i := seq (sub $startingRule 1) $endingRule -}}
+        {{- $iHuman := add 1 $i -}}
+        {{- if lt $execCCCount $execCCLimit -}}
+            {{- execCC $rule $yagpdbChannelID 0 (sdict
+                "ChannelID" $channelID
+                "RuleNumber" $iHuman
+            ) -}}
+            {{- sleep 2 -}}
+        {{- else -}}
+            {{- sendMessage $channelID (joinStr ""
+                "Skipping execCC call #" (add 1 $execCCCount) " due to having exceeded the limit of " $execCCLimit " calls!"
+            ) -}}
+        {{- end -}}
+        {{- $execCCCount = add 1 $execCCCount -}}
     {{- end -}}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
