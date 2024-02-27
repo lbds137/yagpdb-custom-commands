@@ -10,8 +10,6 @@
 {{ $title := "Message Link" }}
 {{ $eFieldLimit := sub 1024 2 }}
 
-{{- /* DB */ -}}
-
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $prefix := $globalDict.Get "Command Prefix" }}
 {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
@@ -28,27 +26,23 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
-{{- /* get message */ -}}
-
 {{ $tMsgObj := or .ExecData.Message .Message }}
 {{ $tMsg := $tMsgObj.Content }}
 {{ $trigger := or .ExecData.MessageLink (reFind $fullRegex $tMsg) }}
 
-{{ $gcmString := reReplace $baseURLRegex $trigger "" }}
-{{ $gcmSlice := split $gcmString "/" }}
-{{ $guildID := index $gcmSlice 0 }}
+{{ $gcmStr := reReplace $baseURLRegex $trigger "" }}
+{{ $gcmSlice := split $gcmStr "/" }}
+{{ $gID := index $gcmSlice 0 }}
 {{ $cID := index $gcmSlice 1 }}
 {{ $mID := index $gcmSlice 2 }}
 {{ $msg := getMessage $cID $mID }}
-
-{{- /* perform checks */ -}}
 
 {{ $execDataCheck := .ExecData.Message }}
 {{ $ignoreCheck := not (or
   (reFind (joinStr "" "\\A\\Q" $prefix "\\E") $tMsg)
   (reFind (joinStr "" "`[^`]*" $trigger "[^`]*`") $tMsg)
 ) }}
-{{ $guildCheck := eq $tMsgObj.GuildID (toInt $guildID) }}
+{{ $guildCheck := eq $tMsgObj.GuildID (toInt $gID) }}
 {{ $staffCheck := hasRoleID $staffRoleID }}
 {{ $originNSFW := (getChannelOrThread $tMsgObj.ChannelID).NSFW }}
 {{ $targetChannel := getChannelOrThread $cID }}
@@ -57,8 +51,6 @@
   {{ $targetNSFW = $targetChannel.NSFW }}
 {{ end }}
 {{ $nsfwCheck := or (not $targetNSFW) (and $originNSFW $targetNSFW) }}
-
-{{- /* link message if checks pass */ -}}
 
 {{ if and $msg (or $execDataCheck $ignoreCheck) $guildCheck (or $staffCheck $nsfwCheck) }}
   {{ $tContent := reReplace $fullRegex $tMsg "" }}
@@ -74,27 +66,23 @@
       {{ $eTitle = $embed.Title }}
     {{ end }}
   {{ end }}
-  {{ $isMessageLink := eq $eTitle $title }}
 
-  {{- /* if linked message is a message link, use its embed; else, make a new embed */ -}}
-
-  {{ $resultEmbed := "" }}
-  {{ $resultEmbedColor := 0 }}
-  {{ if $isMessageLink }}
-    {{ $resultEmbed = $embed }}
+  {{ $resEmbed := "" }}
+  {{ $resEmbedColor := 0 }}
+  {{ $isMsgLink := eq $eTitle $title }}
+  {{ if $isMsgLink }}
+    {{ $resEmbed = $embed }}
   {{ else }}
-    {{ $attachmentUrls := "" }}
-    {{ $image := "" }}
-    {{ $thumbnail := "" }}
+    {{ $aUrls := "" }}
+    {{ $img := "" }}
+    {{ $thumb := "" }}
 
     {{ $eColor := 0 }}
     {{ $eAuthor := "" }}
     {{ $eProvider := "" }}
-    {{ $eDescription := "" }}
+    {{ $eDesc := "" }}
     {{ $eFields := "" }}
     {{ $eFooter := "" }}
-
-    {{- /* linked message author & authorColor */ -}}
 
     {{ $mAuthor := $msg.Author }}
     {{ $user := userArg $mAuthor.ID }}
@@ -122,23 +110,19 @@
       "name" $authorFull "url" $uLink "icon_url" (or ($mAuthor.AvatarURL "128") $defaultAvatar)
     }}
 
-    {{- /* linked message attachments */ -}}
-
     {{ $mAttachments := $msg.Attachments }}
     {{ if gt (len $mAttachments) 0 }}
       {{ $firstAttachment := index $mAttachments 0 }}
-      {{ $image = $firstAttachment.URL }}
+      {{ $img = $firstAttachment.URL }}
 
-      {{ range $i, $attachment := $mAttachments }}
-        {{ $link := joinStr "" "[" $attachment.URL "]" }}
-        {{ $attachmentUrls = joinStr "" $attachmentUrls $link }}
+      {{ range $i, $a := $mAttachments }}
+        {{ $link := joinStr "" "[" $a.URL "]" }}
+        {{ $aUrls = joinStr "" $aUrls $link }}
         {{ if ne $i (sub (len $mAttachments) 1) }}
-          {{ $attachmentUrls = joinStr "" $attachmentUrls "\n\n" }}
+          {{ $aUrls = joinStr "" $aUrls "\n\n" }}
         {{ end }}
       {{ end }}
     {{ end }}
-
-    {{- /* linked message embed */ -}}
 
     {{ if $embed }}
       {{ if $embed.Color }}
@@ -152,26 +136,26 @@
       {{ end }}
       {{ if $embed.Description }}
         {{ if ge (len (toRune $embed.Description)) $eFieldLimit }}
-          {{ $eDescription = joinStr "" (slice $embed.Description 0 $eFieldLimit) "…" }}
+          {{ $eDesc = joinStr "" (slice $embed.Description 0 $eFieldLimit) "…" }}
         {{ else }}
-          {{ $eDescription = $embed.Description }}
+          {{ $eDesc = $embed.Description }}
         {{ end }}
       {{ end }}
       {{ if $embed.Fields }}
         {{ $eFields = $embed.Fields }}
       {{ end }}
       {{ if $embed.Image }}
-        {{ if $image }}
-          {{ $thumbnail = $embed.Image.URL }}
+        {{ if $img }}
+          {{ $thumb = $embed.Image.URL }}
         {{ else }}
-          {{ $image = $embed.Image.URL }}
+          {{ $img = $embed.Image.URL }}
         {{ end }}
       {{ end }}
       {{ if $embed.Thumbnail }}
-        {{ if $image }}
-          {{ $thumbnail = $embed.Thumbnail.URL }}
+        {{ if $img }}
+          {{ $thumb = $embed.Thumbnail.URL }}
         {{ else }}
-          {{ $image = or $embed.Thumbnail.URL }}
+          {{ $img = or $embed.Thumbnail.URL }}
         {{ end }}
       {{ end }}
       {{ if $embed.Footer }}
@@ -179,11 +163,9 @@
       {{ end }}
     {{ end }}
 
-    {{- /* fields */ -}}
-
     {{ $fields := cslice }}
-    {{ if $attachmentUrls }}
-      {{ $fields = $fields.Append (sdict "name" "📎 Attachments" "value" $attachmentUrls "inline" false) }}
+    {{ if $aUrls }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Attachments" "value" $aUrls "inline" false) }}
     {{ end }}
     {{ if $eAuthor }}
       {{ $fields = $fields.Append (sdict "name" "📎 Author" "value" $eAuthor "inline" true) }}
@@ -194,13 +176,13 @@
     {{ if $eTitle }}
       {{ $fields = $fields.Append (sdict "name" "📎 Title" "value" $eTitle "inline" false) }}
     {{ end }}
-    {{ if $eDescription }}
-      {{ $fields = $fields.Append (sdict "name" "📎 Description" "value" $eDescription "inline" false) }}
+    {{ if $eDesc }}
+      {{ $fields = $fields.Append (sdict "name" "📎 Description" "value" $eDesc "inline" false) }}
     {{ end }}
     {{ if $eFields }}
-      {{- range $field := $eFields -}}
+      {{- range $f := $eFields -}}
         {{ $fields = $fields.Append (sdict
-          "name" (joinStr "" "📎 " $field.Name) "value" $field.Value "inline" false
+          "name" (joinStr "" "📎 " $f.Name) "value" $f.Value "inline" false
         ) }}
       {{- end -}}
     {{ end }}
@@ -215,37 +197,29 @@
     {{ $msgLink := joinStr "" "🔗 [Click or tap here to view the message.](" $trigger ")" }}
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
 
-    {{- /* footer */ -}}
-
     {{ $gIconType := ".png" }}
     {{ if ge $guildPremiumTier 1 }}
       {{ $gIconType = ".gif" }}
     {{ end }}
     {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconType) }}
-    {{ $footerText := (joinStr "" "Author ID: " $mAuthor.ID) }}
-
-    {{- /* result embed color */ -}}
+    {{ $footText := (joinStr "" "Author ID: " $mAuthor.ID) }}
 
     {{ if .ExecData.Color }}
-      {{ $resultEmbedColor = .ExecData.Color }}
+      {{ $resEmbedColor = .ExecData.Color }}
     {{ else if $authorColor }}
-      {{ $resultEmbedColor = $authorColor }}
+      {{ $resEmbedColor = $authorColor }}
     {{ else if $eColor }}
-      {{ $resultEmbedColor = $eColor }}
+      {{ $resEmbedColor = $eColor }}
     {{ else }}
-      {{ $resultEmbedColor = $defaultEmbedColor }}
+      {{ $resEmbedColor = $defaultEmbedColor }}
     {{ end }}
 
-    {{- /* result embed */ -}}
-
-    {{ $resultEmbed = cembed
-      "color" $resultEmbedColor "author" $author "title" $title "description" $msg.Content
-      "image" (sdict "url" $image) "thumbnail" (sdict "url" $thumbnail) "fields" $fields
-      "footer" (sdict "text" $footerText "icon_url" $gIcon) "timestamp" $msg.Timestamp
+    {{ $resEmbed = cembed
+      "color" $resEmbedColor "author" $author "title" $title "description" $msg.Content
+      "image" (sdict "url" $img) "thumbnail" (sdict "url" $thumb) "fields" $fields
+      "footer" (sdict "text" $footText "icon_url" $gIcon) "timestamp" $msg.Timestamp
     }}
   {{ end }}
-
-  {{- /* trigger author */ -}}
 
   {{ $tAuthor := $tMsgObj.Author }}
   {{ $tAuthorFull := $tAuthor.String }}
@@ -254,15 +228,13 @@
     {{ $tAuthorFull = joinStr "" $tMember.Nick " (" $tAuthorFull ")" }}
   {{ end }}
 
-  {{- /* complex message */ -}}
-
-  {{ $complexMsgContent := "" }}
+  {{ $cMsgContent := "" }}
   {{ if and (not .ExecData.DisableQuote) $tContent }}
-    {{ $complexMsgContent = joinStr "" "> 💬 **" $tAuthorFull "** quoted a message:\n" $tContent }}
+    {{ $cMsgContent = joinStr "" "> 💬 **" $tAuthorFull "** quoted a message:\n" $tContent }}
   {{ else if not .ExecData.DisableAuthor }}
-    {{ $complexMsgContent = joinStr "" "> 🔗 **" $tAuthorFull "** linked a message:" }}
+    {{ $cMsgContent = joinStr "" "> 🔗 **" $tAuthorFull "** linked a message:" }}
   {{ end }}
-  {{ $linkMsgID := sendMessageRetID (or .ExecData.ChannelID .Channel.ID) (complexMessage "content" $complexMsgContent "embed" $resultEmbed) }}
+  {{ $linkMsgID := sendMessageRetID (or .ExecData.ChannelID .Channel.ID) (complexMessage "content" $cMsgContent "embed" $resEmbed) }}
   {{ if and (not .ExecData.KeepTrigger) $linkMsgID }}
     {{ deleteTrigger $deleteTriggerDelay }}
   {{ else if not $linkMsgID }}
