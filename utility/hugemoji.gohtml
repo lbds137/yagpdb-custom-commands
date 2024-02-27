@@ -8,6 +8,7 @@
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 {{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+{{ $execCCLimit := toInt ($globalDict.Get "ExecCC Limit") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -23,7 +24,6 @@
 {{ $emojiIDRegex := "\\d{16,}" }}
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullURLRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
-{{ $ccExecLimit := 10 }}
 
 {{ $args := parseArgs 1 "Usage: `[emoji(s) and / or message link(s)]`"
   (carg "string" "emoji(s) and / or message link(s)")
@@ -77,7 +77,7 @@
 {{- range $i, $entry := $dictSortHelper -}}
   {{- $emojiStr := $entry.Get "emojiString" -}}
   {{- $msgLink := $entry.Get "messageLink" }}
-  {{- if lt $i $ccExecLimit -}}
+  {{- if lt $i $execCCLimit -}}
     {{- $fileExtension := ".png" -}}
     {{- if reFind $animatedEmojiRegex $emojiStr -}}
       {{- $fileExtension = ".gif" -}}
@@ -110,7 +110,7 @@
 {{ if $tooManyEmojis }}
   {{- /* timing is notoriously unreliable with `execCC` so wait a while before sending the error message */ -}}
   {{ sleep 10 }}
-  {{ $emojiIgnoredCount := sub (len $dictSortHelper) $ccExecLimit }}
+  {{ $emojiIgnoredCount := sub (len $dictSortHelper) $execCCLimit }}
   {{ $subjectAndVerb := "" }}
   {{ if eq 1 $emojiIgnoredCount }}
     {{ $subjectAndVerb = "emoji was" }}
@@ -118,7 +118,7 @@
     {{ $subjectAndVerb = "emojis were" }}
   {{ end }}
   {{ $errorMsgID := sendMessageRetID $channelID (joinStr " "
-    "⚠️ Warning:" $emojiIgnoredCount $subjectAndVerb "not displayed because only" $ccExecLimit "emojis can be expanded at a time."
+    "⚠️ Warning:" $emojiIgnoredCount $subjectAndVerb "not displayed because only" $execCCLimit "emojis can be expanded at a time."
   ) }}
   {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
 {{ end }}
