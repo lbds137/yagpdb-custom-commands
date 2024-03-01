@@ -19,7 +19,7 @@
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $gematriaDict := (dbGet 0 "Gematria").Value }}
-{{ $valuesDict := $gematriaDict.Get "Values Dictionary" }}
+{{ $valuesDict := $gematriaDict.Get "Values" }}
 
 {{ $args := parseArgs 1 "Usage: [text from which to generate pyramid gematria]"
   (carg "string" "text") }}
