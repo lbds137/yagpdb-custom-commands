@@ -5,7 +5,7 @@
   Dependencies: none
 */ -}}
 
-{{- $valuesDict := sdict
+{{- $dValues := sdict
   "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
   "א" 1 "ב" 2 "ג" 3 "ד" 4 "ה" 5 "ו" 6 "ז" 7 "ח" 8 "ט" 9
   "י" 10 "כ" 20 "ל" 30 "מ" 40 "נ" 50 "ס" 60 "ע" 70 "פ" 80 "צ" 90
@@ -69,35 +69,35 @@
   "ᚽ" 9 "ᚿ" 10 "ᛀ" 10 "ᛂ" 11 "ᛄ" 12 "ᛅ" 12 "ᛆ" 12 "ᛡ" 12 "ᛦ" 15 "ᛧ" 15
   "ᛨ" 15 "ᛋ" 16 "ᛌ" 16 "ᛍ" 16 "ᛎ" 16 "ᛐ" 17 "ᛑ" 17 "ᛠ" 17 "ᛓ" 18 "ᛔ" 18
   "ᛕ" 18 "ᛘ" 20 "ᛙ" 20 "ᛛ" 21 "ᛝ" 22 -}}
-{{- $hebrewIndexDict := sdict
+{{- $dHebrewIndices := sdict
   "א" 0 "ב" 1 "ג" 2 "ד" 3 "ה" 4 "ו" 5 "ז" 6 "ח" 7 "ט" 8
   "י" 9 "כ" 10 "ל" 11 "מ" 12 "נ" 13 "ס" 14 "ע" 15 "פ" 16 "צ" 17
-  "ק" 18 "ר" 19 "ש" 20 "ת" 21 -}}
-{{- $rwsNumeralDict := dict
+  "ק" 18 "ר" 19 "ש" 20 "ת" 21 "ך" 10 "ם" 12 "ן" 13 "ף" 16 "ץ" 17 -}}
+{{- $dRwsNumerals := dict
   0 "0" 1 "I" 2 "II" 3 "III" 4 "IV" 5 "V" 6 "VI" 7 "VII" 8 "VIII"
   9 "IX" 10 "X" 11 "XI" 12 "XII" 13 "XIII" 14 "XIV" 15 "XV" 16 "XVI" 17 "XVII"
   18 "XVIII" 19 "XIX" 20 "XX" 21 "XXI" -}}
-{{- $rwsTarotDict := dict
+{{- $dRwsNames := dict
   0 "The Fool" 1 "The Magician" 2 "The High Priestess" 3 "The Empress"
   4 "The Emperor" 5 "The Hierophant" 6 "The Lovers" 7 "The Chariot"
   8 "Strength" 9 "The Hermit" 10 "The Wheel of Fortune" 11 "Justice"
   12 "The Hanged Man" 13 "Death" 14 "Temperance" 15 "The Devil"
   16 "The Tower" 17 "The Star" 18 "The Moon" 19 "The Sun"
   20 "Judgement" 21 "The World" -}}
-{{- $thothNumeralDict := dict
+{{- $dThothNumerals := dict
   4 "XVII" 8 "XI" 11 "VIII" 17 "IV" -}}
-{{- $thothTarotDict := dict
+{{- $dThothNames := dict
   1 "The Magus" 2 "The Priestess" 4 "The Star" 8 "Lust"
   10 "Fortune" 11 "Adjustment" 14 "Art" 17 "The Emperor"
   20 "The Æon" 21 "The Universe" -}}
-{{- range $k, $v := $rwsNumeralDict -}}
-  {{- if not ($thothNumeralDict.Get $k) -}}
-    {{- $thothNumeralDict.Set $k $v -}}
+{{- range $k, $v := $dRwsNumerals -}}
+  {{- if not ($dThothNumerals.Get $k) -}}
+    {{- $dThothNumerals.Set $k $v -}}
   {{- end -}}
 {{- end -}}
-{{- range $k, $v := $rwsTarotDict -}}
-  {{- if not ($thothTarotDict.Get $k) -}}
-    {{- $thothTarotDict.Set $k $v -}}
+{{- range $k, $v := $dRwsNames -}}
+  {{- if not ($dThothNames.Get $k) -}}
+    {{- $dThothNames.Set $k $v -}}
   {{- end -}}
 {{- end -}}
 
@@ -111,12 +111,12 @@
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $gematriaDict := sdict }}
-{{ $gematriaDict.Set "Values Dictionary" $valuesDict }}
-{{ $gematriaDict.Set "Hebrew Index Dictionary" $hebrewIndexDict }}
-{{ $gematriaDict.Set "RWS Numeral Dictionary" $rwsNumeralDict }}
-{{ $gematriaDict.Set "Thoth Numeral Dictionary" $thothNumeralDict }}
-{{ $gematriaDict.Set "RWS Tarot Dictionary" $rwsTarotDict }}
-{{ $gematriaDict.Set "Thoth Tarot Dictionary" $thothTarotDict }}
+{{ $gematriaDict.Set "Values" $dValues }}
+{{ $gematriaDict.Set "Hebrew Indices" $dHebrewIndices }}
+{{ $gematriaDict.Set "RWS Numerals" $dRwsNumerals }}
+{{ $gematriaDict.Set "Thoth Numerals" $dThothNumerals }}
+{{ $gematriaDict.Set "RWS Names" $dRwsNames }}
+{{ $gematriaDict.Set "Thoth Names" $dThothNames }}
 {{ dbSet 0 "Gematria" $gematriaDict }}
 
 {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
