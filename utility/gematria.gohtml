@@ -12,8 +12,8 @@
 {{ $delTrigDelay := toInt ($dGlob.Get "Delete Trigger Delay") }}
 
 {{ $dGem := (dbGet 0 "Gematria").Value }}
-{{ $dVals := $dGem.Get "Values Dictionary" }}
-{{ $dHebIdx := $dGem.Get "Hebrew Index Dictionary" }}
+{{ $dVals := $dGem.Get "Values" }}
+{{ $dHebIdxs := $dGem.Get "Hebrew Indices" }}
 
 {{ $dComm := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($dComm.Get "embed_exec") }}
@@ -160,23 +160,53 @@
 {{ $wCt := $wBgsRes.Get "ct" }}
 {{ $lCt := $lBgsRes.Get "ct" }}
 {{ $f := cslice }}
-{{ $wFirst := index (($dData.Get "w").Get "toks") 0 }}
-{{ if and (eq 1 $wCt) (eq 1 (len (toRune $wFirst))) }}
-  {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" ($tBgsRes.Get "gemStr")) }}
-  {{ if $dHebIdx.HasKey $wFirst }}
-    {{ $cIdx := $dHebIdx.Get $wFirst }}
-    {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $cIdx) "`")) }}
-    {{ $dRwsNum := $dGem.Get "RWS Numeral Dictionary" }}
-    {{ $dThothNum := $dGem.Get "Thoth Numeral Dictionary" }}
-    {{ $dRwsCard := $dGem.Get "RWS Tarot Dictionary" }}
-    {{ $dThothCard := $dGem.Get "Thoth Tarot Dictionary" }}
-    {{ $rwsCard := joinStr " - " ($dRwsNum.Get $cIdx) ($dRwsCard.Get $cIdx) }}
-    {{ $thothCard := joinStr " - " ($dThothNum.Get $cIdx) ($dThothCard.Get $cIdx) }}
-    {{ if eq $rwsCard $thothCard }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsCard) }}
+{{ if eq 1 $wCt }}
+  {{ $dRwsNum := $dGem.Get "RWS Numerals" }}
+  {{ $dThothNum := $dGem.Get "Thoth Numerals" }}
+  {{ $dRwsNames := $dGem.Get "RWS Names" }}
+  {{ $dThothNames := $dGem.Get "Thoth Names" }}
+  {{ $w := index (($dData.Get "w").Get "toks") 0 }}
+  {{ $uniqCds := cslice }}
+  {{ $cdCts := dict }}
+  {{ range $c := split $w "" }}
+    {{ if $dHebIdxs.HasKey $c }}
+      {{ $cIdx := $dHebIdxs.Get $c }}
+      {{ $ct := toInt ($cdCts.Get $cIdx) }}
+      {{ if eq $ct 0 }}
+        {{ $uniqCds = $uniqCds.Append $cIdx }}
+      {{ end }}
+      {{ $cdCts.Set $cIdx (add 1 $ct) }}
+    {{ end }}
+  {{ end }}
+  {{ $rwsCds := cslice }}
+  {{ $thothCds := cslice }}
+  {{ range $cIdx := $uniqCds }}
+    {{ $ctStr := "" }}
+    {{ $ct := $cdCts.Get $cIdx }}
+    {{ if gt $ct 1 }}
+      {{ $ctStr = joinStr "" " (" $ct ")" }}
+    {{ end }}
+    {{ $rwsCds = $rwsCds.Append (joinStr "" "`" ($dRwsNum.Get $cIdx) "` - " ($dRwsNames.Get $cIdx) $ctStr) }}
+    {{ $thothCds = $thothCds.Append (joinStr "" "`" ($dThothNum.Get $cIdx) "` - " ($dThothNames.Get $cIdx) $ctStr) }}
+  {{ end }}
+  {{ $rwsStr := joinStr "\n" $rwsCds.StringSlice }}
+  {{ $thothStr := joinStr "\n" $thothCds.StringSlice }}
+  {{ if eq 1 (len (toRune $w)) }}
+    {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" ($tBgsRes.Get "gemStr")) }}
+    {{ if $dHebIdxs.HasKey $w }}
+      {{ $cIdx := $dHebIdxs.Get $w }}
+      {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $cIdx) "`")) }}
+    {{ end }}
+  {{ else }}
+    {{ $f = $f.Append (sdict "name" "Word Length" "value" ($wBgsRes.Get "lenStr")) }}
+    {{ $f = $f.Append (sdict "name" "Word Gematria" "value" ($wBgsRes.Get "gemStr")) }}
+  {{ end }}
+  {{ if and $rwsStr $thothStr }}
+    {{ if eq $rwsStr $thothStr }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsStr) }}
     {{ else }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsCard) }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothCard) }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsStr) }}
+      {{ $f = $f.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothStr) }}
     {{ end }}
   {{ end }}
 {{ else }}
