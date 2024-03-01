@@ -52,7 +52,7 @@
     {{ $globalDict.Set "ExecCC Limit" "10" }}
 {{ end }}
 
-{{ $commandsDict.Set "embed_exec" $embed_exec }}
+{{ $commandsDict.Set "embed_exec" (str $embed_exec) }}
 
 {{ $rolesDict.Set "Staff" $staffRoleID }}
 
