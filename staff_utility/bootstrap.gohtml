@@ -5,13 +5,15 @@
   Dependencies: `embed_exec`
 */ -}}
 
-{{ $args := parseArgs 2 (joinStr "" "Usage: [`embed_exec` custom command ID] [staff role ID]")
+{{ $args := parseArgs 2 (joinStr "" "Usage: [`embed_exec` custom command ID] [`db` custom command ID] [staff role ID]")
     (carg "int" "`embed_exec` custom command ID")
+    (carg "int" "`db` custom command ID")
     (carg "string" "staff role ID")
 }}
 
 {{ $embed_exec := $args.Get 0 }}
-{{ $staffRoleID := $args.Get 1 }}
+{{ $db := $args.Get 1 }}
+{{ $staffRoleID := $args.Get 2 }}
 {{ $yagpdbChannelID := toString .Channel.ID }}
 
 {{ $globalDict := or (dbGet 0 "Global").Value sdict }}
@@ -53,6 +55,7 @@
 {{ end }}
 
 {{ $commandsDict.Set "embed_exec" (str $embed_exec) }}
+{{ $commandsDict.Set "db" (str $db) }}
 
 {{ $rolesDict.Set "Staff" $staffRoleID }}
 
