@@ -27,7 +27,10 @@
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $category := title ($args.Get 0) }}
-{{ $key := title ($args.Get 1) }}
+{{ $key := $args.Get 1 }}
+{{ if ne $category "Commands" }}
+    {{ $key = title $key }}
+{{ end }}
 {{ $value := $args.Get 2 }}
 {{ $operation := "add" }}
 {{ if eq $value "(nil)" }}
