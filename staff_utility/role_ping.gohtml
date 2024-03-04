@@ -17,6 +17,8 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
+{{ $nilValue := "(nil)" }}
+
 {{ $args := parseArgs 1 "Usage: `[role to ping or (nil)][:][optional message to include with ping]`"
   (carg "string" "[role name][:][optional message]")
 }}
@@ -26,7 +28,10 @@
 {{ $messageArg := "" }}
 {{ $argArray := reSplit ":" $arg 2 }}
 {{ if eq 2 (len $argArray) }}
-  {{ $roleIDArg = title (index $argArray 0) }}
+  {{ $roleIDArg = index $argArray 0 }}
+  {{ if ne $roleIDArg $nilValue }}
+    {{ $roleIDArg = title $roleIDArg }}
+  {{ end }}
   {{ $messageArg = index $argArray 1 }}
 {{ end }}
 
@@ -36,7 +41,7 @@
 {{ $roleID := $rolesDict.Get $roleIDArg }}
 {{ if $roleID }}
   {{ mentionRoleID $roleID }}
-{{ else if (ne $roleIDArg "(nil)") }}
+{{ else if ne $roleIDArg $nilValue }}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "Title" "Invalid Argument"
