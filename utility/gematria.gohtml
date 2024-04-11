@@ -161,36 +161,7 @@
 {{ $lCt := $lBgsRes.Get "ct" }}
 {{ $f := cslice }}
 {{ if eq 1 $wCt }}
-  {{ $dRwsNum := $dGem.Get "RWS Numerals" }}
-  {{ $dThothNum := $dGem.Get "Thoth Numerals" }}
-  {{ $dRwsNames := $dGem.Get "RWS Names" }}
-  {{ $dThothNames := $dGem.Get "Thoth Names" }}
   {{ $w := index (($dData.Get "w").Get "toks") 0 }}
-  {{ $uniqCds := cslice }}
-  {{ $cdCts := dict }}
-  {{ range $c := split $w "" }}
-    {{ if $dHebIdxs.HasKey $c }}
-      {{ $cIdx := $dHebIdxs.Get $c }}
-      {{ $ct := toInt ($cdCts.Get $cIdx) }}
-      {{ if eq $ct 0 }}
-        {{ $uniqCds = $uniqCds.Append $cIdx }}
-      {{ end }}
-      {{ $cdCts.Set $cIdx (add 1 $ct) }}
-    {{ end }}
-  {{ end }}
-  {{ $rwsCds := cslice }}
-  {{ $thothCds := cslice }}
-  {{ range $cIdx := $uniqCds }}
-    {{ $ctStr := "" }}
-    {{ $ct := $cdCts.Get $cIdx }}
-    {{ if gt $ct 1 }}
-      {{ $ctStr = joinStr "" " (" $ct ")" }}
-    {{ end }}
-    {{ $rwsCds = $rwsCds.Append (joinStr "" "`" ($dRwsNum.Get $cIdx) "` - " ($dRwsNames.Get $cIdx) $ctStr) }}
-    {{ $thothCds = $thothCds.Append (joinStr "" "`" ($dThothNum.Get $cIdx) "` - " ($dThothNames.Get $cIdx) $ctStr) }}
-  {{ end }}
-  {{ $rwsStr := joinStr "\n" $rwsCds.StringSlice }}
-  {{ $thothStr := joinStr "\n" $thothCds.StringSlice }}
   {{ if eq 1 (len (toRune $w)) }}
     {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" ($tBgsRes.Get "gemStr")) }}
     {{ if $dHebIdxs.HasKey $w }}
@@ -201,18 +172,8 @@
     {{ $f = $f.Append (sdict "name" "Word Length" "value" ($wBgsRes.Get "lenStr")) }}
     {{ $f = $f.Append (sdict "name" "Word Gematria" "value" ($wBgsRes.Get "gemStr")) }}
   {{ end }}
-  {{ if and $rwsStr $thothStr }}
-    {{ if eq $rwsStr $thothStr }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsStr) }}
-    {{ else }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsStr) }}
-      {{ $f = $f.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothStr) }}
-    {{ end }}
-  {{ end }}
 {{ else }}
-  {{ if gt $wCt 1 }}
-    {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $wCt "`")) }}
-  {{ end }}
+  {{ $f = $f.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $wCt "`")) }}
   {{ $f = $f.Append (sdict "name" "Word Length" "value" ($wBgsRes.Get "lenStr")) }}
   {{ $f = $f.Append (sdict "name" "Word Gematria" "value" ($wBgsRes.Get "gemStr")) }}
   {{ if and (gt $lCt 1) (ne $wCt $lCt) }}
@@ -225,6 +186,47 @@
     {{ $f = $f.Append (sdict "name" "Total Gematria" "value" ($tBgsRes.Get "gemStr")) }}
   {{ end }}
 {{ end }}
+{{ $dRwsNum := $dGem.Get "RWS Numerals" }}
+{{ $dThothNum := $dGem.Get "Thoth Numerals" }}
+{{ $dRwsNames := $dGem.Get "RWS Names" }}
+{{ $dThothNames := $dGem.Get "Thoth Names" }}
+{{ $uniqCds := cslice }}
+{{ $cdCts := dict }}
+{{ range $c := split $text "" }}
+  {{ if $dHebIdxs.HasKey $c }}
+    {{ $cIdx := $dHebIdxs.Get $c }}
+    {{ $ct := toInt ($cdCts.Get $cIdx) }}
+    {{ if eq $ct 0 }}
+      {{ $uniqCds = $uniqCds.Append $cIdx }}
+    {{ end }}
+    {{ $cdCts.Set $cIdx (add 1 $ct) }}
+  {{ end }}
+{{ end }}
+{{ $lenUniqCds := len $uniqCds }}
+{{ $rwsCds := cslice }}
+{{ $thothCds := cslice }}
+{{ range $cIdx := $uniqCds }}
+  {{ $ctStr := "" }}
+  {{ $ct := $cdCts.Get $cIdx }}
+  {{ if gt $ct 1 }}
+    {{ $ctStr = joinStr "" " (" $ct ")" }}
+  {{ end }}
+  {{ $rwsCds = $rwsCds.Append (joinStr "" "`" ($dRwsNum.Get $cIdx) "` - " ($dRwsNames.Get $cIdx) $ctStr) }}
+  {{ $thothCds = $thothCds.Append (joinStr "" "`" ($dThothNum.Get $cIdx) "` - " ($dThothNames.Get $cIdx) $ctStr) }}
+{{ end }}
+{{ $rwsStr := joinStr "\n" $rwsCds.StringSlice }}
+{{ $thothStr := joinStr "\n" $thothCds.StringSlice }}
+{{ $leHalfCds := le $lenUniqCds 11 }}
+{{ if and $rwsStr $thothStr $leHalfCds }}
+  {{ $f = $f.Append (sdict "name" "Unique Arcana" "value" (joinStr "" "`" $lenUniqCds "`")) }}
+  {{ if eq $rwsStr $thothStr }}
+    {{ $f = $f.Append (sdict "name" "Major Arcana" "value" $rwsStr) }}
+  {{ else }}
+    {{ $f = $f.Append (sdict "name" "Major Arcana (RWS)" "value" $rwsStr) }}
+    {{ $f = $f.Append (sdict "name" "Major Arcana (Thoth)" "value" $thothStr) }}
+  {{ end }}
+{{ end }}
+
 {{ if .ExecData.Fields }}
   {{ $f = $f.AppendSlice .ExecData.Fields }}
 {{ end }}
