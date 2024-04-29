@@ -13,7 +13,7 @@
 
 {{ $dGem := (dbGet 0 "Gematria").Value }}
 {{ $dVals := $dGem.Get "Values" }}
-{{ $dHebIdxs := $dGem.Get "Hebrew Indices" }}
+{{ $dTarotIdxs := $dGem.Get "Tarot Indices" }}
 
 {{ $dComm := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($dComm.Get "embed_exec") }}
@@ -164,8 +164,8 @@
   {{ $w := index (($dData.Get "w").Get "toks") 0 }}
   {{ if eq 1 (len (toRune $w)) }}
     {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" ($tBgsRes.Get "gemStr")) }}
-    {{ if $dHebIdxs.HasKey $w }}
-      {{ $cIdx := $dHebIdxs.Get $w }}
+    {{ if $dTarotIdxs.HasKey $w }}
+      {{ $cIdx := $dTarotIdxs.Get $w }}
       {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $cIdx) "`")) }}
     {{ end }}
   {{ else }}
@@ -193,8 +193,8 @@
 {{ $uniqCds := cslice }}
 {{ $cdCts := dict }}
 {{ range $c := split $text "" }}
-  {{ if $dHebIdxs.HasKey $c }}
-    {{ $cIdx := $dHebIdxs.Get $c }}
+  {{ if $dTarotIdxs.HasKey $c }}
+    {{ $cIdx := $dTarotIdxs.Get $c }}
     {{ $ct := toInt ($cdCts.Get $cIdx) }}
     {{ if eq $ct 0 }}
       {{ $uniqCds = $uniqCds.Append $cIdx }}
