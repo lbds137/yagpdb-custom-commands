@@ -5,22 +5,25 @@
   Dependencies: `embed_exec`, `gematria`
 */ -}}
 
-{{ $hebrewDict := sdict
-    "0" "א" "1" "ב" "2" "ג" "3" "ד" "4" "ה" "5" "ו" "6" "ז" "7" "ח" "8" "ט" "9" "י" "10" "כ"
-    "11" "ל" "12" "מ" "13" "נ" "14" "ס" "15" "ע" "16" "פ" "17" "צ" "18" "ק" "19" "ר" "20" "ש" "21" "ת"
-}}
-{{ $sofitDict := sdict
-    "א" "א" "ב" "ב" "ג" "ג" "ד" "ד" "ה" "ה" "ו" "ו" "ז" "ז" "ח" "ח" "ט" "ט" "י" "י" "כ" "ך"
-    "ל" "ל" "מ" "ם" "נ" "ן" "ס" "ס" "ע" "ע" "פ" "ף" "צ" "ץ" "ק" "ק" "ר" "ר" "ש" "ש" "ת" "ת"
-}}
+{{- $dAlefbet := sdict
+  "𐤀" "א" "𐤁" "ב" "𐤂" "ג" "𐤃" "ד" "𐤄" "ה" "𐤅" "ו" "𐤆" "ז" "𐤇" "ח" "𐤈" "ט"
+  "𐤉" "י" "𐤊" "כ" "𐤋" "ל" "𐤌" "מ" "𐤍" "נ" "𐤎" "ס" "𐤏" "ע" "𐤐" "פ" "𐤑" "צ"
+  "𐤒" "ק" "𐤓" "ר" "𐤔" "ש" "𐤕" "ת"
+  "ا" "א" "ب" "ב" "ج" "ג" "د" "ד" "ه" "ה" "ة" "ה" "و" "ו" "ز" "ז" "ح" "ח" "ط" "ט"
+  "ي" "י" "ك" "כ" "ل" "ל" "م" "מ" "ن" "נ" "س" "ס" "ع" "ע" "ف" "פ" "ص" "צ"
+  "ق" "ק" "ر" "ר" "ش" "ש" "ت" "ת" "ث" "ש" "خ" "ח" "ذ" "ז" "ض" "צ" "ظ" "צ"
+  "غ" "ע"
+  "ى" "א" "آ" "א" "أ" "א" "إ" "א" "پ" "ב" "چ" "ג" "ؤ" "ו" "ژ" "ז"
+  "ئ" "י" "گ" "כ" -}}
 
-{{ $args := parseArgs 1 "Usage: [number of letters] OR [number of groups]x[number of letters per group]"
-    (carg "string" "argument")
-}}
+{{ $args := parseArgs 1 "Usage: [text]" (carg "string" "text") }}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 {{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+
+{{ $gematriaDict := (dbGet 0 "Gematria").Value }}
+{{ $sofitDict := $gematriaDict.Get "Final Letters" }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -33,59 +36,46 @@
 {{ $trimmedArg := reReplace "\\A[[:space:]]+" $arg "" }}
 {{ $trimmedArg = reReplace "[[:space:]]+\\z" $trimmedArg "" }}
 
-{{ $groupModeArg := reFind "\\A\\d+x\\d+\\z" $trimmedArg }}
-{{ $singleModeArg := reFind "\\A\\d+\\z" $trimmedArg }}
-{{ $randString := "" }}
-{{ $gematriaString := "" }}
-{{ $totalGematria := 0 }}
-{{ if $groupModeArg }}
-    {{ $subArgs := split $groupModeArg "x" }}
-    {{ $numGroups := toInt (index $subArgs 0) }}
-    {{ $numLetters := toInt (index $subArgs 1) }}
-    {{- range $i := seq 0 $numGroups -}}
-        {{- $curGroup := "" -}}
-        {{- range $j := seq 0 $numLetters -}}
-            {{- $randVal := toString (randInt 0 22) -}}
-            {{- $randLetter := index $hebrewDict $randVal -}}
-            {{- if and (gt $numLetters 1) (eq $j (sub $numLetters 1)) -}}
-                {{- $randLetter = index $sofitDict $randLetter -}}
-            {{- end -}}
-            {{- $curGroup = joinStr "" $curGroup $randLetter -}}
-        {{- end -}}
-        {{- $randString = joinStr " " $randString $curGroup -}}
+{{ $hasHebrew := false }}
+{{ $hebrewText := "" }}
+{{ $chars := split $arg "" }}
+{{ $textLength := len $chars }}
+{{- range $i := seq 0 $textLength -}}
+  {{- $char := index $chars $i -}}
+  {{- $hebrewChar := index $dAlefbet $char -}}
+  {{- if $hebrewChar -}}
+    {{- $hasHebrew = true -}}
+    {{- if eq $i (sub $textLength 1) -}}
+      {{- $hebrewChar = index $sofitDict $hebrewChar -}}
+    {{- else -}}
+      {{- $nextChar := index $chars (add 1 $i) -}}
+      {{- $nextHebrewChar := index $dAlefbet $nextChar -}}
+      {{- if not $nextHebrewChar -}}
+        {{- $hebrewChar = index $sofitDict $hebrewChar -}}
+      {{- end -}}
     {{- end -}}
+    {{- $hebrewText = joinStr "" $hebrewText $hebrewChar -}}
+  {{- else -}}
+    {{- $hebrewText = joinStr "" $hebrewText $char -}}
+  {{- end -}}
+{{- end -}}
 
-    {{ execCC $gematria $yagpdbChannelID 0 (sdict
-        "AuthorID" .User.ID
-        "ChannelID" .Channel.ID
-        "Title" "Hebrew Generator"
-        "Description" $randString
-    ) }}
-{{ else if $singleModeArg }}
-    {{ $numLetters := toInt $singleModeArg }}
-    {{- range $i := seq 0 $numLetters -}}
-        {{- $randVal := toString (randInt 0 22) -}}
-        {{- $randLetter := index $hebrewDict $randVal -}}
-        {{- if and (gt $numLetters 1) (eq $i (sub $numLetters 1)) -}}
-            {{- $randLetter = index $sofitDict $randLetter -}}
-        {{- end -}}
-        {{- $randString = joinStr "" $randString $randLetter -}}
-    {{- end -}}
-
-    {{ execCC $gematria $yagpdbChannelID 0 (sdict
-        "AuthorID" .User.ID
-        "ChannelID" .Channel.ID
-        "Title" "Hebrew Generator"
-        "Description" $randString
-    ) }}
+{{ if $hasHebrew }}
+  {{ execCC $gematria $yagpdbChannelID 0 (sdict
+    "AuthorID" .User.ID
+    "ChannelID" .Channel.ID
+    "Title" "Hebrew Converter"
+    "Description" $hebrewText
+    "Fields" (cslice (sdict "name" "Original Text" "value" $arg "inline" false))
+  ) }}
 {{ else }}
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" .Channel.ID
-        "Title" "Invalid Argument"
-        "Description" (joinStr "" "⚠️ The argument provided does not match the required format. Please try again.")
-        "DeleteResponse" true
-        "DeleteDelay" $deleteResponseDelay
-    ) }}
+  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "Title" "Invalid Argument"
+    "Description" (joinStr "" "⚠️ The argument provided does not contain any valid text for conversion to Hebrew. Please try again.")
+    "DeleteResponse" true
+    "DeleteDelay" $deleteResponseDelay
+  ) }}
 {{ end }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
