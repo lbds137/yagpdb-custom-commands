@@ -164,8 +164,9 @@
   {{ $w := index (($dData.Get "w").Get "toks") 0 }}
   {{ if eq 1 (len (toRune $w)) }}
     {{ $f = $f.Append (sdict "name" "Letter Gematria" "value" ($tBgsRes.Get "gemStr")) }}
-    {{ if $dTarotIdxs.HasKey $w }}
-      {{ $cIdx := $dTarotIdxs.Get $w }}
+    {{ $cVal := $dVals.Get $w }}
+    {{ if $dTarotIdxs.HasKey $cVal }}
+      {{ $cIdx := $dTarotIdxs.Get $cVal }}
       {{ $f = $f.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $cIdx) "`")) }}
     {{ end }}
   {{ else }}
@@ -193,8 +194,9 @@
 {{ $uniqCds := cslice }}
 {{ $cdCts := dict }}
 {{ range $c := split $text "" }}
-  {{ if $dTarotIdxs.HasKey $c }}
-    {{ $cIdx := $dTarotIdxs.Get $c }}
+  {{ $cVal := $dVals.Get $c }}
+  {{ if $dTarotIdxs.HasKey $cVal }}
+    {{ $cIdx := $dTarotIdxs.Get $cVal }}
     {{ $ct := toInt ($cdCts.Get $cIdx) }}
     {{ if eq $ct 0 }}
       {{ $uniqCds = $uniqCds.Append $cIdx }}
