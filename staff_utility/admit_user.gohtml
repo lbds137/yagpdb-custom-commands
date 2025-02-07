@@ -80,11 +80,19 @@
             {{ end }}
             {{ giveRoleID $userID $memberRoleID }}
             {{ takeRoleID $userID $guestRoleID }}
-            {{ deleteAllMessageReactions $channelID $messageID }}
-            {{ addMessageReactions $channelID $messageID $emoji }}
+            {{ try }}
+                {{ deleteAllMessageReactions $channelID $messageID }}
+                {{ addMessageReactions $channelID $messageID $emoji }}
+            {{ catch }}
+                {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                    "ChannelID" $channelID
+                    "Title" "Bot Blocked"
+                    "Description" (joinStr "" "⚠️ The user you are trying to admit (" $user.Mention ") has the bot blocked!")
+                ) }}
+            {{ end }}
             {{ if $introductionArchiveChannelID }}
                 {{ execCC $message_link $yagpdbChannelID 0 (sdict
-                    "ChannelID" .Channel.ID
+                    "ChannelID" $channelID
                     "Message" .Message
                     "ChannelID" $introductionArchiveChannelID
                     "DisableQuote" true
@@ -116,7 +124,7 @@
             ) }}
         {{ else }}
             {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-                "ChannelID" .Channel.ID
+                "ChannelID" $channelID
                 "Title" "Invalid User Type"
                 "Description" "⚠️ You must enter either `minor` or `adult` for the user type parameter!"
                 "DeleteResponse" true
@@ -125,16 +133,16 @@
         {{ end }}
     {{ else }}
         {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-            "ChannelID" .Channel.ID
+            "ChannelID" $channelID
             "Title" "Invalid User"
-            "Description" joinStr "" "⚠️ The user you are trying to admit is not currently in **" .Guild.Name "**!"
+            "Description" (joinStr "" "⚠️ The user you are trying to admit is not currently in **" .Guild.Name "**!")
             "DeleteResponse" true
             "DeleteDelay" $deleteResponseDelay
         ) }}
     {{ end }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" .Channel.ID
+        "ChannelID" $channelID
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true
