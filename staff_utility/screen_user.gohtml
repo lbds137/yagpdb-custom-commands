@@ -38,7 +38,7 @@
 {{ $messageID := index $gcmSlice 2 }}
 
 {{ $guildCheck := eq $guildID (toString .Guild.ID) }}
-{{ $channelCheck := eq $channelID (toString $introductionChannelID) }}
+{{ $channelCheck := or (not $introductionChannelID) (eq $channelID (toString $introductionChannelID)) }}
 
 {{ if and $guildCheck $channelCheck }}
     {{ $message := getMessage $channelID $messageID }}
@@ -51,7 +51,15 @@
 
         {{ $ticketOpenResult := createTicket nil $reason }}
         {{ $ticketChannelID := $ticketOpenResult.ChannelID }}
-        {{ addMessageReactions $channelID $messageID $emoji }}
+        {{ try }}
+            {{ addMessageReactions $channelID $messageID $emoji }}
+        {{ catch }}
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" $channelID
+                "Title" "Bot Blocked"
+                "Description" (joinStr "" "⚠️ The user you are trying to screen (" $user.Mention ") has the bot blocked!")
+            ) }}
+        {{ end }}
         {{ sleep 1 }}
 
         {{ execCC $ticket_adduser_exec $ticketChannelID 0 (sdict "UserID" $userID) }}
@@ -71,7 +79,7 @@
         {{ sendMessage $ticketChannelID $reasonText }}
     {{ else }}
         {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-            "ChannelID" .Channel.ID
+            "ChannelID" $channelID
             "Title" "Invalid User"
             "Description" joinStr "" "⚠️ The user you are trying to screen is not currently in **" .Guild.Name "**!"
             "DeleteResponse" true
@@ -80,7 +88,7 @@
     {{ end }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" .Channel.ID
+        "ChannelID" $channelID
         "Title" "Invalid Message Link"
         "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
         "DeleteResponse" true
