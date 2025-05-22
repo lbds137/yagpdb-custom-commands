@@ -179,9 +179,16 @@ class ConfigLoadingRule(Rule):
         
         # Bootstrap is special - it gets embed_exec ID from user args and stores it in DB
         if uses_embed_exec and not has_embed_exec and not is_bootstrap:
+            # Find the first execCC $embed_exec line
+            exec_line = 1
+            for i, line in enumerate(lines):
+                if "execCC $embed_exec" in line:
+                    exec_line = i + 1
+                    break
+            
             results.append(LintResult(
                 file=filename,
-                line=1,
+                line=exec_line,
                 column=1,
                 rule="config-missing-embed-exec",
                 message="File uses embed_exec but doesn't load it from Commands dictionary",
@@ -215,9 +222,16 @@ class PermissionCheckRule(Rule):
             
             # If command writes to global database but isn't in staff_utility and has no permission check
             if has_db_write_global and not has_permission_check:
+                # Find the first dbSet 0 line
+                db_write_line = 1
+                for i, line in enumerate(lines):
+                    if "dbSet 0" in line:
+                        db_write_line = i + 1
+                        break
+                
                 results.append(LintResult(
                     file=filename,
-                    line=1,
+                    line=db_write_line,
                     column=1,
                     rule="permission-conditional-staff",
                     message="Command performs staff operations but lacks permission checks",
@@ -256,10 +270,12 @@ class ErrorHandlingRule(Rule):
                             break
                     
                     if not in_try_block:
+                        # Find the column where the API call starts
+                        column = line.find(api_call) + 1
                         results.append(LintResult(
                             file=filename,
                             line=i + 1,
-                            column=1,
+                            column=column,
                             rule="error-no-try-catch",
                             message=f"Discord API call '{api_call}' should be wrapped in try-catch block",
                             severity="warning"
@@ -279,13 +295,21 @@ class TriggerDeletionRule(Rule):
         
         has_trigger_deletion = any("deleteTrigger" in line for line in lines)
         
-        # Skip check for embed_exec (trigger type: None)
-        is_embed_exec = any('Trigger type: "None"' in line for line in lines)
+        # Skip check for commands that shouldn't have trigger deletion
+        is_none_trigger = any('Trigger type: `None`' in line or 'Trigger type: "None"' in line for line in lines)
+        is_interval_trigger = any('interval' in line.lower() for line in lines)
         
-        if not has_trigger_deletion and not is_embed_exec:
+        if not has_trigger_deletion and not is_none_trigger and not is_interval_trigger:
+            # Find the last non-empty line for better context
+            last_line = len(lines)
+            for i in range(len(lines) - 1, -1, -1):
+                if lines[i].strip():
+                    last_line = i + 1
+                    break
+            
             results.append(LintResult(
                 file=filename,
-                line=len(lines),
+                line=last_line,
                 column=1,
                 rule="trigger-deletion-missing",
                 message="Command should include deleteTrigger call",
@@ -313,10 +337,12 @@ class VariableNamingRule(Rule):
                 
                 expected_name = db_key.lower() + "Dict"
                 if var_name != expected_name:
+                    # Find the column where the variable name starts
+                    column = line.find(f"${var_name}") + 1
                     results.append(LintResult(
                         file=filename,
                         line=i + 1,
-                        column=1,
+                        column=column,
                         rule="variable-naming-dict",
                         message=f"Dictionary variable should be named '{expected_name}', got '{var_name}'",
                         severity="warning"
@@ -373,10 +399,12 @@ class DatabaseOperationRule(Rule):
                 # Some utility commands may legitimately need to write global data
                 # (like bump tracking), so this is now just a warning
                 if not is_staff_utility and not is_bootstrap:
+                    # Find the column where dbSet starts
+                    column = line.find("dbSet 0") + 1
                     results.append(LintResult(
                         file=filename,
                         line=i + 1,
-                        column=1,
+                        column=column,
                         rule="database-global-write",
                         message="Global database write - verify this is intentional and properly secured",
                         severity="info"
@@ -401,6 +429,29 @@ class YAGPDBLinter:
         ]
         self.results = []
     
+    def _is_suppressed(self, lines: List[str], line_index: int, rule_name: str) -> bool:
+        """Check if a warning should be suppressed based on inline annotations"""
+        if line_index == 0:
+            return False
+        
+        # Check the previous line for suppression comments
+        prev_line = lines[line_index - 1].strip()
+        
+        # Format: {{/* lint:ignore rule-name reason */}}
+        # Examples: {{/* lint:ignore permission-check implicit-via-hiatus-dict */}}
+        #          {{/* lint:ignore error-no-try-catch not-critical-for-bump-tracking */}}
+        
+        if prev_line.startswith("{{/*") and "lint:ignore" in prev_line:
+            # Extract the rule pattern
+            ignore_match = re.search(r'lint:ignore\s+([^\s]+)', prev_line)
+            if ignore_match:
+                ignore_pattern = ignore_match.group(1)
+                # Support wildcards and exact matches
+                if ignore_pattern == "*" or ignore_pattern == rule_name or rule_name.startswith(ignore_pattern.rstrip("*")):
+                    return True
+        
+        return False
+    
     def lint_file(self, filename: str) -> None:
         """Lint a single file"""
         try:
@@ -412,7 +463,12 @@ class YAGPDBLinter:
             
             for rule in self.rules:
                 rule_results = rule.check(filename, lines)
-                self.results.extend(rule_results)
+                # Filter out suppressed warnings
+                filtered_results = []
+                for result in rule_results:
+                    if not self._is_suppressed(lines, result.line - 1, result.rule):
+                        filtered_results.append(result)
+                self.results.extend(filtered_results)
                 
         except Exception as e:
             print(f"Error reading file {filename}: {e}", file=sys.stderr)
