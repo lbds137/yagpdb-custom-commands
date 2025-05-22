@@ -1,1 +1,15 @@
 .idea/
+
+# Build artifacts
+bin/
+
+# Lint reports (keep latest only)
+reports/lint_output_*.txt
+reports/lint_report_*.json
+reports/lint_report_*.md
+reports/manual_output.txt
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
