@@ -434,21 +434,26 @@ class YAGPDBLinter:
         if line_index == 0:
             return False
         
-        # Check the previous line for suppression comments
-        prev_line = lines[line_index - 1].strip()
-        
-        # Format: {{/* lint:ignore rule-name reason */}}
-        # Examples: {{/* lint:ignore permission-check implicit-via-hiatus-dict */}}
-        #          {{/* lint:ignore error-no-try-catch not-critical-for-bump-tracking */}}
-        
-        if prev_line.startswith("{{/*") and "lint:ignore" in prev_line:
-            # Extract the rule pattern
-            ignore_match = re.search(r'lint:ignore\s+([^\s]+)', prev_line)
-            if ignore_match:
-                ignore_pattern = ignore_match.group(1)
-                # Support wildcards and exact matches
-                if ignore_pattern == "*" or ignore_pattern == rule_name or rule_name.startswith(ignore_pattern.rstrip("*")):
-                    return True
+        # Check previous lines for suppression comments (look backwards through consecutive comments)
+        check_line = line_index - 1
+        while check_line >= 0:
+            line = lines[check_line].strip()
+            
+            # If we hit a non-comment line, stop searching
+            if not (line.startswith("{{/*") and line.endswith("*/}}")):
+                break
+            
+            # Check if this comment line has a lint suppression
+            if "lint:ignore" in line:
+                # Extract the rule pattern
+                ignore_match = re.search(r'lint:ignore\s+([^\s]+)', line)
+                if ignore_match:
+                    ignore_pattern = ignore_match.group(1)
+                    # Support wildcards and exact matches
+                    if ignore_pattern == "*" or ignore_pattern == rule_name or rule_name.startswith(ignore_pattern.rstrip("*")):
+                        return True
+            
+            check_line -= 1
         
         return False
     

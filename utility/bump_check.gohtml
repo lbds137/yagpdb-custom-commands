@@ -19,6 +19,7 @@
     {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
         {{ $globalDict.Set "Last Bump" $now }}
         {{/* lint:ignore permission-conditional-staff intentional-global-bump-tracking */}}
+        {{/* lint:ignore database-global-write intentional-bump-tracking */}}
         {{ dbSet 0 "Global" $globalDict }}
         {{ $messageID = sendMessageRetID nil "`Last Bump` updated!" }}
     {{ else }}
@@ -26,6 +27,7 @@
     {{ end }}
 {{ else }}
     {{ $globalDict.Set "Last Bump" $now }}
+    {{/* lint:ignore database-global-write intentional-bump-tracking */}}
     {{ dbSet 0 "Global" $globalDict }}
     {{ $messageID = sendMessageRetID nil "`Last Bump` updated!" }}
 {{ end }}
