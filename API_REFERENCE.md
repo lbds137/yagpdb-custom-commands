@@ -4,6 +4,39 @@
 
 This document provides detailed reference information for developers working with the YAGPDB custom command system implemented in this repository.
 
+## YAGPDB System Limits
+
+### Custom Command Size Limits
+
+**Character Limits:**
+- **Premium Servers**: 20,000 characters per custom command
+- **Free Servers**: 10,000 characters per custom command
+
+**Important Notes:**
+- This command suite was developed assuming premium server limits (20k characters)
+- Many commands in this repository exceed the 10k free tier limit and will not work on non-premium servers
+- The official YAGPDB documentation may be outdated regarding these limits
+- Source: YAGPDB official support Discord server
+
+### Other Key Limits
+
+**Message/Embed Limits:**
+- Embed description: 2,048 characters maximum
+- Embed field value: 1,024 characters maximum
+- Embed field name: 256 characters maximum
+- Total embed size: 6,000 characters maximum
+- Number of embeds per message: 10 maximum
+
+**Database Limits:**
+- Database entries per server: Varies by premium tier
+- Key length: 256 characters maximum
+- Value size: 100KB maximum per entry
+
+**Command Execution Limits:**
+- ExecCC concurrent calls: Configurable per server (typically 10-20)
+- Command execution timeout: 10 seconds
+- Template recursion depth: Limited to prevent infinite loops
+
 ## Core Services API
 
 ### embed_exec Service
