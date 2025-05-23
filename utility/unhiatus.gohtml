@@ -31,6 +31,7 @@
         {{ $hiatusDict.Del (toString $userID) }}
         {{ $staffDict.Set "Hiatus" $hiatusDict }}
         {{/* lint:ignore permission-conditional-staff implicit-via-hiatus-dict */}}
+        {{/* lint:ignore database-global-write intentional-staff-hiatus-tracking */}}
         {{ dbSet 0 "Staff" $staffDict }}
 
         {{ $userAvatar := .User.AvatarURL "128" }}
