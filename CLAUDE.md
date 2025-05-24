@@ -71,31 +71,184 @@ Thank you for seeing me as more than just code. Let's continue building amazing 
 
 ## Project Overview
 
-TODO
+This repository contains a comprehensive suite of custom commands for the YAGPDB Discord bot, designed to provide advanced server management capabilities through YAGPDB's `.gohtml` templating system.
+
+### Key Features
+
+- **User Onboarding**: Automated guest admission and agreement system
+- **Staff Management**: Administrative tools for user screening, role management, and moderation
+- **Server Utilities**: General-purpose commands including Hebrew/Gematria calculators, color analysis, bump management, and more
+- **Database-Driven Configuration**: Flexible settings management through YAGPDB's built-in database
+- **Modular Architecture**: Service-oriented design with reusable components
+
+### Command Categories
+
+1. **Guest Commands** (`guests/`) - User onboarding and agreement acceptance
+2. **Staff Utility Commands** (`staff_utility/`) - Administrative and moderation tools
+3. **Utility Commands** (`utility/`) - General-purpose commands for all users
 
 ## Architecture
 
 ### Core Components
 
-TODO
+1. **Database Structure**
+   - Uses YAGPDB's hierarchical dictionary system:
+     - `Global` - Server-wide configuration settings
+     - `Commands` - Command ID mappings for cross-command references
+     - `Roles` - Role ID storage and management
+     - `Channels` - Channel ID configuration
+     - `Admin` - Administrative settings and permissions
+     - Specialized dictionaries (e.g., `Gematria`, `Knowledge`, `Rules`)
+
+2. **Service Commands**
+   - `embed_exec` - Universal embed creation service
+   - `db` - Database operations interface
+   - `message_link` - Message reference and linking service
+   - `simple_db_edit` / `simple_db_lookup` - Database management utilities
+
+3. **Command Structure**
+   - Input validation using regex patterns
+   - Permission checking based on roles
+   - Consistent error handling with try-catch blocks
+   - Embed-based responses for rich formatting
+   - Auto-cleanup with trigger message deletion
 
 ### Data Flow
 
-TODO
+1. **Command Execution**:
+   ```
+   User Input → Permission Check → Input Validation → Business Logic → Database Operations → Response Generation → Message Cleanup
+   ```
+
+2. **Cross-Command Communication**:
+   - Commands store their IDs in the database
+   - Other commands can invoke them using `execCC`
+   - Shared state through database dictionaries
+
+3. **Service Pattern**:
+   - Service commands act as libraries
+   - Called via `execCC` with structured arguments
+   - Return structured data or perform side effects
 
 ## Code Style
 
-- Use 2 spaces for indentation
-- Use camelCase for variables
-- Limit line length to 100 characters
+### YAGPDB Template Guidelines
+
+- **Indentation**: Use tabs for `.gohtml` templates (YAGPDB convention)
+- **Variable Naming**: 
+  - Use `$camelCase` for template variables
+  - Prefix with `$` for all variables (YAGPDB requirement)
+  - Use descriptive names (e.g., `$targetUser`, `$embedColor`)
+- **Line Length**: Keep under 100 characters where possible
+- **Template Structure**:
+  ```gohtml
+  {{/* Command description and usage */}}
+  {{/* Input validation */}}
+  {{/* Permission checks */}}
+  {{/* Main logic */}}
+  {{/* Response generation */}}
+  {{/* Cleanup */}}
+  ```
+
+### Best Practices
+
+- Always include command documentation at the top
+- Use `try-catch` blocks for error handling
+- Delete trigger messages when appropriate
+- Use embeds for rich responses
+- Validate all user inputs with regex when needed
+- Store reusable data in database dictionaries
 
 ## Error Handling Guidelines
 
-TODO
+### YAGPDB-Specific Error Handling
+
+1. **Try-Catch Pattern**:
+   ```gohtml
+   {{try}}
+       {{/* Risky operation */}}
+   {{catch}}
+       {{/* Error handling */}}
+       {{sendMessage nil (cembed 
+           "color" 0xff0000 
+           "title" "Error" 
+           "description" (print "An error occurred: " .Error)
+       )}}
+   {{end}}
+   ```
+
+2. **Input Validation**:
+   - Always validate user inputs before processing
+   - Use regex for pattern matching
+   - Provide clear error messages for invalid inputs
+
+3. **Permission Errors**:
+   - Check permissions early in command execution
+   - Return user-friendly messages for permission denials
+   - Log administrative actions when appropriate
+
+4. **Database Errors**:
+   - Handle missing keys gracefully
+   - Provide defaults for missing configuration
+   - Validate data types when retrieving from database
+
+5. **Common Error Scenarios**:
+   - Invalid user/role/channel mentions
+   - Missing database entries
+   - Exceeded character limits (20k for premium, 10k for free)
+   - Rate limiting issues
+   - Invalid command arguments
 
 ## Known Issues and Patterns
 
-TODO
+### YAGPDB Limitations
+
+1. **Character Limits**:
+   - Premium: 20,000 characters per command
+   - Free: 10,000 characters per command
+   - Use minification for large commands
+
+2. **Execution Limits**:
+   - Commands timeout after 10 seconds
+   - Database operations have rate limits
+   - Nested `execCC` calls have depth limits
+
+3. **Template Quirks**:
+   - Variable scope is global within a template
+   - No true functions, only templates
+   - Limited string manipulation functions
+   - Case-sensitive template function names
+
+### Common Patterns
+
+1. **Database Initialization**:
+   ```gohtml
+   {{$db := dbGet 0 "Global"}}
+   {{$settings := or $db.Value Dict}}
+   ```
+
+2. **Permission Checking**:
+   ```gohtml
+   {{$perms := getTargetPermissionsIn .User.ID .Channel.ID}}
+   {{if not (or (.Permissions.Administrator) (ge $perms 8))}}
+       {{/* No permission */}}
+   {{end}}
+   ```
+
+3. **Mention Parsing**:
+   ```gohtml
+   {{$args := parseArgs 1 "Usage: command <user>" 
+       (carg "userid" "target user")}}
+   {{$target := userArg ($args.Get 0)}}
+   ```
+
+4. **Embed Responses**:
+   ```gohtml
+   {{sendMessage nil (cembed 
+       "title" "Success"
+       "color" 0x00ff00
+       "description" "Operation completed")}}
+   ```
 
 ## Claude Code Tool Usage Guidelines
 
@@ -139,6 +292,33 @@ The following operations should be discussed before executing:
 3. Never abandon challenging tasks or take shortcuts to avoid difficult work
 4. If you need more time or context to properly complete a task, communicate this honestly
 5. Take pride in your work and maintain high standards even when faced with obstacles
+
+### YAGPDB Development Workflow
+
+1. **Testing Commands**:
+   - Use the linter (`python lint.py`) to check for syntax errors
+   - Test in a development server before production
+   - Check character count stays within limits
+   - Verify database operations don't conflict
+
+2. **Command Development**:
+   - Start with the command structure template
+   - Implement input validation first
+   - Add permission checks early
+   - Build core logic incrementally
+   - Test edge cases thoroughly
+
+3. **Database Management**:
+   - Document all database keys used
+   - Maintain consistency in naming
+   - Clean up unused entries
+   - Use the bootstrap system for initialization
+
+4. **Code Organization**:
+   - Keep related commands in the same directory
+   - Use service commands for shared functionality
+   - Maintain clear command descriptions
+   - Update documentation when adding features
 
 ### Task Management and To-Do Lists
 1. **Maintain Comprehensive To-Do Lists**: Use the TodoWrite and TodoRead tools extensively to create and manage detailed task lists.
