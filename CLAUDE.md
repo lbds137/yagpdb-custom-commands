@@ -102,7 +102,7 @@ TODO
 ### Approved Tools
 The following tools are generally safe to use without explicit permission:
 
-1**File Operations and Basic Commands**
+1. **File Operations and Basic Commands**
     - `Read` - Read file contents (always approved)
     - `Write` - Create new files or update existing files (approved for most files except configs)
     - `Edit` - Edit portions of files (approved for most files except configs)
@@ -128,7 +128,7 @@ The following tools are generally safe to use without explicit permission:
 ### Tools Requiring Approval
 The following operations should be discussed before executing:
 
-1**Git Operations**
+1. **Git Operations**
     - Do not push to remote repositories (will trigger deployment)
     - Commits are allowed but discuss significant changes first
     - Branch operations should be explicitly requested
