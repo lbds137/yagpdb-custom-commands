@@ -155,7 +155,11 @@
     {{- else -}}
       {{- sendMessage $channelID $embed -}}
     {{- end -}}
-    {{- sendMessage $channelID $categoryEntry -}}
+	{{- if ne "" $categoryEntry -}}
+      {{- sendMessage $channelID $categoryEntry -}}
+	{{- else -}}
+	  {{- sendMessage $channelID "_(no channels in category)_" -}}
+	{{- end -}}
 
     {{- $i = add 1 $i -}}
   {{- end -}}
