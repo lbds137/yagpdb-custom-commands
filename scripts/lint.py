@@ -8,9 +8,10 @@ import subprocess
 import os
 
 def main():
-    # Get the directory of this script
+    # Get the project root (parent of scripts/ directory)
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    linter_path = os.path.join(script_dir, "tools", "linter", "yagpdb_lint.py")
+    project_root = os.path.dirname(script_dir)
+    linter_path = os.path.join(project_root, "tools", "linter", "yagpdb_lint.py")
     
     # Forward all arguments to the linter
     cmd = [sys.executable, linter_path] + sys.argv[1:]
