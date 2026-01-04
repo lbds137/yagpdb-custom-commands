@@ -85,17 +85,20 @@ Provides CRUD operations with nested dictionary support:
   - keys: List dictionary keys
   - get: Retrieve values
   - set: Store values
-  - add: Merge dictionaries
-  - remove: Delete entries
+  - add: Merge dictionaries / append to arrays
+  - remove: Delete entries / remove from arrays
   - delete: Remove keys
+  - dump: Export database entries as JSON file
 {{ end }}
 ```
 
 **Key Features:**
 - Nested key access (`Parent:Child:Grandchild`)
+- Direct array append/remove without JSON wrapping
 - Type-safe operations
 - JSON serialization support
 - Permission-based access control
+- File export capability for backups
 
 #### Embed Service (`embed_exec.gohtml`)
 Centralized message formatting and delivery:
@@ -330,5 +333,44 @@ Built-in systems for operational oversight:
 - Error tracking and reporting
 - Performance monitoring through execution delays
 - Automated cleanup of temporary data
+
+## Development and Testing
+
+### Local Emulator
+
+The `tools/emulator/` directory contains a Go-based YAGPDB template emulator for local testing without a live Discord server.
+
+#### Features
+- Execute `.gohtml` templates locally
+- Mock Discord context (users, channels, roles)
+- Simulated database with full CRUD support
+- YAML-based test case definitions
+- Support for `execCC` chaining between templates
+
+#### Usage
+```bash
+# Build the emulator
+cd tools/emulator
+go build -o bin/yagtest ./cmd/yagtest
+
+# Run a single template
+./bin/yagtest run ../../utility/db.gohtml
+
+# Run test suite
+./bin/yagtest test testdata/command_tests.yaml
+```
+
+#### Test Case Format
+```yaml
+- name: "db add - Append to array"
+  template: "../../../utility/db.gohtml"
+  context:
+    args: ["add", "Directory:Exclude Categories", "New Category"]
+    cmd_args: ["add", "Directory:Exclude Categories", "New Category"]
+```
+
+### Vendor Directory
+
+The `vendor/` directory contains a local copy of YAGPDB's source code for reference when implementing template functions. This is not checked into version control.
 
 This architecture ensures scalability, maintainability, and reliability while providing a rich feature set for Discord server management.

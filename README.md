@@ -246,9 +246,13 @@ The system expects these database categories to be available:
 
 ### Database Operations
 ```
-/db get:0 Global                    # Get global configuration
-/db set:0 Admin:Welcome "Hi there!" # Set welcome message
-/db keys:0 Roles                    # List all role mappings
+/db get:0 Global                                    # Get global configuration
+/db set:0 Admin:Welcome "Hi there!"                 # Set welcome message
+/db keys:0 Roles                                    # List all role mappings
+/db add:0 "Directory:Exclude Categories" "Archive"  # Append to array
+/db remove:0 "Directory:Exclude Categories" "Old"   # Remove from array
+/db dump                                            # Export config as JSON file
+/db dump Global                                     # Export specific key only
 ```
 
 ## Error Handling
@@ -260,6 +264,41 @@ The system implements comprehensive error handling:
 - **Bot Blocking**: Graceful handling when users have the bot blocked
 - **Database Errors**: Safe fallbacks when database operations fail
 - **Message Processing**: Robust parsing of Discord message links and IDs
+
+## Development
+
+### Local Testing with Emulator
+
+This repository includes a Go-based YAGPDB template emulator for testing commands without a live Discord server:
+
+```bash
+# Build the emulator
+cd tools/emulator
+go build -o bin/yagtest ./cmd/yagtest
+
+# Run a single template
+./bin/yagtest run ../../utility/timestamp.gohtml
+
+# Run the full test suite
+./bin/yagtest test testdata/command_tests.yaml
+```
+
+The emulator supports:
+- All standard YAGPDB template functions
+- Mock database with persistent state during test runs
+- YAML-based test case definitions with custom context
+- `execCC` chaining between templates
+
+### Project Structure
+
+```
+├── guests/           # Guest onboarding commands
+├── staff_utility/    # Staff/admin commands
+├── utility/          # General utility commands
+├── tools/emulator/   # Local testing emulator
+├── docs/             # Documentation
+└── scripts/          # Development scripts
+```
 
 ## Contributing
 
