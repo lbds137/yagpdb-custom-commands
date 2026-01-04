@@ -9,12 +9,18 @@
     - get <key>: Get a value by key
     - set <key> <value>: Set a value (value can be JSON)
     - delete <key>: Delete a key
-    - add <key> <json>: Add keys from JSON to a dictionary (appends to arrays)
-    - remove <key> <json>: Remove keys from a dictionary
+    - add <key> <value>: Add to a dictionary or array
+      - For arrays: `db add "Parent:ArrayKey" "item"` appends item directly
+      - For dicts: `db add "Key" '{"k":"v"}'` merges JSON keys (appends to nested arrays)
+    - remove <key> <value>: Remove from a dictionary or array
+      - For arrays: `db remove "Parent:ArrayKey" "item"` removes item by value
+      - For dicts: `db remove "Key" '{"k":""}'` removes specified keys
     - dump [key|all]: Export database entries as JSON file
       - Staff: `db dump` dumps global config (userID=0), `db dump:123` dumps specific user
       - Regular users: `db dump` dumps their own data
       - `db dump <key>`: Dump specific key only
+
+  Nested keys: Use `:` to access nested values, e.g., `db get "Directory:Exclude Categories"`
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
@@ -202,7 +208,7 @@
             {{ end }}
             {{ $lastParentExistingType := printf "%T" $lastParentExistingValue }}
             {{ $existingIsSlice := eq "slice" (kindOf $existingValue) }}
-            {{/* Direct array append: if target is a slice, append the value */}}
+            {{/* Direct array operations: if target is a slice */}}
             {{ if and $existingIsSlice $isAdd }}
                 {{/* Convert raw slice to cslice and append */}}
                 {{ $newSlice := cslice }}
@@ -210,6 +216,26 @@
                     {{ $newSlice = $newSlice.Append $item }}
                 {{ end }}
                 {{ $newSlice = $newSlice.Append $parsedValue }}
+                {{ $existingValue = $newSlice }}
+                {{/* Update the parent with the modified slice */}}
+                {{ if ge (len $keyArray) 2 }}
+                    {{ $lastParentExistingValue.Set $lastSubkey $existingValue }}
+                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
+                {{ else }}
+                    {{ dbSet $userID $key $existingValue }}
+                {{ end }}
+                {{ $value = $parsedValue }}
+            {{ else if and $existingIsSlice $isRemove }}
+                {{/* Remove item from array by value */}}
+                {{ $newSlice := cslice }}
+                {{ $removed := false }}
+                {{ range $item := $existingValue }}
+                    {{ if and (not $removed) (eq (str $item) (str $parsedValue)) }}
+                        {{ $removed = true }}
+                    {{ else }}
+                        {{ $newSlice = $newSlice.Append $item }}
+                    {{ end }}
+                {{ end }}
                 {{ $existingValue = $newSlice }}
                 {{/* Update the parent with the modified slice */}}
                 {{ if ge (len $keyArray) 2 }}
