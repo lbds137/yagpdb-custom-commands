@@ -100,6 +100,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"kindOf": funcs.KindOf,
 		"seq":    funcs.Seq,
 		"randInt": funcs.RandInt,
+		"get":    e.getFunc, // Universal getter that works with interface{}
 
 		// Database
 		"dbGet":               dbFuncs.DbGet,
@@ -621,6 +622,29 @@ func (e *Engine) indexFunc(item interface{}, indices ...interface{}) interface{}
 			} else {
 				return nil
 			}
+		case []string:
+			i := funcs.ToInt(idx)
+			if i >= 0 && i < len(v) {
+				current = v[i]
+			} else {
+				return nil
+			}
+		case []int:
+			i := funcs.ToInt(idx)
+			if i >= 0 && i < len(v) {
+				current = v[i]
+			} else {
+				return nil
+			}
+		case string:
+			// Index into string returns a character
+			i := funcs.ToInt(idx)
+			runes := []rune(v)
+			if i >= 0 && i < len(runes) {
+				current = string(runes[i])
+			} else {
+				return nil
+			}
 		case types.SDict:
 			current = v[funcs.ToString(idx)]
 		case map[string]interface{}:
@@ -632,6 +656,24 @@ func (e *Engine) indexFunc(item interface{}, indices ...interface{}) interface{}
 		}
 	}
 	return current
+}
+
+// getFunc is a universal getter that works with any dict-like type.
+// This handles the case where SDict.Get returns interface{} and the
+// template engine loses track of the underlying type's methods.
+func (e *Engine) getFunc(collection, key interface{}) interface{} {
+	switch v := collection.(type) {
+	case types.SDict:
+		return v.Get(key)
+	case map[string]interface{}:
+		return v[funcs.ToString(key)]
+	case types.Dict:
+		return v.Get(key)
+	case map[interface{}]interface{}:
+		return v[key]
+	default:
+		return nil
+	}
 }
 
 func (e *Engine) returnFunc(args ...interface{}) string {

@@ -125,8 +125,9 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 
 	// Build member object
 	member := types.CtxMember{
-		User:  user,
-		Roles: ctx.UserRoles,
+		User:     user,
+		Roles:    ctx.UserRoles,
+		JoinedAt: types.TemplateTime{Time: time.Now().Add(-24 * time.Hour)}, // Default: joined 24h ago
 	}
 
 	// Build channel object
@@ -136,10 +137,15 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		Name:    ctx.ChannelName,
 	}
 
-	// Build guild object
+	// Build guild object with roles
+	guildRoles := make([]types.CtxRole, 0, len(ctx.AvailableRoles))
+	for _, role := range ctx.AvailableRoles {
+		guildRoles = append(guildRoles, role)
+	}
 	guild := types.CtxGuild{
-		ID:   ctx.GuildID,
-		Name: ctx.GuildName,
+		ID:    ctx.GuildID,
+		Name:  ctx.GuildName,
+		Roles: guildRoles,
 	}
 
 	// Build message object
