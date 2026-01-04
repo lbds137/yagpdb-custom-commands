@@ -53,6 +53,7 @@ setup_db:
     key: "Gematria"
     value:
       Values:
+        # Hebrew letters
         א: 1
         ב: 2
         ג: 3
@@ -64,27 +65,118 @@ setup_db:
         ט: 9
         י: 10
         כ: 20
+        ך: 20
         ל: 30
         מ: 40
+        ם: 40
         נ: 50
+        ן: 50
         ס: 60
         ע: 70
         פ: 80
+        ף: 80
         צ: 90
+        ץ: 90
         ק: 100
         ר: 200
         ש: 300
         ת: 400
+        # Latin letters (English Qabalah style)
+        a: 1
+        b: 2
+        c: 3
+        d: 4
+        e: 5
+        f: 6
+        g: 7
+        h: 8
+        i: 9
+        j: 600
+        k: 10
+        l: 20
+        m: 30
+        n: 40
+        o: 50
+        p: 60
+        q: 70
+        r: 80
+        s: 90
+        t: 100
+        u: 200
+        v: 700
+        w: 900
+        x: 300
+        y: 400
+        z: 500
       Final Letters:
-        ך: כ
-        ם: מ
-        ן: נ
-        ף: פ
-        ץ: צ
+        א: א
+        ב: ב
+        ג: ג
+        ד: ד
+        ה: ה
+        ו: ו
+        ז: ז
+        ח: ח
+        ט: ט
+        י: י
+        כ: ך
+        ל: ל
+        מ: ם
+        נ: ן
+        ס: ס
+        ע: ע
+        פ: ף
+        צ: ץ
+        ק: ק
+        ר: ר
+        ש: ש
+        ת: ת
       Tarot Indices:
+        "1": 0
+        "2": 1
+        "3": 2
+        "4": 3
+        "5": 4
+        "6": 5
+        "7": 6
+        "8": 7
+        "9": 8
+        "10": 9
+        "20": 10
+        "30": 11
+        "40": 12
+        "50": 13
+        "60": 14
+        "70": 15
+        "80": 16
+        "90": 17
+        "100": 18
+        "200": 19
+        "300": 20
+        "400": 21
+      RWS Names:
+        "0": "The Fool"
         "1": "The Magician"
         "2": "The High Priestess"
         "3": "The Empress"
+        "4": "The Emperor"
+        "5": "The Hierophant"
+        "6": "The Lovers"
+        "7": "The Chariot"
+        "8": "Strength"
+        "9": "The Hermit"
+        "10": "The Wheel of Fortune"
+        "11": "Justice"
+        "12": "The Hanged Man"
+        "13": "Death"
+        "14": "Temperance"
+        "15": "The Devil"
+        "16": "The Tower"
+        "17": "The Star"
+        "18": "The Moon"
+        "19": "The Sun"
+        "20": "Judgement"
+        "21": "The World"
   - user_id: 0
     key: "Rules"
     value:
@@ -96,6 +188,15 @@ setup_db:
     value:
       FAQ: "This is the FAQ content."
       Guidelines: "These are the guidelines."
+  - user_id: 0
+    key: "Directory"
+    value:
+      Exclude Categories:
+        - "Staff Only"
+        - "Bot Commands"
+        - "Archive"
+      Show Empty: false
+      Show NSFW: false
 
 command_map:
   123: "templates/mock_embed_exec.gohtml"
@@ -276,3 +377,31 @@ tests:
     context:
       args: ["Knowledge", "FAQ", "Updated FAQ content"]
       cmd_args: ["Knowledge", "FAQ", "Updated FAQ content"]
+
+  # ===== Database Dump =====
+
+  - name: "db dump - Dump all keys"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["dump"]
+      cmd_args: ["dump"]
+
+  - name: "db dump - Dump specific key"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["dump", "Global"]
+      cmd_args: ["dump", "Global"]
+
+  # ===== Database Add (Array Append) =====
+
+  - name: "db add - Append to array via nested key"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add", "Directory:Exclude Categories", "New Category"]
+      cmd_args: ["add", "Directory:Exclude Categories", "New Category"]
+
+  - name: "db get - Verify array contents"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get", "Directory:Exclude Categories"]
+      cmd_args: ["get", "Directory:Exclude Categories"]

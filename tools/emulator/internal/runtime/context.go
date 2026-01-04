@@ -23,6 +23,13 @@ type RoleChange struct {
 	Action string // "add" or "remove"
 }
 
+// FileUpload represents a file that was "uploaded" during template execution.
+type FileUpload struct {
+	ChannelID int64
+	Filename  string
+	Content   string
+}
+
 // ExecutionContext holds all state for a single template execution.
 type ExecutionContext struct {
 	// Guild/Server context
@@ -62,6 +69,7 @@ type ExecutionContext struct {
 	Output       strings.Builder
 	SentMessages []SentMessage
 	RoleChanges  []RoleChange
+	FileUploads  []FileUpload
 	Errors       []error
 
 	// Execution limits
@@ -287,6 +295,15 @@ func (ctx *ExecutionContext) RecordRoleChange(userID, roleID int64, action strin
 		UserID: userID,
 		RoleID: roleID,
 		Action: action,
+	})
+}
+
+// RecordFileUpload records a file that was "uploaded" during execution.
+func (ctx *ExecutionContext) RecordFileUpload(channelID int64, filename, content string) {
+	ctx.FileUploads = append(ctx.FileUploads, FileUpload{
+		ChannelID: channelID,
+		Filename:  filename,
+		Content:   content,
 	})
 }
 

@@ -87,6 +87,15 @@ This repository contains a comprehensive suite of custom commands for the YAGPDB
 2. **Staff Utility Commands** (`staff_utility/`) - Administrative and moderation tools
 3. **Utility Commands** (`utility/`) - General-purpose commands for all users
 
+### Development Resources
+
+- **YAGPDB Source Code** (`vendor/yagpdb/`): Contains the complete YAGPDB codebase for reference. When researching YAGPDB template functions, available methods, or implementation details, **always check this directory first** instead of doing web searches. Key files:
+  - `common/templates/general.go` - Template function implementations (sendMessage, complexMessage, cembed, etc.)
+  - `common/templates/context.go` - Template execution context and data structures
+  - `lib/discordgo/` - Discord API types and structures
+
+- **Template Emulator** (`tools/emulator/`): Local testing tool that emulates YAGPDB template execution. Run templates locally before deploying to production.
+
 ## Architecture
 
 ### Core Components

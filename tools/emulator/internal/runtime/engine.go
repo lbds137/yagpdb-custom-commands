@@ -243,6 +243,14 @@ func (e *Engine) sendMessage(args ...interface{}) string {
 		case string:
 			content = v
 		case types.SDict:
+			// Check if this is a complexMessage with file upload
+			if fileContent, hasFile := v["_file_content"]; hasFile {
+				filename := "file.txt"
+				if fn, hasFn := v["_file_name"]; hasFn {
+					filename = funcs.ToString(fn)
+				}
+				e.ctx.RecordFileUpload(channelID, filename, funcs.ToString(fileContent))
+			}
 			embed = v
 		default:
 			content = funcs.ToString(v)
@@ -412,7 +420,32 @@ func (e *Engine) cembed(args ...interface{}) (types.SDict, error) {
 }
 
 func (e *Engine) complexMessage(args ...interface{}) (types.SDict, error) {
-	return e.cembed(args...)
+	result, err := e.cembed(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Handle file upload if "file" key is present
+	if fileContent, hasFile := result["file"]; hasFile {
+		filename := "file"
+		if fn, hasFn := result["filename"]; hasFn {
+			filename = funcs.ToString(fn)
+		}
+		// YAGPDB forces .txt extension for safety
+		filename = filename + ".txt"
+
+		content := funcs.ToString(fileContent)
+		// Check 100KB limit as per YAGPDB
+		if len(content) > 100000 {
+			return nil, fmt.Errorf("file length for send message builder exceeded size limit (100KB)")
+		}
+
+		// Record the file upload for later retrieval
+		result["_file_content"] = content
+		result["_file_name"] = filename
+	}
+
+	return result, nil
 }
 
 func (e *Engine) complexMessageEdit(args ...interface{}) (types.SDict, error) {
@@ -514,6 +547,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 	// Propagate side effects back to parent
 	e.ctx.SentMessages = append(e.ctx.SentMessages, childCtx.SentMessages...)
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
+	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
 	e.ctx.CurrentOps = childCtx.CurrentOps
 
 	// execCC doesn't return output to the caller

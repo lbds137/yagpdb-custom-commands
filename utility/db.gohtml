@@ -3,6 +3,18 @@
   Trigger type: `Command`
   Trigger: `db`
   Dependencies: `embed_exec`
+
+  Operations:
+    - keys <key>: List all keys in a dictionary
+    - get <key>: Get a value by key
+    - set <key> <value>: Set a value (value can be JSON)
+    - delete <key>: Delete a key
+    - add <key> <json>: Add keys from JSON to a dictionary (appends to arrays)
+    - remove <key> <json>: Remove keys from a dictionary
+    - dump [key|all]: Export database entries as JSON file
+      - Staff: `db dump` dumps global config (userID=0), `db dump:123` dumps specific user
+      - Regular users: `db dump` dumps their own data
+      - `db dump <key>`: Dump specific key only
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
@@ -69,12 +81,18 @@
 {{ $isSet := eq "set" $operation }}
 {{ $isAdd := eq "add" $operation }}
 {{ $isRemove := eq "remove" $operation }}
-{{ $operationCheck := or $isKeys $isDelete $isGet $isSet $isAdd $isRemove }}
-{{ $valueCheck := or $value $isKeys $isDelete $isGet }}
+{{ $isDump := eq "dump" $operation }}
+{{ $operationCheck := or $isKeys $isDelete $isGet $isSet $isAdd $isRemove $isDump }}
+{{ $valueCheck := or $value $isKeys $isDelete $isGet $isDump }}
 
 {{ $nil := "(nil)" }}
 {{ $resultText := "" }}
 {{ $resultEmoji := "✅" }}
+{{ $displayUserID := $userID }}
+{{/* For dump operation, key is optional (defaults to "all") */}}
+{{ if and $isDump (not $key) }}
+    {{ $key = "all" }}
+{{ end }}
 {{ if and $operationCheck $key $valueCheck }}
     {{ $existingValue := "" }}
     {{ $existingType := "" }}
@@ -114,7 +132,38 @@
     {{ end }}
 
     {{ $ptAction := "" }}
-    {{ if $isKeys }}
+    {{ if $isDump }}
+        {{/* Dump operation: export database entries as JSON file */}}
+        {{/* Staff can dump global config (userID=0) or any user via db dump:userID */}}
+        {{/* Regular users can only dump their own data */}}
+        {{ $dumpUserID := .Member.User.ID }}
+        {{ if hasRoleID $staffRoleID }}
+            {{/* Staff defaults to global config (userID=0), but can specify other IDs */}}
+            {{ if eq $userID .Member.User.ID }}
+                {{ $dumpUserID = 0 }}
+            {{ else }}
+                {{ $dumpUserID = $userID }}
+            {{ end }}
+        {{ end }}
+        {{ $dumpData := sdict }}
+        {{ $knownKeys := cslice "Global" "Commands" "Channels" "Roles" "Admin" "Gematria" "Knowledge" "Rules" "Directory" }}
+        {{ if and $key (ne $key "all") }}
+            {{/* Dump specific key only */}}
+            {{ $knownKeys = cslice $key }}
+        {{ end }}
+        {{ range $k := $knownKeys }}
+            {{ $entry := dbGet $dumpUserID $k }}
+            {{ if and $entry $entry.Value }}
+                {{ $dumpData.Set $k $entry.Value }}
+            {{ end }}
+        {{ end }}
+        {{ $ptAction = "dumped" }}
+        {{ $displayUserID = $dumpUserID }}
+        {{ $jsonData := json $dumpData true }}
+        {{ $filename := joinStr "" "db_dump_" (toString $dumpUserID) "_" (currentTime.Unix) }}
+        {{ sendMessage nil (complexMessage "file" $jsonData "filename" $filename) }}
+        {{ $value = joinStr "" "Exported " (len $dumpData) " entries to file" }}
+    {{ else if $isKeys }}
         {{ if eq $sDictType $existingType }}
             {{ $ptAction = "inspected" }}
             {{ $value = cslice }}
@@ -139,8 +188,12 @@
         {{ end }}
     {{ else if or $isAdd $isRemove }}
         {{ try }}
+            {{ $parsedValue := $value }}
             {{ if eq $stringType $valueType }}
-                {{ $value = jsonToSdict $value }}
+                {{/* Only try parsing as JSON if it starts with { (JSON object) */}}
+                {{ if and (gt (len $value) 0) (eq "{" (index $value 0 | printf "%c")) }}
+                    {{ $parsedValue = jsonToSdict $value }}
+                {{ end }}
             {{ end }}
             {{ if $isAdd }}
                 {{ $ptAction = "added" }}
@@ -148,10 +201,40 @@
                 {{ $ptAction = "removed" }}
             {{ end }}
             {{ $lastParentExistingType := printf "%T" $lastParentExistingValue }}
-            {{ if eq $sDictType $lastParentExistingType }}
+            {{ $existingIsSlice := eq "slice" (kindOf $existingValue) }}
+            {{/* Direct array append: if target is a slice, append the value */}}
+            {{ if and $existingIsSlice $isAdd }}
+                {{/* Convert raw slice to cslice and append */}}
+                {{ $newSlice := cslice }}
+                {{ range $item := $existingValue }}
+                    {{ $newSlice = $newSlice.Append $item }}
+                {{ end }}
+                {{ $newSlice = $newSlice.Append $parsedValue }}
+                {{ $existingValue = $newSlice }}
+                {{/* Update the parent with the modified slice */}}
+                {{ if ge (len $keyArray) 2 }}
+                    {{ $lastParentExistingValue.Set $lastSubkey $existingValue }}
+                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
+                {{ else }}
+                    {{ dbSet $userID $key $existingValue }}
+                {{ end }}
+                {{ $value = $parsedValue }}
+            {{ else if eq $sDictType $lastParentExistingType }}
+                {{/* Dict operations: add/remove keys */}}
+                {{ $value = $parsedValue }}
                 {{- range $k, $v := $value -}}
                     {{- if $isAdd -}}
-                        {{- $lastParentExistingValue.Set $k $v -}}
+                        {{- /* Check if both existing and new values are slices - if so, append */ -}}
+                        {{- $existingAtK := $lastParentExistingValue.Get $k -}}
+                        {{- if and (eq "slice" (kindOf $existingAtK)) (eq "slice" (kindOf $v)) -}}
+                            {{- /* Append new items to existing slice */ -}}
+                            {{- range $item := $v -}}
+                                {{- $existingAtK = $existingAtK.Append $item -}}
+                            {{- end -}}
+                            {{- $lastParentExistingValue.Set $k $existingAtK -}}
+                        {{- else -}}
+                            {{- $lastParentExistingValue.Set $k $v -}}
+                        {{- end -}}
                     {{- else -}}
                         {{- $value.Set $k ($lastParentExistingValue.Get $k) -}}
                         {{- $lastParentExistingValue.Del $k -}}
@@ -233,9 +316,9 @@
     "ChannelID" (or .ExecData.ChannelID .Channel.ID)
     "Title" $title
     "Description" (joinStr "" "```\n" (or $value $nil) "\n```")
-    "AuthorID" $userID
+    "AuthorID" $displayUserID
     "Fields" (cslice
-        (sdict "name" "User ID" "value" (joinStr "" "```\n" $userID "```") "inline" true)
+        (sdict "name" "User ID" "value" (joinStr "" "```\n" $displayUserID "```") "inline" true)
         (sdict "name" "Key" "value" (joinStr "" "```\n" (or $key $nil) "```") "inline" true)
         (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
     )
