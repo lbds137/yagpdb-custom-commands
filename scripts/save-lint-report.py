@@ -10,21 +10,27 @@ from datetime import datetime
 from pathlib import Path
 
 def main():
-    # Get current directory and create reports directory
-    reports_dir = Path("reports")
+    # Get project root (parent of scripts/ directory)
+    script_dir = Path(__file__).parent.absolute()
+    project_root = script_dir.parent
+
+    # Create reports directory in project root
+    reports_dir = project_root / "reports"
     reports_dir.mkdir(exist_ok=True)
-    
+
     # Get timestamp for filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
     # Run linter and capture all output
     print("🔍 Running linter...")
-    
+    linter_path = project_root / "tools" / "linter" / "yagpdb_lint.py"
+
     try:
         result = subprocess.run(
-            [sys.executable, "tools/linter/yagpdb_lint.py", "--dir", "."],
+            [sys.executable, str(linter_path), "--dir", str(project_root)],
             capture_output=True,
-            text=True
+            text=True,
+            cwd=str(project_root)
         )
         
         # Combine stdout and stderr

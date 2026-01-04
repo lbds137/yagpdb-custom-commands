@@ -154,8 +154,17 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 
 		// Control flow
 		"execCC":                   e.execCC,
+		"exec":                     e.exec,
+		"execTemplate":             e.execTemplateFunc,
 		"scheduleUniqueCC":         e.scheduleUniqueCC,
 		"cancelScheduledUniqueCC":  e.cancelScheduledUniqueCC,
+		"sleep":                    e.sleep,
+
+		// Mention functions
+		"mentionRoleID":   e.mentionRoleID,
+		"mentionRole":     e.mentionRole,
+		"mentionEveryone": e.mentionEveryone,
+		"mentionHere":     e.mentionHere,
 
 		// Argument parsing
 		"parseArgs": e.parseArgs,
@@ -260,6 +269,10 @@ func (e *Engine) addReactions(args ...interface{}) string {
 }
 
 func (e *Engine) addMessageReactions(args ...interface{}) string {
+	return ""
+}
+
+func (e *Engine) deleteAllMessageReactions(args ...interface{}) string {
 	return ""
 }
 
@@ -571,6 +584,46 @@ func (e *Engine) tryFunc(args ...interface{}) interface{} {
 		return args[0]
 	}
 	return nil
+}
+
+// sleep is a no-op in emulator (YAGPDB uses this to delay execution)
+func (e *Engine) sleep(args ...interface{}) string {
+	// In real YAGPDB this pauses execution; we skip for testing speed
+	return ""
+}
+
+// exec executes another template inline (simpler than execCC)
+func (e *Engine) exec(name string, data ...interface{}) string {
+	// In YAGPDB this executes a named template
+	// For now, just return empty - templates would need to be registered
+	return ""
+}
+
+// execTemplateFunc executes a defined template and returns its output
+func (e *Engine) execTemplateFunc(name string, data interface{}) interface{} {
+	// This is used with {{define "name"}} blocks
+	// The actual execution happens via Go's template system
+	// Return nil as we can't easily capture defined template output here
+	return nil
+}
+
+// Mention functions
+
+func (e *Engine) mentionRoleID(roleID interface{}) string {
+	return fmt.Sprintf("<@&%d>", funcs.ToInt64(roleID))
+}
+
+func (e *Engine) mentionRole(roleName interface{}) string {
+	// In real YAGPDB this would look up the role by name
+	return fmt.Sprintf("@%s", funcs.ToString(roleName))
+}
+
+func (e *Engine) mentionEveryone() string {
+	return "@everyone"
+}
+
+func (e *Engine) mentionHere() string {
+	return "@here"
 }
 
 // parseArgs wraps the funcs.ArgsParser for template use.

@@ -42,6 +42,12 @@ test-verbose: build-emulator ## Run template tests with verbose output
 	@echo "🧪 Running template tests (verbose)..."
 	@./bin/yagtest test -verbose tools/emulator/testdata/
 
+test-templates: build-emulator ## Test all .gohtml templates against emulator
+	@./scripts/test-all-templates.sh
+
+analyze: ## Analyze templates for missing emulator functions
+	@./scripts/find-missing-functions.sh
+
 # Create bin directory if it doesn't exist
 bin:
 	@mkdir -p bin
@@ -56,7 +62,7 @@ dev-lint: lint-verbose ## Alias for lint-verbose
 # Reporting targets
 lint-report: ## Generate and save lint report with timestamp
 	@echo "📊 Generating lint report..."
-	@./save-lint-report.py
+	@./scripts/save-lint-report.py
 
 lint-history: ## Show available lint reports
 	@echo "📚 Available lint reports:"
@@ -73,7 +79,7 @@ ci-lint: build-linter ## Run linter for CI (stricter)
 
 ci-report: ## Generate lint report for CI
 	@echo "📊 Generating CI lint report..."
-	@./lint-report.py --latest --markdown
+	@./scripts/lint-report.py --latest --markdown
 
 # Installation target for development
 install-dev: build-linter ## Install linter to system PATH

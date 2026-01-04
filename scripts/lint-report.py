@@ -8,9 +8,10 @@ import subprocess
 import os
 
 def main():
-    # Get the directory of this script
+    # Get the project root (parent of scripts/ directory)
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    reporter_path = os.path.join(script_dir, "tools", "linter", "lint_reporter.py")
+    project_root = os.path.dirname(script_dir)
+    reporter_path = os.path.join(project_root, "tools", "linter", "lint_reporter.py")
     
     # Forward all arguments to the reporter
     cmd = [sys.executable, reporter_path] + sys.argv[1:]
