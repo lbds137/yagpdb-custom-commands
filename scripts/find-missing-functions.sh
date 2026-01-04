@@ -28,7 +28,7 @@ IMPLEMENTED=(
     "add" "sub" "mult" "div" "fdiv" "mod" "abs" "sqrt" "cbrt" "pow" "log"
     "round" "roundCeil" "roundFloor" "roundEven" "min" "max"
     # Collections
-    "dict" "sdict" "cslice" "json" "jsonToSdict"
+    "dict" "sdict" "cslice" "json" "jsonToSdict" "sort"
     # Time
     "currentTime" "formatTime" "parseTime" "newDate"
     # Regex
@@ -46,13 +46,15 @@ IMPLEMENTED=(
     "mentionRoleID" "mentionRole" "mentionEveryone" "mentionHere"
     # Discord - Roles
     "hasRole" "hasRoleID" "targetHasRole" "targetHasRoleID" "addRole" "giveRole" "removeRole" "takeRole"
-    "setRoles" "giveRoleID" "takeRoleID" "addRoleID" "removeRoleID"
+    "setRoles" "giveRoleID" "takeRoleID" "addRoleID" "removeRoleID" "getRole"
     # Discord - Members/Users
     "getMember" "userArg" "getTargetPermissionsIn"
     # Discord - Channels
     "getChannel" "getChannelOrThread"
+    # Discord - Tickets
+    "createTicket"
     # Embeds
-    "cembed" "complexMessage" "sendTemplate"
+    "cembed" "complexMessage" "complexMessageEdit" "sendTemplate"
     # Control flow
     "execCC" "exec" "execAdmin" "execTemplate" "scheduleUniqueCC" "cancelScheduledUniqueCC"
     "sleep" "catch"
