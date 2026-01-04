@@ -17,8 +17,9 @@ func (s SDict) Set(key string, value interface{}) string {
 }
 
 // Get retrieves a value by key, returning nil if not found.
-func (s SDict) Get(key string) interface{} {
-	return s[key]
+// Accepts interface{} for template compatibility.
+func (s SDict) Get(key interface{}) interface{} {
+	return s[fmt.Sprint(key)]
 }
 
 // Del deletes a key and returns an empty string.
@@ -97,6 +98,70 @@ func (s Slice) StringSlice(strict ...bool) ([]string, error) {
 	return result, nil
 }
 
+// TemplateValue wraps any value and provides Get/Set methods for template access.
+// This ensures that when templates call .Value.Get, the method is always available.
+type TemplateValue struct {
+	V interface{}
+}
+
+// Get retrieves a value from the wrapped dict-like type.
+// Returns a TemplateValue for dict-like results to enable method chaining.
+func (tv TemplateValue) Get(key interface{}) interface{} {
+	var result interface{}
+	switch v := tv.V.(type) {
+	case SDict:
+		result = v.Get(key)
+	case map[string]interface{}:
+		result = v[fmt.Sprint(key)]
+	case Dict:
+		result = v.Get(key)
+	case map[interface{}]interface{}:
+		result = v[key]
+	default:
+		return tv.V // Return the raw value if not a dict type
+	}
+	// Wrap dict-like results in TemplateValue for method chaining
+	switch result.(type) {
+	case SDict, map[string]interface{}, Dict, map[interface{}]interface{}:
+		return TemplateValue{V: result}
+	default:
+		return result
+	}
+}
+
+// Set sets a value in the wrapped dict-like type.
+func (tv TemplateValue) Set(key interface{}, value interface{}) string {
+	switch v := tv.V.(type) {
+	case SDict:
+		return v.Set(fmt.Sprint(key), value)
+	case map[string]interface{}:
+		v[fmt.Sprint(key)] = value
+	case Dict:
+		return v.Set(key, value)
+	case map[interface{}]interface{}:
+		v[key] = value
+	}
+	return ""
+}
+
+// HasKey returns true if the key exists in the wrapped dict-like type.
+func (tv TemplateValue) HasKey(key interface{}) bool {
+	switch v := tv.V.(type) {
+	case SDict:
+		return v.HasKey(fmt.Sprint(key))
+	case map[string]interface{}:
+		_, ok := v[fmt.Sprint(key)]
+		return ok
+	case Dict:
+		return v.HasKey(key)
+	case map[interface{}]interface{}:
+		_, ok := v[key]
+		return ok
+	default:
+		return false
+	}
+}
+
 // LightDBEntry represents a database entry, matching YAGPDB's LightDBEntry.
 type LightDBEntry struct {
 	ID        int64
@@ -105,7 +170,7 @@ type LightDBEntry struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Key       string
-	Value     interface{}
+	Value     TemplateValue
 	ValueSize int
 	User      DiscordUser
 	ExpiresAt time.Time
@@ -172,6 +237,34 @@ type CtxGuild struct {
 	Channels    []CtxChannel
 }
 
+// GetRole returns a role by ID, or nil if not found.
+func (g CtxGuild) GetRole(roleID interface{}) *CtxRole {
+	var id int64
+	switch v := roleID.(type) {
+	case int64:
+		id = v
+	case int:
+		id = int64(v)
+	case string:
+		// Try to parse as int
+		for _, r := range g.Roles {
+			if fmt.Sprint(r.ID) == v {
+				return &r
+			}
+		}
+		return nil
+	default:
+		return nil
+	}
+
+	for _, role := range g.Roles {
+		if role.ID == id {
+			return &role
+		}
+	}
+	return nil
+}
+
 // CtxRole represents a Discord role.
 type CtxRole struct {
 	ID          int64
@@ -183,12 +276,23 @@ type CtxRole struct {
 	Managed     bool
 }
 
+// TemplateTime wraps time.Time with additional methods for YAGPDB template compatibility.
+type TemplateTime struct {
+	time.Time
+}
+
+// Parse returns the time itself (for YAGPDB method chaining compatibility).
+// In YAGPDB, this is used to allow chaining like: $member.JoinedAt.Parse.Sub currentTime
+func (t TemplateTime) Parse() time.Time {
+	return t.Time
+}
+
 // CtxMember represents a Discord guild member.
 type CtxMember struct {
 	User     DiscordUser
 	Nick     string
 	Roles    []int64
-	JoinedAt time.Time
+	JoinedAt TemplateTime
 }
 
 // CtxMessage represents a Discord message.

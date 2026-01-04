@@ -81,6 +81,9 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		createdAt = now
 	}
 
+	// Convert nested maps to SDict for proper template method access
+	convertedValue := convertToSDict(value)
+
 	entry := &types.LightDBEntry{
 		ID:        id,
 		GuildID:   m.guildID,
@@ -88,13 +91,41 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		CreatedAt: createdAt,
 		UpdatedAt: now,
 		Key:       key,
-		Value:     value,
-		ValueSize: estimateSize(value),
+		Value:     types.TemplateValue{V: convertedValue},
+		ValueSize: estimateSize(convertedValue),
 		ExpiresAt: expiresAt,
 	}
 
 	m.entries[compositeKey] = entry
 	return entry
+}
+
+// convertToSDict recursively converts map[string]interface{} to types.SDict
+// so that template methods like .Get work properly.
+func convertToSDict(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		result := make(types.SDict)
+		for k, v := range val {
+			result[k] = convertToSDict(v)
+		}
+		return result
+	case map[interface{}]interface{}:
+		// YAML sometimes produces this type
+		result := make(types.SDict)
+		for k, v := range val {
+			result[fmt.Sprint(k)] = convertToSDict(v)
+		}
+		return result
+	case []interface{}:
+		result := make(types.Slice, len(val))
+		for i, item := range val {
+			result[i] = convertToSDict(item)
+		}
+		return result
+	default:
+		return v
+	}
 }
 
 // Del deletes a database entry by key.
@@ -148,8 +179,8 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 		} else {
 			id = existing.ID
 			createdAt = existing.CreatedAt
-			// Try to get numeric value
-			switch v := existing.Value.(type) {
+			// Try to get numeric value from the wrapped value
+			switch v := existing.Value.V.(type) {
 			case float64:
 				currentVal = v
 			case int:
@@ -157,7 +188,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 			case int64:
 				currentVal = float64(v)
 			default:
-				return 0, fmt.Errorf("cannot increment non-numeric value of type %T", existing.Value)
+				return 0, fmt.Errorf("cannot increment non-numeric value of type %T", existing.Value.V)
 			}
 		}
 	} else {
@@ -175,7 +206,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 		CreatedAt: createdAt,
 		UpdatedAt: now,
 		Key:       key,
-		Value:     newVal,
+		Value:     types.TemplateValue{V: newVal},
 		ValueSize: 8, // float64 size
 	}
 
