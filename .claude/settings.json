@@ -14,8 +14,6 @@
       "Batch(*)",
       "Fetch(*)",
       "Search(*)",
-      "WebSearch(*)",
-      "WebFetch(*)",
       "Bash(echo)",
       "Bash(md5sum:*)",
       "Bash(git status)",
@@ -44,7 +42,23 @@
       "Bash(diff:*)",
       "Bash(curl:*)",
       "Bash(sed:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(make:*)",
+      "Bash(go build:*)",
+      "Bash(python3 tools/linter/yagpdb_lint.py:*)",
+      "Bash(./lint-report.py)",
+      "Bash(./save-lint-report.py)",
+      "Bash(python3:*)",
+      "Bash(wc:*)",
+      "WebSearch",
+      "mcp__council__server_info",
+      "mcp__council__ask",
+      "mcp__council__brainstorm",
+      "mcp__council__code_review",
+      "mcp__council__debug",
+      "mcp__council__refactor",
+      "mcp__council__synthesize_perspectives"
     ],
     "deny": []
   }

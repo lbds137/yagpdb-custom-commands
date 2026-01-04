@@ -120,6 +120,33 @@ type DiscordUser struct {
 	Bot           bool
 }
 
+// AvatarURL returns the user's avatar URL.
+func (u DiscordUser) AvatarURL(size ...string) string {
+	if u.Avatar == "" {
+		// Default avatar based on discriminator
+		return fmt.Sprintf("https://cdn.discordapp.com/embed/avatars/%d.png", u.ID%5)
+	}
+	ext := "png"
+	if len(u.Avatar) > 2 && u.Avatar[:2] == "a_" {
+		ext = "gif"
+	}
+	s := "128"
+	if len(size) > 0 {
+		s = size[0]
+	}
+	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s.%s?size=%s", u.ID, u.Avatar, ext, s)
+}
+
+// Mention returns the user mention string.
+func (u DiscordUser) Mention() string {
+	return fmt.Sprintf("<@%d>", u.ID)
+}
+
+// String returns the user's username.
+func (u DiscordUser) String() string {
+	return u.Username
+}
+
 // CtxChannel represents a Discord channel context.
 type CtxChannel struct {
 	ID        int64
