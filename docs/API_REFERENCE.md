@@ -94,6 +94,8 @@ This document provides detailed reference information for developers working wit
 ) }}
 ```
 
+**Nested Keys**: Use `:` to access nested values, e.g., `Global:Embed Color` or `Directory:Exclude Categories`
+
 **Operations**:
 
 #### Get Operation
@@ -124,8 +126,11 @@ This document provides detailed reference information for developers working wit
 ) }}
 ```
 
-#### Add Operation (Merge Dictionaries)
+#### Add Operation
+Supports both dictionary merging and direct array append:
+
 ```gohtml
+{{/* Merge keys into a dictionary */}}
 {{ execCC $db $channelID 0 (sdict
     "UserID" 0
     "Operation" "add"
@@ -134,14 +139,27 @@ This document provides detailed reference information for developers working wit
 ) }}
 ```
 
+**Command-line array append** (direct string, no JSON required):
+```
+/db add:0 "Directory:Exclude Categories" "New Category Name"
+```
+
 #### Remove Operation
+Supports both dictionary key removal and array item removal:
+
 ```gohtml
+{{/* Remove keys from a dictionary */}}
 {{ execCC $db $channelID 0 (sdict
     "UserID" 0
     "Operation" "remove"
     "Key" "Roles"
     "Value" (sdict "OldRole" "")
 ) }}
+```
+
+**Command-line array remove** (removes first matching item):
+```
+/db remove:0 "Directory:Exclude Categories" "Category To Remove"
 ```
 
 #### Delete Operation
@@ -152,6 +170,19 @@ This document provides detailed reference information for developers working wit
     "Key" "Temporary:Data"
 ) }}
 ```
+
+#### Dump Operation
+Export database entries as a JSON file:
+
+```
+/db dump              # Staff: dumps global config (userID=0)
+/db dump:123456789    # Staff: dumps specific user's data
+/db dump Global       # Dump only the "Global" key
+```
+
+- Staff users default to dumping global config (userID=0)
+- Regular users can only dump their own data
+- Known keys: Global, Commands, Channels, Roles, Admin, Gematria, Knowledge, Rules, Directory
 
 ## Configuration API
 
