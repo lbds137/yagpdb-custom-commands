@@ -405,3 +405,31 @@ tests:
     context:
       args: ["get", "Directory:Exclude Categories"]
       cmd_args: ["get", "Directory:Exclude Categories"]
+
+  # ===== Database Remove (Array Remove) =====
+
+  - name: "db remove - Remove item from array via nested key"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["remove", "Directory:Exclude Categories", "Staff Only"]
+      cmd_args: ["remove", "Directory:Exclude Categories", "Staff Only"]
+
+  - name: "db remove - Remove with JSON from dict"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["remove", "Global", "{\"Delete Trigger Delay\": \"\"}"]
+      cmd_args: ["remove", "Global", "{\"Delete Trigger Delay\": \"\"}"]
+
+  # ===== Database Edge Cases =====
+
+  - name: "db keys - List dictionary keys"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["keys", "Global"]
+      cmd_args: ["keys", "Global"]
+
+  - name: "db delete - Delete a nested key"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["delete", "Directory:Show Empty"]
+      cmd_args: ["delete", "Directory:Show Empty"]
