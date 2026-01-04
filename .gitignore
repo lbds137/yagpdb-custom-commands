@@ -13,3 +13,6 @@ reports/manual_output.txt
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Vendor - external reference sources (not tracked)
+vendor/yagpdb/

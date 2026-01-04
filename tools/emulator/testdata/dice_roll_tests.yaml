@@ -1,0 +1,53 @@
+name: "Dice Roll Command Tests"
+
+defaults:
+  user:
+    id: 987654321098765432
+    username: "TestUser"
+    discriminator: "0001"
+  channel:
+    id: 123456789012345678
+    name: "test-channel"
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value:
+      Delete Trigger Delay: 5
+      Delete Response Delay: 10
+  - user_id: 0
+    key: "Commands"
+    value:
+      embed_exec: 123
+  - user_id: 0
+    key: "Channels"
+    value:
+      YAGPDB: 999999999
+
+command_map:
+  # Map embed_exec to a mock template
+  123: "templates/mock_embed_exec.gohtml"
+
+tests:
+  - name: "Valid dice roll 2d6"
+    template: "../../../utility/dice_roll.gohtml"
+    context:
+      args: ["2d6"]
+      cmd_args: ["2d6"]
+    # Should execute without error - template calls execCC with embed data
+
+  - name: "Valid dice roll 1d20"
+    template: "../../../utility/dice_roll.gohtml"
+    context:
+      args: ["1d20"]
+      cmd_args: ["1d20"]
+
+  - name: "Invalid dice format"
+    template: "../../../utility/dice_roll.gohtml"
+    context:
+      args: ["invalid"]
+      cmd_args: ["invalid"]
+    # Should still execute - shows error via execCC

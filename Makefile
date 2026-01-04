@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-linter clean test
+.PHONY: help lint lint-verbose build-linter build-emulator clean test test-templates
 
 # Default target
 help: ## Show this help message
@@ -11,6 +11,11 @@ build-linter: ## Build the linter tool
 	@echo "🔨 Building linter..."
 	@cd tools/linter && go build -o ../../bin/yagpdb-lint .
 	@echo "✅ Linter built successfully"
+
+build-emulator: ## Build the template emulator/test runner
+	@echo "🔨 Building emulator..."
+	@cd tools/emulator && go build -o ../../bin/yagtest ./cmd/yagtest
+	@echo "✅ Emulator built successfully"
 
 lint: build-linter ## Run linter on all .gohtml files
 	@echo "🔍 Running linter..."
@@ -29,9 +34,13 @@ clean: ## Clean build artifacts
 	@rm -rf bin/
 	@echo "✅ Clean complete"
 
-test: ## Run tests (placeholder for future implementation)
-	@echo "🧪 Running tests..."
-	@echo "⚠️  Tests not yet implemented"
+test: build-emulator ## Run all template tests
+	@echo "🧪 Running template tests..."
+	@./bin/yagtest test tools/emulator/testdata/
+
+test-verbose: build-emulator ## Run template tests with verbose output
+	@echo "🧪 Running template tests (verbose)..."
+	@./bin/yagtest test -verbose tools/emulator/testdata/
 
 # Create bin directory if it doesn't exist
 bin:
@@ -39,6 +48,7 @@ bin:
 
 # Ensure bin directory exists before building
 build-linter: | bin
+build-emulator: | bin
 
 # Development shortcuts
 dev-lint: lint-verbose ## Alias for lint-verbose

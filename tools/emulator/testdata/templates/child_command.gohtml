@@ -1,0 +1,3 @@
+{{- /* Child command that receives ExecData */ -}}
+{{ $msg := or .ExecData.Message "No message" }}
+{{ sendMessage nil $msg }}

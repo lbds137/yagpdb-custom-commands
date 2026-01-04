@@ -1,0 +1,63 @@
+name: "Database Command Tests"
+
+# Shared defaults for all tests
+defaults:
+  user:
+    id: 987654321098765432
+    username: "TestUser"
+    discriminator: "0001"
+  channel:
+    id: 123456789012345678
+    name: "test-channel"
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+
+# Shared database setup
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value:
+      Delete Trigger Delay: 5
+  - user_id: 0
+    key: "Commands"
+    value:
+      db: 456
+      embed_exec: 123
+  - user_id: 0
+    key: "Channels"
+    value:
+      YAGPDB: 999999999
+  - user_id: 0
+    key: "Roles"
+    value:
+      Staff: 888888888
+
+tests:
+  - name: "Get existing database entry"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get", "Global"]
+      cmd_args: ["get", "Global"]
+    # db.gohtml calls execCC which we mock, so we just check it executed without error
+
+  - name: "Get non-existent key"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get", "NonExistent"]
+      cmd_args: ["get", "NonExistent"]
+    # Should complete without error (shows "No value found" via embed)
+
+  - name: "Invalid operation"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["invalid_op", "SomeKey"]
+      cmd_args: ["invalid_op", "SomeKey"]
+    # Should complete without error (shows error message via embed)
+
+  - name: "Keys operation on dictionary"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["keys", "Global"]
+      cmd_args: ["keys", "Global"]
+    # Lists keys in the Global dictionary

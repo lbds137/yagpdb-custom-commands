@@ -1,0 +1,6 @@
+{{- /* Recursive command that tries to call execCC again */ -}}
+{{ $depth := or .ExecData.Depth 0 }}
+Depth: {{ $depth }}
+{{ if lt $depth 5 }}
+{{ execCC 101 nil 0 (sdict "Depth" (add $depth 1)) }}
+{{ end }}
