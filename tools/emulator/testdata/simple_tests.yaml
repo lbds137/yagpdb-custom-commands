@@ -1,0 +1,87 @@
+name: "Simple Template Tests"
+
+tests:
+  - name: "Basic addition"
+    template_source: "{{ add 2 3 }}"
+    expected:
+      output_equals: "5"
+
+  - name: "String manipulation"
+    template_source: "{{ upper \"hello\" }}"
+    expected:
+      output_equals: "HELLO"
+
+  - name: "SDict creation and access"
+    template_source: |
+      {{ $d := sdict "name" "Test" "count" 42 }}
+      Name: {{ $d.Get "name" }}, Count: {{ $d.Get "count" }}
+    expected:
+      output_contains: "Name: Test, Count: 42"
+
+  - name: "Database set and get"
+    template_source: |
+      {{ dbSet 0 "TestKey" "TestValue" }}
+      {{ $entry := dbGet 0 "TestKey" }}
+      Value: {{ $entry.Value }}
+    expected:
+      output_contains: "Value: TestValue"
+    assertions:
+      db_checks:
+        - user_id: 0
+          key: "TestKey"
+          value_equals: "TestValue"
+
+  - name: "Database with SDict value"
+    template_source: |
+      {{ $data := sdict "foo" "bar" "num" 123 }}
+      {{ dbSet 0 "DictKey" $data }}
+      {{ $entry := dbGet 0 "DictKey" }}
+      Foo: {{ $entry.Value.Get "foo" }}
+    expected:
+      output_contains: "Foo: bar"
+    assertions:
+      db_checks:
+        - user_id: 0
+          key: "DictKey"
+          value_contains: "foo"
+
+  - name: "parseArgs basic usage"
+    template_source: |
+      {{ $args := parseArgs 2 "Need 2 args" (carg "string" "first") (carg "string" "second") }}
+      First: {{ $args.Get 0 }}, Second: {{ $args.Get 1 }}
+    context:
+      args: ["hello", "world"]
+      cmd_args: ["hello", "world"]
+    expected:
+      output_contains: "First: hello, Second: world"
+
+  - name: "parseArgs insufficient args"
+    template_source: |
+      {{ $args := parseArgs 2 "Need 2 arguments!" (carg "string" "first") (carg "string" "second") }}
+      Result: {{ $args.Get 0 }}
+    context:
+      args: ["only_one"]
+      cmd_args: ["only_one"]
+    expected:
+      error_contains: "Need 2 arguments!"
+
+  - name: "Conditional logic"
+    template_source: |
+      {{ $x := 10 }}
+      {{ if gt $x 5 }}big{{ else }}small{{ end }}
+    expected:
+      output_equals: "big"
+
+  - name: "Range over slice"
+    template_source: |
+      {{ $s := cslice "a" "b" "c" }}
+      {{ range $s }}{{ . }}{{ end }}
+    expected:
+      output_equals: "abc"
+
+  - name: "JSON encoding"
+    template_source: |
+      {{ $d := sdict "key" "value" }}
+      {{ json $d }}
+    expected:
+      output_contains: "key"

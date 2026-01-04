@@ -1,0 +1,52 @@
+name: "execCC Tests"
+
+# Map command ID 100 to the child template
+command_map:
+  100: "templates/child_command.gohtml"
+
+tests:
+  - name: "Basic execCC call"
+    template_source: |
+      {{ execCC 100 nil 0 (sdict "Message" "Hello from child!") }}
+      Parent done
+    expected:
+      output_contains: "Parent done"
+    assertions:
+      sent_messages:
+        - content_contains: "Hello from child!"
+
+  - name: "execCC with channel override"
+    template_source: |
+      {{ execCC 100 999 0 (sdict "Message" "Channel test") }}
+    assertions:
+      sent_messages:
+        - channel_id: 999
+          content_contains: "Channel test"
+
+  - name: "execCC to unknown command ID (silently fails)"
+    template_source: |
+      {{ execCC 999 nil 0 (sdict "Message" "Should not appear") }}
+      Still works
+    expected:
+      output_contains: "Still works"
+
+  - name: "execCC depth limit"
+    template_source: |
+      {{/* This template calls execCC which calls execCC - should hit depth limit */}}
+      {{ execCC 101 nil 0 (sdict "Depth" 1) }}
+      Parent complete
+    command_map:
+      101: "templates/recursive_command.gohtml"
+    expected:
+      output_contains: "Parent complete"
+
+  - name: "execCC shares database state"
+    template_source: |
+      {{ dbSet 0 "SharedKey" "ParentValue" }}
+      {{ execCC 102 nil 0 (sdict) }}
+      {{ $result := dbGet 0 "SharedKey" }}
+      Final: {{ $result.Value }}
+    command_map:
+      102: "templates/db_modifier.gohtml"
+    expected:
+      output_contains: "Final: ChildModified"
