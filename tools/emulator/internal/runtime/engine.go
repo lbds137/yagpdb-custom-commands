@@ -90,6 +90,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"reFind":      funcs.ReFind,
 		"reFindAll":   funcs.ReFindAll,
 		"reReplace":   funcs.ReReplace,
+		"reSplit":     funcs.ReSplit,
 		"reQuoteMeta": funcs.ReQuoteMeta,
 
 		// Utilities
@@ -115,20 +116,23 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"dbRank":              dbFuncs.DbRank,
 
 		// Discord mocks (output capture)
-		"sendMessage": e.sendMessage,
-		"sendDM":      e.sendDM,
-		"editMessage": e.editMessage,
-		"getMessage":  e.getMessage,
-		"deleteMessage":     e.deleteMessage,
-		"deleteTrigger":     e.deleteTrigger,
-		"deleteResponse":    e.deleteResponse,
-		"addReactions":      e.addReactions,
-		"addMessageReactions": e.addMessageReactions,
+		"sendMessage":             e.sendMessage,
+		"sendMessageRetID":        e.sendMessageRetID,
+		"sendDM":                  e.sendDM,
+		"editMessage":             e.editMessage,
+		"getMessage":              e.getMessage,
+		"deleteMessage":           e.deleteMessage,
+		"deleteTrigger":           e.deleteTrigger,
+		"deleteResponse":          e.deleteResponse,
+		"addReactions":            e.addReactions,
+		"addMessageReactions":     e.addMessageReactions,
+		"deleteAllMessageReactions": e.deleteAllMessageReactions,
 
 		// Role functions
-		"hasRole":        e.hasRole,
-		"hasRoleID":      e.hasRoleID,
-		"targetHasRole":  e.targetHasRole,
+		"hasRole":         e.hasRole,
+		"hasRoleID":       e.hasRoleID,
+		"targetHasRole":   e.targetHasRole,
+		"targetHasRoleID": e.targetHasRoleID,
 		"addRole":        e.addRole,
 		"giveRole":       e.giveRole,
 		"removeRole":     e.removeRole,
@@ -145,7 +149,8 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"getTargetPermissionsIn": e.getTargetPermissionsIn,
 
 		// Channel functions
-		"getChannel":     e.getChannel,
+		"getChannel":         e.getChannel,
+		"getChannelOrThread": e.getChannelOrThread,
 
 		// Embed building
 		"cembed":         e.cembed,
@@ -155,6 +160,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		// Control flow
 		"execCC":                   e.execCC,
 		"exec":                     e.exec,
+		"execAdmin":                e.execAdmin,
 		"execTemplate":             e.execTemplateFunc,
 		"scheduleUniqueCC":         e.scheduleUniqueCC,
 		"cancelScheduledUniqueCC":  e.cancelScheduledUniqueCC,
@@ -238,6 +244,12 @@ func (e *Engine) sendMessage(args ...interface{}) string {
 	return ""
 }
 
+func (e *Engine) sendMessageRetID(args ...interface{}) int64 {
+	// Same as sendMessage but returns a mock message ID
+	e.sendMessage(args...)
+	return 123456789 // Mock message ID
+}
+
 func (e *Engine) sendDM(msg interface{}) string {
 	content := funcs.ToString(msg)
 	e.ctx.RecordSentMessage(0, content, nil) // 0 = DM
@@ -289,6 +301,11 @@ func (e *Engine) hasRoleID(roleID interface{}) bool {
 
 func (e *Engine) targetHasRole(target, roleInput interface{}) (bool, error) {
 	return false, nil
+}
+
+func (e *Engine) targetHasRoleID(target, roleID interface{}) bool {
+	// In real YAGPDB this checks if target user has the role
+	return false
 }
 
 func (e *Engine) addRole(roleInput interface{}, delay ...interface{}) string {
@@ -367,6 +384,11 @@ func (e *Engine) getChannel(channelID interface{}) interface{} {
 		GuildID: e.ctx.GuildID,
 		Name:    "mock-channel",
 	}
+}
+
+func (e *Engine) getChannelOrThread(channelID interface{}) interface{} {
+	// Same as getChannel - threads are just channels in Discord's API
+	return e.getChannel(channelID)
 }
 
 // Embed/message building
@@ -597,6 +619,12 @@ func (e *Engine) exec(name string, data ...interface{}) string {
 	// In YAGPDB this executes a named template
 	// For now, just return empty - templates would need to be registered
 	return ""
+}
+
+func (e *Engine) execAdmin(name string, data ...interface{}) string {
+	// In YAGPDB this executes a template with admin privileges
+	// For testing, same as exec
+	return e.exec(name, data...)
 }
 
 // execTemplateFunc executes a defined template and returns its output

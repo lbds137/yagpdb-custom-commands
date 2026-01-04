@@ -32,29 +32,29 @@ IMPLEMENTED=(
     # Time
     "currentTime" "formatTime" "parseTime" "newDate"
     # Regex
-    "reFind" "reFindAll" "reReplace" "reQuoteMeta"
+    "reFind" "reFindAll" "reReplace" "reSplit" "reQuoteMeta"
     # Utilities
     "in" "inFold" "kindOf" "seq" "randInt"
     # Database
     "dbGet" "dbSet" "dbSetExpire" "dbDel" "dbDelById" "dbDelByID" "dbIncr"
     "dbGetPattern" "dbGetPatternReverse" "dbCount" "dbTopEntries" "dbBottomEntries" "dbRank"
     # Discord - Messages
-    "sendMessage" "sendDM" "editMessage" "getMessage" "deleteMessage"
+    "sendMessage" "sendMessageRetID" "sendDM" "editMessage" "getMessage" "deleteMessage"
     "deleteTrigger" "deleteResponse" "addReactions" "addMessageReactions"
     "deleteAllMessageReactions"
     # Mentions
     "mentionRoleID" "mentionRole" "mentionEveryone" "mentionHere"
     # Discord - Roles
-    "hasRole" "hasRoleID" "targetHasRole" "addRole" "giveRole" "removeRole" "takeRole"
+    "hasRole" "hasRoleID" "targetHasRole" "targetHasRoleID" "addRole" "giveRole" "removeRole" "takeRole"
     "setRoles" "giveRoleID" "takeRoleID" "addRoleID" "removeRoleID"
     # Discord - Members/Users
     "getMember" "userArg" "getTargetPermissionsIn"
     # Discord - Channels
-    "getChannel"
+    "getChannel" "getChannelOrThread"
     # Embeds
     "cembed" "complexMessage" "sendTemplate"
     # Control flow
-    "execCC" "exec" "execTemplate" "scheduleUniqueCC" "cancelScheduledUniqueCC"
+    "execCC" "exec" "execAdmin" "execTemplate" "scheduleUniqueCC" "cancelScheduledUniqueCC"
     "sleep" "catch"
     # Args
     "parseArgs" "carg"

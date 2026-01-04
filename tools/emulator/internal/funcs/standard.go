@@ -377,12 +377,13 @@ func ParseTime(layout, value string) (time.Time, error) {
 	return time.Parse(layout, value)
 }
 
-// NewDate creates a new time.Time.
-func NewDate(year, month, day, hour, min, sec int, loc *time.Location) time.Time {
-	if loc == nil {
-		loc = time.UTC
+// NewDate creates a new time.Time. Location is optional (defaults to UTC).
+func NewDate(year, month, day, hour, min, sec int, loc ...*time.Location) time.Time {
+	var location *time.Location = time.UTC
+	if len(loc) > 0 && loc[0] != nil {
+		location = loc[0]
 	}
-	return time.Date(year, time.Month(month), day, hour, min, sec, 0, loc)
+	return time.Date(year, time.Month(month), day, hour, min, sec, 0, location)
 }
 
 // Regex Functions
@@ -416,6 +417,19 @@ func ReReplace(pattern, s, repl string) string {
 		return s
 	}
 	return re.ReplaceAllString(s, repl)
+}
+
+// ReSplit splits a string by regex pattern.
+func ReSplit(pattern, s string, n ...int) []string {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return []string{s}
+	}
+	limit := -1
+	if len(n) > 0 {
+		limit = n[0]
+	}
+	return re.Split(s, limit)
 }
 
 // ReQuoteMeta escapes regex metacharacters.
