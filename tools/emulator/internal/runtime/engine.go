@@ -79,6 +79,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"cslice":      types.CreateSlice,
 		"json":        types.ToJSON,
 		"jsonToSdict": types.JSONToSDict,
+		"sort":        funcs.Sort,
 
 		// Time
 		"currentTime": funcs.CurrentTime,
@@ -152,10 +153,17 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"getChannel":         e.getChannel,
 		"getChannelOrThread": e.getChannelOrThread,
 
+		// Discord - Roles (lookup)
+		"getRole": e.getRole,
+
+		// Discord - Tickets
+		"createTicket": e.createTicket,
+
 		// Embed building
-		"cembed":         e.cembed,
-		"complexMessage": e.complexMessage,
-		"sendTemplate":   e.sendTemplate,
+		"cembed":             e.cembed,
+		"complexMessage":     e.complexMessage,
+		"complexMessageEdit": e.complexMessageEdit,
+		"sendTemplate":       e.sendTemplate,
 
 		// Control flow
 		"execCC":                   e.execCC,
@@ -406,8 +414,39 @@ func (e *Engine) complexMessage(args ...interface{}) (types.SDict, error) {
 	return e.cembed(args...)
 }
 
+func (e *Engine) complexMessageEdit(args ...interface{}) (types.SDict, error) {
+	// Same as cembed/complexMessage - creates an SDict for message editing
+	return e.cembed(args...)
+}
+
 func (e *Engine) sendTemplate(args ...interface{}) string {
 	return ""
+}
+
+// getRole returns a mock role by ID
+func (e *Engine) getRole(roleID interface{}) types.CtxRole {
+	id := funcs.ToInt64(roleID)
+	// Check if role exists in available roles
+	for _, role := range e.ctx.AvailableRoles {
+		if role.ID == id {
+			return role
+		}
+	}
+	// Return mock role with default Discord blurple color
+	return types.CtxRole{
+		ID:    id,
+		Name:  "MockRole",
+		Color: 0x7289DA,
+	}
+}
+
+// createTicket creates a mock ticket and returns result with ChannelID
+func (e *Engine) createTicket(user, reason interface{}) types.SDict {
+	// Return mock ticket result
+	return types.SDict{
+		"ChannelID": int64(999999999),
+		"TicketID":  int64(1),
+	}
 }
 
 // Cross-command execution
