@@ -1,0 +1,278 @@
+name: "Command Integration Tests"
+description: "Tests for utility and staff_utility commands that require arguments"
+
+defaults:
+  user:
+    id: 987654321098765432
+    username: "TestUser"
+    discriminator: "0001"
+  channel:
+    id: 123456789012345678
+    name: "test-channel"
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+
+# Common database setup for all tests
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value:
+      Delete Trigger Delay: 5
+      Delete Response Delay: 10
+      ExecCC Limit: 10
+  - user_id: 0
+    key: "Commands"
+    value:
+      embed_exec: 123
+      gematria: 124
+      message_link: 125
+      db_get_embed: 126
+      db_get_text: 127
+  - user_id: 0
+    key: "Channels"
+    value:
+      YAGPDB: 999999999
+      Introduction: 888888888
+      Introduction Archive: 777777777
+      Welcome: 666666666
+      Admission Log: 555555555
+  - user_id: 0
+    key: "Roles"
+    value:
+      Staff: 111111111
+      Guest: 222222222
+      Member: 333333333
+      Minor: 444444444
+      Adult: 555555555
+  - user_id: 0
+    key: "Admin"
+    value:
+      Welcome Message: "Welcome to the server!"
+  - user_id: 0
+    key: "Gematria"
+    value:
+      Values:
+        א: 1
+        ב: 2
+        ג: 3
+        ד: 4
+        ה: 5
+        ו: 6
+        ז: 7
+        ח: 8
+        ט: 9
+        י: 10
+        כ: 20
+        ל: 30
+        מ: 40
+        נ: 50
+        ס: 60
+        ע: 70
+        פ: 80
+        צ: 90
+        ק: 100
+        ר: 200
+        ש: 300
+        ת: 400
+      Final Letters:
+        ך: כ
+        ם: מ
+        ן: נ
+        ף: פ
+        ץ: צ
+      Tarot Indices:
+        "1": "The Magician"
+        "2": "The High Priestess"
+        "3": "The Empress"
+  - user_id: 0
+    key: "Rules"
+    value:
+      "Rule #1": "Be respectful to all members."
+      "Rule #2": "No spamming or flooding the chat."
+      "Rule #3": "Keep discussions on topic."
+  - user_id: 0
+    key: "Knowledge"
+    value:
+      FAQ: "This is the FAQ content."
+      Guidelines: "These are the guidelines."
+
+command_map:
+  123: "templates/mock_embed_exec.gohtml"
+  124: "templates/mock_gematria.gohtml"
+  125: "templates/mock_message_link.gohtml"
+  126: "templates/mock_db_get_embed.gohtml"
+  127: "templates/mock_db_get_text.gohtml"
+
+tests:
+  # ===== Utility Commands =====
+
+  - name: "alefbet - Hebrew text conversion"
+    template: "../../../utility/alefbet.gohtml"
+    context:
+      args: ["שלום"]
+      cmd_args: ["שלום"]
+
+  - name: "alefbet - Arabic to Hebrew"
+    template: "../../../utility/alefbet.gohtml"
+    context:
+      args: ["سلام"]
+      cmd_args: ["سلام"]
+
+  - name: "atbash - Basic cipher"
+    template: "../../../utility/atbash.gohtml"
+    context:
+      args: ["אבגד"]
+      cmd_args: ["אבגד"]
+
+  - name: "contrast - Valid hex color"
+    template: "../../../utility/contrast.gohtml"
+    context:
+      args: ["#FF5500"]
+      cmd_args: ["#FF5500"]
+
+  - name: "contrast - Hex without hash"
+    template: "../../../utility/contrast.gohtml"
+    context:
+      args: ["00FF00"]
+      cmd_args: ["00FF00"]
+
+  - name: "contrast - Role ID"
+    template: "../../../utility/contrast.gohtml"
+    context:
+      args: ["111111111111111111"]
+      cmd_args: ["111111111111111111"]
+
+  - name: "contrasts - Multiple colors"
+    template: "../../../utility/contrasts.gohtml"
+    context:
+      args: ["FF0000 00FF00 0000FF"]
+      cmd_args: ["FF0000 00FF00 0000FF"]
+
+  - name: "gematria - Hebrew word"
+    template: "../../../utility/gematria.gohtml"
+    context:
+      args: ["אמת"]
+      cmd_args: ["אמת"]
+
+  - name: "gematria - English text"
+    template: "../../../utility/gematria.gohtml"
+    context:
+      args: ["hello"]
+      cmd_args: ["hello"]
+
+  - name: "hugemoji - Discord custom emoji"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args: ["<:test:123456789012345678>"]
+      cmd_args: ["<:test:123456789012345678>"]
+
+  - name: "hugemoji - Animated emoji"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args: ["<a:dance:987654321098765432>"]
+      cmd_args: ["<a:dance:987654321098765432>"]
+
+  - name: "kb - Knowledge base lookup"
+    template: "../../../utility/kb.gohtml"
+    context:
+      args: ["FAQ"]
+      cmd_args: ["FAQ"]
+
+  - name: "message_pointer - Valid message link"
+    template: "../../../utility/message_pointer.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/123456789012345678/999888777666555444"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/123456789012345678/999888777666555444"]
+
+  - name: "pyramid - Simple text"
+    template: "../../../utility/pyramid.gohtml"
+    context:
+      args: ["hello"]
+      cmd_args: ["hello"]
+
+  - name: "rand_hebrew - Generate random letters"
+    template: "../../../utility/rand_hebrew.gohtml"
+    context:
+      args: ["5"]
+      cmd_args: ["5"]
+
+  - name: "rule - View rule 1"
+    template: "../../../utility/rule.gohtml"
+    context:
+      args: ["1"]
+      cmd_args: ["1"]
+
+  - name: "rule - View rule 2"
+    template: "../../../utility/rule.gohtml"
+    context:
+      args: ["2"]
+      cmd_args: ["2"]
+
+  # ===== Staff Utility Commands =====
+
+  - name: "admit_user - Admit with message link"
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/888888888/123123123123123123", "adult"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/123123123123123123", "adult"]
+
+  - name: "archive - Archive channel"
+    template: "../../../staff_utility/archive.gohtml"
+    context:
+      args: ["test-archive"]
+      cmd_args: ["test-archive"]
+
+  - name: "bootstrap - Initialize with command IDs"
+    template: "../../../staff_utility/bootstrap.gohtml"
+    context:
+      args: ["123", "127", "111111111"]
+      cmd_args: ["123", "127", "111111111"]
+
+  - name: "guest - Guest user processing"
+    template: "../../../staff_utility/guest.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/888888888/456456456456456456"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/456456456456456456"]
+
+  - name: "inactivity - Check user inactivity"
+    template: "../../../staff_utility/inactivity.gohtml"
+    context:
+      args: ["30"]
+      cmd_args: ["30"]
+
+  - name: "reject_user - Reject with message link"
+    template: "../../../staff_utility/reject_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/888888888/789789789789789789", "Did not meet requirements"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/789789789789789789", "Did not meet requirements"]
+
+  - name: "role_ping - Ping a role"
+    template: "../../../staff_utility/role_ping.gohtml"
+    context:
+      args: ["111111111", "Important announcement!"]
+      cmd_args: ["111111111", "Important announcement!"]
+
+  - name: "rule_edit - Edit a rule"
+    template: "../../../staff_utility/rule_edit.gohtml"
+    context:
+      args: ["1", "Updated rule text here."]
+      cmd_args: ["1", "Updated rule text here."]
+
+  - name: "screen_user - Screen user for admission"
+    template: "../../../staff_utility/screen_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/888888888/321321321321321321", "Suspicious activity"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/321321321321321321", "Suspicious activity"]
+
+  - name: "simple_db_lookup - Lookup knowledge entry"
+    template: "../../../staff_utility/simple_db_lookup.gohtml"
+    context:
+      args: ["Knowledge", "FAQ"]
+      cmd_args: ["Knowledge", "FAQ"]
+
+  - name: "simple_db_edit - Edit knowledge entry"
+    template: "../../../staff_utility/simple_db_edit.gohtml"
+    context:
+      args: ["Knowledge", "FAQ", "Updated FAQ content"]
+      cmd_args: ["Knowledge", "FAQ", "Updated FAQ content"]

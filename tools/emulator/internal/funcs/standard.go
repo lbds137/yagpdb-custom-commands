@@ -387,19 +387,24 @@ func NewDate(year, month, day, hour, min, sec int, loc ...*time.Location) time.T
 }
 
 // Regex Functions
+// Note: These accept interface{} to handle nil values gracefully
 
 // ReFind finds the first match.
-func ReFind(pattern, s string) string {
-	re, err := regexp.Compile(pattern)
+func ReFind(pattern, s interface{}) string {
+	patternStr := ToString(pattern)
+	sStr := ToString(s)
+	re, err := regexp.Compile(patternStr)
 	if err != nil {
 		return ""
 	}
-	return re.FindString(s)
+	return re.FindString(sStr)
 }
 
 // ReFindAll finds all matches.
-func ReFindAll(pattern, s string, n ...int) []string {
-	re, err := regexp.Compile(pattern)
+func ReFindAll(pattern, s interface{}, n ...int) []string {
+	patternStr := ToString(pattern)
+	sStr := ToString(s)
+	re, err := regexp.Compile(patternStr)
 	if err != nil {
 		return nil
 	}
@@ -407,34 +412,39 @@ func ReFindAll(pattern, s string, n ...int) []string {
 	if len(n) > 0 {
 		limit = n[0]
 	}
-	return re.FindAllString(s, limit)
+	return re.FindAllString(sStr, limit)
 }
 
 // ReReplace replaces matches.
-func ReReplace(pattern, s, repl string) string {
-	re, err := regexp.Compile(pattern)
+func ReReplace(pattern, s, repl interface{}) string {
+	patternStr := ToString(pattern)
+	sStr := ToString(s)
+	replStr := ToString(repl)
+	re, err := regexp.Compile(patternStr)
 	if err != nil {
-		return s
+		return sStr
 	}
-	return re.ReplaceAllString(s, repl)
+	return re.ReplaceAllString(sStr, replStr)
 }
 
 // ReSplit splits a string by regex pattern.
-func ReSplit(pattern, s string, n ...int) []string {
-	re, err := regexp.Compile(pattern)
+func ReSplit(pattern, s interface{}, n ...int) []string {
+	patternStr := ToString(pattern)
+	sStr := ToString(s)
+	re, err := regexp.Compile(patternStr)
 	if err != nil {
-		return []string{s}
+		return []string{sStr}
 	}
 	limit := -1
 	if len(n) > 0 {
 		limit = n[0]
 	}
-	return re.Split(s, limit)
+	return re.Split(sStr, limit)
 }
 
 // ReQuoteMeta escapes regex metacharacters.
-func ReQuoteMeta(s string) string {
-	return regexp.QuoteMeta(s)
+func ReQuoteMeta(s interface{}) string {
+	return regexp.QuoteMeta(ToString(s))
 }
 
 // Utility Functions
