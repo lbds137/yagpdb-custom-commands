@@ -38,6 +38,13 @@ YAGPDB has strict execution limits. Emulator could enforce these in "strict mode
 
 ## Testing Improvements
 
+### Fix the two failing database tests
+`make test` fails 2 of 58: "Database set and get" and "execCC shares database state". The emulator returns stored values wrapped (`{"V":"TestValue"}`, printed as `{TestValue}`) where the tests expect the plain value. Already failing at aa08d2f (2026-01-03); found 2026-09-23.
+
+**Implementation approach:**
+- Check how real YAGPDB returns `dbGet` values in `vendor/yagpdb/`, then fix the emulator or the test expectations to match.
+- Go isn't installed on the dev machine. `bin/yagtest` is a prebuilt binary from 2026-01-03, so install Go before `make build-emulator`.
+
 ### CI/CD Integration
 Run emulator tests in GitHub Actions on push/PR.
 
