@@ -219,15 +219,14 @@ func countFlattened(args []reflect.Value, first int) int {
 }
 
 // targetUserID follows YAGPDB's TargetUserID: a user, a mention ("<@id>" or "<@!id>"),
-// or anything ToInt64 understands.
+// or anything ToInt64 understands. A member (.Member) isn't accepted and gives 0, as in
+// YAGPDB, where that makes setRoles a no-op and getMember nil.
 func targetUserID(input interface{}) int64 {
 	switch t := input.(type) {
 	case types.DiscordUser:
 		return t.ID
 	case *types.DiscordUser:
 		return t.ID
-	case types.CtxMember:
-		return t.User.ID
 	case string:
 		s := strings.TrimSpace(t)
 		if strings.HasPrefix(s, "<@") && strings.HasSuffix(s, ">") && len(s) > 4 {

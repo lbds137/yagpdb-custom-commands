@@ -270,13 +270,59 @@ func (e *Engine) hasRoleID(roleID interface{}) bool {
 	return e.ctx.HasRole(funcs.ToInt64(roleID))
 }
 
+// targetHasRole follows YAGPDB's targetHasRole: an unknown target, a user who isn't a
+// member, or a role the guild doesn't have is an error.
 func (e *Engine) targetHasRole(target, roleInput interface{}) (bool, error) {
+	id := targetUserID(target)
+	if id == 0 {
+		return false, fmt.Errorf("target %v not found", target)
+	}
+	if !e.ctx.isMember(id) {
+		return false, fmt.Errorf("member not found in state")
+	}
+	role := e.findRole(roleInput)
+	if role == nil {
+		return false, fmt.Errorf("role %v not found", roleInput)
+	}
+	for _, r := range e.ctx.rolesOf(id) {
+		if r == role.ID {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
-func (e *Engine) targetHasRoleID(target, roleID interface{}) bool {
-	// In real YAGPDB this checks if target user has the role
-	return false
+func (e *Engine) targetHasRoleID(target, roleID interface{}) (bool, error) {
+	return e.targetHasRole(target, roleID)
+}
+
+// findRole resolves a role ID, mention or name. When the test declares the guild's roles,
+// unknown roles are nil, as in YAGPDB; otherwise any ID is taken to exist.
+func (e *Engine) findRole(roleInput interface{}) *types.CtxRole {
+	var id int64
+	if s, ok := roleInput.(string); ok {
+		t := strings.TrimSpace(s)
+		if strings.HasPrefix(t, "<@&") && strings.HasSuffix(t, ">") {
+			id = funcs.ToInt64(t[3 : len(t)-1])
+		} else if id = funcs.ToInt64(t); id == 0 {
+			for _, r := range e.ctx.AvailableRoles {
+				if strings.EqualFold(r.Name, t) {
+					role := r
+					return &role
+				}
+			}
+			return nil
+		}
+	} else {
+		id = funcs.ToInt64(roleInput)
+	}
+	if role, ok := e.ctx.AvailableRoles[id]; ok {
+		return &role
+	}
+	if len(e.ctx.AvailableRoles) > 0 || id == 0 {
+		return nil
+	}
+	return &types.CtxRole{ID: id, Name: "MockRole", Color: 0x7289DA}
 }
 
 func (e *Engine) addRole(roleInput interface{}, delay ...interface{}) string {
@@ -331,28 +377,41 @@ func (e *Engine) removeRoleID(roleID interface{}, delay ...interface{}) string {
 // else is not in the server and gets a nil *CtxMember, as in YAGPDB.
 func (e *Engine) getMember(userID interface{}) *types.CtxMember {
 	id := targetUserID(userID)
-	if e.ctx.Members != nil {
-		found := false
-		for _, m := range e.ctx.Members {
-			found = found || m == id
-		}
-		if !found {
-			return nil
-		}
+	if id == 0 || !e.ctx.isMember(id) {
+		return nil
 	}
 	return &types.CtxMember{
 		User: types.DiscordUser{
 			ID:       id,
 			Username: "MockUser",
 		},
+		Roles: e.ctx.rolesOf(id),
 	}
 }
 
+// userArg follows YAGPDB's userArg (commands/tmplexec.go): an ID or mention of a server
+// member gives that user; anything else that isn't a string or number is returned as is;
+// otherwise the result is nil, so (userArg $x).ID reads as no value.
 func (e *Engine) userArg(arg interface{}) interface{} {
-	return types.DiscordUser{
-		ID:       funcs.ToInt64(arg),
-		Username: "MockUser",
+	id := funcs.ToInt64(arg)
+	if id == 0 {
+		str, ok := arg.(string)
+		if !ok {
+			return arg
+		}
+		str = strings.TrimSpace(str)
+		if len(str) < 5 || !strings.HasPrefix(str, "<@") || !strings.HasSuffix(str, ">") {
+			return nil
+		}
+		id = funcs.ToInt64(strings.TrimPrefix(str[2:len(str)-1], "!"))
 	}
+	if id == 0 || !e.ctx.isMember(id) {
+		return nil
+	}
+	if id == e.ctx.UserID {
+		return &types.DiscordUser{ID: id, Username: e.ctx.Username, Discriminator: e.ctx.Discriminator}
+	}
+	return &types.DiscordUser{ID: id, Username: "MockUser"}
 }
 
 func (e *Engine) getTargetPermissionsIn(userID, channelID interface{}) int64 {
@@ -463,21 +522,10 @@ func (e *Engine) sendTemplate(args ...interface{}) string {
 	return ""
 }
 
-// getRole returns a mock role by ID
-func (e *Engine) getRole(roleID interface{}) types.CtxRole {
-	id := funcs.ToInt64(roleID)
-	// Check if role exists in available roles
-	for _, role := range e.ctx.AvailableRoles {
-		if role.ID == id {
-			return role
-		}
-	}
-	// Return mock role with default Discord blurple color
-	return types.CtxRole{
-		ID:    id,
-		Name:  "MockRole",
-		Color: 0x7289DA,
-	}
+// getRole returns the role, or a nil *CtxRole for a role the guild doesn't have (YAGPDB
+// returns nil without an error, so (getRole $id).Color then fails).
+func (e *Engine) getRole(roleID interface{}) *types.CtxRole {
+	return e.findRole(roleID)
 }
 
 // createTicket creates a mock ticket and returns result with ChannelID

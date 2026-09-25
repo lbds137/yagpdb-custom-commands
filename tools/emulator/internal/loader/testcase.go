@@ -40,6 +40,8 @@ type ContextDef struct {
 	// MessageContent is the triggering message's text (.Message.Content), for regex triggers
 	MessageContent string  `yaml:"message_content"`
 	Members        []int64 `yaml:"members"` // If set, the only users getMember finds
+	// MemberRoles gives other members' roles (the triggering user's are user.roles)
+	MemberRoles map[int64][]int64 `yaml:"member_roles"`
 }
 
 // MessageDef is an existing Discord message.
@@ -74,8 +76,16 @@ type ChannelDef struct {
 
 // GuildDef defines guild/server context.
 type GuildDef struct {
-	ID   int64  `yaml:"id"`
-	Name string `yaml:"name"`
+	ID    int64     `yaml:"id"`
+	Name  string    `yaml:"name"`
+	Roles []RoleDef `yaml:"roles"` // If set, getRole and targetHasRole know only these
+}
+
+// RoleDef is a role in the guild.
+type RoleDef struct {
+	ID    int64  `yaml:"id"`
+	Name  string `yaml:"name"`
+	Color int    `yaml:"color"`
 }
 
 // DBEntry represents a database entry for setup.
@@ -280,6 +290,12 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.Members == nil {
 		tc.Context.Members = defaults.Members
+	}
+	if tc.Context.MemberRoles == nil {
+		tc.Context.MemberRoles = defaults.MemberRoles
+	}
+	if tc.Context.Guild.Roles == nil {
+		tc.Context.Guild.Roles = defaults.Guild.Roles
 	}
 
 	// Merge guild defaults
