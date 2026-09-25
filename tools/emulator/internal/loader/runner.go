@@ -302,8 +302,8 @@ func (r *Runner) checkOutput(output string, expected ExpectedResult) []string {
 	// Normalize output (trim whitespace)
 	output = strings.TrimSpace(output)
 
-	if expected.OutputEquals != "" {
-		expectedNorm := strings.TrimSpace(expected.OutputEquals)
+	if expected.OutputEquals != nil {
+		expectedNorm := strings.TrimSpace(*expected.OutputEquals)
 		if output != expectedNorm {
 			failures = append(failures,
 				fmt.Sprintf("output mismatch:\n  expected: %q\n  got:      %q", expectedNorm, output))
@@ -384,30 +384,37 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 	var failures []string
 
 	for i, check := range checks {
-		// Find matching message
+		// The nth message (the first by default) in the check's channel, or of any channel
 		var found *runtime.SentMessage
+		n := max(check.Nth, 1)
 		for j := range messages {
 			if check.ChannelID == 0 || messages[j].ChannelID == check.ChannelID {
-				found = &messages[j]
-				break
+				if n--; n == 0 {
+					found = &messages[j]
+					break
+				}
 			}
 		}
 
 		if found == nil {
-			if check.ChannelID != 0 {
-				failures = append(failures,
-					fmt.Sprintf("%s message check %d: no message %s in channel %d", how, i, how, check.ChannelID))
-			} else {
-				failures = append(failures,
-					fmt.Sprintf("%s message check %d: no messages %s", how, i, how))
+			which := "no message"
+			if check.Nth > 1 {
+				which = fmt.Sprintf("no message #%d", check.Nth)
+			} else if check.ChannelID == 0 {
+				which = "no messages"
 			}
+			where := ""
+			if check.ChannelID != 0 {
+				where = fmt.Sprintf(" in channel %d", check.ChannelID)
+			}
+			failures = append(failures, fmt.Sprintf("%s message check %d: %s %s%s", how, i, which, how, where))
 			continue
 		}
 
-		if check.ContentEquals != "" && found.Content != check.ContentEquals {
+		if check.ContentEquals != nil && found.Content != *check.ContentEquals {
 			failures = append(failures,
 				fmt.Sprintf("message check %d: content mismatch:\n  expected: %q\n  got:      %q",
-					i, check.ContentEquals, found.Content))
+					i, *check.ContentEquals, found.Content))
 		}
 
 		if check.ContentContains != "" && !strings.Contains(found.Content, check.ContentContains) {

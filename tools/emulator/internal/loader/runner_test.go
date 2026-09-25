@@ -22,8 +22,8 @@ func TestSetupTemplatesRunFirstOnTheSameDatabase(t *testing.T) {
 		Name:           "reads the seed",
 		TemplateSource: `{{(dbGet 0 "seeded").Value}}`,
 		SetupTemplates: []string{"seed.gohtml"},
-		Expected:       ExpectedResult{OutputEquals: "yes"},
-		Assertions:     Assertions{SentMessages: []MessageCheck{{ContentEquals: "from test"}}},
+		Expected:       ExpectedResult{OutputEquals: str("yes")},
+		Assertions:     Assertions{SentMessages: []MessageCheck{{ContentEquals: str("from test")}}},
 	}
 	tc.applyDefaults()
 	r := NewRunner(RunnerConfig{BaseDir: dir})
@@ -191,11 +191,58 @@ func TestBadHeaderSettingIsAnError(t *testing.T) {
 	}
 }
 
+// nth picks a later message, and an explicit "" in content_equals or output_equals asserts
+// emptiness instead of checking nothing
+func TestMessageAndOutputEquals(t *testing.T) {
+	src := `{{sendMessage 9 "a"}}{{sendMessage 9 "b"}}{{sendMessage 8 "c"}}{{$id := sendMessageRetID 7 (complexMessage "content" "d" "embed" (cembed "title" "t"))}}{{editMessage 7 $id (complexMessageEdit "content" "" "embed" (cembed "title" "t"))}}`
+	cases := []struct {
+		name     string
+		output   *string
+		checks   []MessageCheck
+		edits    []MessageCheck
+		failures []string
+	}{
+		{"nth in a channel and overall", nil, []MessageCheck{
+			{ChannelID: 9, Nth: 2, ContentEquals: str("b")}, {Nth: 3, ContentEquals: str("c")}}, nil, nil},
+		{"no such message", nil, []MessageCheck{{ChannelID: 9, Nth: 3}}, nil,
+			[]string{"sent message check 0: no message #3 sent in channel 9"}},
+		{"empty content is checked", nil, []MessageCheck{{ContentEquals: str("")}}, nil,
+			[]string{"message check 0: content mismatch"}},
+		{"an emptied edit", nil, nil, []MessageCheck{{ChannelID: 7, ContentEquals: str("")}}, nil},
+		{"empty output passes", str(""), nil, nil, nil},
+		{"output that isn't empty", str(""), nil, nil, nil},
+	}
+	for i, c := range cases {
+		source := src
+		if i == len(cases)-1 {
+			source += "x"
+		}
+		tc := &TestCase{Name: c.name, TemplateSource: source,
+			Expected:   ExpectedResult{OutputEquals: c.output},
+			Assertions: Assertions{SentMessages: c.checks, EditedMessages: c.edits}}
+		tc.applyDefaults()
+		res := NewRunner(RunnerConfig{}).RunTest(tc)
+		want := c.failures
+		if i == len(cases)-1 {
+			want = []string{"output mismatch"}
+		}
+		if res.Error != nil || len(res.Failures) != len(want) {
+			t.Errorf("%s: %v, %q", c.name, res.Error, res.Failures)
+			continue
+		}
+		for j, f := range want {
+			if !strings.Contains(res.Failures[j], f) {
+				t.Errorf("%s: failure %q, want %q", c.name, res.Failures[j], f)
+			}
+		}
+	}
+}
+
 func TestExpectedErrorStillChecksWhatTheRunDid(t *testing.T) {
 	tc := &TestCase{
 		Name:           "fails late",
 		TemplateSource: `before{{dbSet 0 "k" "v"}}{{index (cslice) 5}}`,
-		Expected:       ExpectedResult{ErrorContains: "index out of range", OutputEquals: "before"},
+		Expected:       ExpectedResult{ErrorContains: "index out of range", OutputEquals: str("before")},
 		Assertions:     Assertions{DBChecks: []DBCheck{{Key: "k", ValueEquals: "v"}}},
 	}
 	tc.applyDefaults()
@@ -203,7 +250,7 @@ func TestExpectedErrorStillChecksWhatTheRunDid(t *testing.T) {
 	if res := r.RunTest(tc); !res.Passed {
 		t.Errorf("want a pass, got %q %v", res.Failures, res.Error)
 	}
-	tc.Expected.OutputEquals = "after"
+	tc.Expected.OutputEquals = str("after")
 	if res := r.RunTest(tc); res.Passed {
 		t.Error("a wrong output assertion must fail even when the expected error matched")
 	}
@@ -233,3 +280,5 @@ func TestRoleChangeAssertions(t *testing.T) {
 		t.Errorf("no_role_changes passes when nothing changed: %q", res.Failures)
 	}
 }
+
+func str(s string) *string { return &s }
