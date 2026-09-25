@@ -122,6 +122,14 @@ func TestPruneSnapshots(t *testing.T) {
 	optedOut := snapshotTest(dir, "x")
 	optedOut.Name = "no longer a snapshot test"
 	optedOut.Snapshot = false
+	stale, err := StaleSnapshots([]*TestCase{kept, optedOut})
+	want := SnapshotPath(kept.SourceFile) + ": renamed away"
+	if err != nil || len(stale) != 1 || stale[0] != want {
+		t.Fatalf("stale = %q, %v; want [%q]", stale, err, want)
+	}
+	if snaps, _ := readSnapshots(SnapshotPath(kept.SourceFile)); len(snaps) != 2 {
+		t.Fatalf("StaleSnapshots changed the file: %v", snaps)
+	}
 	removed, err := PruneSnapshots([]*TestCase{kept, optedOut})
 	if err != nil || removed != 1 {
 		t.Fatalf("removed=%d err=%v", removed, err)
@@ -129,5 +137,41 @@ func TestPruneSnapshots(t *testing.T) {
 	snaps, _ := readSnapshots(SnapshotPath(kept.SourceFile))
 	if _, ok := snaps["greets"]; !ok || len(snaps) != 1 {
 		t.Errorf("want only the kept snapshot, got %v", snaps)
+	}
+}
+
+// Staleness is per suite file: a name another file still has doesn't keep an entry
+func TestStaleSnapshotsPerFile(t *testing.T) {
+	dirA, dirB := t.TempDir(), t.TempDir()
+	r := NewRunner(RunnerConfig{})
+	a, b := snapshotTest(dirA, "a"), snapshotTest(dirB, "b")
+	gone := snapshotTest(dirA, "c")
+	gone.Name = "gone"
+	r.RunTests([]*TestCase{a, b, gone})
+
+	onlyB := snapshotTest(dirB, "b")
+	onlyB.Name = "gone" // the same name, in the other file
+	stale, err := StaleSnapshots([]*TestCase{a, b, onlyB})
+	want := SnapshotPath(a.SourceFile) + ": gone"
+	if err != nil || len(stale) != 1 || stale[0] != want {
+		t.Errorf("stale = %q, %v; want [%q]", stale, err, want)
+	}
+}
+
+// An unreadable snapshot file is reported, and the other files are still checked
+func TestStaleSnapshotsPastAnUnreadableFile(t *testing.T) {
+	dirA, dirB := t.TempDir(), t.TempDir()
+	a, b := snapshotTest(dirA, "a"), snapshotTest(dirB, "b")
+	gone := snapshotTest(dirB, "c")
+	gone.Name = "gone"
+	NewRunner(RunnerConfig{}).RunTests([]*TestCase{a, b, gone})
+	os.WriteFile(SnapshotPath(a.SourceFile), []byte("x: [\n"), 0o644)
+
+	for i := 0; i < 5; i++ { // map order must not decide what's found
+		stale, err := StaleSnapshots([]*TestCase{a, b})
+		want := SnapshotPath(b.SourceFile) + ": gone"
+		if err == nil || len(stale) != 1 || stale[0] != want {
+			t.Fatalf("stale = %q, %v; want [%q] and an error", stale, err, want)
+		}
 	}
 }

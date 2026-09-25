@@ -9,7 +9,9 @@ make test              # template tests in tools/emulator/testdata/, with db_sch
 make test-go           # go vet + Go unit tests
 make ci                # everything CI runs (.github/workflows/test.yml): test-go, test, lint, gofmt
 make watch             # rerun template tests on changes
-make update-snapshots  # accept an intended change in snapshot output
+make update-snapshots  # accept an intended change in snapshot output (also prunes)
+make prune-snapshots   # only remove the entries of renamed/deleted tests (make ci and CI
+                       # fail while any are left; a plain make test warns)
 
 ./bin/yagtest run -args "get,Global" -verbose utility/db.gohtml
 ./bin/yagtest run -message "#ff8800" utility/hex_to_int.gohtml # whole message (Regex triggers need it)

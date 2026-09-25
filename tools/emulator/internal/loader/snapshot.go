@@ -3,6 +3,7 @@ package loader
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -264,6 +265,35 @@ func findDuplicateNames(tests []*TestCase) map[string]bool {
 // PruneSnapshots removes saved snapshots whose test no longer exists or no longer has
 // snapshot: true, for every test file among tests. Returns how many were removed.
 func PruneSnapshots(tests []*TestCase) (int, error) {
+	removed := 0
+	err := forStaleSnapshots(tests, func(path string, snaps map[string]Snapshot, stale []string) error {
+		for _, name := range stale {
+			delete(snaps, name)
+		}
+		removed += len(stale)
+		return saveSnapshots(path, snaps)
+	})
+	return removed, err
+}
+
+// StaleSnapshots lists the snapshot entries of the tests' files that no snapshot test
+// has any more (a renamed or deleted test, or one without snapshot: true), as
+// "<snapshot file>: <name>", without changing anything.
+func StaleSnapshots(tests []*TestCase) ([]string, error) {
+	var found []string
+	err := forStaleSnapshots(tests, func(path string, _ map[string]Snapshot, stale []string) error {
+		for _, name := range stale {
+			found = append(found, fmt.Sprintf("%s: %s", path, name))
+		}
+		return nil
+	})
+	sort.Strings(found)
+	return found, err
+}
+
+// forStaleSnapshots calls fn for each of the tests' snapshot files that holds entries no
+// snapshot test in that file has, with the file's entries and the stale names (sorted).
+func forStaleSnapshots(tests []*TestCase, fn func(path string, snaps map[string]Snapshot, stale []string) error) error {
 	keep := map[string]map[string]bool{}
 	for _, tc := range tests {
 		if tc.SourceFile == "" {
@@ -277,29 +307,37 @@ func PruneSnapshots(tests []*TestCase) (int, error) {
 		}
 	}
 
-	removed := 0
-	for source, names := range keep {
+	// Files in order, and an unreadable one doesn't stop the others being checked
+	sources := make([]string, 0, len(keep))
+	for source := range keep {
+		sources = append(sources, source)
+	}
+	sort.Strings(sources)
+	var errs []error
+	for _, source := range sources {
+		names := keep[source]
 		path := SnapshotPath(source)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			continue
 		}
 		snaps, err := readSnapshots(path)
 		if err != nil {
-			return removed, err
-		}
-		before := len(snaps)
-		for name := range snaps {
-			if !names[name] {
-				delete(snaps, name)
-			}
-		}
-		if len(snaps) == before {
+			errs = append(errs, err)
 			continue
 		}
-		removed += before - len(snaps)
-		if err := saveSnapshots(path, snaps); err != nil {
-			return removed, err
+		var stale []string
+		for name := range snaps {
+			if !names[name] {
+				stale = append(stale, name)
+			}
+		}
+		if len(stale) == 0 {
+			continue
+		}
+		sort.Strings(stale)
+		if err := fn(path, snaps, stale); err != nil {
+			errs = append(errs, err)
 		}
 	}
-	return removed, nil
+	return errors.Join(errs...)
 }

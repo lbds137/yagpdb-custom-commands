@@ -34,8 +34,6 @@ gets a failing test first.
 - directory (`exec "Clean" ...`) and ticket_adduser_exec (`exec "ticket adduser"`) have no
   test that checks their exec lines (screen_user's test maps ticket_adduser_exec to a
   recording mock).
-- A renamed or deleted snapshot test leaves its entry in the .snap.yaml until
-  `make update-snapshots` prunes it; `make ci` doesn't flag stale entries.
 - `yagtest watch` takes one path, and `-stop-on-fail` with several test paths stops only
   within the current one.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
@@ -351,6 +349,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
         only the error (the message went out unpinged).
       - `admit_user` with no Welcome Message skips the welcome; it stopped there with
         "invalid value; expected string", before the admission record.
+- [x] A snapshot entry no test has any more (a renamed or deleted test) is listed after
+      the results: a warning from `make test`, a failure in `make ci` and CI; `make
+      prune-snapshots` removes only those, `make update-snapshots` rewrites too
+      (2026-09-25)
 - [x] `sleep` is YAGPDB's tmplSleep without the wait: under 1 second or over 60 in all is
       "can sleep for max 60 seconds combined", and the run's clock moves on by the
       seconds slept (an execCC child starts its own 60 on its caller's clock). The strict
