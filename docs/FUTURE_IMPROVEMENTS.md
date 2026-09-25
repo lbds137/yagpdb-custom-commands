@@ -14,9 +14,17 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   that writes the key may read the old value in production). Scheduled runs are recorded,
   not run: test the scheduled command on its own with the recorded `exec_data` (a test's
   exec_data is a plain map, while the real run gets an `*sdict` with `.Get`/`.Set`).
-- `execCC` and `scheduleUniqueCC` don't check that the command exists or the channel is
-  known; YAGPDB errors first ("Couldn't find custom command", "Unknown channel"). An
-  unmapped command is skipped, since `command_map` is only the commands a test runs.
+- `execCC` and `scheduleUniqueCC` don't check that the command exists (YAGPDB errors
+  "Couldn't find custom command" before its "Unknown channel"): an unmapped command is
+  skipped, since `command_map` is only the commands a test runs.
+- Channels have only an ID and a name: no types, so threads, voice channels and DMs
+  aren't told apart (YAGPDB's name lookup skips some types, and getMessage/editMessage
+  refuse DMs), and getChannel has no other fields. A test that declares no channels
+  treats any channel ID as existing, with a `[channel]` warning per ID. Names are looked
+  up in declared order, standing in for Discord's positions. deleteMessage,
+  addMessageReactions, deleteAllMessageReactions, getTargetPermissionsIn and sendTemplate
+  ignore their channel (YAGPDB's deleteAllMessageReactions prints "non-existing channel"
+  for an unknown one, and sendTemplate errors "unknown channel").
 - Discord functions are mocks: reaction calls only record, role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
   is a no-op, and there are no components or threads yet.
@@ -31,12 +39,10 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   `deleteResponse`, `deleteMessage` and `deleteTrigger` record no deletions.
   `editMessageNoEscape` is `editMessage` (edits notify
   no one either way).
-- `editMessage` gaps: the channel argument is read as a number (YAGPDB also takes channel
-  names and refuses floats and unknown channels up front); a stored message keeps only its
-  first embed and no file, so edits of multi-embed or file messages can differ; edits don't
-  set `EditedTimestamp`; message builders read keys as a map, so a repeated key (two
-  `"embed"`s) counts once. A test message is the bot's to edit only with `author_id:
-  1234567890`.
+- `editMessage` gaps: a stored message keeps only its first embed and no file, so edits
+  of multi-embed or file messages can differ; message builders read keys as a map, so a
+  repeated key (two `"embed"`s) counts once. A test message is the bot's to edit only
+  with `author_id: 1234567890`.
 - A LIKE pattern is matched against the rows the query's other conditions select, so the
   trailing-escape error comes only from a row whose match reaches the escape. Postgres
   also runs LIKE while planning, on the key column's statistics (every server's keys),
@@ -44,8 +50,7 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   guessing. Keys that aren't valid UTF-8 or hold a NUL byte are stored; Postgres
   rejects them.
 - `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
-  declares no guild roles accepts any role), and accepts any channel ID, since the
-  emulator has no channel list. Its `role` argument uses the role functions' lookup;
+  declares no guild roles accepts any role). Its `role` argument uses the role functions' lookup;
   dcmd's RoleArg matches names case-sensitively and falls back from a numeric ID to a name.
 - Role gaps: a test that declares no guild roles treats any role ID as existing, with a
   `[role]` warning per ID (a stale ID would be nil in production).
@@ -156,6 +161,13 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] Channel arguments follow YAGPDB's baseChannelArg for sendMessage, getMessage,
+      editMessage, getChannel, execCC and scheduleUniqueCC: an int is an ID, a string an ID
+      or a name (any case), anything else (a float) no channel, and the channel must exist
+      (tests declare `guild.channels`; each function fails as YAGPDB does). parseArgs'
+      channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
+      used to return the previous message's ID after a refused send). Edits set
+      EditedTimestamp (2026-09-25)
 - [x] Message checks take `nth` (the nth message in the channel, or of all; 1 = first, the
       default), and an explicit `""` in content_equals or output_equals asserts emptiness
       (2026-09-25)

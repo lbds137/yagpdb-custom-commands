@@ -75,11 +75,15 @@ func (ctx *ExecutionContext) cancelScheduled(ccID int64, key string) {
 // scheduleUniqueCC is YAGPDB's tmplScheduleUniqueCC: a delayed run that replaces any run
 // scheduled for the same command and key. A delay of 0 or less does nothing.
 func (e *Engine) scheduleUniqueCC(ccID, channel, delay, key, data interface{}) (string, error) {
+	channelID := e.channelArg(channel)
+	if channelID == 0 { // checked before the delay, as in YAGPDB
+		return "", errors.New("Unknown channel")
+	}
 	if yagstd.ToInt64(delay) <= 0 {
 		return "", nil
 	}
 	k := yagstd.ToString(key)
-	return "", e.ctx.schedule(funcs.ToInt64(ccID), e.channelArg(channel), delay, &k, data)
+	return "", e.ctx.schedule(funcs.ToInt64(ccID), channelID, delay, &k, data)
 }
 
 // cancelScheduledUniqueCC is YAGPDB's tmplCancelUniqueCC.

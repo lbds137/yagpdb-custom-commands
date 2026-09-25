@@ -4,6 +4,11 @@ name: "execCC Tests"
 command_map:
   100: "templates/child_command.gohtml"
 
+defaults:
+  guild:
+    channels:
+      - { id: 999, name: "other" }
+
 tests:
   - name: "Basic execCC call"
     template_source: |

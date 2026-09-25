@@ -321,7 +321,13 @@ func (e *Engine) withLimits(name string, fn interface{}) interface{} {
 			if spec.silent {
 				e.ctx.warnOnce(err.Error() + "; YAGPDB skips this call silently")
 				if e.ctx.Strict {
-					return []reflect.Value{reflect.Zero(outs[0]), reflect.Zero(errorType)}
+					// YAGPDB's silent functions return "", which an interface{} result
+					// (sendMessageRetID) must hold rather than nil
+					out := reflect.New(outs[0]).Elem()
+					if outs[0].Kind() == reflect.Interface {
+						out.Set(reflect.ValueOf(""))
+					}
+					return []reflect.Value{out, reflect.Zero(errorType)}
 				}
 			} else {
 				if e.ctx.Strict {

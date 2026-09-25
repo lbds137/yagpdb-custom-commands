@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ type Engine struct {
 
 	lastMessageID int64          // ID of the message sendMessage last sent, for sendMessageRetID
 	mockRoles     map[int64]bool // role IDs already warned about, see guildRole
+	mockChannels  map[int64]bool // channel IDs already warned about, see channelArg
 }
 
 // NewEngine creates a new template engine with the given context.
@@ -250,9 +252,11 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 	var hasOther bool
 	allowed := usersOnly()
 
+	e.lastMessageID = 0 // nothing sent yet
 	if len(args) >= 1 {
-		if args[0] != nil {
-			channelID = funcs.ToInt64(args[0])
+		// tmplSendMessage: a channel that isn't there sends nothing, without an error
+		if channelID = e.channelArg(args[0]); channelID == 0 {
+			return "", nil
 		}
 	}
 	if len(args) >= 2 {
@@ -292,18 +296,23 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 	return "", nil
 }
 
-func (e *Engine) sendMessageRetID(args ...interface{}) (int64, error) {
-	if _, err := e.sendMessage(args...); err != nil {
-		return 0, err
-	}
-	return e.lastMessageID, nil
+// sendMessageRetID returns the sent message's ID, or "" (as YAGPDB) when nothing was sent.
+func (e *Engine) sendMessageRetID(args ...interface{}) (interface{}, error) {
+	_, err := e.sendMessage(args...)
+	return e.sentID(), err
 }
 
-func (e *Engine) sendMessageNoEscapeRetID(args ...interface{}) (int64, error) {
-	if _, err := e.sendMessageNoEscape(args...); err != nil {
-		return 0, err
+// sentID is what the RetID functions return: the ID, or "" when nothing was sent.
+func (e *Engine) sentID() interface{} {
+	if e.lastMessageID == 0 {
+		return ""
 	}
-	return e.lastMessageID, nil
+	return e.lastMessageID
+}
+
+func (e *Engine) sendMessageNoEscapeRetID(args ...interface{}) (interface{}, error) {
+	_, err := e.sendMessageNoEscape(args...)
+	return e.sentID(), err
 }
 
 func (e *Engine) sendDM(msg interface{}) (string, error) {
@@ -320,10 +329,7 @@ func (e *Engine) sendDM(msg interface{}) (string, error) {
 // limits apply to the edited message as they do to a sent one. Editing a message that
 // doesn't exist, or someone else's, fails as Discord fails it.
 func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
-	channelID := e.ctx.ChannelID
-	if channel != nil {
-		channelID = funcs.ToInt64(channel)
-	}
+	channelID := e.channelArg(channel) // ChannelArgNoDM
 	if channelID == 0 {
 		return "", errors.New("unknown channel")
 	}
@@ -370,6 +376,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 		return "", err
 	}
 	target.Content, target.Embeds = content, embeds
+	target.EditedTimestamp = time.Now() // Discord sets it on every edit
 	edited := SentMessage{ID: id, ChannelID: channelID, Content: content}
 	if len(embeds) > 0 {
 		edited.Embed = embeds[0]
@@ -383,10 +390,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 // $msg.Author is a nil pointer error, as in production. A nil channel is the current one.
 func (e *Engine) getMessage(channel, msgID interface{}) *types.CtxMessage {
 	id := funcs.ToInt64(msgID)
-	channelID := e.ctx.ChannelID
-	if channel != nil {
-		channelID = funcs.ToInt64(channel)
-	}
+	channelID := e.channelArg(channel) // an unknown channel finds nothing, as in YAGPDB
 	for i := range e.ctx.Messages {
 		m := &e.ctx.Messages[i]
 		if m.ID == id && m.ChannelID == channelID {
@@ -482,15 +486,17 @@ func (e *Engine) getTargetPermissionsIn(userID, channelID interface{}) int64 {
 
 // Channel functions
 
-func (e *Engine) getChannel(channelID interface{}) interface{} {
-	return types.CtxChannel{
-		ID:      funcs.ToInt64(channelID),
-		GuildID: e.ctx.GuildID,
-		Name:    "mock-channel",
+// getChannel is YAGPDB's tmplGetChannel: nil for a channel that isn't there. A channel
+// assumed to exist (no channels declared) has no name.
+func (e *Engine) getChannel(channel interface{}) *types.CtxChannel {
+	id := e.channelArg(channel)
+	if id == 0 {
+		return nil
 	}
+	return &types.CtxChannel{ID: id, GuildID: e.ctx.GuildID, Name: e.ctx.channelName(id)}
 }
 
-func (e *Engine) getChannelOrThread(channelID interface{}) interface{} {
+func (e *Engine) getChannelOrThread(channelID interface{}) *types.CtxChannel {
 	// Same as getChannel - threads are just channels in Discord's API
 	return e.getChannel(channelID)
 }
@@ -706,9 +712,13 @@ func (e *Engine) createTicket(user, reason interface{}) types.SDict {
 // otherwise it runs the command now, at most two levels deep.
 func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (string, error) {
 	commandID := funcs.ToInt64(ccID)
+	channelID := e.channelArg(channel)
+	if channelID == 0 { // tmplRunCC checks the channel before the delay
+		return "", errors.New("Unknown channel")
+	}
 
 	if yagstd.ToInt64(delay) > 0 {
-		return "", e.ctx.schedule(commandID, e.channelArg(channel), delay, nil, data)
+		return "", e.ctx.schedule(commandID, channelID, delay, nil, data)
 	}
 
 	if e.ctx.ExecCCDepth >= e.ctx.MaxExecCCDepth {
@@ -734,15 +744,13 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 		return "", nil
 	}
 
-	channelID := e.channelArg(channel)
-
 	// Create child context (shares DB and other state)
 	childCtx := &ExecutionContext{
 		GuildID:         e.ctx.GuildID,
 		GuildName:       e.ctx.GuildName,
 		Prefix:          e.ctx.Prefix,
 		ChannelID:       channelID,
-		ChannelName:     e.ctx.ChannelName,
+		ChannelName:     e.ctx.channelName(channelID),
 		UserID:          e.ctx.UserID,
 		Username:        e.ctx.Username,
 		Discriminator:   e.ctx.Discriminator,
@@ -756,6 +764,8 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 		Counters:        make(map[string]int), // execCC starts a new run with its own limits
 		StartTime:       e.ctx.StartTime,
 		AvailableRoles:  e.ctx.AvailableRoles,
+		Channels:        e.ctx.Channels,
+		ChannelOrder:    e.ctx.ChannelOrder,
 		OwnerID:         e.ctx.OwnerID,
 		CommandIDMap:    e.ctx.CommandIDMap,
 		CCID:            commandID,
@@ -810,10 +820,39 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 
 // channelArg is YAGPDB's ChannelArg as the mocks read it: nil is the current channel.
 func (e *Engine) channelArg(channel interface{}) int64 {
-	if channel == nil {
+	// baseChannelArg (common/templates/context_funcs.go): nil is the current channel, an
+	// int or int64 an ID, a string an ID or a channel's name (any case); anything else,
+	// a float included, is no channel
+	var id int64
+	switch t := channel.(type) {
+	case nil:
 		return e.ctx.ChannelID
+	case int, int64:
+		id = funcs.ToInt64(t)
+	case string:
+		parsed, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			return e.ctx.channelNamed(t)
+		}
+		id = parsed
+	default:
+		return 0
 	}
-	return funcs.ToInt64(channel)
+	// GetChannelOrThread: the channel must exist
+	if len(e.ctx.Channels) > 0 {
+		if _, ok := e.ctx.Channels[id]; !ok {
+			return 0
+		}
+		return id
+	}
+	if id != 0 && id != e.ctx.ChannelID && !e.mockChannels[id] {
+		if e.mockChannels == nil {
+			e.mockChannels = make(map[int64]bool)
+		}
+		e.mockChannels[id] = true
+		e.ctx.Warn(KindChannel, "channel %d is assumed to exist, since no guild channels are declared (a test's guild.channels)", id)
+	}
+	return id
 }
 
 // sleep is a no-op in emulator (YAGPDB uses this to delay execution)
@@ -868,7 +907,12 @@ func (e *Engine) parseArgs(numRequired int, failedMessage string, argDefs ...*fu
 			}
 			return nil
 		},
-		Channel: func(id int64) interface{} { return e.getChannel(id) },
+		Channel: func(id int64) interface{} {
+			if c := e.getChannel(id); c != nil { // not a typed nil in the interface
+				return c
+			}
+			return nil
+		},
 		Role: func(arg string) interface{} {
 			if r := e.findRole(arg, acceptAllRoleInput); r != nil {
 				return r

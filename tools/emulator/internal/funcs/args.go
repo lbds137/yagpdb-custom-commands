@@ -225,13 +225,19 @@ func parseArg(def *ArgDef, part string, lookups Lookups) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("User %q not found", part)
 	case "channel":
-		id := strings.TrimSuffix(strings.TrimPrefix(part, "<#"), ">")
+		// dcmd's ChannelArg: a mention or an ID, of a channel the server has
+		id := part
+		if strings.HasPrefix(part, "<#") && len(part) > 3 {
+			id = part[2 : len(part)-1]
+		}
 		v, err := strconv.ParseInt(id, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("Improper mention %q", part)
 		}
-		// The emulator has no channel list, so any ID is a channel
-		return lookups.Channel(v), nil
+		if c := lookups.Channel(v); c != nil {
+			return c, nil
+		}
+		return nil, fmt.Errorf("Improper mention %q", part)
 	case "role":
 		if r := lookups.Role(part); r != nil {
 			return r, nil

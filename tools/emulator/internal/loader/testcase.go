@@ -89,6 +89,9 @@ type GuildDef struct {
 	ID    int64     `yaml:"id"`
 	Name  string    `yaml:"name"`
 	Roles []RoleDef `yaml:"roles"` // If set, getRole and targetHasRole know only these
+	// Channels, if set, are the server's other channels (the test's channel always exists):
+	// channel arguments then accept only these, by ID or by name
+	Channels []ChannelDef `yaml:"channels"`
 	// OwnerID is .Guild.OwnerID (default: the triggering user)
 	OwnerID int64  `yaml:"owner_id"`
 	Prefix  string `yaml:"prefix"` // The command prefix (default: YAGPDB's "-")
@@ -373,6 +376,9 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.Guild.Roles == nil {
 		tc.Context.Guild.Roles = defaults.Guild.Roles
+	}
+	if tc.Context.Guild.Channels == nil {
+		tc.Context.Guild.Channels = defaults.Guild.Channels
 	}
 
 	// Merge guild defaults

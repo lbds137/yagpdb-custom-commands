@@ -104,6 +104,7 @@ func TestExecCCResponseIsSent(t *testing.T) {
 	ctx := roleCtx()
 	ctx.TemplateBaseDir = dir
 	ctx.CommandIDMap = map[int64]string{7: "child.gohtml", 8: "sends.gohtml", 9: "fails.gohtml", 10: "quiet.gohtml"}
+	ctx.Channels = map[int64]string{ctx.ChannelID: ctx.ChannelName, 42: "forty-two", 43: "forty-three"}
 	src := `{{execCC 7 42 0 (sdict "Text" "hi")}}{{execCC 8 nil 0 nil}}{{execCC 9 43 0 nil}}{{execCC 10 nil 0 nil}}`
 	if _, err := run(t, ctx, src); err != nil {
 		t.Fatal(err)
