@@ -75,36 +75,13 @@ func (ctx *ExecutionContext) pings(content string, allowed types.AllowedMentions
 	}
 	if replyTo != 0 {
 		if m := ctx.knownMessage(channelID, replyTo); m == nil {
-			ctx.Warn(KindMessage, "a reply to message %d in channel %d, which the test doesn't declare (a test's messages): it is assumed to exist, and its author's ping isn't recorded", replyTo, channelID)
+			ctx.Warn(KindMessage, "a reply to message %d in channel %d, which isn't the trigger, a sent message or one of the test's messages: it is assumed to exist, and its author's ping isn't recorded", replyTo, channelID)
 		} else if allowed.RepliedUser && m.Author.ID != botUser.ID && !slices.Contains(p.Users, m.Author.ID) {
 			p.Users = append(p.Users, m.Author.ID)
 			slices.Sort(p.Users)
 		}
 	}
 	return p
-}
-
-// knownMessage is the message with that ID in the channel, as the emulator knows it: a
-// test's or a sent message, the message an execCC caller passed on (not a reaction run's,
-// whose author there is the reactor), or the triggering message. Nil when it's none of
-// those.
-func (ctx *ExecutionContext) knownMessage(channelID, id int64) *types.CtxMessage {
-	for i := range ctx.Messages {
-		if m := &ctx.Messages[i]; m.ID == id && m.ChannelID == channelID {
-			return m
-		}
-	}
-	var trigger types.CtxMessage
-	switch {
-	case ctx.InheritedMessage != nil && !ctx.inheritedFromReaction:
-		trigger = *ctx.InheritedMessage
-	case ctx.Reaction == nil && !ctx.NoMessage:
-		trigger = ctx.message()
-	}
-	if trigger.ID == id && trigger.ChannelID == channelID {
-		return &trigger
-	}
-	return nil
 }
 
 func mentionedIDs(re *regexp.Regexp, content string, all bool, allowed []int64) []int64 {

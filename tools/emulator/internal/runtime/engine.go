@@ -352,12 +352,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	}
 
 	id := funcs.ToInt64(msgID)
-	var target *types.CtxMessage
-	for i := range e.ctx.Messages {
-		if m := &e.ctx.Messages[i]; m.ID == id && m.ChannelID == channelID {
-			target = m
-		}
-	}
+	target := e.ctx.knownMessage(channelID, id)
 	switch {
 	case target == nil:
 		return "", e.ctx.discordRefuses("editMessage", "HTTP 404, 10008 Unknown Message",
@@ -387,19 +382,14 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	return "", nil
 }
 
-// getMessage returns a message the test declared (context.messages) or the run sent, or a
-// nil *CtxMessage like YAGPDB's for a message that doesn't exist: `if $msg` is false and
-// $msg.Author is a nil pointer error, as in production. A nil channel is the current one.
+// getMessage returns a message the emulator knows (knownMessage: a test's, a sent one, the
+// triggering message), or a nil *CtxMessage like YAGPDB's for a message that doesn't exist:
+// `if $msg` is false and $msg.Author is a nil pointer error, as in production. A nil
+// channel is the current one.
 func (e *Engine) getMessage(channel, msgID interface{}) *types.CtxMessage {
 	id := funcs.ToInt64(msgID)
 	channelID := e.channelArg(channel) // an unknown channel finds nothing, as in YAGPDB
-	for i := range e.ctx.Messages {
-		m := &e.ctx.Messages[i]
-		if m.ID == id && m.ChannelID == channelID {
-			return m
-		}
-	}
-	return nil
+	return e.ctx.knownMessage(channelID, id)
 }
 
 func (e *Engine) deleteMessage(args ...interface{}) string {
