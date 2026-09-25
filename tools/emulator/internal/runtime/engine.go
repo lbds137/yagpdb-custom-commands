@@ -186,10 +186,12 @@ func (e *Engine) Execute(source string) (string, error) {
 
 // Mock Discord functions
 
-func (e *Engine) sendMessage(args ...interface{}) string {
+func (e *Engine) sendMessage(args ...interface{}) (string, error) {
 	var channelID int64 = e.ctx.ChannelID
 	var content string
-	var embed interface{}
+	var embeds []interface{}
+	var file *types.MessageSend
+	var hasOther bool
 
 	if len(args) >= 1 {
 		if args[0] != nil {
@@ -202,32 +204,47 @@ func (e *Engine) sendMessage(args ...interface{}) string {
 			content = v
 		case *types.MessageSend:
 			content = v.Content
-			if len(v.Embeds) > 0 {
-				embed = v.Embeds[0]
-			}
+			embeds = v.Embeds
 			if v.HasFile {
-				e.ctx.RecordFileUpload(channelID, v.Filename, v.File)
+				file = v
 			}
+			hasOther = v.HasOther
 		case types.Embed:
-			embed = v
+			embeds = []interface{}{v}
 		default:
 			content = funcs.ToString(v)
 		}
 	}
 
+	if ok, err := e.ctx.checkSend("sendMessage", content, embeds, file != nil || hasOther, false); !ok {
+		return "", err
+	}
+	if file != nil {
+		e.ctx.RecordFileUpload(channelID, file.Filename, file.File)
+	}
+	var embed interface{}
+	if len(embeds) > 0 {
+		embed = embeds[0]
+	}
 	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embed)
-	return ""
+	return "", nil
 }
 
-func (e *Engine) sendMessageRetID(args ...interface{}) int64 {
-	e.sendMessage(args...)
-	return e.lastMessageID
+func (e *Engine) sendMessageRetID(args ...interface{}) (int64, error) {
+	if _, err := e.sendMessage(args...); err != nil {
+		return 0, err
+	}
+	return e.lastMessageID, nil
 }
 
-func (e *Engine) sendDM(msg interface{}) string {
+func (e *Engine) sendDM(msg interface{}) (string, error) {
 	content := funcs.ToString(msg)
+	// YAGPDB adds a server-info button, so a DM is never empty
+	if ok, _ := e.ctx.checkSend("sendDM", content, nil, true, true); !ok {
+		return "", nil
+	}
 	e.ctx.RecordSentMessage(0, content, nil) // 0 = DM
-	return ""
+	return "", nil
 }
 
 func (e *Engine) editMessage(channel, msgID, content interface{}) string {
@@ -535,8 +552,12 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 			if r := []rune(filename); len(r) > 64 {
 				filename = string(r[:64])
 			}
-		case "allowed_mentions", "reply", "silent", "components", "ephemeral", "buttons", "menus",
-			"forward", "sticker", "suppress_embeds", "is_components_v2":
+		case "components", "buttons", "menus", "forward", "sticker":
+			// Not modelled, but they count as message content for Discord
+			if val != nil {
+				msg.HasOther = true
+			}
+		case "allowed_mentions", "reply", "silent", "ephemeral", "suppress_embeds", "is_components_v2":
 			// Accepted; the emulator doesn't model these
 		default:
 			return nil, fmt.Errorf(`invalid key "%s" passed to send message builder.`, key)

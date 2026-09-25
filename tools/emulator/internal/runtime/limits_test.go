@@ -9,6 +9,9 @@ import (
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 )
 
+// q is a quoted template string of n characters.
+func q(n int) string { return `"` + strings.Repeat("a", n) + `"` }
+
 func newCtx(strict, premium bool) *ExecutionContext {
 	ctx := NewExecutionContext(1, state.NewMockDB(1))
 	ctx.Strict = strict
@@ -383,5 +386,149 @@ func TestMultiLineTryTagKeepsLines(t *testing.T) {
 	}
 	if w := kinds(ctx, KindLoopDB); len(w) != 1 || !strings.HasPrefix(w[0], "line 5:") {
 		t.Errorf("got %q", w)
+	}
+}
+
+func TestEmbedLimitsStrictFailsTheSend(t *testing.T) {
+	cases := map[string]struct{ src, want string }{
+		"title":       {`{{sendMessage nil (cembed "title" ` + q(257) + `)}}`, "embed 1 title is 257 characters (max 256)"},
+		"description": {`{{sendMessage nil (cembed "description" ` + q(4097) + `)}}`, "description is 4097 characters (max 4096)"},
+		"field value": {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" "n" "value" ` + q(1025) + `)))}}`, "field 1 value is 1025 characters (max 1024)"},
+		"empty value": {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" "n" "value" "")))}}`, "field 1 value is empty"},
+		"footer":      {`{{sendMessage nil (cembed "footer" (sdict "text" ` + q(2049) + `))}}`, "footer text is 2049 characters (max 2048)"},
+		"author":      {`{{sendMessage nil (cembed "author" (sdict "name" ` + q(257) + `))}}`, "author name is 257 characters (max 256)"},
+		"total": {`{{sendMessage nil (complexMessage "embed" (cslice (cembed "description" ` + q(4000) + `) (cembed "description" ` + q(2001) + `)))}}`,
+			"the embeds total 6001 characters (max 6000)"},
+		"content":     {`{{sendMessage nil ` + q(2001) + `}}`, "content is 2001 characters (max 2000)"},
+		"blank name":  {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" " " "value" "v")))}}`, "field 1 name is empty"},
+		"empty":       {`{{sendMessage nil ""}}`, "the message is empty"},
+		"empty embed": {`{{sendMessage nil (cembed)}}`, "the message is empty"},
+		"retid":       {`{{sendMessageRetID nil (cembed "title" ` + q(257) + `)}}`, "title is 257 characters"},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			ctx := newCtx(true, true)
+			_, err := run(t, ctx, c.src)
+			if err == nil || !strings.Contains(err.Error(), c.want) || !strings.Contains(err.Error(), "HTTP 400") {
+				t.Fatalf("want %q, got %v", c.want, err)
+			}
+			if len(ctx.SentMessages) != 0 {
+				t.Errorf("a rejected message must not be recorded as sent")
+			}
+		})
+	}
+}
+
+func TestEmbedFieldCountLimit(t *testing.T) {
+	ctx := newCtx(true, true)
+	src := `{{$f := cslice}}{{range seq 0 26}}{{$f = $f.Append (sdict "name" "n" "value" "v")}}{{end}}` +
+		`{{sendMessage nil (cembed "fields" $f)}}`
+	if _, err := run(t, ctx, src); err == nil || !strings.Contains(err.Error(), "has 26 fields (max 25)") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestEmbedLimitsWarnAndSendOutsideStrict(t *testing.T) {
+	ctx := newCtx(false, true)
+	out, err := run(t, ctx, `{{sendMessage nil (cembed "title" `+q(257)+`)}}{{sendMessage nil (cembed "title" `+q(257)+`)}}ok`)
+	if err != nil || out != "ok" {
+		t.Fatalf("out=%q err=%v", out, err)
+	}
+	if len(ctx.SentMessages) != 2 {
+		t.Errorf("permissive mode still sends, got %d", len(ctx.SentMessages))
+	}
+	if w := kinds(ctx, KindLimit); len(w) != 1 || !strings.Contains(w[0], "title is 257") {
+		t.Errorf("want one warning for the repeated breach, got %q", w)
+	}
+}
+
+func TestEmbedWithinLimitsAndUnsentEmbedsPass(t *testing.T) {
+	ctx := newCtx(true, true)
+	// cembed never fails on Discord's limits: only a send does, so a template may trim first
+	src := `{{$e := cembed "title" ` + q(300) + `}}` +
+		`{{sendMessage nil (cembed "title" ` + q(256) + ` "description" ` + q(4096) +
+		` "fields" (cslice (sdict "name" "n" "value" ` + q(1024) + `)))}}ok`
+	if out, err := run(t, ctx, src); err != nil || out != "ok" {
+		t.Fatalf("out=%q err=%v", out, err)
+	}
+	if w := kinds(ctx, KindLimit); len(w) != 0 {
+		t.Errorf("no warnings expected, got %q", w)
+	}
+}
+
+func TestRejectedDMIsDroppedSilently(t *testing.T) {
+	ctx := newCtx(true, true)
+	// sendDM discards Discord's error: the DM isn't delivered and the command carries on
+	out, err := run(t, ctx, `{{sendDM `+q(2001)+`}}ok`)
+	if err != nil || out != "ok" {
+		t.Fatalf("out=%q err=%v", out, err)
+	}
+	if len(ctx.SentMessages) != 0 {
+		t.Errorf("the rejected DM must not be recorded")
+	}
+	if w := kinds(ctx, KindLimit); len(w) != 1 || !strings.Contains(w[0], "silently") {
+		t.Errorf("want one silent-skip warning, got %q", w)
+	}
+}
+
+func TestRejectedSendIsCatchable(t *testing.T) {
+	ctx := newCtx(true, true)
+	out, err := run(t, ctx, `{{try}}{{sendMessage nil ""}}{{catch}}caught{{end}}`)
+	if err != nil || out != "caught" {
+		t.Fatalf("out=%q err=%v", out, err)
+	}
+}
+
+func TestRejectedSendRecordsNoFile(t *testing.T) {
+	ctx := newCtx(true, true)
+	_, err := run(t, ctx, `{{sendMessage nil (complexMessage "content" `+q(2001)+` "file" "data")}}`)
+	if err == nil || len(ctx.FileUploads) != 0 {
+		t.Fatalf("want an error and no upload: err=%v uploads=%d", err, len(ctx.FileUploads))
+	}
+	// a file alone is not an empty message
+	ctx = newCtx(true, true)
+	if _, err := run(t, ctx, `{{sendMessage nil (complexMessage "file" "data")}}`); err != nil {
+		t.Fatalf("file-only message: %v", err)
+	}
+}
+
+func TestZeroWidthSpaceIsABlankFieldName(t *testing.T) {
+	ctx := newCtx(true, true)
+	if _, err := run(t, ctx, "{{sendMessage nil (cembed \"fields\" (cslice (sdict \"name\" \"\u200b\" \"value\" \"v\")))}}"); err != nil {
+		t.Fatalf("a zero-width space name is accepted by Discord: %v", err)
+	}
+}
+
+func TestAPILimitSkipsBeforeTheSendCheck(t *testing.T) {
+	ctx := newCtx(true, true)
+	// past the API call limit YAGPDB returns before sending, so Discord never sees the message
+	src := `{{range seq 0 100}}{{sendMessage nil "x"}}{{end}}{{sendMessage nil ""}}ok`
+	if out, err := run(t, ctx, src); err != nil || out != "ok" {
+		t.Fatalf("out=%q err=%v", out, err)
+	}
+}
+
+func TestNonEmptyWithoutContent(t *testing.T) {
+	for name, src := range map[string]string{
+		// YAGPDB adds its server-info button to every DM
+		"empty DM": `{{sendDM ""}}`,
+		"buttons":  `{{sendMessage nil (complexMessage "buttons" (cslice (sdict "label" "a" "custom_id" "b")))}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := newCtx(true, true)
+			if _, err := run(t, ctx, src); err != nil || len(ctx.SentMessages) != 1 {
+				t.Fatalf("err=%v sent=%d", err, len(ctx.SentMessages))
+			}
+			if w := kinds(ctx, KindLimit); len(w) != 0 {
+				t.Errorf("no warnings expected, got %q", w)
+			}
+		})
+	}
+}
+
+func TestEmptyMessageNamesDiscordsCode(t *testing.T) {
+	_, err := run(t, newCtx(true, true), `{{sendMessage nil " "}}`)
+	if err == nil || !strings.Contains(err.Error(), "50006 Cannot send an empty message") {
+		t.Fatalf("got %v", err)
 	}
 }

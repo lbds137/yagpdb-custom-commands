@@ -391,6 +391,9 @@ type MessageSend struct {
 	File     string        // attached file contents, if any
 	Filename string        // with YAGPDB's forced .txt extension
 	HasFile  bool
+	// HasOther is set by keys that make a message non-empty without content, embeds or a
+	// file: buttons, menus, components, a sticker or a forward (not otherwise modelled).
+	HasOther bool
 }
 
 // Embed is what cembed builds: the dict after YAGPDB's conversion to a Discord embed
