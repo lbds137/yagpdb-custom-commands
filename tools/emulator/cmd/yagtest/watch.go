@@ -32,7 +32,7 @@ func watchCommand(args []string) {
 		fmt.Fprintln(os.Stderr, "Error: test file or directory required")
 		os.Exit(1)
 	}
-	opts.path = fs.Arg(0)
+	paths := fs.Args()
 
 	dirs := strings.Split(*watchDirs, ",")
 	for i, d := range dirs {
@@ -47,7 +47,7 @@ func watchCommand(args []string) {
 	rerun := func(reason string) {
 		fmt.Print("\033[H\033[2J") // clear the screen
 		fmt.Printf("%s[%s] %s%s\n\n", colorCyan, time.Now().Format("15:04:05"), reason, colorReset)
-		runTests(opts)
+		runPaths(opts, paths, runTests)
 		fmt.Printf("\n%sWatching %s for changes (Ctrl+C to stop)%s\n", colorCyan, strings.Join(dirs, ", "), colorReset)
 	}
 	rerun("Starting")
