@@ -12,22 +12,22 @@ type DiscordFuncs struct {
 	onRoleChange  func(userID, roleID int64, action string)
 
 	// State accessors
-	getUserID     func() int64
-	getChannelID  func() int64
-	getUserRoles  func() []int64
-	getMemberFunc func(userID int64) *types.CtxMember
+	getUserID      func() int64
+	getChannelID   func() int64
+	getUserRoles   func() []int64
+	getMemberFunc  func(userID int64) *types.CtxMember
 	getChannelFunc func(channelID int64) *types.CtxChannel
 }
 
 // DiscordFuncsConfig configures the Discord functions.
 type DiscordFuncsConfig struct {
-	OnSendMessage  func(channelID int64, content string, embed interface{})
-	OnRoleChange   func(userID, roleID int64, action string)
-	GetUserID      func() int64
-	GetChannelID   func() int64
-	GetUserRoles   func() []int64
-	GetMember      func(userID int64) *types.CtxMember
-	GetChannel     func(channelID int64) *types.CtxChannel
+	OnSendMessage func(channelID int64, content string, embed interface{})
+	OnRoleChange  func(userID, roleID int64, action string)
+	GetUserID     func() int64
+	GetChannelID  func() int64
+	GetUserRoles  func() []int64
+	GetMember     func(userID int64) *types.CtxMember
+	GetChannel    func(channelID int64) *types.CtxChannel
 }
 
 // NewDiscordFuncs creates a new DiscordFuncs instance.
