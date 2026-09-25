@@ -88,8 +88,11 @@ Test Options:
     -base-dir <dir>   Base directory for resolving template paths
     -strict           Fail on YAGPDB execution limits instead of warning
     -schema <file>    Warn when stored values don't match the schema's types
-    -update-snapshots Rewrite the snapshots of tests marked snapshot: true
-                      (a missing snapshot is written, or fails when CI is set)
+    -update-snapshots Rewrite the snapshots of tests marked snapshot: true, and remove
+                      those of renamed or deleted tests (a missing snapshot is written,
+                      or fails when CI is set)
+    -prune-snapshots  Only remove the snapshots of renamed or deleted tests (a run
+                      without either flag lists them; with CI set they fail it)
 
 Watch Options:
     Same as test, plus:
@@ -523,6 +526,7 @@ type testOptions struct {
 	strict          bool
 	schemaFile      string
 	updateSnapshots bool
+	pruneSnapshots  bool
 }
 
 func addTestFlags(fs *flag.FlagSet, opts *testOptions) {
@@ -531,7 +535,8 @@ func addTestFlags(fs *flag.FlagSet, opts *testOptions) {
 	fs.StringVar(&opts.baseDir, "base-dir", "", "Base directory for resolving template paths")
 	fs.BoolVar(&opts.strict, "strict", false, "Fail on YAGPDB execution limits")
 	fs.StringVar(&opts.schemaFile, "schema", "", "Schema file with expected database value types")
-	fs.BoolVar(&opts.updateSnapshots, "update-snapshots", false, "Rewrite snapshots")
+	fs.BoolVar(&opts.updateSnapshots, "update-snapshots", false, "Rewrite snapshots, and remove those of renamed or deleted tests")
+	fs.BoolVar(&opts.pruneSnapshots, "prune-snapshots", false, "Remove only the snapshots of renamed or deleted tests")
 }
 
 func testCommand(args []string) {
@@ -632,12 +637,17 @@ func runTests(opts testOptions) int {
 	results := runner.RunTests(tests)
 
 	pruned := 0
-	if opts.updateSnapshots {
+	var stale []string
+	var staleErr error
+	if opts.updateSnapshots || opts.pruneSnapshots {
 		var err error
 		if pruned, err = loader.PruneSnapshots(tests); err != nil {
 			fmt.Fprintf(os.Stderr, "Error pruning snapshots: %v\n", err)
 			return 1
 		}
+	} else {
+		// An unreadable snapshot file fails its tests already; report it and go on
+		stale, staleErr = loader.StaleSnapshots(tests)
 	}
 
 	// Print results
@@ -703,6 +713,24 @@ func runTests(opts testOptions) int {
 		}
 	}
 
+	// Entries no test has any more: a warning locally, a failure in CI (where the file
+	// is what was committed)
+	inCI := os.Getenv("CI") != ""
+	if len(stale) > 0 {
+		color, verdict := colorYellow, "⚠"
+		if inCI {
+			color, verdict = colorRed, "✗"
+		}
+		fmt.Printf("\n%s=== Stale snapshots ===%s\n", colorBold, colorReset)
+		for _, s := range stale {
+			fmt.Printf("%s%s %s%s\n", color, verdict, s, colorReset)
+		}
+		fmt.Printf("No snapshot test has these entries any more; `make prune-snapshots` removes them.\n")
+	}
+	if staleErr != nil {
+		fmt.Printf("\n%s⚠ Couldn't check for stale snapshots: %v%s\n", colorYellow, staleErr, colorReset)
+	}
+
 	// Print summary
 	fmt.Printf("\n%s=== Summary ===%s\n", colorBold, colorReset)
 	fmt.Printf("Total: %d | ", len(results))
@@ -730,9 +758,12 @@ func runTests(opts testOptions) int {
 	if pruned > 0 {
 		fmt.Printf(" | Stale snapshots removed: %d", pruned)
 	}
+	if len(stale) > 0 {
+		fmt.Printf(" | Stale snapshots: %d", len(stale))
+	}
 	fmt.Println()
 
-	if failed > 0 || errors > 0 {
+	if failed > 0 || errors > 0 || (inCI && (len(stale) > 0 || staleErr != nil)) {
 		return 1
 	}
 	return 0

@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed
+.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -43,9 +43,15 @@ test-go: ## Run the emulator's Go unit tests and vet
 update-snapshots: build-emulator ## Rewrite snapshots after an intended output change
 	@./bin/yagtest test -update-snapshots $(YAGTEST_FLAGS) tools/emulator/testdata/
 
+prune-snapshots: build-emulator ## Remove only the snapshots of renamed or deleted tests
+	@./bin/yagtest test -prune-snapshots $(YAGTEST_FLAGS) tools/emulator/testdata/
+
 watch: build-emulator ## Rerun template tests whenever a command or test changes
 	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,utility,staff_utility,docs/cookbook tools/emulator/testdata/
 
+# As on GitHub (which sets CI): a missing or stale snapshot fails instead of being written
+# or only warned about
+ci: export CI := true
 ci: test-go test test-templates lint ## Everything CI runs
 	@echo "🔍 Checking Go formatting..."
 	@test -z "$$(gofmt -l tools/emulator)" || (gofmt -l tools/emulator && echo "❌ Run: gofmt -w tools/emulator" && exit 1)
