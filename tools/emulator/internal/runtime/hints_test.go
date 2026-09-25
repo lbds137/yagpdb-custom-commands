@@ -20,7 +20,7 @@ func TestHints(t *testing.T) {
 		message string // the triggering message, if a message runs the command
 	}{
 		{`{{dbGett 0 "a"}}`, "Did you mean dbGet?", ""},
-		{`{{sendMessageNoEscape nil "x"}}`, "the emulator doesn't implement yet", ""},
+		{`{{sendComponentMessage nil "x"}}`, "the emulator doesn't implement yet", ""},
 		{`{{totallyMadeUpThing}}`, "YAGPDB has no function totallyMadeUpThing", ""},
 		{`{{dbSet 0 "k" "v"}}{{(dbGet 0 "k").Foo}}`, "with .Value", ""},
 		{`{{$a := parseArgs 1 "usage" (carg "string" "x")}}`, "-args", "-t"},

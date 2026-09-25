@@ -16,7 +16,14 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   and over 1000000 bytes fails with "ExecData is too big").
 - Discord functions are mocks: reaction calls only record, role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
-  is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
+  is a no-op, and there are no components or threads yet.
+- Pings follow the allowed mentions, but Discord also lets a role ping only when the role is
+  mentionable or the bot may mention everyone, and @everyone/@here only with that
+  permission; the emulator assumes the bot has it. A complexMessage `reply` isn't modelled,
+  so the replied-to author's ping (NoEscape, or `replied_user: true`) isn't recorded.
+- An execCC child's output is dropped; YAGPDB sends it to the target channel (with its own
+  pings), so it can't be asserted.
+  `editMessageNoEscape` is `editMessage` (edits notify no one either way).
 - `editMessage` gaps: the channel argument is read as a number (YAGPDB also takes channel
   names and refuses floats and unknown channels up front); a stored message keeps only its
   first embed and no file, so edits of multi-embed or file messages can differ; edits don't
@@ -128,6 +135,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       content, empty messages): a warning, or with `-strict` Discord's 400 error from
       `sendMessage` and a silently dropped DM from `sendDM`; `cembed` itself doesn't check,
       as in production (2026-09-25)
+- [x] Pings: `sendMessageNoEscape`(`RetID`) ported; sent messages and the response record
+      who they notify, from YAGPDB's allowed mentions (users only by default; roles and
+      @everyone via mentionRole*/mentionEveryone/mentionHere, a complexMessage's
+      `allowed_mentions`, or NoEscape); `pings` and `response_pings` assertions (2026-09-25)
 - [x] Gematria tests run on the real bootstrap (`setup_templates`) and check the computed
       values (`embed_contains`) (2026-09-25)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")

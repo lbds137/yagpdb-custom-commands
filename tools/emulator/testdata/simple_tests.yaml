@@ -83,3 +83,14 @@ tests:
       {{ json $d }}
     expected:
       output_contains: "key"
+
+  - name: "Pings: a typed role mention doesn't ping; sendMessageNoEscape's does"
+    template_source: |
+      {{ sendMessage nil "<@5> <@&20>" }}
+      {{ sendMessageNoEscape 900000000000000002 "<@&20> @here" }}
+      <@&20> {{ mentionEveryone }}
+    assertions:
+      response_pings: { everyone: true }
+      sent_messages:
+        - { channel_id: 0, pings: { users: [5] } }
+        - { channel_id: 900000000000000002, pings: { everyone: true, roles: [20] } }

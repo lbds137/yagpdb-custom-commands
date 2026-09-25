@@ -92,21 +92,23 @@ var limitedFuncs = map[string]limitedFunc{
 	// One API call, and one call per target user (tmplSetRoles)
 	"setRoles": {check: checkSetRoles},
 
-	"sendMessage":      {limits: []callLimit{limitAPI}, silent: true},
-	"sendMessageRetID": {limits: []callLimit{limitAPI}, silent: true},
-	"sendDM":           {limits: []callLimit{limitSendDM, limitAPI}, silent: true},
-	"giveRole":         {limits: []callLimit{limitAPI}, silent: true},
-	"giveRoleID":       {limits: []callLimit{limitAPI}, silent: true},
-	"takeRole":         {limits: []callLimit{limitAPI}, silent: true},
-	"takeRoleID":       {limits: []callLimit{limitAPI}, silent: true},
-	"hasRole":          {limits: []callLimit{limitAPI}, silent: true},
-	"hasRoleID":        {limits: []callLimit{limitAPI}, silent: true},
-	"mentionRole":      {limits: []callLimit{limitAPI}, silent: true},
-	"mentionRoleID":    {limits: []callLimit{limitAPI}, silent: true},
-	"giveRoleName":     {limits: []callLimit{limitAPI}, silent: true},
-	"takeRoleName":     {limits: []callLimit{limitAPI}, silent: true},
-	"hasRoleName":      {limits: []callLimit{limitAPI}, silent: true},
-	"mentionRoleName":  {limits: []callLimit{limitAPI}, silent: true},
+	"sendMessage":              {limits: []callLimit{limitAPI}, silent: true},
+	"sendMessageNoEscape":      {limits: []callLimit{limitAPI}, silent: true},
+	"sendMessageNoEscapeRetID": {limits: []callLimit{limitAPI}, silent: true},
+	"sendMessageRetID":         {limits: []callLimit{limitAPI}, silent: true},
+	"sendDM":                   {limits: []callLimit{limitSendDM, limitAPI}, silent: true},
+	"giveRole":                 {limits: []callLimit{limitAPI}, silent: true},
+	"giveRoleID":               {limits: []callLimit{limitAPI}, silent: true},
+	"takeRole":                 {limits: []callLimit{limitAPI}, silent: true},
+	"takeRoleID":               {limits: []callLimit{limitAPI}, silent: true},
+	"hasRole":                  {limits: []callLimit{limitAPI}, silent: true},
+	"hasRoleID":                {limits: []callLimit{limitAPI}, silent: true},
+	"mentionRole":              {limits: []callLimit{limitAPI}, silent: true},
+	"mentionRoleID":            {limits: []callLimit{limitAPI}, silent: true},
+	"giveRoleName":             {limits: []callLimit{limitAPI}, silent: true},
+	"takeRoleName":             {limits: []callLimit{limitAPI}, silent: true},
+	"hasRoleName":              {limits: []callLimit{limitAPI}, silent: true},
+	"mentionRoleName":          {limits: []callLimit{limitAPI}, silent: true},
 
 	"editMessage":            {limits: []callLimit{limitAPI}},
 	"editMessageNoEscape":    {limits: []callLimit{limitAPI}},
@@ -372,7 +374,9 @@ func (ctx *ExecutionContext) response(output string) string {
 			return fmt.Sprintf("Custom command (#%d) response was longer than 2k (contact an admin on the server...)", ctx.CCID)
 		}
 		ctx.Warn(KindLimit, "the response is %d characters; YAGPDB replaces responses over %d with a notice", n, maxResponseRunes)
+		return output // the notice YAGPDB sends pings no one
 	}
+	ctx.ResponsePings = pingsOf(output, ctx.responseMentions())
 	return output
 }
 

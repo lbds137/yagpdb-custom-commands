@@ -70,6 +70,8 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		// Discord mocks (output capture)
 		"sendMessage":               e.sendMessage,
 		"sendMessageRetID":          e.sendMessageRetID,
+		"sendMessageNoEscape":       e.sendMessageNoEscape,
+		"sendMessageNoEscapeRetID":  e.sendMessageNoEscapeRetID,
 		"sendDM":                    e.sendDM,
 		"editMessage":               e.editMessage,
 		"editMessageNoEscape":       e.editMessage,
@@ -192,11 +194,24 @@ func (e *Engine) Execute(source string) (string, error) {
 // Mock Discord functions
 
 func (e *Engine) sendMessage(args ...interface{}) (string, error) {
+	return e.send("sendMessage", true, args...)
+}
+
+// sendMessageNoEscape is sendMessage with every mention pinging, whatever a complexMessage's
+// allowed_mentions said.
+func (e *Engine) sendMessageNoEscape(args ...interface{}) (string, error) {
+	return e.send("sendMessageNoEscape", false, args...)
+}
+
+// send is YAGPDB's tmplSendMessage; filterSpecialMentions keeps roles and @everyone from
+// pinging unless a complexMessage allows them.
+func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}) (string, error) {
 	var channelID int64 = e.ctx.ChannelID
 	var content string
 	var embeds []interface{}
 	var file *types.MessageSend
 	var hasOther bool
+	allowed := usersOnly()
 
 	if len(args) >= 1 {
 		if args[0] != nil {
@@ -214,6 +229,7 @@ func (e *Engine) sendMessage(args ...interface{}) (string, error) {
 				file = v
 			}
 			hasOther = v.HasOther
+			allowed = v.AllowedMentions
 		case types.Embed:
 			embeds = []interface{}{v}
 		default:
@@ -221,7 +237,11 @@ func (e *Engine) sendMessage(args ...interface{}) (string, error) {
 		}
 	}
 
-	if ok, err := e.ctx.checkSend("sendMessage", content, embeds, file != nil || hasOther, false); !ok {
+	if !filterSpecialMentions {
+		allowed = noEscape()
+	}
+
+	if ok, err := e.ctx.checkSend(fn, content, embeds, file != nil || hasOther, false); !ok {
 		return "", err
 	}
 	if file != nil {
@@ -231,12 +251,19 @@ func (e *Engine) sendMessage(args ...interface{}) (string, error) {
 	if len(embeds) > 0 {
 		embed = embeds[0]
 	}
-	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embed)
+	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embed, pingsOf(content, allowed))
 	return "", nil
 }
 
 func (e *Engine) sendMessageRetID(args ...interface{}) (int64, error) {
 	if _, err := e.sendMessage(args...); err != nil {
+		return 0, err
+	}
+	return e.lastMessageID, nil
+}
+
+func (e *Engine) sendMessageNoEscapeRetID(args ...interface{}) (int64, error) {
+	if _, err := e.sendMessageNoEscape(args...); err != nil {
 		return 0, err
 	}
 	return e.lastMessageID, nil
@@ -248,7 +275,7 @@ func (e *Engine) sendDM(msg interface{}) (string, error) {
 	if ok, _ := e.ctx.checkSend("sendDM", content, nil, true, true); !ok {
 		return "", nil
 	}
-	e.ctx.RecordSentMessage(0, content, nil) // 0 = DM
+	e.ctx.RecordSentMessage(0, content, nil, Pings{}) // 0 = DM; a DM pings no one
 	return "", nil
 }
 
@@ -464,7 +491,7 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 		return nil, err
 	}
 
-	msg := &types.MessageSend{}
+	msg := &types.MessageSend{AllowedMentions: usersOnly()}
 	filename := "attachment_" + time.Now().Format("2006-01-02_15-04-05")
 	for key, val := range dict {
 		switch strings.ToLower(key) {
@@ -509,7 +536,17 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 			if val != nil {
 				msg.HasOther = true
 			}
-		case "allowed_mentions", "reply", "silent", "ephemeral", "suppress_embeds", "is_components_v2":
+		case "allowed_mentions":
+			if val == nil {
+				msg.AllowedMentions = types.AllowedMentions{}
+				continue
+			}
+			parsed, err := parseAllowedMentions(val)
+			if err != nil {
+				return nil, err
+			}
+			msg.AllowedMentions = *parsed
+		case "reply", "silent", "ephemeral", "suppress_embeds", "is_components_v2":
 			// Accepted; the emulator doesn't model these
 		default:
 			return nil, fmt.Errorf(`invalid key "%s" passed to send message builder.`, key)
@@ -736,11 +773,14 @@ func (e *Engine) execAdmin(name string, data ...interface{}) string {
 
 // Mention functions
 
+// mentionEveryone and mentionHere let the response ping everyone.
 func (e *Engine) mentionEveryone() string {
+	e.ctx.mentionEveryone = true
 	return "@everyone"
 }
 
 func (e *Engine) mentionHere() string {
+	e.ctx.mentionEveryone = true
 	return "@here"
 }
 

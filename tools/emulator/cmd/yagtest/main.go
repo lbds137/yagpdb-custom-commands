@@ -238,6 +238,9 @@ func runCommand(args []string) {
 			fmt.Println("=== Template Output ===")
 		}
 		fmt.Println(output)
+		if *verbose && !ctx.ResponsePings.Empty() {
+			fmt.Printf("(pings %s)\n", ctx.ResponsePings)
+		}
 	}
 
 	// Print sent messages
@@ -255,6 +258,9 @@ func runCommand(args []string) {
 			if msg.Embed != nil {
 				embedJSON, _ := json.MarshalIndent(msg.Embed, "", "  ")
 				fmt.Println(string(embedJSON))
+			}
+			if *verbose && !msg.Pings.Empty() {
+				fmt.Printf("(pings %s)\n", msg.Pings)
 			}
 		}
 	}
