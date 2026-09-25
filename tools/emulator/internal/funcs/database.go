@@ -112,8 +112,8 @@ func (d *DatabaseFuncs) DbGetPattern(userID interface{}, pattern interface{}, am
 	s := ToInt(skip)
 
 	// Cap at 100 as YAGPDB does
-	if a > 100 {
-		a = 100
+	if a > 100 || a <= 0 {
+		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
 	entries := d.DB.GetPattern(uid, p, a, s, false)
@@ -129,8 +129,8 @@ func (d *DatabaseFuncs) DbGetPatternReverse(userID interface{}, pattern interfac
 	a := ToInt(amount)
 	s := ToInt(skip)
 
-	if a > 100 {
-		a = 100
+	if a > 100 || a <= 0 {
+		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
 	entries := d.DB.GetPattern(uid, p, a, s, true)
@@ -167,8 +167,8 @@ func (d *DatabaseFuncs) DbTopEntries(pattern interface{}, amount interface{}, sk
 	a := ToInt(amount)
 	s := ToInt(skip)
 
-	if a > 100 {
-		a = 100
+	if a > 100 || a <= 0 {
+		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
 	entries := d.DB.TopEntries(p, a, s, false)
@@ -182,8 +182,8 @@ func (d *DatabaseFuncs) DbBottomEntries(pattern interface{}, amount interface{},
 	a := ToInt(amount)
 	s := ToInt(skip)
 
-	if a > 100 {
-		a = 100
+	if a > 100 || a <= 0 {
+		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
 	entries := d.DB.TopEntries(p, a, s, true)

@@ -3,6 +3,7 @@ package runtime
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
@@ -104,7 +105,7 @@ func TestComplexMessageSplitsContentAndEmbed(t *testing.T) {
 	if m.Content != "hi" {
 		t.Errorf("content = %q", m.Content)
 	}
-	if e, ok := m.Embed.(types.SDict); !ok || e["title"] != "T" {
+	if e, ok := m.Embed.(types.Embed); !ok || e["title"] != "T" {
 		t.Errorf("embed = %#v", m.Embed)
 	}
 	if len(ctx.FileUploads) != 1 || ctx.FileUploads[0].Filename != "log.txt" || ctx.FileUploads[0].Content != "data" {
@@ -120,5 +121,80 @@ func TestLoopCheckSeesWhile(t *testing.T) {
 	}
 	if w := kinds(ctx, KindLoopDB); len(w) != 1 || !strings.Contains(w[0], "line 2: dbGet inside a loop") {
 		t.Errorf("a db call in a while condition runs every iteration: %q", w)
+	}
+}
+
+func TestRunawayLoopsStopOutsideStrictMode(t *testing.T) {
+	for _, src := range []string{
+		`{{$i := 0}}{{while lt $i 5}}{{end}}`, // no output: stopped by the operation cap
+		`{{while true}}xxxxxxxxxx{{end}}`,     // output: stopped by the output cap
+	} {
+		done := make(chan error, 1)
+		go func() { _, err := run(t, newCtx(false, true), src); done <- err }()
+		select {
+		case err := <-done:
+			if err == nil {
+				t.Errorf("%s: a runaway loop should end with an error", src)
+			}
+		case <-time.After(20 * time.Second):
+			t.Fatalf("%s: still running after 20s", src)
+		}
+	}
+}
+
+func TestStoredValuesComeBackAsMsgpackTypes(t *testing.T) {
+	cases := []struct{ name, src, want string }{
+		{"nested ints are int64",
+			`{{dbSet 0 "s" (sdict "n" 5)}}{{kindOf ((dbGet 0 "s").Value.Get "n")}}`, "int64"},
+		{"dict int keys become int64, so an int literal misses",
+			`{{dbSet 0 "d" (dict 1 "one")}}{{index (dbGet 0 "d").Value 1}}`, "<no value>"},
+		{"a map from jsonToSdict's contents stays a plain map",
+			`{{dbSet 0 "j" (jsonToSdict "{\"a\":{\"b\":1}}")}}{{kindOf ((dbGet 0 "j").Value.Get "a")}}`, "map"},
+		{"durations come back as int64",
+			`{{dbSet 0 "t" (sdict "d" (toDuration "1h"))}}{{kindOf ((dbGet 0 "t").Value.Get "d")}}`, "int64"},
+	}
+	for _, c := range cases {
+		out, err := run(t, newCtx(false, true), c.src)
+		if err != nil || strings.TrimSpace(out) != c.want {
+			t.Errorf("%s:\n  out: %q err: %v\n  want: %q", c.name, out, err, c.want)
+		}
+	}
+}
+
+func TestEmbedsAreValidatedLikeDiscord(t *testing.T) {
+	for _, src := range []string{
+		`{{cembed "description" 5}}`,
+		`{{cembed "color" "red"}}`,
+		`{{cembed "fields" (cslice (sdict "name" "n" "value" 3))}}`,
+		`{{complexMessage "embed" (sdict "title" 1)}}`,
+		`{{complexMessage "channel" 1}}`, // only valid inside "forward"
+	} {
+		if _, err := run(t, newCtx(false, true), src); err == nil {
+			t.Errorf("%s: want an error, as in YAGPDB", src)
+		}
+	}
+	if _, err := run(t, newCtx(false, true), `{{complexMessage (sdict "content" "hi" "is_components_v2" false)}}`); err != nil {
+		t.Errorf("one sdict and is_components_v2 are accepted: %v", err)
+	}
+}
+
+func TestEmbedIsACopyOfTheDict(t *testing.T) {
+	ctx := newCtx(false, true)
+	if _, err := run(t, ctx, `{{$e := sdict "title" "first"}}{{sendMessage nil (cembed $e)}}{{$e.Set "title" "second"}}{{sendMessage nil (cembed $e)}}`); err != nil {
+		t.Fatal(err)
+	}
+	if got := ctx.SentMessages[0].Embed.(types.Embed)["title"]; got != "first" {
+		t.Errorf("the first message changed with the dict: %v", got)
+	}
+}
+
+func TestMessageContentUsesYAGPDBToString(t *testing.T) {
+	ctx := newCtx(false, true)
+	if _, err := run(t, ctx, `{{sendMessage nil 1.5}}{{sendMessage nil true}}{{sendMessage nil (sdict "a" 1)}}`); err != nil {
+		t.Fatal(err)
+	}
+	got := []string{ctx.SentMessages[0].Content, ctx.SentMessages[1].Content, ctx.SentMessages[2].Content}
+	if got[0] != "1.5E+00" || got[1] != "" || got[2] != "" || ctx.SentMessages[2].Embed != nil {
+		t.Errorf("contents = %q (a plain sdict is not an embed)", got)
 	}
 }

@@ -375,11 +375,8 @@ func loadDatabaseState(db *state.MockDB, filename string) error {
 	}
 
 	for _, entry := range entries {
-		// Convert map[string]interface{} to SDict
-		if m, ok := entry.Value.(map[string]interface{}); ok {
-			entry.Value = types.SDict(m)
-		}
-		db.Set(entry.UserID, entry.Key, entry.Value)
+		// Fixture maps stand in for sdicts a command stored
+		db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value))
 	}
 
 	return nil

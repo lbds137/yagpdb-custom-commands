@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -162,8 +164,18 @@ func (e *Engine) Execute(source string) (string, error) {
 		e.ctx.Warn(KindLoopDB, "%s", f.Message(e.ctx.SourceName))
 	}
 
+	// Like YAGPDB's LimitWriter, stop at the output cap. Outside strict mode the cap is
+	// higher, so an oversized response is reported as a warning, but a runaway loop still
+	// can't fill memory.
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, e.ctx.BuildTemplateData()); err != nil {
+	outCap := maxOutputBytes
+	if !e.ctx.Strict {
+		outCap = maxOutputBytesLenient
+	}
+	if err := tmpl.Execute(&limitWriter{w: &buf, n: outCap}, e.ctx.BuildTemplateData()); err != nil {
+		if errors.Is(err, io.ErrShortWrite) || strings.Contains(err.Error(), io.ErrShortWrite.Error()) {
+			err = fmt.Errorf("response grew too big (>%d bytes)", outCap)
+		}
 		return "", fmt.Errorf("template execution error: %w", err)
 	}
 
@@ -194,7 +206,7 @@ func (e *Engine) sendMessage(args ...interface{}) string {
 			if v.HasFile {
 				e.ctx.RecordFileUpload(channelID, v.Filename, v.File)
 			}
-		case types.SDict:
+		case types.Embed:
 			embed = v
 		default:
 			content = funcs.ToString(v)
@@ -435,22 +447,31 @@ func (e *Engine) getChannelOrThread(channelID interface{}) interface{} {
 
 // Embed/message building
 
-// cembed takes its arguments as YAGPDB's CreateEmbed does: one sdict (or map) as the embed,
-// or key/value pairs under sdict's rules. YAGPDB then converts it to a Discord embed; the
-// emulator keeps the dict.
-func (e *Engine) cembed(args ...interface{}) (types.SDict, error) {
+// cembed follows YAGPDB's CreateEmbed: one sdict (or map) as the embed, or key/value
+// pairs under sdict's rules, converted to a Discord embed (wrong value types are errors).
+func (e *Engine) cembed(args ...interface{}) (types.Embed, error) {
 	if len(args) < 1 {
-		return types.SDict{}, nil
+		return types.Embed{}, nil
 	}
+	return toEmbed(args...)
+}
+
+func toEmbed(args ...interface{}) (types.Embed, error) {
 	switch t := args[0].(type) {
-	case types.SDict:
+	case types.Embed:
 		return t, nil
+	case types.SDict:
+		return types.BuildEmbed(t)
 	case *types.SDict:
-		return *t, nil
+		return types.BuildEmbed(*t)
 	case map[string]interface{}:
-		return types.SDict(t), nil
+		return types.BuildEmbed(t)
 	}
-	return yagstd.StringKeyDictionary(args...)
+	d, err := yagstd.StringKeyDictionary(args...)
+	if err != nil {
+		return nil, err
+	}
+	return types.BuildEmbed(d)
 }
 
 // complexMessage follows YAGPDB's CreateMessageSend (common/templates/general.go): known keys
@@ -463,14 +484,15 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 	if m, ok := args[0].(*types.MessageSend); len(args) == 1 && ok {
 		return m, nil
 	}
-	if len(args)%2 != 0 {
-		return nil, fmt.Errorf("invalid dict call")
+	// Keys and values as YAGPDB's StringKeyDictionary reads them (one sdict, or pairs)
+	dict, err := yagstd.StringKeyDictionary(args...)
+	if err != nil {
+		return nil, err
 	}
 
 	msg := &types.MessageSend{}
 	filename := "attachment_" + time.Now().Format("2006-01-02_15-04-05")
-	for i := 0; i < len(args); i += 2 {
-		key, val := funcs.ToString(args[i]), args[i+1]
+	for key, val := range dict {
 		switch strings.ToLower(key) {
 		case "content":
 			msg.Content = funcs.ToString(val)
@@ -484,10 +506,18 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 			}
 			if rv.Kind() == reflect.Slice {
 				for j := 0; j < rv.Len() && j < 10; j++ {
-					msg.Embeds = append(msg.Embeds, rv.Index(j).Interface())
+					embed, err := toEmbed(rv.Index(j).Interface())
+					if err != nil {
+						return nil, err
+					}
+					msg.Embeds = append(msg.Embeds, embed)
 				}
 			} else {
-				msg.Embeds = append(msg.Embeds, val)
+				embed, err := toEmbed(val)
+				if err != nil {
+					return nil, err
+				}
+				msg.Embeds = append(msg.Embeds, embed)
 			}
 		case "file":
 			file := funcs.ToString(val)
@@ -501,7 +531,7 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 				filename = string(r[:64])
 			}
 		case "allowed_mentions", "reply", "silent", "components", "ephemeral", "buttons", "menus",
-			"forward", "channel", "message", "sticker", "suppress_embeds":
+			"forward", "sticker", "suppress_embeds", "is_components_v2":
 			// Accepted; the emulator doesn't model these
 		default:
 			return nil, fmt.Errorf(`invalid key "%s" passed to send message builder.`, key)
@@ -513,9 +543,13 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 	return msg, nil
 }
 
+// complexMessageEdit builds the dict editMessage (a no-op mock) receives, under sdict's
+// rules for keys and values.
 func (e *Engine) complexMessageEdit(args ...interface{}) (types.SDict, error) {
-	// Same as cembed/complexMessage - creates an SDict for message editing
-	return e.cembed(args...)
+	if len(args) == 0 {
+		return types.SDict{}, nil
+	}
+	return yagstd.StringKeyDictionary(args...)
 }
 
 func (e *Engine) sendTemplate(args ...interface{}) string {
@@ -592,6 +626,9 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 		MaxExecCCDepth:  e.ctx.MaxExecCCDepth,
 		TemplateBaseDir: e.ctx.TemplateBaseDir,
 		SourceName:      templatePath,
+		Messages:        e.ctx.Messages, // the same server
+		Members:         e.ctx.Members,
+		MemberRoles:     e.ctx.MemberRoles,
 	}
 
 	// Execute child template

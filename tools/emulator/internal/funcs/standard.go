@@ -1,19 +1,16 @@
 package funcs
 
 import (
-	"fmt"
-	"strconv"
 	"time"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // Type Conversion Functions
 
-// ToString converts any value to a string.
+// ToString is YAGPDB's ToString (yagstd), so mocks convert values as production does.
 func ToString(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	return fmt.Sprint(v)
+	return yagstd.ToString(v)
 }
 
 // ToInt converts a value to int.
@@ -21,49 +18,14 @@ func ToInt(v interface{}) int {
 	return int(ToInt64(v))
 }
 
-// ToInt64 converts a value to int64.
+// ToInt64 is YAGPDB's ToInt64 (yagstd), so mocks convert values as production does.
 func ToInt64(v interface{}) int64 {
-	switch val := v.(type) {
-	case int:
-		return int64(val)
-	case int64:
-		return val
-	case int32:
-		return int64(val)
-	case float64:
-		return int64(val)
-	case float32:
-		return int64(val)
-	case string:
-		i, _ := strconv.ParseInt(val, 10, 64)
-		return i
-	case bool:
-		if val {
-			return 1
-		}
-		return 0
-	default:
-		return 0
-	}
+	return yagstd.ToInt64(v)
 }
 
-// ToFloat64 converts a value to float64.
+// ToFloat64 is YAGPDB's ToFloat64 (yagstd), so mocks convert values as production does.
 func ToFloat64(v interface{}) float64 {
-	switch val := v.(type) {
-	case float64:
-		return val
-	case float32:
-		return float64(val)
-	case int:
-		return float64(val)
-	case int64:
-		return float64(val)
-	case string:
-		f, _ := strconv.ParseFloat(val, 64)
-		return f
-	default:
-		return 0
-	}
+	return yagstd.ToFloat64(v)
 }
 
 // ToDuration converts a value to time.Duration.

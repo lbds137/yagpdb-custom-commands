@@ -3,6 +3,7 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 // YAGPDB's per-execution limits. Sources are in vendor/yagpdb (see the comments).
 const (
 	maxOutputBytes        = 25000            // common/templates/context.go: LimitWriter in executeParsed
+	maxOutputBytesLenient = 1 << 20          // outside -strict: warn past 25k, stop at 1 MiB
 	maxResponseRunes      = 2000             // customcommands/bot.go replaces longer responses
 	maxSourceRunes        = 10000            // customcommands.MaxCCResponsesLength
 	maxSourceRunesPremium = 20000            // customcommands.MaxCCResponsesLengthPremium
@@ -359,4 +361,19 @@ func (ctx *ExecutionContext) maxOps() int {
 		return maxOpsPremium
 	}
 	return maxOpsNormal
+}
+
+// limitWriter writes at most n bytes, then fails with io.ErrShortWrite, like YAGPDB's
+// LimitWriter (common/templates/context.go).
+type limitWriter struct {
+	w io.Writer
+	n int
+}
+
+func (l *limitWriter) Write(p []byte) (int, error) {
+	if len(p) > l.n {
+		return 0, io.ErrShortWrite
+	}
+	l.n -= len(p)
+	return l.w.Write(p)
 }
