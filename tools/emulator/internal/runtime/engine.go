@@ -721,7 +721,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 		Username:        e.ctx.Username,
 		Discriminator:   e.ctx.Discriminator,
 		UserRoles:       e.ctx.UserRoles,
-		MessageContent:  e.ctx.MessageContent, // YAGPDB passes the caller's message on
+		MessageContent:  e.ctx.MessageContent,
 		ExecData:        data,
 		IsPremium:       e.ctx.IsPremium,
 		Strict:          e.ctx.Strict,
@@ -747,6 +747,11 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 		MemberJoinedAgo: e.ctx.MemberJoinedAgo,
 		scheduled:       e.ctx.scheduledRuns(),
 	}
+
+	// YAGPDB passes the caller's message on (tmplextensions.go tmplRunCC: newCtx.Msg)
+	inherited := e.ctx.triggerMsg()
+	childCtx.InheritedMessage = &inherited
+	childCtx.NoMember = e.ctx.NoMember // the child's context has the caller's (nil) member
 
 	// Execute child template
 	childEngine := NewEngine(childCtx)

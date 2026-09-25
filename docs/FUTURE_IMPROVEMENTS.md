@@ -53,9 +53,9 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   dcmd's RoleArg matches names case-sensitively and falls back from a numeric ID to a name.
 - Role gaps: a test that declares no guild roles treats any role ID as existing, with a
   `[role]` warning per ID (a stale ID would be nil in production).
-- A command run by `execCC` from a reaction-triggered command sees the test's
-  `message_content` as `.Message`; YAGPDB passes on the reacted-to message.
-- Interval and None runs get a `.Message` with empty content; YAGPDB gives them none.
+- Component and modal triggers aren't modelled (YAGPDB's `.Message` there is the
+  interaction's message with the clicker as author), nor is a join message's `ctx.Msg` (a
+  blank message from the joining member, which an execCC from it would inherit).
 - Triggers are always case-insensitive (YAGPDB's default); a header can't say otherwise.
 
 ## IDE Integration
@@ -161,6 +161,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] `.Message` follows what started the run: an interval or cron run has none, and no
+      `.User`, `.Member` or `.BotUser` (its children neither); a reaction run's is the
+      test's message with the reacted-to ID in the run's channel (its content and author);
+      an execCC child gets its caller's message as YAGPDB keeps it (a reaction run's with
+      the reactor as author, a blank one from the bot after an interval run). A None
+      command, which only execCC runs, keeps a message (2026-09-25)
 - [x] getRole* over the API-call limit fail with YAGPDB's "too many calls to this
       function" (2026-09-25)
 - [x] `deleteResponse` with a delay under 1 sends no response (the output is empty, pings

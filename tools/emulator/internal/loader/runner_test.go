@@ -51,7 +51,8 @@ func TestArgsFollowTheHeaderTrigger(t *testing.T) {
 	}
 	write("kb.gohtml", header("Command", "kb")+`{{json .Args}}|{{.Cmd}}|{{json .CmdArgs}}`)
 	write("link.gohtml", header("Regex", `\d{3}`)+`{{.Cmd}}|{{json .CmdArgs}}`)
-	write("interval.gohtml", header("Minute interval", "")+`ran`)
+	write("interval.gohtml", header("Minute interval", "")+`ran {{.Message}} {{.User}}`)
+	write("none.gohtml", header("None", "")+`{{.Message.Author.ID}}`)
 	write("plain.gohtml", `{{.Cmd}}`)
 	write("message.gohtml", header("Command", "m")+`{{.Message.Content}}`)
 
@@ -65,7 +66,8 @@ func TestArgsFollowTheHeaderTrigger(t *testing.T) {
 		{"server prefix", "kb.gohtml", ContextDef{Guild: GuildDef{Prefix: "!"}}, `["!kb"]|!kb|[]`, ""},
 		{"regex", "link.gohtml", ContextDef{MessageContent: "see 123 x"}, `see 123|["x"]`, ""},
 		{"no header", "plain.gohtml", ContextDef{}, "-plain", ""},
-		{"interval", "interval.gohtml", ContextDef{}, "ran", ""},
+		{"interval", "interval.gohtml", ContextDef{}, "ran <no value> <no value>", ""}, // no message or member
+		{"none", "none.gohtml", ContextDef{}, "987654321098765432", ""},                // run by execCC: a caller's message
 		{"both", "kb.gohtml", ContextDef{Args: []string{"x"}, MessageContent: "-kb x"}, "", "not both"},
 		{"regex with args", "link.gohtml", ContextDef{Args: []string{"x"}}, "", "needs message_content"},
 		{"no match", "link.gohtml", ContextDef{MessageContent: "no digits"}, "", "doesn't match"},

@@ -196,6 +196,7 @@ func runCommand(args []string) {
 		if len(parts) > 0 || msg != "" {
 			fatalf("arguments and -message need a message trigger; the template's is %q", trigger.Type)
 		}
+		ctx.NoMessage, ctx.NoMember = trigger.Scheduled(), trigger.Scheduled()
 	case msg != "" && len(parts) > 0:
 		fatalf("give arguments or -message, not both")
 	case msg == "" && trigger.Type == "Regex":

@@ -255,6 +255,7 @@ func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContex
 		if len(c.Args) > 0 || c.MessageContent != "" {
 			return fmt.Errorf("args and message_content need a message trigger; the template's is %q", t.Type)
 		}
+		ctx.NoMessage, ctx.NoMember = t.Scheduled(), t.Scheduled()
 		return nil
 	}
 

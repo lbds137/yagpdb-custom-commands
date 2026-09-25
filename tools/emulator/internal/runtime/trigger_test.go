@@ -105,3 +105,14 @@ func TestParseArgsNeedsATriggerMessage(t *testing.T) {
 		t.Errorf("got %q, %v", out, err)
 	}
 }
+
+func TestScheduledTriggers(t *testing.T) {
+	for typ, want := range map[string]bool{
+		"Minute interval": true, "Hourly interval": true, "Cron": true,
+		"None": false, "Command": false, "Reaction": false, "Join message": false,
+	} {
+		if got := (Trigger{Type: typ}).Scheduled(); got != want {
+			t.Errorf("%s: %v", typ, got)
+		}
+	}
+}
