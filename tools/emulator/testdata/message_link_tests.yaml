@@ -1,0 +1,74 @@
+name: "message_link (regex trigger on message links)"
+
+# Someone posts a link in #general (123456789012345678) to message 700...001 in
+# #introduction (900...002), written by 500...001.
+defaults:
+  user:
+    id: 987654321098765432
+    username: "Linker"
+  channel:
+    id: 123456789012345678
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+  messages:
+    - id: 700000000000000001
+      channel_id: 900000000000000002
+      author_id: 500000000000000001
+      content: "Hi! I'm Guest, I like tea."
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Command Prefix: "-", Embed Color: 5793266, Delete Trigger Delay: 5, Default Avatar: "https://example.com/a.png" }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: 1 }
+  - user_id: 0
+    key: "Roles"
+    value: { Staff: 111111111111111111 }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 900000000000000001 }
+
+command_map:
+  1: "templates/recording_embed_exec.gohtml"
+
+tests:
+  - name: "message_link: expands a quoted link"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "quoted a message:\nlook" }
+    snapshot: true
+
+  - name: "message_link: deleted message is ignored"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"
+    expected:
+      output_equals: ""
+    snapshot: true
+
+  - name: "message_link: links in code are ignored"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "`https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001`"
+    snapshot: true
+
+  - name: "message_link: the linker left the server"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      members: [500000000000000001]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "linked a message" }
+
+  - name: "message_link: execCC data without a link"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      exec_data: { ChannelID: 900000000000000003, DisableQuote: true }
+    snapshot: true
