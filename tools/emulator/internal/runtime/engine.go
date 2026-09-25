@@ -55,6 +55,9 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 	for name, fn := range yagstd.StandardFuncs() {
 		m[name] = fn
 	}
+	for name, fn := range yagstd.RunFuncs(e.ctx.Now, e.ctx.random()) {
+		m[name] = fn
+	}
 	for name, fn := range e.yag.Funcs() {
 		m[name] = fn
 	}
@@ -180,7 +183,8 @@ func (e *Engine) Execute(source string) (string, error) {
 
 // execute runs the template and returns its response, or what it printed before an error.
 func (e *Engine) execute(source string) (string, error) {
-	e.ctx.StartTime = time.Now()
+	e.ctx.started = time.Now()
+	e.ctx.StartTime = e.ctx.Now()
 
 	if err := e.ctx.checkSourceLength(source); err != nil {
 		return "", err
@@ -236,7 +240,7 @@ func (e *Engine) execute(source string) (string, error) {
 		return e.ctx.response(buf.String()), fmt.Errorf("Failed executing template: %w", err)
 	}
 
-	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.StartTime), yagpdbCap != nil && yagpdbCap.err != nil)
+	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.started), yagpdbCap != nil && yagpdbCap.err != nil)
 }
 
 // Mock Discord functions
@@ -382,7 +386,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 		return "", err
 	}
 	target.Content, target.Embeds = content, embeds
-	target.EditedTimestamp = time.Now() // Discord sets it on every edit
+	target.EditedTimestamp = types.NewTimestamp(e.ctx.Now()) // Discord sets it on every edit
 	edited := SentMessage{ID: id, ChannelID: channelID, Content: content}
 	if len(embeds) > 0 {
 		edited.Embed = embeds[0]
@@ -563,7 +567,7 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 	}
 
 	msg := &types.MessageSend{AllowedMentions: usersOnly()}
-	filename := "attachment_" + time.Now().Format("2006-01-02_15-04-05")
+	filename := "attachment_" + e.ctx.Now().Format("2006-01-02_15-04-05")
 	for key, val := range dict {
 		switch strings.ToLower(key) {
 		case "content":
@@ -800,6 +804,8 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		Schema:                   e.ctx.Schema,
 		Counters:                 make(map[string]int), // execCC starts a new run with its own limits
 		StartTime:                e.ctx.StartTime,
+		Clock:                    e.ctx.Clock,
+		Random:                   e.ctx.Random,
 		AvailableRoles:           e.ctx.AvailableRoles,
 		Channels:                 e.ctx.Channels,
 		ChannelOrder:             e.ctx.ChannelOrder,

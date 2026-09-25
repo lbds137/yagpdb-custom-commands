@@ -32,6 +32,9 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   context:
     args: ["arg1", "arg two"]         # after the trigger in the header: the message is `-example arg1 "arg two"`
     premium: false                    # optional, default true
+    clock: 2026-01-02T03:04:05Z       # stops the clock there (currentTime, timestamps, db
+                                      # entry times), for a snapshot of time-dependent output
+    seed: 1                           # seeds randInt, shuffle, adjective, noun, verb
     user: { id: 1, roles: [111] }
     guild: { roles: [{ id: 111, name: "Staff", color: 3447003, position: 2 }] }  # if set, unknown roles are nil/errors
     # guild.bot_mention_everyone: false -> only roles with mentionable: true ping, never @everyone/@here

@@ -40,9 +40,14 @@ type ContextDef struct {
 	// Args are the arguments after the trigger; the message is the trigger followed by them
 	Args     []string               `yaml:"args"`
 	ExecData map[string]interface{} `yaml:"exec_data"`
-	Premium  *bool                  `yaml:"premium"`  // Default true
-	Reaction *ReactionDef           `yaml:"reaction"` // Makes this a reaction-triggered run
-	Messages []MessageDef           `yaml:"messages"` // Messages getMessage can find
+	Premium  *bool                  `yaml:"premium"` // Default true
+	// Clock stops the run's clock at this time (currentTime, timestamps, database entry
+	// times), so a snapshot can hold them; unset, it's the system clock
+	Clock *time.Time `yaml:"clock"`
+	// Seed seeds randInt, shuffle, adjective, noun and verb; unset, they're random
+	Seed     *int64       `yaml:"seed"`
+	Reaction *ReactionDef `yaml:"reaction"` // Makes this a reaction-triggered run
+	Messages []MessageDef `yaml:"messages"` // Messages getMessage can find
 	// MessageContent is the whole triggering message, trigger included (instead of args);
 	// with exec_data or reaction, the message .Message is
 	MessageContent string  `yaml:"message_content"`
@@ -395,6 +400,12 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 
 	if tc.Context.Premium == nil {
 		tc.Context.Premium = defaults.Premium
+	}
+	if tc.Context.Clock == nil {
+		tc.Context.Clock = defaults.Clock
+	}
+	if tc.Context.Seed == nil {
+		tc.Context.Seed = defaults.Seed
 	}
 	if tc.Context.Messages == nil {
 		tc.Context.Messages = defaults.Messages

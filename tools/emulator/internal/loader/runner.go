@@ -68,6 +68,9 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 
 	// Set up database
 	db := state.NewMockDB(tc.Context.Guild.ID)
+	if c := tc.Context.Clock; c != nil {
+		db.SetClock(func() time.Time { return *c })
+	}
 	for _, entry := range tc.SetupDB {
 		// Fixture maps stand in for sdicts a command stored, and keys are cut as dbSet cuts them
 		key := funcs.LimitString(entry.Key, 256)
@@ -180,6 +183,12 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	if tc.Context.Premium != nil && !*tc.Context.Premium {
 		ctx.SetNonPremium()
 	}
+	if tc.Context.Clock != nil {
+		ctx.FixClock(*tc.Context.Clock)
+	}
+	if tc.Context.Seed != nil {
+		ctx.Seed(*tc.Context.Seed)
+	}
 	ctx.GuildName = tc.Context.Guild.Name
 	ctx.OwnerID = tc.Context.Guild.OwnerID
 	if tc.Context.Guild.Prefix != "" {
@@ -202,6 +211,9 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 			GuildID:   ctx.GuildID,
 			Author:    types.DiscordUser{ID: m.AuthorID, Username: "MockUser", Discriminator: "0"},
 			Content:   m.Content,
+			// as Discord's: the time its snowflake ID holds, to the millisecond (Discord's
+			// epoch is 1420070400000 ms)
+			Timestamp: types.NewTimestamp(time.UnixMilli(m.ID>>22 + 1420070400000)),
 		})
 	}
 	ctx.Members = tc.Context.Members

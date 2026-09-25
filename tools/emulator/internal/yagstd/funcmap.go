@@ -18,8 +18,11 @@ import (
 //
 // Not included, because they need Discord data: componentBuilder and the other component
 // builders, and roleAbove (the emulator's roles are its own type).
+//
+// The clock and random functions (RunFuncs) read the system clock and math/rand here; the
+// emulator's runs replace them with their own.
 func StandardFuncs() map[string]interface{} {
-	return map[string]interface{}{
+	m := map[string]interface{}{
 		// conversion functions
 		"str":        ToString,
 		"toString":   ToString,
@@ -84,11 +87,7 @@ func StandardFuncs() map[string]interface{} {
 		"humanizeDurationHours":   tmplHumanizeDurationHours,
 		"humanizeDurationMinutes": tmplHumanizeDurationMinutes,
 		"humanizeDurationSeconds": tmplHumanizeDurationSeconds,
-		"humanizeTimeSinceDays":   tmplHumanizeTimeSinceDays,
 
-		"adjective":     RandomAdjective,
-		"noun":          RandomNoun,
-		"verb":          RandomVerb,
 		"sanitizeText":  confusables.SanitizeText,
 		"dict":          Dictionary,
 		"sdict":         StringKeyDictionary,
@@ -99,12 +98,9 @@ func StandardFuncs() map[string]interface{} {
 		"inFold":        inFold,
 		"json":          tmplJson,
 		"jsonToSdict":   tmplJSONToSDict,
-		"randInt":       randInt,
 		"seq":           sequence,
-		"shuffle":       shuffle,
 
 		// time functions
-		"currentTime":     tmplCurrentTime,
 		"parseTime":       tmplParseTime,
 		"formatTime":      tmplFormatTime,
 		"loadLocation":    time.LoadLocation,
@@ -113,6 +109,10 @@ func StandardFuncs() map[string]interface{} {
 		"timestampToTime": tmplTimestampToTime,
 		"weekNumber":      tmplWeekNumber,
 	}
+	for name, fn := range RunFuncs(time.Now, GlobalRandom{}) {
+		m[name] = fn
+	}
+	return m
 }
 
 // CallVariadic is callVariadic, for the emulator's copies of YAGPDB's variadic context

@@ -414,3 +414,54 @@ func TestFailedChildFailsTheTest(t *testing.T) {
 		}
 	}
 }
+
+func TestFixedClockAndSeed(t *testing.T) {
+	src := `{{currentTime.Unix}} {{.Message.Timestamp.Parse.Unix}} ` +
+		`{{humanizeTimeSinceDays (currentTime.Add -172800000000000)}} ` +
+		`{{dbSet 0 "k" 1}}{{(dbGet 0 "k").CreatedAt.Unix}} ` +
+		`{{randInt 1000000}} {{shuffle (seq 0 10)}} {{adjective}} {{noun}} {{verb}}`
+	clock := time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)
+	run := func(seed int64) string {
+		tc := &TestCase{Name: "fixed", TemplateSource: src, Strict: true}
+		tc.Context.Clock = &clock
+		tc.Context.Seed = &seed
+		tc.applyDefaults()
+		res := NewRunner(RunnerConfig{}).RunTest(tc)
+		// strict: a clock 25 years back must not count as a run over the time limit
+		if res.Error != nil || !res.Passed {
+			t.Fatalf("run failed: %v %q", res.Error, res.Failures)
+		}
+		return res.Output
+	}
+
+	out := run(7)
+	want := "981173106 981173106 2 days 981173106 "
+	if !strings.HasPrefix(out, want) {
+		t.Errorf("clock: got %q, want the prefix %q", out, want)
+	}
+	if again := run(7); again != out {
+		t.Errorf("the same seed should repeat the run:\n%q\n%q", out, again)
+	}
+	if other := run(8); other == out {
+		t.Errorf("another seed gave the same values: %q", other)
+	}
+}
+
+func TestClockAndSeedFromYAML(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "t.yaml")
+	os.WriteFile(path, []byte("defaults:\n  clock: 2001-02-03T04:05:06Z\n  seed: 7\n"+
+		"tests:\n  - name: one\n    template_source: '{{currentTime.Unix}}'\n"+
+		"  - name: two\n    template_source: '{{currentTime.Unix}}'\n    context: { clock: 2002-02-03T04:05:06Z }\n"), 0o644)
+	suite, err := LoadTestSuite(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := NewRunner(RunnerConfig{BaseDir: dir})
+	for i, want := range []string{"981173106", "1012709106"} {
+		tc := &suite.Tests[i]
+		if res := r.RunTest(tc); res.Output != want || tc.Context.Seed == nil || *tc.Context.Seed != 7 {
+			t.Errorf("%s: output %q (want %q), seed %v", tc.Name, res.Output, want, tc.Context.Seed)
+		}
+	}
+}

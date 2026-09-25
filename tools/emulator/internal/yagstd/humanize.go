@@ -1,26 +1,33 @@
 // Copied from YAGPDB (github.com/botlabs-gg/yagpdb, commit 0cf2ec5), common/util.go (RandomAdjective to HumanizeDuration), common/templates/general.go
 // (tmplHumanize*, tmplSnowflakeToTime) and bot/util.go (SnowflakeToTime).
 // MIT license, see LICENSE-YAGPDB. Changes: package name; common. prefixes dropped; SnowflakeToTime computes Discord's snowflake
-// time directly instead of through the snowflake package (same epoch, 1420070400000).
+// time directly instead of through the snowflake package (same epoch, 1420070400000);
+// Random* and tmplHumanizeTimeSinceDays are built for a run from its random source and
+// clock (see runfuncs.go).
 
 package templates
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 )
 
-func RandomAdjective() string {
-	return Adjectives[rand.Intn(len(Adjectives))]
+func RandomAdjective(random Random) func() string {
+	return func() string {
+		return Adjectives[random.Intn(len(Adjectives))]
+	}
 }
 
-func RandomNoun() string {
-	return Nouns[rand.Intn(len(Nouns))]
+func RandomNoun(random Random) func() string {
+	return func() string {
+		return Nouns[random.Intn(len(Nouns))]
+	}
 }
 
-func RandomVerb() string {
-	return Verbs[rand.Intn(len(Verbs))]
+func RandomVerb(random Random) func() string {
+	return func() string {
+		return Verbs[random.Intn(len(Verbs))]
+	}
 }
 
 type DurationFormatPrecision int
@@ -130,8 +137,10 @@ func tmplHumanizeDurationSeconds(in interface{}) string {
 	return HumanizeDuration(DurationPrecisionSeconds, ToDuration(in))
 }
 
-func tmplHumanizeTimeSinceDays(in time.Time) string {
-	return HumanizeDuration(DurationPrecisionDays, time.Since(in))
+func tmplHumanizeTimeSinceDays(now func() time.Time) func(in time.Time) string {
+	return func(in time.Time) string {
+		return HumanizeDuration(DurationPrecisionDays, now().Sub(in))
+	}
 }
 
 func tmplSnowflakeToTime(v interface{}) time.Time {

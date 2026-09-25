@@ -363,8 +363,8 @@ type CtxMessage struct {
 	GuildID         int64
 	Author          DiscordUser
 	Content         string
-	Timestamp       time.Time
-	EditedTimestamp time.Time
+	Timestamp       Timestamp
+	EditedTimestamp Timestamp // "" until edited
 	Attachments     []interface{}
 	Embeds          []interface{}
 }

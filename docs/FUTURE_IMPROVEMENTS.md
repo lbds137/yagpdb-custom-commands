@@ -4,8 +4,13 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ## Known command bugs
 
-None open: the snapshot audit's list (2026-09-25) is fixed (see Completed Improvements).
-Each fix gets a failing test first.
+The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
+gets a failing test first.
+- db_get_text and db_get_embed walk nested keys with the old db.gohtml walk (read, not
+  yet run): a stored `false`, `0` or `""` reads as missing, a dictionary inside JSON
+  stored by `db set` (a plain map) is unreachable, and a key past a value that isn't a
+  dictionary returns that value (db_get_text.gohtml:49-70, db_get_embed.gohtml:56-77).
+  Next unit: port db.gohtml's walk.
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
@@ -50,9 +55,15 @@ Each fix gets a failing test first.
   Discord refuses; that the error is 10008 is inferred, not probed.
 - Without -strict, a function over its call limit warns "YAGPDB stops the command here"
   and runs on, even inside `{{try}}`, where YAGPDB's error would go to `{{catch}}` instead.
-- The clock is real (currentTime, the run's start), and random functions aren't seeded, so a
-  command whose output holds the time (db dump's file name) or random values (rand_hebrew)
-  can't be snapshot-tested. A test-level fixed clock and seed would fix that.
+- A fixed clock (`clock:`) stands still for the whole run, where YAGPDB's moves on by
+  milliseconds; the 10-second limit is still measured on the system clock. A bad `clock:`
+  value's error names neither the field nor the line (yaml.v3's time parse error), and a
+  fractional `seed:` is truncated silently (1.5 is 1).
+- `printf "%T"` of the emulator's Discord types prints their Go names (`types.CtxMessage`,
+  `types.Timestamp`), not discordgo's (`*discordgo.Message`, `discordgo.Timestamp`); a
+  command comparing those names would behave differently. None does today (the `%T`
+  comparisons in db, db_get_text and db_get_embed are against `*templates.SDict` and
+  `string` only).
 - Discord functions are mocks: role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
   is a no-op, and there are no components or threads yet.
@@ -208,8 +219,8 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       tests). A user prints as username#discriminator and its default avatar follows
       discordgo (discriminator % 5, or (id >> 22) % 6 on the new system); AvatarURL takes
       its size argument as there. Mock users have the new system's discriminator "0".
-      Snapshots record attached files. command_tests and db_tests are snapshot tests,
-      except rand_hebrew and db dump (see the clock gap) (2026-09-25)
+      Snapshots record attached files. command_tests and db_tests are snapshot tests
+      (rand_hebrew and db dump since the fixed clock and seed) (2026-09-25)
 - [x] execCC, scheduleUniqueCC and cancelScheduledUniqueCC take the command as an `int`,
       as in YAGPDB (a string or float variable is "wrong type for value"), and follow
       tmplRunCC's order: the command is looked up (an Interval or Crontab command refused)
@@ -324,6 +335,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
         only the error (the message went out unpinged).
       - `admit_user` with no Welcome Message skips the welcome; it stopped there with
         "invalid value; expected string", before the admission record.
+- [x] A test's `clock:` fixes the run's clock (currentTime, humanizeTimeSinceDays,
+      message timestamps, members' join times, database entry times and expiry) and
+      `seed:` seeds randInt, shuffle, adjective, noun and verb, so db dump and rand_hebrew
+      are snapshot tests. `.Message.Timestamp` and `.EditedTimestamp` are discordgo's
+      Timestamp strings with `.Parse` (they were time.Time), and a test's `messages:`
+      have the time their ID holds (2026-09-25)
 - [x] The recording embed_exec mock keeps color, image and thumbnail; an `embed_title`
       check on a message without an embed fails (it passed) (2026-09-25)
 - [x] Test coverage for db operations (it passed only because the tests never reached the
