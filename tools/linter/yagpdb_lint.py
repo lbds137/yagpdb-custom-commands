@@ -481,8 +481,12 @@ class YAGPDBLinter:
     def lint_directory(self, directory: str, verbose: bool = False) -> None:
         """Lint all .gohtml files in a directory"""
         path = Path(directory)
-        
+        # Not custom commands: emulator fixtures, the YAGPDB source, git internals
+        skip_dirs = {"tools", "vendor", ".git"}
+
         for gohtml_file in path.rglob("*.gohtml"):
+            if skip_dirs.intersection(gohtml_file.relative_to(path).parts[:-1]):
+                continue
             if verbose:
                 print(f"Linting: {gohtml_file}")
             self.lint_file(str(gohtml_file))

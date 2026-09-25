@@ -1,0 +1,22 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          # Same line as the dev machine (mise); go.mod's "go 1.21" is only the minimum
+          go-version: "1.27"
+          cache-dependency-path: tools/emulator/go.sum
+
+      # Go vet + unit tests, template tests (CI=true makes a missing snapshot fail),
+      # the command linter, and a gofmt check
+      - run: make ci
