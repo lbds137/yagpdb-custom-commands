@@ -46,12 +46,12 @@ update-snapshots: build-emulator ## Rewrite snapshots after an intended output c
 watch: build-emulator ## Rerun template tests whenever a command or test changes
 	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,utility,staff_utility,docs/cookbook tools/emulator/testdata/
 
-ci: test-go test lint ## Everything CI runs
+ci: test-go test test-templates lint ## Everything CI runs
 	@echo "🔍 Checking Go formatting..."
 	@test -z "$$(gofmt -l tools/emulator)" || (gofmt -l tools/emulator && echo "❌ Run: gofmt -w tools/emulator" && exit 1)
 	@echo "✅ All checks passed"
 
-test-templates: build-emulator ## Test all .gohtml templates against emulator
+test-templates: build-emulator ## Smoke test: run every command once with no arguments
 	@./scripts/test-all-templates.sh
 
 analyze: ## Analyze templates for missing emulator functions

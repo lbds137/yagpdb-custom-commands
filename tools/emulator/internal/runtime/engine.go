@@ -23,6 +23,8 @@ import (
 type Engine struct {
 	ctx *ExecutionContext
 	yag yagstd.Context // per-run state of YAGPDB's context functions (regex cache)
+
+	lastMessageID int64 // ID of the message sendMessage last sent, for sendMessageRetID
 }
 
 // NewEngine creates a new template engine with the given context.
@@ -213,14 +215,13 @@ func (e *Engine) sendMessage(args ...interface{}) string {
 		}
 	}
 
-	e.ctx.RecordSentMessage(channelID, content, embed)
+	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embed)
 	return ""
 }
 
 func (e *Engine) sendMessageRetID(args ...interface{}) int64 {
-	// Same as sendMessage but returns a mock message ID
 	e.sendMessage(args...)
-	return 123456789 // Mock message ID
+	return e.lastMessageID
 }
 
 func (e *Engine) sendDM(msg interface{}) string {
@@ -233,14 +234,18 @@ func (e *Engine) editMessage(channel, msgID, content interface{}) string {
 	return ""
 }
 
-// getMessage returns a message the test declared (context.messages), or a nil
-// *CtxMessage like YAGPDB's for a message that doesn't exist: `if $msg` is false and
-// $msg.Author is a nil pointer error, as in production.
+// getMessage returns a message the test declared (context.messages) or the run sent, or a
+// nil *CtxMessage like YAGPDB's for a message that doesn't exist: `if $msg` is false and
+// $msg.Author is a nil pointer error, as in production. A nil channel is the current one.
 func (e *Engine) getMessage(channel, msgID interface{}) *types.CtxMessage {
 	id := funcs.ToInt64(msgID)
+	channelID := e.ctx.ChannelID
+	if channel != nil {
+		channelID = funcs.ToInt64(channel)
+	}
 	for i := range e.ctx.Messages {
 		m := &e.ctx.Messages[i]
-		if m.ID == id && (channel == nil || m.ChannelID == funcs.ToInt64(channel)) {
+		if m.ID == id && m.ChannelID == channelID {
 			return m
 		}
 	}
@@ -621,14 +626,17 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 		Counters:        make(map[string]int), // execCC starts a new run with its own limits
 		StartTime:       e.ctx.StartTime,
 		AvailableRoles:  e.ctx.AvailableRoles,
+		OwnerID:         e.ctx.OwnerID,
 		CommandIDMap:    e.ctx.CommandIDMap,
 		ExecCCDepth:     e.ctx.ExecCCDepth + 1,
 		MaxExecCCDepth:  e.ctx.MaxExecCCDepth,
 		TemplateBaseDir: e.ctx.TemplateBaseDir,
 		SourceName:      templatePath,
-		Messages:        e.ctx.Messages, // the same server
-		Members:         e.ctx.Members,
-		MemberRoles:     e.ctx.MemberRoles,
+		// The same server; a copy, since execCC runs after the caller finishes
+		Messages:    append([]types.CtxMessage(nil), e.ctx.Messages...),
+		sentIDs:     e.ctx.sentMessageIDs(),
+		Members:     e.ctx.Members,
+		MemberRoles: e.ctx.MemberRoles,
 	}
 
 	// Execute child template

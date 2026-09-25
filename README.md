@@ -296,7 +296,8 @@ production. On top of that:
   `db_schema.yaml` (`-schema`)
 - **Error hints**: typo suggestions from YAGPDB's function list, links to its docs
 - **YAML tests** with output, database, message and role assertions, `strict: true`,
-  `context.premium: false`, `expected.warning_contains`, and `snapshot: true`
+  `context.premium: false`, `expected.warning_contains`, `setup_templates` (run a bootstrap
+  command first, on the same database), and `snapshot: true`
   (saved under `__snapshots__/`; `make update-snapshots` accepts an intended change)
 
 [`docs/COOKBOOK.md`](docs/COOKBOOK.md) has tested example commands, and

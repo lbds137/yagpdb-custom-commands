@@ -350,6 +350,12 @@ type CtxMessage struct {
 	Embeds          []interface{}
 }
 
+// Link is discordgo's Message.Link. A value receiver, so it works on the mocks' values and
+// pointers alike.
+func (m CtxMessage) Link() string {
+	return fmt.Sprintf("https://discord.com/channels/%v/%v/%v", m.GuildID, m.ChannelID, m.ID)
+}
+
 // CtxReaction mirrors discordgo.MessageReaction, the .Reaction of reaction-triggered commands.
 type CtxReaction struct {
 	UserID    int64

@@ -70,79 +70,18 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 		db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value))
 	}
 
-	// Create execution context
-	ctx := runtime.NewExecutionContext(tc.Context.Guild.ID, db)
+	for _, path := range tc.SetupTemplates {
+		if err := r.runSetupTemplate(tc, db, path); err != nil {
+			result.Error = err
+			return result
+		}
+	}
+
+	ctx := r.newContext(tc, db)
 	ctx.SourceName = displayPath(r.config.BaseDir, tc.Template)
 	if ctx.SourceName == "" {
 		ctx.SourceName = fmt.Sprintf("inline template of %q", tc.Name)
 	}
-	ctx.Strict = r.config.Strict || tc.Strict
-	ctx.Schema = r.config.Schema
-	if tc.Context.Premium != nil && !*tc.Context.Premium {
-		ctx.SetNonPremium()
-	}
-	ctx.GuildName = tc.Context.Guild.Name
-	ctx.ChannelID = tc.Context.Channel.ID
-	ctx.ChannelName = tc.Context.Channel.Name
-	ctx.UserID = tc.Context.User.ID
-	ctx.Username = tc.Context.User.Username
-	ctx.Discriminator = tc.Context.User.Discriminator
-	ctx.UserRoles = tc.Context.User.Roles
-
-	// Set up args
-	if len(tc.Context.Args) > 0 {
-		ctx.Args = make([]interface{}, len(tc.Context.Args))
-		for i, a := range tc.Context.Args {
-			ctx.Args[i] = a
-		}
-	}
-	if len(tc.Context.CmdArgs) > 0 {
-		ctx.CmdArgs = make([]interface{}, len(tc.Context.CmdArgs))
-		for i, a := range tc.Context.CmdArgs {
-			ctx.CmdArgs[i] = a
-		}
-	} else if len(tc.Context.Args) > 0 {
-		// Default CmdArgs to Args if not specified
-		ctx.CmdArgs = ctx.Args
-	}
-
-	for _, m := range tc.Context.Messages {
-		ctx.Messages = append(ctx.Messages, types.CtxMessage{
-			ID:        m.ID,
-			ChannelID: m.ChannelID,
-			GuildID:   ctx.GuildID,
-			Author:    types.DiscordUser{ID: m.AuthorID, Username: "MockUser"},
-			Content:   m.Content,
-		})
-	}
-	ctx.Members = tc.Context.Members
-	ctx.MemberRoles = tc.Context.MemberRoles
-	for _, r := range tc.Context.Guild.Roles {
-		ctx.AvailableRoles[r.ID] = types.CtxRole{ID: r.ID, Name: r.Name, Color: r.Color}
-	}
-	ctx.MessageContent = tc.Context.MessageContent
-
-	if rd := tc.Context.Reaction; rd != nil {
-		ctx.Reaction = &types.CtxReaction{
-			UserID:    ctx.UserID,
-			MessageID: rd.MessageID,
-			ChannelID: ctx.ChannelID,
-			GuildID:   ctx.GuildID,
-			Emoji:     types.CtxEmoji{ID: rd.EmojiID, Name: rd.Emoji},
-		}
-		ctx.ReactionAdded = rd.Added == nil || *rd.Added
-	}
-
-	// Set ExecData if provided
-	if tc.Context.ExecData != nil {
-		ctx.ExecData = types.SDict(tc.Context.ExecData)
-	}
-
-	// Set command map for execCC
-	if tc.CommandMap != nil {
-		ctx.CommandIDMap = tc.CommandMap
-	}
-	ctx.TemplateBaseDir = r.config.BaseDir
 
 	// Execute template
 	engine := runtime.NewEngine(ctx)
@@ -200,6 +139,100 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 
 	result.Passed = len(result.Failures) == 0 && result.Error == nil
 	return result
+}
+
+// newContext builds the execution context a test describes, on the given database.
+func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionContext {
+	ctx := runtime.NewExecutionContext(tc.Context.Guild.ID, db)
+	ctx.Strict = r.config.Strict || tc.Strict
+	ctx.Schema = r.config.Schema
+	if tc.Context.Premium != nil && !*tc.Context.Premium {
+		ctx.SetNonPremium()
+	}
+	ctx.GuildName = tc.Context.Guild.Name
+	ctx.OwnerID = tc.Context.Guild.OwnerID
+	ctx.ChannelID = tc.Context.Channel.ID
+	ctx.ChannelName = tc.Context.Channel.Name
+	ctx.UserID = tc.Context.User.ID
+	ctx.Username = tc.Context.User.Username
+	ctx.Discriminator = tc.Context.User.Discriminator
+	ctx.UserRoles = tc.Context.User.Roles
+
+	// Set up args
+	if len(tc.Context.Args) > 0 {
+		ctx.Args = make([]interface{}, len(tc.Context.Args))
+		for i, a := range tc.Context.Args {
+			ctx.Args[i] = a
+		}
+	}
+	if len(tc.Context.CmdArgs) > 0 {
+		ctx.CmdArgs = make([]interface{}, len(tc.Context.CmdArgs))
+		for i, a := range tc.Context.CmdArgs {
+			ctx.CmdArgs[i] = a
+		}
+	} else if len(tc.Context.Args) > 0 {
+		// Default CmdArgs to Args if not specified
+		ctx.CmdArgs = ctx.Args
+	}
+
+	for _, m := range tc.Context.Messages {
+		ctx.Messages = append(ctx.Messages, types.CtxMessage{
+			ID:        m.ID,
+			ChannelID: m.ChannelID,
+			GuildID:   ctx.GuildID,
+			Author:    types.DiscordUser{ID: m.AuthorID, Username: "MockUser"},
+			Content:   m.Content,
+		})
+	}
+	ctx.Members = tc.Context.Members
+	ctx.MemberRoles = tc.Context.MemberRoles
+	for _, role := range tc.Context.Guild.Roles {
+		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color}
+	}
+	ctx.MessageContent = tc.Context.MessageContent
+
+	if rd := tc.Context.Reaction; rd != nil {
+		ctx.Reaction = &types.CtxReaction{
+			UserID:    ctx.UserID,
+			MessageID: rd.MessageID,
+			ChannelID: ctx.ChannelID,
+			GuildID:   ctx.GuildID,
+			Emoji:     types.CtxEmoji{ID: rd.EmojiID, Name: rd.Emoji},
+		}
+		ctx.ReactionAdded = rd.Added == nil || *rd.Added
+	}
+
+	// Set ExecData if provided
+	if tc.Context.ExecData != nil {
+		ctx.ExecData = types.SDict(tc.Context.ExecData)
+	}
+
+	// Set command map for execCC
+	if tc.CommandMap != nil {
+		ctx.CommandIDMap = tc.CommandMap
+	}
+	ctx.TemplateBaseDir = r.config.BaseDir
+	return ctx
+}
+
+// runSetupTemplate runs a template the test lists under setup_templates, in the test's
+// context and on its database, and discards what it sends.
+func (r *Runner) runSetupTemplate(tc *TestCase, db *state.MockDB, path string) error {
+	full := path
+	if !filepath.IsAbs(full) {
+		full = filepath.Join(r.config.BaseDir, path)
+	}
+	source, err := os.ReadFile(full)
+	if err != nil {
+		return fmt.Errorf("setup template: %w", err)
+	}
+	ctx := r.newContext(tc, db)
+	ctx.SourceName = displayPath(r.config.BaseDir, path)
+	ctx.Args, ctx.CmdArgs, ctx.ExecData = nil, nil, nil
+	if _, err := runtime.NewEngine(ctx).Execute(string(source)); err != nil {
+		return fmt.Errorf("setup template %s: %w", path, err)
+	}
+	return nil
 }
 
 // checkOutput verifies output assertions.
@@ -325,6 +358,16 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 		if check.HasEmbed && found.Embed == nil {
 			failures = append(failures,
 				fmt.Sprintf("message check %d: expected embed but none found", i))
+		}
+
+		if check.EmbedContains != "" {
+			if found.Embed == nil {
+				failures = append(failures,
+					fmt.Sprintf("message check %d: expected an embed containing %q but none found", i, check.EmbedContains))
+			} else if embed := readableJSON(found.Embed); !strings.Contains(embed, check.EmbedContains) {
+				failures = append(failures,
+					fmt.Sprintf("message check %d: embed should contain %q but is:\n%s", i, check.EmbedContains, embed))
+			}
 		}
 
 		if check.EmbedTitle != "" && found.Embed != nil {

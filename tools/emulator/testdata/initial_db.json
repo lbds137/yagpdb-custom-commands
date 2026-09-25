@@ -3,29 +3,41 @@
     "user_id": 0,
     "key": "Global",
     "value": {
-      "Delete Trigger Delay": 5
+      "Embed Color": "16777214",
+      "Default Avatar": "https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png",
+      "Delete Trigger Delay": "5",
+      "Delete Response Delay": "5",
+      "Command Prefix": "/",
+      "Guild Premium Tier": "0",
+      "ExecCC Limit": "10"
     }
   },
   {
     "user_id": 0,
     "key": "Commands",
     "value": {
-      "db": 456,
-      "embed_exec": 123
+      "embed_exec": "123",
+      "db": "456"
+    }
+  },
+  { "user_id": 0, "key": "Rules", "value": {} },
+  {
+    "user_id": 0,
+    "key": "Roles",
+    "value": {
+      "Staff": "888888888888888888"
     }
   },
   {
     "user_id": 0,
     "key": "Channels",
     "value": {
-      "YAGPDB": 999999999
+      "YAGPDB": "123456789"
     }
   },
-  {
-    "user_id": 0,
-    "key": "Roles",
-    "value": {
-      "Staff": 888888888
-    }
-  }
+  { "user_id": 0, "key": "Admin", "value": {} },
+  { "user_id": 0, "key": "Knowledge", "value": {} },
+  { "user_id": 0, "key": "Directory", "value": {} },
+  { "user_id": 0, "key": "Inactivity Prune", "value": {} },
+  { "user_id": 0, "key": "Staff", "value": {} }
 ]

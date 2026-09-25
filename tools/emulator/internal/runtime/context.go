@@ -35,6 +35,7 @@ type ExecutionContext struct {
 	// Guild/Server context
 	GuildID   int64
 	GuildName string
+	OwnerID   int64 // The guild owner; 0 means the triggering user
 
 	// Channel context
 	ChannelID   int64
@@ -64,6 +65,7 @@ type ExecutionContext struct {
 
 	// Messages that exist, for getMessage; Members, if set, are the only users in the server
 	Messages []types.CtxMessage
+	sentIDs  *int64 // see sentMessageIDs
 	Members  []int64
 	// MemberRoles are other members' roles; the triggering user's are UserRoles
 	MemberRoles map[int64][]int64
@@ -170,10 +172,15 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	for _, role := range ctx.AvailableRoles {
 		guildRoles = append(guildRoles, role)
 	}
+	ownerID := ctx.OwnerID
+	if ownerID == 0 {
+		ownerID = ctx.UserID
+	}
 	guild := types.CtxGuild{
-		ID:    ctx.GuildID,
-		Name:  ctx.GuildName,
-		Roles: guildRoles,
+		ID:      ctx.GuildID,
+		Name:    ctx.GuildName,
+		OwnerID: ownerID,
+		Roles:   guildRoles,
 	}
 
 	// Build message object
@@ -261,11 +268,7 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		}(),
 
 		// Bot user (simplified)
-		"BotUser": types.DiscordUser{
-			ID:       1234567890,
-			Username: "YAGPDB.xyz",
-			Bot:      true,
-		},
+		"BotUser": botUser,
 
 		// Permissions
 		"Permissions": permissions,
@@ -307,14 +310,46 @@ func (ctx *ExecutionContext) HasRole(roleID int64) bool {
 	return false
 }
 
-// RecordSentMessage records a message that was "sent" during execution.
-func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embed interface{}) {
+// RecordSentMessage records a message sent during execution. Messages the bot sends to a
+// channel can be fetched with getMessage, as on Discord; it returns their ID.
+func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embed interface{}) int64 {
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{
 		ChannelID: channelID,
 		Content:   content,
 		Embed:     embed,
 	})
+	*ctx.sentMessageIDs()++
+	id := firstSentMessageID + *ctx.sentIDs
+	msg := types.CtxMessage{
+		ID:        id,
+		ChannelID: channelID,
+		GuildID:   ctx.GuildID,
+		Author:    botUser,
+		Content:   content,
+		Timestamp: time.Now(),
+	}
+	if embed != nil {
+		msg.Embeds = []interface{}{embed}
+	}
+	if channelID != 0 { // a DM isn't in the server's channels
+		ctx.Messages = append(ctx.Messages, msg)
+	}
+	return id
 }
+
+// Sent messages get IDs from here up, clear of the IDs tests declare.
+const firstSentMessageID = 1_100_000_000_000_000_000
+
+// sentMessageIDs is the count of messages sent so far, shared with execCC children so every
+// message in a run gets its own ID.
+func (ctx *ExecutionContext) sentMessageIDs() *int64 {
+	if ctx.sentIDs == nil {
+		ctx.sentIDs = new(int64)
+	}
+	return ctx.sentIDs
+}
+
+var botUser = types.DiscordUser{ID: 1234567890, Username: "YAGPDB.xyz", Bot: true}
 
 // RecordRoleChange records a role change during execution.
 func (ctx *ExecutionContext) RecordRoleChange(userID, roleID int64, action string) {
