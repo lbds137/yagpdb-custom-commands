@@ -30,16 +30,17 @@ type TestCase struct {
 
 // ContextDef defines the execution context for a test.
 type ContextDef struct {
-	User     UserDef                `yaml:"user"`
-	Channel  ChannelDef             `yaml:"channel"`
-	Guild    GuildDef               `yaml:"guild"`
+	User    UserDef    `yaml:"user"`
+	Channel ChannelDef `yaml:"channel"`
+	Guild   GuildDef   `yaml:"guild"`
+	// Args are the arguments after the trigger; the message is the trigger followed by them
 	Args     []string               `yaml:"args"`
-	CmdArgs  []string               `yaml:"cmd_args"`
 	ExecData map[string]interface{} `yaml:"exec_data"`
 	Premium  *bool                  `yaml:"premium"`  // Default true
 	Reaction *ReactionDef           `yaml:"reaction"` // Makes this a reaction-triggered run
 	Messages []MessageDef           `yaml:"messages"` // Messages getMessage can find
-	// MessageContent is the triggering message's text (.Message.Content), for regex triggers
+	// MessageContent is the whole triggering message, trigger included (instead of args);
+	// with exec_data or reaction, the message .Message is
 	MessageContent string  `yaml:"message_content"`
 	Members        []int64 `yaml:"members"` // If set, the only users getMember finds
 	// MemberRoles gives other members' roles (the triggering user's are user.roles)
@@ -82,7 +83,8 @@ type GuildDef struct {
 	Name  string    `yaml:"name"`
 	Roles []RoleDef `yaml:"roles"` // If set, getRole and targetHasRole know only these
 	// OwnerID is .Guild.OwnerID (default: the triggering user)
-	OwnerID int64 `yaml:"owner_id"`
+	OwnerID int64  `yaml:"owner_id"`
+	Prefix  string `yaml:"prefix"` // The command prefix (default: YAGPDB's "-")
 }
 
 // RoleDef is a role in the guild.
@@ -314,6 +316,9 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.Guild.Name == "" {
 		tc.Context.Guild.Name = defaults.Guild.Name
+	}
+	if tc.Context.Guild.Prefix == "" {
+		tc.Context.Guild.Prefix = defaults.Guild.Prefix
 	}
 	if tc.Context.Guild.OwnerID == 0 {
 		tc.Context.Guild.OwnerID = defaults.Guild.OwnerID

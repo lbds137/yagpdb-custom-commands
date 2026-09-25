@@ -102,6 +102,7 @@ tests:
   # Leveling
   - name: "Cookbook leveling: crossing 100 XP is level 1"
     template: "../../../docs/cookbook/leveling.gohtml"
+    context: { message_content: "hello" }
     setup_db:
       - { user_id: 900000000000000001, key: "xp", value: 95 }
     expected:
@@ -113,6 +114,7 @@ tests:
 
   - name: "Cookbook leveling: no XP during the cooldown"
     template: "../../../docs/cookbook/leveling.gohtml"
+    context: { message_content: "hello" }
     setup_db:
       - { user_id: 900000000000000001, key: "xp", value: 95 }
       - { user_id: 900000000000000001, key: "xp_cooldown", value: true }

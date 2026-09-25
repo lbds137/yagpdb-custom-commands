@@ -371,7 +371,6 @@ go build -o bin/yagtest ./cmd/yagtest
   template: "../../../utility/db.gohtml"
   context:
     args: ["add", "Directory:Exclude Categories", "New Category"]
-    cmd_args: ["add", "Directory:Exclude Categories", "New Category"]
 ```
 
 ### Vendor Directory

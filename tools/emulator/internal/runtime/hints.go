@@ -67,7 +67,7 @@ func Hint(err error) string {
 
 	if strings.Contains(msg, "error calling parseArgs") {
 		return "the command needs arguments. Pass them with -args \"a,b\" (yagtest run) or " +
-			"context.args (test YAML)."
+			"context.args (test YAML), or give the whole message with -message or message_content."
 	}
 
 	if m := reWrongArgs.FindStringSubmatch(msg); m != nil {

@@ -12,6 +12,7 @@ make watch             # rerun template tests on changes
 make update-snapshots  # accept an intended change in snapshot output
 
 ./bin/yagtest run -args "get,Global" -verbose utility/db.gohtml
+./bin/yagtest run -message "#ff8800" utility/hex_to_int.gohtml # whole message (Regex triggers need it)
 ./bin/yagtest run -no-premium -strict utility/db.gohtml   # free-server limits, fail on breach
 ./bin/yagtest check utility/*.gohtml                      # parse + static warnings
 make test-templates                # smoke-run every command with no args on a bootstrapped DB (in make ci)
@@ -28,15 +29,16 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   strict: true                        # optional: fail on YAGPDB limits
   snapshot: true                      # optional: compare with __snapshots__/<file>.snap.yaml
   context:
-    args: ["arg1", "arg2"]
+    args: ["arg1", "arg two"]         # after the trigger in the header: the message is `-example arg1 "arg two"`
     premium: false                    # optional, default true
     user: { id: 1, roles: [111] }
     guild: { roles: [{ id: 111, name: "Staff", color: 3447003 }] }  # if set, unknown roles are nil/errors
-    # guild.owner_id: .Guild.OwnerID (default: the triggering user)
+    # guild.owner_id: .Guild.OwnerID (default: the triggering user); guild.prefix (default "-")
     members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
     member_roles: { 2: [111] }        # other members' roles
     messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # what getMessage finds
-    message_content: "text"           # the triggering message (.Message.Content), for regex triggers
+    message_content: "text"           # or the whole message, trigger included (Regex triggers need it);
+                                      # with exec_data/reaction it is only .Message (no arguments)
     reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }

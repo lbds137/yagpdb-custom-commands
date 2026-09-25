@@ -82,6 +82,10 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	if ctx.SourceName == "" {
 		ctx.SourceName = fmt.Sprintf("inline template of %q", tc.Name)
 	}
+	if err := setTriggerMessage(tc, source, ctx); err != nil {
+		result.Error = err
+		return result
+	}
 
 	// Execute template
 	engine := runtime.NewEngine(ctx)
@@ -151,29 +155,15 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	}
 	ctx.GuildName = tc.Context.Guild.Name
 	ctx.OwnerID = tc.Context.Guild.OwnerID
+	if tc.Context.Guild.Prefix != "" {
+		ctx.Prefix = tc.Context.Guild.Prefix
+	}
 	ctx.ChannelID = tc.Context.Channel.ID
 	ctx.ChannelName = tc.Context.Channel.Name
 	ctx.UserID = tc.Context.User.ID
 	ctx.Username = tc.Context.User.Username
 	ctx.Discriminator = tc.Context.User.Discriminator
 	ctx.UserRoles = tc.Context.User.Roles
-
-	// Set up args
-	if len(tc.Context.Args) > 0 {
-		ctx.Args = make([]interface{}, len(tc.Context.Args))
-		for i, a := range tc.Context.Args {
-			ctx.Args[i] = a
-		}
-	}
-	if len(tc.Context.CmdArgs) > 0 {
-		ctx.CmdArgs = make([]interface{}, len(tc.Context.CmdArgs))
-		for i, a := range tc.Context.CmdArgs {
-			ctx.CmdArgs[i] = a
-		}
-	} else if len(tc.Context.Args) > 0 {
-		// Default CmdArgs to Args if not specified
-		ctx.CmdArgs = ctx.Args
-	}
 
 	for _, m := range tc.Context.Messages {
 		ctx.Messages = append(ctx.Messages, types.CtxMessage{
@@ -189,8 +179,6 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	for _, role := range tc.Context.Guild.Roles {
 		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color}
 	}
-	ctx.MessageContent = tc.Context.MessageContent
-
 	if rd := tc.Context.Reaction; rd != nil {
 		ctx.Reaction = &types.CtxReaction{
 			UserID:    ctx.UserID,
@@ -215,6 +203,47 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	return ctx
 }
 
+// setTriggerMessage gives the command the message that triggered it: the test's
+// message_content, or its args after the trigger the template's header names. Commands
+// run by execCC or a reaction have no trigger, but message_content can set their .Message;
+// commands without a message trigger have neither.
+func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContext) error {
+	c := tc.Context
+	if c.ExecData != nil || c.Reaction != nil {
+		if len(c.Args) > 0 {
+			return fmt.Errorf("args need a message trigger, not exec_data or reaction")
+		}
+		ctx.MessageContent = c.MessageContent
+		return nil
+	}
+	t, ok := runtime.ReadTrigger(source)
+	if !ok {
+		// Inline templates and ones without a header are commands named after their file
+		name := strings.TrimSuffix(filepath.Base(tc.Template), filepath.Ext(tc.Template))
+		if tc.Template == "" {
+			name = "test"
+		}
+		t = runtime.Trigger{Type: "Command", Text: name}
+	}
+	if !t.MessageTriggered() {
+		if len(c.Args) > 0 || c.MessageContent != "" {
+			return fmt.Errorf("args and message_content need a message trigger; the template's is %q", t.Type)
+		}
+		return nil
+	}
+
+	msg := c.MessageContent
+	switch {
+	case msg != "" && len(c.Args) > 0:
+		return fmt.Errorf("give args or message_content, not both")
+	case msg == "" && t.Type == "Regex":
+		return fmt.Errorf("a Regex trigger needs message_content (the whole message)")
+	case msg == "":
+		msg = runtime.TriggerMessage(ctx.Prefix, t, c.Args)
+	}
+	return ctx.SetTriggerMessage(t, msg)
+}
+
 // runSetupTemplate runs a template the test lists under setup_templates, in the test's
 // context and on its database, and discards what it sends.
 func (r *Runner) runSetupTemplate(tc *TestCase, db *state.MockDB, path string) error {
@@ -228,7 +257,7 @@ func (r *Runner) runSetupTemplate(tc *TestCase, db *state.MockDB, path string) e
 	}
 	ctx := r.newContext(tc, db)
 	ctx.SourceName = displayPath(r.config.BaseDir, path)
-	ctx.Args, ctx.CmdArgs, ctx.ExecData = nil, nil, nil
+	ctx.ExecData = nil
 	if _, err := runtime.NewEngine(ctx).Execute(string(source)); err != nil {
 		return fmt.Errorf("setup template %s: %w", path, err)
 	}

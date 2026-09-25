@@ -38,26 +38,22 @@ tests:
     template: "../../../utility/db.gohtml"
     context:
       args: ["get", "Global"]
-      cmd_args: ["get", "Global"]
     # db.gohtml calls execCC which we mock, so we just check it executed without error
 
   - name: "Get non-existent key"
     template: "../../../utility/db.gohtml"
     context:
       args: ["get", "NonExistent"]
-      cmd_args: ["get", "NonExistent"]
     # Should complete without error (shows "No value found" via embed)
 
   - name: "Invalid operation"
     template: "../../../utility/db.gohtml"
     context:
       args: ["invalid_op", "SomeKey"]
-      cmd_args: ["invalid_op", "SomeKey"]
     # Should complete without error (shows error message via embed)
 
   - name: "Keys operation on dictionary"
     template: "../../../utility/db.gohtml"
     context:
       args: ["keys", "Global"]
-      cmd_args: ["keys", "Global"]
     # Lists keys in the Global dictionary
