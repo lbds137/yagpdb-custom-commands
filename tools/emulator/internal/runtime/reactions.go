@@ -43,10 +43,10 @@ func (r ReactionChange) String() string {
 // {{try}}, otherwise a warning, as the other limited functions do.
 func (e *Engine) reactionCount(fn string, l callLimit) error {
 	if err := e.ctx.countCall(fn, l); err != nil {
-		if e.ctx.Strict || e.ctx.caughtInTry(err) {
+		if e.ctx.returnsError(err) {
 			return err
 		}
-		e.ctx.warnOnce(err.Error() + "; YAGPDB stops the command here")
+		e.ctx.warnOnce(explain(err) + "; YAGPDB stops the command here")
 	}
 	return nil
 }
@@ -57,10 +57,10 @@ func (e *Engine) reactionCount(fn string, l callLimit) error {
 // Discord refused.
 func (e *Engine) react(fn string, change ReactionChange) (ok bool, err error) {
 	if strings.HasPrefix(change.Emoji, "<") && strings.HasSuffix(change.Emoji, " Value>") {
-		return false, e.ctx.discordRefuses(fn, "HTTP 400, 10014 Unknown Emoji", fmt.Sprintf("the emoji %s is not a string", change.Emoji))
+		return false, e.ctx.discordRefuses(fn, errUnknownEmoji, fmt.Sprintf("the emoji %s is not a string", change.Emoji))
 	}
 	if !e.ctx.messageExists(change.ChannelID, change.MessageID) {
-		return false, e.ctx.discordRefuses(fn, "HTTP 404, 10008 Unknown Message",
+		return false, e.ctx.discordRefuses(fn, errUnknownMessage,
 			fmt.Sprintf("no message %d in channel %d (a test's messages, a sent one or the run's message)", change.MessageID, change.ChannelID))
 	}
 	e.ctx.Reactions = append(e.ctx.Reactions, change)

@@ -37,6 +37,15 @@ func kinds(ctx *ExecutionContext, kind string) []string {
 	return out
 }
 
+// explained is a run's error with the warnings that explain it: the error carries
+// YAGPDB's text, and the emulator's detail (which function, which limit) is a warning.
+func explained(ctx *ExecutionContext, err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error() + "\n" + strings.Join(kinds(ctx, KindLimit), "\n")
+}
+
 // eleven dbGet calls: one over the free limit of 10
 const elevenDBGets = `{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}` +
 	`{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}done`
@@ -47,7 +56,7 @@ func TestDBLimitStrictFree(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), ErrTooManyCalls.Error()) {
 		t.Fatalf("want ErrTooManyCalls, got %v", err)
 	}
-	if !strings.Contains(err.Error(), "dbGet: over the limit of 10 db_interactions") {
+	if !strings.Contains(explained(ctx, err), "dbGet: over the limit of 10 db_interactions") {
 		t.Errorf("error should name the function and limit: %v", err)
 	}
 }
@@ -237,7 +246,7 @@ func TestDeleteReactionsCounters(t *testing.T) {
 	}
 	ctx = msgCtx()
 	_, err := run(t, ctx, `{{deleteAllMessageReactions nil 1 "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k"}}`)
-	if err == nil || !strings.Contains(err.Error(), "del_reaction_message") {
+	if err == nil || !strings.Contains(explained(ctx, err), "del_reaction_message") {
 		t.Errorf("11 emoji should pass the del_reaction_message limit of 10, got %v", err)
 	}
 }
@@ -352,8 +361,9 @@ func TestSetRolesTargets(t *testing.T) {
 }
 
 func TestDeleteReactionsFlattensSlices(t *testing.T) {
-	_, err := run(t, msgCtx(), `{{deleteAllMessageReactions nil 1 (cslice "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k")}}`)
-	if err == nil || !strings.Contains(err.Error(), "del_reaction_message") {
+	ctx := msgCtx()
+	_, err := run(t, ctx, `{{deleteAllMessageReactions nil 1 (cslice "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k")}}`)
+	if err == nil || !strings.Contains(explained(ctx, err), "del_reaction_message") {
 		t.Errorf("11 emoji in a slice should hit the limit, got %v", err)
 	}
 	if _, err := run(t, msgCtx(), `{{addReactions nil nil "a"}}`); err != nil {
@@ -421,7 +431,7 @@ func TestEmbedLimitsStrictFailsTheSend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx := newCtx(true, true)
 			_, err := run(t, ctx, c.src)
-			if err == nil || !strings.Contains(err.Error(), c.want) || !strings.Contains(err.Error(), "HTTP 400") {
+			if err == nil || !strings.Contains(explained(ctx, err), c.want) || !strings.Contains(err.Error(), "HTTP 400") {
 				t.Fatalf("want %q, got %v", c.want, err)
 			}
 			// The rejected message isn't recorded; the run's show_errors message is
@@ -436,7 +446,7 @@ func TestEmbedFieldCountLimit(t *testing.T) {
 	ctx := newCtx(true, true)
 	src := `{{$f := cslice}}{{range seq 0 26}}{{$f = $f.Append (sdict "name" "n" "value" "v")}}{{end}}` +
 		`{{sendMessage nil (cembed "fields" $f)}}`
-	if _, err := run(t, ctx, src); err == nil || !strings.Contains(err.Error(), "has 26 fields (max 25)") {
+	if _, err := run(t, ctx, src); err == nil || !strings.Contains(explained(ctx, err), "has 26 fields (max 25)") {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -541,7 +551,7 @@ func TestNonEmptyWithoutContent(t *testing.T) {
 
 func TestEmptyMessageNamesDiscordsCode(t *testing.T) {
 	_, err := run(t, newCtx(true, true), `{{sendMessage nil " "}}`)
-	if err == nil || !strings.Contains(err.Error(), "50006 Cannot send an empty message") {
+	if err == nil || !strings.Contains(err.Error(), `"code": 50006`) {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -561,8 +571,8 @@ func TestEditMessage(t *testing.T) {
 		{"a number is printed as YAGPDB prints it", send + `{{editMessage nil $id 1.5}}{{(getMessage nil $id).Content}}`, true, "", "1.5"},
 		{"an embed alone keeps the content", send + `{{editMessage nil $id (cembed "title" "U")}}{{(getMessage nil $id).Content}}`, true, "", "a"},
 		{"components v2 skips YAGPDB's check", send + `{{editMessage nil $id (complexMessageEdit "content" "" "is_components_v2" true)}}`, false, "", ""},
-		{"unknown message", `{{editMessage nil 42 "x"}}`, true, "10008 Unknown Message", ""},
-		{"a message in another channel", send + `{{editMessage 99 $id "x"}}`, true, "10008 Unknown Message", ""},
+		{"unknown message", `{{editMessage nil 42 "x"}}`, true, `"code": 10008`, ""},
+		{"a message in another channel", send + `{{editMessage 99 $id "x"}}`, true, `"code": 10008`, ""},
 		{"someone else's message", `{{editMessage nil 7 "x"}}`, true, "50005", ""},
 		{"too long", send + `{{editMessage nil $id (printf "%2001s" "x")}}`, true, "HTTP 400", ""},
 		{"unknown key", `{{complexMessageEdit "file" "x"}}`, false, `invalid key "file" passed to message edit builder`, ""},
@@ -659,7 +669,7 @@ func TestDBQueryErrorsAsProductionWrapsThem(t *testing.T) {
 	for _, c := range cases {
 		ctx := newCtx(false, true)
 		_, err := run(t, ctx, `{{dbSet 1 "a" 1}}`+c.src)
-		if err == nil || !strings.Contains(err.Error(), c.want) {
+		if err == nil || !strings.Contains(explained(ctx, err), c.want) {
 			t.Errorf("%s: got %v, want %q", c.src, err, c.want)
 		}
 	}

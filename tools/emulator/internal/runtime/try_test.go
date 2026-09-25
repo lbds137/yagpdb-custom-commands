@@ -17,7 +17,8 @@ func TestCallLimitInsideTryGoesToCatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	// What the try printed before the error stays, as in YAGPDB
-	if !strings.Contains(out, "caught: ") || !strings.Contains(out, ErrTooManyCalls.Error()) || strings.Contains(out, "done") {
+	// The catch sees YAGPDB's text alone: .Error is "too many calls to this function"
+	if !strings.HasSuffix(out, "caught: "+ErrTooManyCalls.Error()) || strings.Contains(out, "done") {
 		t.Errorf("the catch should get the limit error and the rest of the try not run: %q", out)
 	}
 	if w := kinds(ctx, KindLimit); len(w) != 1 || !strings.Contains(w[0], "inside {{try}}, so its {{catch}} runs") {
@@ -65,7 +66,7 @@ func TestDiscordRefusalInsideTryGoesToCatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out, "caught: ") || !strings.Contains(out, "10008 Unknown Message") || strings.Contains(out, "after") {
+	if !strings.Contains(out, "caught: ") || !strings.HasSuffix(out, "caught: "+errUnknownMessage.Error()) || strings.Contains(out, "after") {
 		t.Errorf("the catch should get Discord's refusal: %q", out)
 	}
 	if len(ctx.EditedMessages) != 0 {
@@ -121,14 +122,46 @@ func TestSilentCallsInsideTryDontGoToCatch(t *testing.T) {
 	}
 }
 
-// -strict returns the error anyway; the catch warning is only for non-strict runs
-func TestStrictTryAddsNoWarning(t *testing.T) {
+// -strict returns the error anyway; the catch warning is only for non-strict runs (the
+// explanation of the error is still a warning)
+func TestStrictTryWarnsOnlyTheExplanation(t *testing.T) {
 	ctx := newCtx(true, false)
 	out, err := run(t, ctx, elevenDBGetsInTry)
 	if err != nil || !strings.Contains(out, "caught: ") {
 		t.Fatalf("want the catch to run: out=%q err=%v", out, err)
 	}
-	if w := kinds(ctx, KindLimit); len(w) != 0 {
-		t.Errorf("want no warnings with -strict, got %q", w)
+	if w := kinds(ctx, KindLimit); len(w) != 1 || strings.Contains(w[0], "inside {{try}}") {
+		t.Errorf("want only the explanation with -strict, got %q", w)
+	}
+}
+
+// discordgo's RESTError text, "HTTP <status>, <body>", with Discord's JSON body
+func TestDiscordErrorText(t *testing.T) {
+	for err, want := range map[discordError]string{
+		errUnknownMessage:  `HTTP 404 Not Found, {"message": "Unknown Message", "code": 10008}`,
+		errUnknownEmoji:    `HTTP 400 Bad Request, {"message": "Unknown Emoji", "code": 10014}`,
+		errEditOthers:      `HTTP 403 Forbidden, {"message": "Cannot edit a message authored by another user", "code": 50005}`,
+		errEmptyMessage:    `HTTP 400 Bad Request, {"message": "Cannot send an empty message", "code": 50006}`,
+		errInvalidFormBody: `HTTP 400 Bad Request, {"message": "Invalid Form Body", "code": 50035}`,
+	} {
+		if err.Error() != want {
+			t.Errorf("got %s, want %s", err.Error(), want)
+		}
+	}
+}
+
+// The error holds YAGPDB's text only; the emulator's explanation is a warning
+func TestExplanationStaysOutOfTheError(t *testing.T) {
+	for src, detail := range map[string]string{
+		elevenDBGets:                     "over the limit",
+		`{{editMessage nil 424242 "x"}}`: "Discord refuses",
+		`{{sendMessage nil ""}}`:         "Discord rejects",
+	} {
+		ctx := msgCtx() // strict
+		ctx.SetNonPremium()
+		_, err := run(t, ctx, src)
+		if err == nil || strings.Contains(err.Error(), detail) || !strings.Contains(explained(ctx, err), detail) {
+			t.Errorf("%s: want %q in a warning, not the error: %v / %q", src, detail, err, kinds(ctx, KindLimit))
+		}
 	}
 }

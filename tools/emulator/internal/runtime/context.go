@@ -125,9 +125,10 @@ type ExecutionContext struct {
 	// Premium mode
 	IsPremium bool
 
-	// Strict makes YAGPDB's execution limits fail the run, as they would in production.
-	// Without it, a breached limit is recorded as a warning and execution continues,
-	// except inside {{try}} (see caughtInTry).
+	// Strict makes YAGPDB's execution limits fail the run, as they would in production;
+	// the error has YAGPDB's text and the emulator's explanation is a warning. Without
+	// it, a breached limit is recorded as a warning and execution continues, except
+	// inside {{try}} (see returnsError).
 	Strict bool
 	// inTry is whether the template function being called is inside {{try}}; the
 	// template engine sets it before each call (OnCall), and it is false after the run.

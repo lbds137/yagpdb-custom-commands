@@ -20,13 +20,16 @@ gets a failing test first.
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
-- A function's error text is the emulator's, not YAGPDB's, so a `{{catch}}` printing or
-  comparing `.Error` (and a failed run's error message) differs from production: a call
-  limit is "too many calls to this function (dbGet: over the limit of 10 ...)" where
-  YAGPDB's is "too many calls to this function"; a Discord refusal is "editMessage:
-  Discord refuses this (HTTP 404, 10008 ...)" where discordgo's REST error reads
-  differently; checkSend's too. Fix: YAGPDB's text in the error, the explanation in a
-  warning (found in review 2026-09-25; next unit).
+- Discord's error bodies are written as `{"message": "...", "code": N}` (errors.go
+  discordError): the spacing is Discord's usual, not captured from a live response, and
+  a 50035 Invalid Form Body body also lists the fields at fault, which the emulator's
+  leaves out. A `{{catch}}` comparing the whole text could differ; one checking for the
+  code or message won't. Promote by capturing a real response. Also unprobed: which
+  error Discord gives first when a call has two problems (the emulator checks a
+  reaction's emoji before its message, and an edit's target before its form body);
+  promote if a command's catch tells those errors apart.
+- `editMessageNoEscape` runs editMessage's code, so its warnings name `editMessage`.
+  Promote when a command uses editMessageNoEscape (none does today).
 - Left as is (2026-09-25): a test whose name starts with a newline can't be
   snapshotted. The name is a YAML map key, which yaml.v3 can't write for such text; the
   write is refused with an error, so nothing is corrupted. Promote if a test needs it.
@@ -140,6 +143,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] Function errors carry YAGPDB's text, which is what a `{{catch}}`'s `.Error` and a
+      failed run's message show: "too many calls to this function" alone, and Discord's
+      refusals as discordgo's `HTTP 404 Not Found, {"message": "Unknown Message", "code":
+      10008}`. The emulator's explanation (which function, which limit, why Discord
+      refuses) is a warning, with -strict too (2026-09-25)
 
 - [x] A bad `clock:` value's error names the field and line (a mapping is refused
       rather than read as year 1), and a float `seed:` (1.5, 1.0, 1e3) is an error

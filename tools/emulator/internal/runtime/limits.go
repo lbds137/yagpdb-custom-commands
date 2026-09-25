@@ -159,7 +159,7 @@ func (ctx *ExecutionContext) count(fn, key string, limit int, base error) error 
 	if ctx.Counters[key] <= limit {
 		return nil
 	}
-	return fmt.Errorf("%w (%s: over the limit of %d %s calls per run)", base, fn, limit, key)
+	return &yagError{base, fmt.Sprintf("%v (%s: over the limit of %d %s calls per run)", base, fn, limit, key)}
 }
 
 func checkSetRoles(ctx *ExecutionContext, name string, args []reflect.Value) error {
@@ -222,15 +222,22 @@ func (ctx *ExecutionContext) limitBreach(err error) error {
 	return nil
 }
 
-// caughtInTry reports whether a function's error, which outside strict mode is only a
-// warning, must be returned after all: inside {{try}}, YAGPDB's {{catch}} gets it, so the
-// run goes on differently. The warning is still recorded.
-func (ctx *ExecutionContext) caughtInTry(err error) bool {
-	if !ctx.inTry {
-		return false
+// returnsError reports whether a function returns its YAGPDB error rather than warning
+// and going on: with -strict, and inside {{try}}, where YAGPDB's {{catch}} gets it (so
+// the run goes on differently). The error carries only YAGPDB's text, so its explanation
+// is recorded as a warning either way.
+func (ctx *ExecutionContext) returnsError(err error) bool {
+	switch {
+	case ctx.Strict:
+		if d := explain(err); d != err.Error() {
+			ctx.warnOnce(d)
+		}
+		return true
+	case ctx.inTry:
+		ctx.warnOnce(explain(err) + "; inside {{try}}, so its {{catch}} runs, as in YAGPDB")
+		return true
 	}
-	ctx.warnOnce(err.Error() + "; inside {{try}}, so its {{catch}} runs, as in YAGPDB")
-	return true
+	return false
 }
 
 // warnOnce records a limit warning unless the same one was already recorded this run.
@@ -278,7 +285,7 @@ func (e *Engine) withLimits(name string, fn interface{}) interface{} {
 
 		if err != nil {
 			if spec.silent {
-				e.ctx.warnOnce(err.Error() + "; YAGPDB skips this call silently")
+				e.ctx.warnOnce(explain(err) + "; YAGPDB skips this call silently")
 				if e.ctx.Strict {
 					// YAGPDB's silent functions return "", which an interface{} result
 					// (sendMessageRetID) must hold rather than nil
@@ -289,10 +296,10 @@ func (e *Engine) withLimits(name string, fn interface{}) interface{} {
 					return []reflect.Value{out, reflect.Zero(errorType)}
 				}
 			} else {
-				if e.ctx.Strict || e.ctx.caughtInTry(err) {
+				if e.ctx.returnsError(err) {
 					return []reflect.Value{reflect.Zero(outs[0]), reflect.ValueOf(&err).Elem()}
 				}
-				e.ctx.warnOnce(err.Error() + "; YAGPDB stops the command here")
+				e.ctx.warnOnce(explain(err) + "; YAGPDB stops the command here")
 			}
 		}
 
@@ -410,31 +417,35 @@ func (ctx *ExecutionContext) checkSend(fn, content string, embeds []interface{},
 	if len(problems) == 0 {
 		return true, nil
 	}
-	reason := "HTTP 400 Invalid Form Body"
+	derr := errInvalidFormBody
 	if problems[0] == msgEmpty {
-		reason = "HTTP 400, 50006 Cannot send an empty message"
+		derr = errEmptyMessage
 	}
-	err := fmt.Errorf("%s: Discord rejects this message (%s): %s", fn, reason, strings.Join(problems, "; "))
-	if !ctx.Strict && (silent || !ctx.caughtInTry(err)) {
-		ctx.warnOnce(err.Error())
+	err := &yagError{derr, fmt.Sprintf("%s: Discord rejects this message (%v): %s", fn, derr, strings.Join(problems, "; "))}
+	if silent {
+		if ctx.Strict {
+			ctx.warnOnce(explain(err) + "; YAGPDB skips this call silently")
+			return false, nil
+		}
+		ctx.warnOnce(explain(err))
 		return true, nil
 	}
-	if silent {
-		ctx.warnOnce(err.Error() + "; YAGPDB skips this call silently")
-		return false, nil
+	if ctx.returnsError(err) {
+		return false, err
 	}
-	return false, err
+	ctx.warnOnce(explain(err))
+	return true, nil
 }
 
-// discordRefuses reports a call Discord would answer with an error: an error with
-// -strict or inside {{try}}, otherwise a warning (and the call does nothing).
-func (ctx *ExecutionContext) discordRefuses(fn, reason, detail string) error {
-	err := fmt.Errorf("%s: Discord refuses this (%s): %s", fn, reason, detail)
-	if !ctx.Strict && !ctx.caughtInTry(err) {
-		ctx.warnOnce(err.Error())
-		return nil
+// discordRefuses reports a call Discord would answer with derr: an error with -strict or
+// inside {{try}}, otherwise a warning (and the call does nothing).
+func (ctx *ExecutionContext) discordRefuses(fn string, derr discordError, detail string) error {
+	err := &yagError{derr, fmt.Sprintf("%s: Discord refuses this (%v): %s", fn, derr, detail)}
+	if ctx.returnsError(err) {
+		return err
 	}
-	return err
+	ctx.warnOnce(explain(err))
+	return nil
 }
 
 const msgEmpty = "the message is empty"
