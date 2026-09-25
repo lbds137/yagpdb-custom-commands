@@ -116,3 +116,25 @@ func TestBadSuiteReportsItsOwnError(t *testing.T) {
 		}
 	}
 }
+
+func TestUnknownKeysAreErrors(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "typo.yaml")
+	src := "tests:\n  - name: x\n    template_source: \"hi\"\n    assertions:\n      sent_mesages: []\n"
+	if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadTestFile(path); err == nil || !strings.Contains(err.Error(), "sent_mesages") {
+		t.Errorf("a misspelled assertion should be an error naming it, got %v", err)
+	}
+}
+
+func TestSuiteDefaultsCantTriggerACommand(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "defaults.yaml")
+	src := "defaults:\n  args: [x]\ntests:\n  - name: x\n    template_source: \"hi\"\n"
+	if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadTestFile(path); err == nil || !strings.Contains(err.Error(), "set them per test") {
+		t.Errorf("args in defaults should be an error, got %v", err)
+	}
+}

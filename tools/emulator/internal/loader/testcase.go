@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
 // TestCase represents a single test definition.
@@ -150,10 +152,11 @@ type RoleCheck struct {
 
 // TestSuite represents a collection of test cases.
 type TestSuite struct {
-	Name     string     `yaml:"name"`
-	Tests    []TestCase `yaml:"tests"`
-	Defaults ContextDef `yaml:"defaults"` // Default context values
-	SetupDB  []DBEntry  `yaml:"setup_db"` // Shared database setup
+	Name        string     `yaml:"name"`
+	Description string     `yaml:"description"`
+	Tests       []TestCase `yaml:"tests"`
+	Defaults    ContextDef `yaml:"defaults"` // Default context values
+	SetupDB     []DBEntry  `yaml:"setup_db"` // Shared database setup
 	// SetupTemplates run before every test in the suite, ahead of the test's own
 	SetupTemplates []string         `yaml:"setup_templates"`
 	CommandMap     map[int64]string `yaml:"command_map"` // Shared command ID mapping
@@ -167,7 +170,7 @@ func LoadTestCase(filename string) (*TestCase, error) {
 	}
 
 	var tc TestCase
-	if err := yaml.Unmarshal(data, &tc); err != nil {
+	if err := types.StrictYAML(data, &tc); err != nil {
 		return nil, fmt.Errorf("parsing test YAML: %w", err)
 	}
 
@@ -186,8 +189,14 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 	}
 
 	var ts TestSuite
-	if err := yaml.Unmarshal(data, &ts); err != nil {
+	if err := types.StrictYAML(data, &ts); err != nil {
 		return nil, fmt.Errorf("parsing test suite YAML: %w", err)
+	}
+
+	// A suite's defaults can't trigger or feed a command; each test says that for itself
+	d := ts.Defaults
+	if len(d.Args) > 0 || d.ExecData != nil || d.MessageContent != "" || d.Reaction != nil {
+		return nil, fmt.Errorf("%s: defaults can't set args, exec_data, message_content or reaction; set them per test", filename)
 	}
 
 	// Apply defaults to all tests
