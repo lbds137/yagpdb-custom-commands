@@ -1,7 +1,7 @@
 package runtime
 
 // A failed custom command's error message, copied from YAGPDB's customcommands/bot.go
-// (formatCustomCommandRunErr and its helpers) and tmplextensions.go (limitString).
+// (formatCustomCommandRunErr and its helpers); limitString is funcs.LimitString.
 // emperror's errors.Cause stops at a template.ExecError, which has no Unwrap; errors.As
 // finds the same error in the emulator's chain.
 
@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	template "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate"
 )
 
@@ -99,7 +100,7 @@ func getSurroundingLines(lines []string, lineIndex int) string {
 		// remove common leading whitespace
 		line = line[commonLeadingSpaces:]
 		if len(line) > 35 {
-			line = limitString(line, 30) + "..."
+			line = funcs.LimitString(line, 30) + "..."
 		}
 		// replace all ` with ` + a ZWS to make sure that all the code will stay formatted nicely in the codeblock
 		line = strings.ReplaceAll(line, "`", "`\u200b")
@@ -143,20 +144,4 @@ func parseExecError(err template.ExecError) *execErrorData {
 	}
 
 	return &execErrorData{ccid, line, row, parts[4]}
-}
-
-func limitString(s string, l int) string {
-	if len(s) <= l {
-		return s
-	}
-
-	lastValidLoc := 0
-	for i := range s {
-		if i > l {
-			break
-		}
-		lastValidLoc = i
-	}
-
-	return s[:lastValidLoc]
 }

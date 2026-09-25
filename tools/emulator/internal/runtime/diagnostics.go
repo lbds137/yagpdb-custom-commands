@@ -9,6 +9,7 @@ const (
 	KindSchema = "schema"  // a stored value does not match the schema
 	KindExecCC = "execcc"  // a command run by execCC failed
 	KindRole   = "role"    // a role was assumed to exist
+	KindDB     = "db"      // a query production may fail where the mock doesn't
 )
 
 // Diagnostic is a warning found while checking or running a template.

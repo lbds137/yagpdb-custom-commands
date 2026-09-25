@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -63,7 +64,11 @@ func TestTopEntriesUseValueNum(t *testing.T) {
 	db.Set(2, "xp", "50") // a numeric string ranks by its number
 	db.Set(3, "xp", 30)
 	var got []int64
-	for _, e := range db.TopEntries("xp", 10, 0, false) {
+	entries, err := db.TopEntries("xp", 10, 0, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
 		got = append(got, e.UserID)
 	}
 	if len(got) != 3 || got[0] != 2 || got[1] != 3 || got[2] != 1 {
@@ -86,10 +91,77 @@ func TestMatchPatternIsLike(t *testing.T) {
 		{"abc", "ab", false},      // whole key
 		{"a.c", "a.c", true},      // regex metacharacters are literal
 		{"abc", "a.c", false},
+		{"héllo", "h_llo", true}, // _ is one character, not one byte
+		{"héllo", "h__llo", false},
+		{"", "%", true},
+		{"", "", true},
+		{"a%b", `a\%b`, true},
+		{"axb", `a\%b`, false},
+		{"é", "%__", false}, // the _ after a % steps by character
+		{"a", "a%", true},   // trailing %'s match the end of the text
 	}
 	for _, c := range cases {
-		if got := matchPattern(c.s, c.pattern); got != c.want {
-			t.Errorf("matchPattern(%q, %q) = %v, want %v", c.s, c.pattern, got, c.want)
+		if got, err := matchPattern(c.s, c.pattern); got != c.want || err != nil {
+			t.Errorf("matchPattern(%q, %q) = %v, %v; want %v", c.s, c.pattern, got, err, c.want)
+		}
+	}
+}
+
+// Postgres raises the trailing-escape error only when matching reaches the escape
+// with text left (like_match.c)
+func TestLikeTrailingEscape(t *testing.T) {
+	cases := []struct {
+		s, pattern string
+		fails      bool
+	}{
+		{"abcd", `abc\`, true},
+		{"x", `%\`, true},
+		{"abc", `abc\`, false}, // the text ends first: no match, no error
+		{"xyz", `abc\`, false}, // a mismatch before the escape
+		{"", `%\`, false},
+		{"ab", `\`, true},
+	}
+	for _, c := range cases {
+		got, err := matchPattern(c.s, c.pattern)
+		if got || (err != nil) != c.fails || (err != nil && err != ErrLikeEscape) {
+			t.Errorf("matchPattern(%q, %q) = %v, %v; want an error: %v", c.s, c.pattern, got, err, c.fails)
+		}
+	}
+
+	// A failing statement changes nothing
+	db := NewMockDB(1)
+	db.Set(1, "abcd", 1)
+	if _, err := db.DelMultiple(nil, ptr(`abc\`), false, 100, 0); err != ErrLikeEscape {
+		t.Errorf("got %v", err)
+	}
+	if db.Get(1, "abcd") == nil {
+		t.Error("the failed delete removed the entry")
+	}
+}
+
+func ptr(s string) *string { return &s }
+
+// Postgres sorts NaN above every number, Infinity included, and NaN equals NaN (so the
+// id breaks the tie)
+func TestNaNSortsHighest(t *testing.T) {
+	db := NewMockDB(1)
+	for user, v := range []string{"5", "NaN", "Inf", "-1", "NaN"} {
+		db.Set(int64(user), "k", v)
+	}
+	for _, c := range []struct {
+		ascending bool
+		want      string
+	}{{false, "[4 1 2 0 3]"}, {true, "[3 0 2 1 4]"}} {
+		entries, err := db.TopEntries("k", 10, 0, c.ascending)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var users []int64
+		for _, e := range entries {
+			users = append(users, e.UserID)
+		}
+		if got := fmt.Sprint(users); got != c.want {
+			t.Errorf("ascending %v: %s, want %s", c.ascending, got, c.want)
 		}
 	}
 }

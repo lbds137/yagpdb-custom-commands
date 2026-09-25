@@ -51,13 +51,13 @@ func TestExpiredEntriesAreRankedOutButDeleted(t *testing.T) {
 		}
 	}
 	db.entries[makeKey(1, "b")].ExpiresAt = time.Now().Add(-time.Minute)
-	if rank := db.Rank(nil, nil, false, 1, "b"); rank != 0 {
+	if rank, _ := db.Rank(nil, nil, false, 1, "b"); rank != 0 {
 		t.Errorf("an expired entry has no rank, got %d", rank)
 	}
-	if rank := db.Rank(nil, nil, false, 1, "a"); rank != 1 {
+	if rank, _ := db.Rank(nil, nil, false, 1, "a"); rank != 1 {
 		t.Errorf("the expired entry doesn't count, got rank %d", rank)
 	}
-	if n := db.DelMultiple(nil, nil, false, 100, 0); n != 2 {
+	if n, _ := db.DelMultiple(nil, nil, false, 100, 0); n != 2 {
 		t.Errorf("dbDelMultiple deletes expired entries too, deleted %d", n)
 	}
 }

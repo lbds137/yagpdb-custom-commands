@@ -9,9 +9,6 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   entry) serialize as the emulator's types, so their size differs from YAGPDB's. A value
   whose overflow past 100000 bytes is only whitespace is stored whole; YAGPDB stores it
   cut off, so reading it back fails.
-- A NaN value_num (`dbSet` of "NaN") sorts unpredictably in dbTopEntries, dbRank and
-  dbDelMultiple; Postgres puts NaN above every number. setup_db keys aren't cut to 256
-  bytes, so a longer fixture key can't be read back.
 - An immediate `execCC` runs inline, before the caller goes on; YAGPDB starts it in a
   goroutine, so it races with the rest of the caller (a `dbGet` right after an `execCC`
   that writes the key may read the old value in production). Scheduled runs are recorded,
@@ -44,7 +41,12 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   1234567890`.
 - Message assertions match the first message per channel, and `content_equals: ""` checks
   nothing, so an emptied content can't be asserted.
-- A trailing backslash in a LIKE pattern is ignored; Postgres errors.
+- A LIKE pattern is matched against the rows the query's other conditions select, so the
+  trailing-escape error comes only from a row whose match reaches the escape. Postgres
+  also runs LIKE while planning, on the key column's statistics (every server's keys),
+  for a pattern that isn't an exact match: there the emulator warns (`[db]`) instead of
+  guessing. Keys that aren't valid UTF-8 or hold a NUL byte are stored; Postgres
+  rejects them.
 - `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
   declares no guild roles accepts any role), and accepts any channel ID, since the
   emulator has no channel list. Its `role` argument uses the role functions' lookup;
@@ -160,6 +162,14 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] DB patterns use a port of Postgres's MatchText (like_match.c), checked against
+      Postgres 15 on 24,000 random cases: a trailing backslash is "LIKE pattern must not
+      end with escape character" when matching reaches it, and a failed dbDelMultiple
+      deletes nothing. Query errors carry sqlboiler's wrapping where YAGPDB selects through
+      it (dbGetPattern*, dbTop/BottomEntries, dbDelMultiple); dbCount and dbRank return
+      lib/pq's error as it is. NaN value_num sorts above every number (and equals NaN).
+      setup_db, `yagtest run --db` and db_checks keys are cut to 256 bytes as dbSet and
+      dbGet cut them (2026-09-25)
 - [x] `.Guild.Roles` is in YAGPDB's order (its state tracker sorts roles as dstate.Roles:
       highest position first, the lower ID on a tie) instead of Go's random map order, and
       holds @everyone when a test declares no roles; a role name lookup takes the first

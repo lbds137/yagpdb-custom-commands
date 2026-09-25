@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/loader"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
@@ -416,8 +417,9 @@ func loadDatabaseState(db *state.MockDB, filename string) error {
 	}
 
 	for _, entry := range entries {
-		// Fixture maps stand in for sdicts a command stored
-		if _, err := db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value)); err != nil {
+		// Fixture maps stand in for sdicts a command stored, and keys are cut as dbSet cuts them
+		key := funcs.LimitString(entry.Key, 256)
+		if _, err := db.Set(entry.UserID, key, types.FixtureForStorage(entry.Value)); err != nil {
 			return fmt.Errorf("%q: %w", entry.Key, err)
 		}
 	}
