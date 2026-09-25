@@ -318,12 +318,6 @@ tests:
       args: ["123", "127", "111111111"]
       cmd_args: ["123", "127", "111111111"]
 
-  - name: "guest - Guest user processing"
-    template: "../../../staff_utility/guest.gohtml"
-    context:
-      args: ["https://discord.com/channels/111222333444555666/888888888888888888/456456456456456456"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/456456456456456456"]
-
   - name: "inactivity - Check user inactivity"
     template: "../../../staff_utility/inactivity.gohtml"
     context:

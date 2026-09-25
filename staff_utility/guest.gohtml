@@ -11,6 +11,7 @@
 {{ $hoursCutoff := toInt ($globalDict.Get "Guest Grace Period Hours") }}
 {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -26,8 +27,24 @@
 
 {{ $args := parseArgs 1 (joinStr "" "Please enter a user ID.") (carg "string" "user ID") }}
 
-{{ $userID := (userArg ($args.Get 0)).ID }}
-{{ $member := getMember $userID }}
+{{/* userArg is nil for an unknown user; getMember is nil for someone who left */}}
+{{ $user := userArg ($args.Get 0) }}
+{{ $member := "" }}
+{{ if $user }}
+    {{ $member = getMember $user.ID }}
+{{ end }}
+
+{{ if not $member }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Invalid User"
+        "Description" (joinStr "" "⚠️ The user you are trying to check is not currently in **" .Guild.Name "**!")
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
+    ) }}
+{{ else }}
+
+{{ $userID := $user.ID }}
 {{ $userAvatar := $member.User.AvatarURL "128" }}
 
 {{ $isGuest := targetHasRoleID $userID $guestRoleID }}
@@ -70,5 +87,6 @@
     "Fields" $fields
     "ThumbnailURL" (or $userAvatar $defaultAvatar)
 ) }}
+{{ end }}
 
 {{ deleteTrigger $deleteTriggerDelay }}

@@ -1,4 +1,4 @@
-name: "Admission commands (admit, reject, screen, archive)"
+name: "Admission commands (admit, reject, screen, archive, guest)"
 
 # The staff member runs commands in #staff (123456789012345678). The guest (500...001)
 # posted an introduction (message 700...001) in #introduction (900...002).
@@ -12,6 +12,12 @@ defaults:
   guild:
     id: 111222333444555666
     name: "Test Server"
+    roles:
+      - { id: 111111111111111111, name: "Staff" }
+      - { id: 222222222222222222, name: "Guest" }
+      - { id: 333333333333333333, name: "Member", color: 3447003 }
+      - { id: 444444444444444444, name: "Minor", color: 15844367 }
+      - { id: 555555555555555555, name: "Adult", color: 10181046 }
   messages:
     - id: 700000000000000001
       channel_id: 900000000000000002
@@ -22,7 +28,7 @@ defaults:
 setup_db:
   - user_id: 0
     key: "Global"
-    value: { Delete Trigger Delay: 5, Delete Response Delay: 10, Default Avatar: "https://example.com/a.png" }
+    value: { Delete Trigger Delay: 5, Delete Response Delay: 10, Default Avatar: "https://example.com/a.png", Guest Grace Period Hours: 48 }
   - user_id: 0
     key: "Commands"
     value: { embed_exec: 1, message_link: 2, ticket_adduser_exec: 3 }
@@ -175,3 +181,53 @@ tests:
     assertions:
       sent_messages:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
+
+  - name: "archive: archives an adult's introduction"
+    template: "../../../staff_utility/archive.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
+      member_roles: { 500000000000000001: [333333333333333333, 555555555555555555] }
+    assertions:
+      sent_messages:
+        - { channel_id: 900000000000000003, content_equals: "message_link copy" }
+
+  - name: "archive: member with neither age role"
+    template: "../../../staff_utility/archive.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
+      member_roles: { 500000000000000001: [333333333333333333] }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid User Type" }
+
+  # guest (the mock members joined long ago, past the 48-hour grace period)
+  - name: "guest: kicks a guest past the grace period"
+    template: "../../../staff_utility/guest.gohtml"
+    context:
+      args: ["500000000000000001"]
+      member_roles: { 500000000000000001: [222222222222222222] }
+    snapshot: true
+
+  - name: "guest: leaves a member alone"
+    template: "../../../staff_utility/guest.gohtml"
+    context:
+      args: ["500000000000000001"]
+      member_roles: { 500000000000000001: [333333333333333333] }
+    snapshot: true
+
+  - name: "guest: user not in the server"
+    template: "../../../staff_utility/guest.gohtml"
+    context:
+      args: ["500000000000000009"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid User" }
+
+  - name: "guest: not a user ID"
+    template: "../../../staff_utility/guest.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid User" }
+
