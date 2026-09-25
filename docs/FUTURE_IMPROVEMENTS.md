@@ -7,11 +7,20 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
 - The Global "ExecCC Limit" setting (bootstrap default 10) is trusted as is: YAGPDB allows
-  10 immediate execCC calls per run on premium (1 on a free server), so a setting above
-  that makes rules, contrasts, hugemoji and pyramid fail at the 11th call instead of
-  skipping.
+  10 execCC calls per run on premium (1 on a free server), counted together with
+  scheduleUniqueCC, so a setting above that makes rules, contrasts, hugemoji and pyramid
+  fail at the 11th call instead of skipping.
   Harmless at the default; clamp it to 10 in those commands if the setting is ever
   raised (read, not run).
+- `embed_exec` cuts a description to 1,998 characters plus "…" (`sub 2000 2`), but
+  Discord allows 4,096 in an embed description, so text between 1,999 and 4,096
+  characters is cut when it needn't be. `db` sizes its own cut to fit (`sub 1998 9`).
+  Lila chose 4,096 (2026-09-25): cut at Discord's limit and keep the whole embed under
+  its 6,000-character total; db's cut follows. In progress.
+- To check in the emulator: YAGPDB's `LimitWriter` drops leading whitespace bytes at the
+  start of a write, and `serializeValue` passes binary msgpack through it, so a `dbSet`
+  of a value whose msgpack form begins with a whitespace byte (a small integer 9-13 or
+  32) may store an empty value (code-reading by a reviewer, not run).
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
@@ -27,10 +36,6 @@ gets a failing test first.
   (testdata/templates) keeps the title, description, fields, color, image and thumbnail,
   but not embed_exec's author, its author-color fallback, its description cut or its
   DeleteResponse.
-- The limit tables in docs/API_REFERENCE.md and .claude/skills/yagpdb-templates.md
-  weren't written from the vendored source (the 10-second timeout was wrong); check each
-  remaining row (embed description 2,048, "ExecCC concurrent calls typically 10-20", ...)
-  against vendor/yagpdb and Discord's limits.
 - `yagtest watch` takes one path, and `-stop-on-fail` with several test paths stops only
   within the current one.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
@@ -132,6 +137,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] The limit tables in docs/API_REFERENCE.md and the templates skill are rewritten
+      from vendor/yagpdb and Discord's documented limits: embed description 4,096 (not
+      2,048); execCC 1 call per run, 10 on premium, 2 levels deep (not "concurrent,
+      typically 10-20"); DB entries, key cut, value size and calls per run; API calls
+      per run (2026-09-25)
 
 - [x] Fixed the two failing database tests: `dbGet` returned stored strings and numbers
       wrapped in `TemplateValue` (2026-09-24)

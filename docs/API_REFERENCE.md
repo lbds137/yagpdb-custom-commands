@@ -6,37 +6,61 @@ This document provides detailed reference information for developers working wit
 
 ## YAGPDB System Limits
 
+The YAGPDB limits below come from the vendored source (`vendor/yagpdb`, file named on
+each line); the message and embed limits are Discord's
+(discord.com/developers/docs/resources/message#embed-object-embed-limits).
+
 ### Custom Command Size Limits
 
-**Character Limits:**
-- **Premium Servers**: 20,000 characters per custom command
-- **Free Servers**: 10,000 characters per custom command
-
-**Important Notes:**
-- This command suite was developed assuming premium server limits (20k characters)
-- Many commands in this repository exceed the 10k free tier limit and will not work on non-premium servers
-- The official YAGPDB documentation may be outdated regarding these limits
-- Source: YAGPDB official support Discord server
+- **Premium servers**: 20,000 characters per custom command; **free servers**: 10,000.
+  Characters are counted over all of a command's responses together
+  (`customcommands/customcommands.go`, `validateCCResponseLength`).
+- Custom commands per server: 100, or 250 on premium (`customcommands/customcommands.go`).
+- This command suite assumes premium. Two commands exceed the free limit: `utility/db`
+  (about 16,900) and `utility/gematria` (about 11,500).
 
 ### Other Key Limits
 
-**Message/Embed Limits:**
-- Embed description: 2,048 characters maximum
-- Embed field value: 1,024 characters maximum
-- Embed field name: 256 characters maximum
-- Total embed size: 6,000 characters maximum
-- Number of embeds per message: 10 maximum
+**Message/Embed Limits (Discord):**
+- Message content: 2,000 characters
+- Embed title: 256; description: 4,096; fields: 25 per embed; field name: 256;
+  field value: 1,024; footer: 2,048; author name: 256 characters
+- All embeds of one message together: 6,000 characters
+- Embeds per message: 10. `complexMessage` and `complexMessageEdit` keep the first 10 of
+  a longer list and drop the rest (`common/templates/general.go`)
+- Discord refuses a message over any of these; `sendMessage` returns its error
+- A command's own response (what it outputs, whitespace trimmed) over 2,000 characters is
+  replaced by YAGPDB with "Custom command (#N) response was longer than 2k (contact an
+  admin on the server...)" (`customcommands/bot.go`)
 
-**Database Limits:**
-- Database entries per server: Varies by premium tier
-- Key length: 256 characters maximum
-- Value size: 100KB maximum per entry
+**Database Limits (`customcommands/tmplextensions.go`):**
+- Entries per server: 50 × the server's member count (× 10 on premium), counting
+  unexpired entries; at the cap, `dbSet`, `dbSetExpire` and `dbIncr` fail with "Above DB
+  Limit", even when overwriting an existing key. The count is cached; a delete resets it
+- Keys are cut to 256 bytes, silently
+- Values: 100,000 bytes once encoded (msgpack); a larger value makes `dbSet` fail with
+  "short write" (unless everything past the limit is whitespace: then it is stored cut)
+- Calls per run: 10 database calls (50 on premium); of those, the multi-entry ones
+  (`dbGetPattern`, `dbGetPatternReverse`, `dbTopEntries`, `dbBottomEntries`, `dbCount`,
+  `dbDelMultiple`, `dbRank`) 2 (10 on premium). One over fails with "too many calls to this function"
 
 **Command Execution Limits:**
-- ExecCC concurrent calls: Configurable per server (typically 10-20)
 - No time limit: a run is bounded by its operation count (1M, 2.5M premium), 60 seconds
-  of `sleep` in all and 25,000 bytes of output (vendor/yagpdb/common/templates)
-- Template recursion depth: Limited to prevent infinite loops
+  of `sleep` in all and 25,000 bytes of output (`common/templates/context.go`)
+- `execCC` and `scheduleUniqueCC`: 1 call per run together, 10 on premium, immediate
+  and delayed alike (`customcommands/tmplextensions.go`). An immediate `execCC` runs the
+  other command in the background: the caller doesn't wait and gets `""` back. Chains
+  go 2 levels deep (the caller's child's child can't call: "Max nested immediate execCC
+  calls reached (2)"). A delayed `execCC` is scheduled, with at most 1 MB of
+  `.ExecData`; a `scheduleUniqueCC` with a delay of 0 or less uses up a call and does
+  nothing
+- Discord API calls (`getMember`, `sendMessage` and others): 100 per run, 20 from
+  `evalcc` (`common/templates/context.go`, `IncreaseCheckGenericAPICall`). Past it,
+  `sendMessage` returns `""` without an error and sends nothing
+- `sendDM`: 1 per run (`common/templates/context_funcs.go`)
+- Any string over 1,000,000 bytes stops the run; each `template` call costs 100
+  operations, so the operation limit allows about 10,000 per run (25,000 on premium)
+  (`lib/template/exec.go`)
 
 ## Core Services API
 
@@ -63,7 +87,8 @@ This document provides detailed reference information for developers working wit
 **Parameters**:
 - `ChannelID` (int): Target channel for message
 - `Title` (string): Embed title
-- `Description` (string): Main embed content (max 2000 chars)
+- `Description` (string): Main embed content; past 1,998 characters, `embed_exec` keeps the
+  first 1,998 and adds "…"
 - `Fields` (slice): Array of field objects
 - `AuthorID` (int): User ID for author attribution
 - `Color` (int): Embed color (defaults to role color or server default)
@@ -220,7 +245,8 @@ Keys:
 - "Default Avatar" (string): URL for default avatar image
 - "Command Prefix" (string): Server command prefix
 - "Guild Premium Tier" (string): Server nitro boost level
-- "ExecCC Limit" (string): Maximum concurrent execCC calls
+- "ExecCC Limit" (string): How many `execCC` calls a command may make in one run (YAGPDB allows
+  10 `execCC` and `scheduleUniqueCC` calls per run together on premium, 1 on free)
 - "Server URL" (string): Server website URL
 ```
 
