@@ -143,7 +143,9 @@ type ExecutionContext struct {
 	// the run: YAGPDB deletes later, from a goroutine or a scheduled event)
 	Deletions []Deletion
 	// Reactions are the reactions the run added and removed, in order
-	Reactions   []ReactionChange
+	Reactions []ReactionChange
+	// Execs are the bot commands the run executed with exec and execAdmin, in order
+	Execs       []Exec
 	FileUploads []FileUpload
 	// ResponsePings are who the response (the template's output) notifies
 	ResponsePings Pings

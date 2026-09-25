@@ -153,6 +153,16 @@ type Assertions struct {
 	// Reactions are exactly the reactions the run added and removed, in order (`[]` for
 	// none)
 	Reactions *[]ReactionCheck `yaml:"reactions"`
+	// Execs are exactly the bot commands the run executed with exec and execAdmin, in
+	// order (`[]` for none)
+	Execs *[]ExecCheck `yaml:"execs"`
+}
+
+// ExecCheck matches an exec or execAdmin call; unset fields match anything.
+type ExecCheck struct {
+	Line      string `yaml:"line"` // the command line, as YAGPDB builds it: kick 5 "reason"
+	Admin     *bool  `yaml:"admin"`
+	ChannelID int64  `yaml:"channel_id"`
 }
 
 // ReactionCheck matches a reaction change; unset fields match anything.

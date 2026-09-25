@@ -14,10 +14,28 @@ Each fix gets a failing test first.
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
-- `exec` (a bot command, as `exec "kick"`) is a silent no-op: a snapshot can say "kicked"
-  with no kick recorded. The recording mock of embed_exec (testdata/templates) keeps the
-  title, description, fields, color, image and thumbnail, but not embed_exec's author,
-  its author-color fallback, its description cut or its DeleteResponse.
+- `exec`/`execAdmin` record the command line (`execs:`, snapshots) but don't run the bot
+  command: the call returns "", where YAGPDB returns the command's response ("Unknown
+  command" for a name it doesn't have, "Error: ..." when it fails), and execAdmin's
+  "Failed fetching member" isn't modelled. The recording mock of embed_exec
+  (testdata/templates) keeps the title, description, fields, color, image and thumbnail,
+  but not embed_exec's author, its author-color fallback, its description cut or its
+  DeleteResponse.
+- NEXT UNIT: `sleep` is a no-op, where YAGPDB's (context_funcs.go tmplSleep) refuses under
+  1 second or over 60 combined ("can sleep for max 60 seconds combined") and waits.
+  hugemoji (`sleep 10`) and screen_user (`sleep 1` twice) use it. And the emulator's
+  strict "10-second" run limit (limits.go maxDuration) has no source in the vendored
+  YAGPDB (commit 0cf2ec5): no deadline or timeout in common/templates, lib/template or
+  customcommands, and Context.Execute's timing is commented out; a run is bounded by
+  the operation limit, sleep's 60 seconds and the 25k output. The same unsourced
+  "10 seconds" is in CLAUDE.md, .claude/skills/yagpdb-templates.md and
+  docs/API_REFERENCE.md. Plan: model sleep's limits without waiting, drop or re-source
+  the time limit, fix those docs.
+- directory (`exec "Clean" ...`) and ticket_adduser_exec (`exec "ticket adduser"`) have no
+  test that checks their exec lines (screen_user's test maps ticket_adduser_exec to a
+  recording mock).
+- A renamed or deleted snapshot test leaves its entry in the .snap.yaml until
+  `make update-snapshots` prunes it; `make ci` doesn't flag stale entries.
 - `yagtest watch` takes one path, and `-stop-on-fail` with several test paths stops only
   within the current one.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
@@ -330,6 +348,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
         only the error (the message went out unpinged).
       - `admit_user` with no Welcome Message skips the welcome; it stopped there with
         "invalid value; expected string", before the admission record.
+- [x] exec and execAdmin record the command line as YAGPDB builds it (`execs:`,
+      snapshots), so the kicks in guest, reject_user and inactivity are pinned; they
+      were silent no-ops (2026-09-25)
 - [x] db_get_text and db_get_embed walk nested keys as db does: a stored `false`, `0` or
       `""` is a value, a dictionary inside JSON stored by `db set` is reached, a key past
       a value that isn't a dictionary finds nothing, and a missing nested key keeps its

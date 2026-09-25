@@ -89,6 +89,10 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # exactly the reaction changes, in order: action = add|remove|remove_emoji|remove_all;
     # response: true = on the response (addResponseReactions); reacting to a message that isn't
     # declared, sent or the run's own is Discord's 10008 (an error with -strict, else a warning)
+    execs: [{ line: 'kick 5 "spam"', admin: true }]
+    # exactly the exec/execAdmin calls, in order ([] for none), with the command line as
+    # YAGPDB builds it (strings quoted, switches and numbers not); recorded, not run: the
+    # call returns ""
     deletions: [{ of: trigger, delay: 5s }, { of: message, channel_id: 9, message_id: 7 }]
     # exactly the deletions asked for, in order ([] for none): of = trigger|message|response;
     # unset fields match anything, delay: 0s = at once. Snapshots record deletions too
