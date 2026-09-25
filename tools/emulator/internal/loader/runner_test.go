@@ -201,6 +201,45 @@ func TestLongDBCheckKeyIsCut(t *testing.T) {
 	}
 }
 
+// embed_contains and embed_title match any of a message's embeds, not just the first
+func TestEmbedChecksMatchAnyEmbed(t *testing.T) {
+	src := `{{sendMessage 9 (complexMessage "embed" (cslice (cembed "title" "first") (cembed "title" "second")))}}`
+	cases := []struct {
+		name     string
+		checks   []MessageCheck
+		failures []string
+	}{
+		{"embed_contains matches the second embed", []MessageCheck{
+			{ChannelID: 9, EmbedContains: `"second"`}}, nil},
+		{"embed_title matches the second embed", []MessageCheck{
+			{ChannelID: 9, EmbedTitle: "second"}}, nil},
+		{"embed_contains matching neither fails naming both embeds", []MessageCheck{
+			{ChannelID: 9, EmbedContains: "third"}},
+			[]string{"embed should contain", "\"first\"", "\"second\""}},
+		{"embed_title matching neither fails naming both titles", []MessageCheck{
+			{ChannelID: 9, EmbedTitle: "third"}},
+			[]string{`no embed titled "third"; titles found: ["first" "second"]`}},
+	}
+	for _, c := range cases {
+		tc := &TestCase{Name: c.name, TemplateSource: src, Assertions: Assertions{SentMessages: c.checks}}
+		tc.applyDefaults()
+		res := NewRunner(RunnerConfig{}).RunTest(tc)
+		wantFailures := 0
+		if len(c.failures) > 0 {
+			wantFailures = 1
+		}
+		if res.Error != nil || len(res.Failures) != wantFailures {
+			t.Errorf("%s: %v, %q", c.name, res.Error, res.Failures)
+			continue
+		}
+		for _, want := range c.failures {
+			if !strings.Contains(res.Failures[0], want) {
+				t.Errorf("%s: failure %q, want it to contain %q", c.name, res.Failures, want)
+			}
+		}
+	}
+}
+
 // A header setting the emulator can't read fails the test instead of defaulting
 func TestBadHeaderSettingIsAnError(t *testing.T) {
 	tc := &TestCase{Name: "bad header", TemplateSource: "{{/*\n  Show errors: `no`\n*/}}hi"}
@@ -230,7 +269,7 @@ func TestMessageAndOutputEquals(t *testing.T) {
 		{"an emptied edit", nil, nil, []MessageCheck{{ChannelID: 7, ContentEquals: str("")}}, nil},
 		{"an embed title", nil, []MessageCheck{{ChannelID: 7, EmbedTitle: "t"}}, nil, nil},
 		{"a wrong embed title", nil, []MessageCheck{{ChannelID: 7, EmbedTitle: "u"}}, nil,
-			[]string{"message check 0: embed title mismatch"}},
+			[]string{`message check 0: no embed titled "u"; titles found: ["t"]`}},
 		{"an embed title on a message without one", nil, []MessageCheck{{EmbedTitle: "t"}}, nil,
 			[]string{`message check 0: expected an embed titled "t" but the message has none`}},
 		{"empty output passes", str(""), nil, nil, nil},

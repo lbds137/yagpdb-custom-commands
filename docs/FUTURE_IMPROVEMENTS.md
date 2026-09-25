@@ -119,8 +119,7 @@ gets a failing test first.
 - An execCC child works on a copy of the messages, so its edits aren't seen by the
   caller's later getMessage (YAGPDB's getMessage asks Discord, which has the edit).
 - `editMessage` gaps: a stored message keeps its embeds but no file, so edits of file
-  messages can differ, and the sent/edited record (`sent_messages`, snapshots) shows only
-  the first embed; message builders read keys as a map, so a
+  messages can differ; message builders read keys as a map, so a
   repeated key (two `"embed"`s) counts once. A test message is the bot's to edit only
   with `author_id: 1234567890`.
 - A LIKE pattern is matched against the rows the query's other conditions select, so the
@@ -152,6 +151,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] `SentMessage.Embeds` records every embed of a sent or edited message, not only the
+      first; `has_embed`, `embed_contains` and `embed_title` match any of them, and
+      snapshots store a message's embeds as an `embeds:` list (2026-09-25)
 
 - [x] The six suites that execCC embed_exec (admission, avatar_viewer, command,
       dice_roll, gematria, message_link) now map it to the real

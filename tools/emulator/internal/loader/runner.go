@@ -473,33 +473,59 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 					i, check.ContentContains, found.Content))
 		}
 
-		if check.HasEmbed && found.Embed == nil {
+		if check.HasEmbed && len(found.Embeds) == 0 {
 			failures = append(failures,
 				fmt.Sprintf("message check %d: expected embed but none found", i))
 		}
 
 		if check.EmbedContains != "" {
-			if found.Embed == nil {
+			if len(found.Embeds) == 0 {
 				failures = append(failures,
 					fmt.Sprintf("message check %d: expected an embed containing %q but none found", i, check.EmbedContains))
-			} else if embed := readableJSON(found.Embed); !strings.Contains(embed, check.EmbedContains) {
-				failures = append(failures,
-					fmt.Sprintf("message check %d: embed should contain %q but is:\n%s", i, check.EmbedContains, embed))
+			} else {
+				var matched bool
+				var embeds []string
+				for _, e := range found.Embeds {
+					embed := readableJSON(e)
+					embeds = append(embeds, embed)
+					if strings.Contains(embed, check.EmbedContains) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					failures = append(failures,
+						fmt.Sprintf("message check %d: embed should contain %q but the embeds are:\n%s",
+							i, check.EmbedContains, strings.Join(embeds, "\n---\n")))
+				}
 			}
 		}
 
 		if check.EmbedTitle != "" {
-			embedMap, ok := found.Embed.(types.Embed)
-			if !ok {
+			var titles []string
+			var matched bool
+			for _, e := range found.Embeds {
+				embedMap, ok := e.(types.Embed)
+				if !ok {
+					continue
+				}
+				title, _ := embedMap["title"].(string)
+				titles = append(titles, title)
+				if title == check.EmbedTitle {
+					matched = true
+					break
+				}
+			}
+			switch {
+			case matched:
+				// found
+			case len(found.Embeds) == 0:
 				failures = append(failures,
 					fmt.Sprintf("message check %d: expected an embed titled %q but the message has none", i, check.EmbedTitle))
-			} else if title, ok := embedMap["title"].(string); !ok {
+			default:
 				failures = append(failures,
-					fmt.Sprintf("message check %d: embed has no title, expected %q", i, check.EmbedTitle))
-			} else if title != check.EmbedTitle {
-				failures = append(failures,
-					fmt.Sprintf("message check %d: embed title mismatch:\n  expected: %q\n  got:      %q",
-						i, check.EmbedTitle, title))
+					fmt.Sprintf("message check %d: no embed titled %q; titles found: %q",
+						i, check.EmbedTitle, titles))
 			}
 		}
 

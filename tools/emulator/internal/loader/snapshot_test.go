@@ -73,6 +73,39 @@ func TestSnapshotLifecycle(t *testing.T) {
 	}
 }
 
+// A message with two embeds snapshots as a two-item `embeds` list, not a single `embed`
+func TestSnapshotHoldsEveryEmbed(t *testing.T) {
+	dir := t.TempDir()
+	src := `{{sendMessage nil (complexMessage "embed" (cslice (cembed "title" "T1") (cembed "title" "T2")))}}`
+
+	r := NewRunner(RunnerConfig{BaseDir: dir})
+	res := r.RunTest(snapshotTest(dir, src))
+	if !res.Passed || !res.SnapshotWritten {
+		t.Fatalf("first run should pass and write: %+v", res)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "__snapshots__", "suite.snap.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"embeds:", `"title": "T1"`, `"title": "T2"`} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("snapshot missing %q:\n%s", want, data)
+		}
+	}
+	if strings.Contains(string(data), "embed:") {
+		t.Errorf("snapshot should not have a singular embed: key:\n%s", data)
+	}
+
+	snaps, err := readSnapshots(filepath.Join(dir, "__snapshots__", "suite.snap.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	msgs := snaps["greets"].Messages
+	if len(msgs) != 1 || len(msgs[0].Embeds) != 2 {
+		t.Fatalf("want one message with two embeds: %+v", msgs)
+	}
+}
+
 // A failed run with no output posts "\nAn error caused...": yaml.v3 alone writes that, in
 // a list, as a block scalar it can't read back
 func TestSnapshotStringsReadBack(t *testing.T) {
@@ -100,7 +133,7 @@ func TestSnapshotStringsReadBack(t *testing.T) {
 	}
 	for _, str := range strs {
 		s := snapText(str)
-		snaps := map[string]Snapshot{"t": {Output: s, Messages: []SnapshotMessage{{Content: s, Embed: s}},
+		snaps := map[string]Snapshot{"t": {Output: s, Messages: []SnapshotMessage{{Content: s, Embeds: []snapText{s}}},
 			Files: []SnapshotFile{{Filename: s, Content: s}}, DB: []SnapshotEntry{{Key: s, Value: s}}}}
 		data, err := encodeSnapshots(snaps)
 		if err != nil {

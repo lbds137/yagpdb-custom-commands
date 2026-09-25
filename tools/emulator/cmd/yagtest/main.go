@@ -266,8 +266,8 @@ func runCommand(args []string) {
 			if msg.Content != "" {
 				fmt.Println(msg.Content)
 			}
-			if msg.Embed != nil {
-				embedJSON, _ := json.MarshalIndent(msg.Embed, "", "  ")
+			for _, embed := range msg.Embeds {
+				embedJSON, _ := json.MarshalIndent(embed, "", "  ")
 				fmt.Println(string(embedJSON))
 			}
 			if *verbose && !msg.Pings.Empty() {

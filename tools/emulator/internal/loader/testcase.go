@@ -327,8 +327,8 @@ type MessageCheck struct {
 	ContentEquals   *string `yaml:"content_equals"` // "" asserts empty content
 	ContentContains string  `yaml:"content_contains"`
 	HasEmbed        bool    `yaml:"has_embed"`
-	EmbedTitle      string  `yaml:"embed_title"`
-	EmbedContains   string  `yaml:"embed_contains"` // Substring of the embed as JSON (title, fields, ...)
+	EmbedTitle      string  `yaml:"embed_title"`    // matches any of the message's embeds
+	EmbedContains   string  `yaml:"embed_contains"` // substring of any of the message's embeds as JSON (title, fields, ...)
 	// Pings is exactly who the message notifies (edits notify no one)
 	Pings *PingsCheck `yaml:"pings"`
 }

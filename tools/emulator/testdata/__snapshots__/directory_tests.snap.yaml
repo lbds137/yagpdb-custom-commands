@@ -2,19 +2,21 @@ directory - lists the channels by category:
     output: ""
     messages:
         - channel_id: 99
-          embed: |-
-            {
-              "color": 3447003,
-              "title": "❓ Uncategorized ❓"
-            }
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "title": "❓ Uncategorized ❓"
+              }
         - channel_id: 99
           content: <#40>
         - channel_id: 99
-          embed: |-
-            {
-              "color": 3447003,
-              "title": "Info"
-            }
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "title": "Info"
+              }
         - channel_id: 99
           content: |-
             <#11>
@@ -24,11 +26,12 @@ directory - lists the channels by category:
 
             <#99>
         - channel_id: 99
-          embed: |-
-            {
-              "color": 3447003,
-              "title": "Chat"
-            }
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "title": "Chat"
+              }
         - channel_id: 99
           content: |-
             <#21>
@@ -36,11 +39,12 @@ directory - lists the channels by category:
 
             <#22>
         - channel_id: 99
-          embed: |-
-            {
-              "color": 3447003,
-              "description": "⏫ [Back to Top](https://discord.com/channels/111222333444555666/99/1100000000000000001) ⏫"
-            }
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "description": "⏫ [Back to Top](https://discord.com/channels/111222333444555666/99/1100000000000000001) ⏫"
+              }
     execs:
         - exec Clean 100 "<@204255221017214977>" in channel 99
     db:

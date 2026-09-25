@@ -399,10 +399,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	}
 	target.Content, target.Embeds = content, types.EmbedStructs(embeds)
 	target.EditedTimestamp = types.NewTimestamp(e.ctx.Now()) // Discord sets it on every edit
-	edited := SentMessage{ID: id, ChannelID: channelID, Content: content}
-	if len(embeds) > 0 {
-		edited.Embed = embeds[0]
-	}
+	edited := SentMessage{ID: id, ChannelID: channelID, Content: content, Embeds: embeds}
 	e.ctx.EditedMessages = append(e.ctx.EditedMessages, edited)
 	return "", nil
 }

@@ -21,7 +21,7 @@ type SentMessage struct {
 	ID        int64
 	ChannelID int64
 	Content   string
-	Embed     interface{}
+	Embeds    []interface{}
 	Pings     Pings // who the message notifies
 }
 
@@ -455,19 +455,15 @@ func (ctx *ExecutionContext) HasRole(roleID int64) bool {
 
 // RecordSentMessage records a message sent during execution. Messages the bot sends to a
 // channel can be fetched with getMessage, as on Discord, with all their embeds; it returns
-// their ID. The record (and snapshot) keeps the first embed.
+// their ID.
 func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embeds []interface{}, pings Pings) int64 {
-	var embed interface{}
-	if len(embeds) > 0 {
-		embed = embeds[0]
-	}
 	*ctx.sentMessageIDs()++
 	id := firstSentMessageID + *ctx.sentIDs
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{
 		ID:        id,
 		ChannelID: channelID,
 		Content:   content,
-		Embed:     embed,
+		Embeds:    embeds,
 		Pings:     pings,
 	})
 	msg := types.CtxMessage{

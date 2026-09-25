@@ -2,11 +2,12 @@
     output: Welcomed
     messages:
         - channel_id: 123456789012345678
-          embed: |-
-            {
-              "description": "Hello, TestUser",
-              "title": "Welcome"
-            }
+          embeds:
+            - |-
+              {
+                "description": "Hello, TestUser",
+                "title": "Welcome"
+              }
     db:
         - user_id: 987654321098765432
           key: Visits

@@ -2,12 +2,13 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: |-
-            {
-              "color": 5793266,
-              "description": "1. <@900000000000000002> — 480 XP\n2. <@900000000000000001> — 120 XP\n3. <@900000000000000003> — 45 XP\n",
-              "title": "XP leaderboard"
-            }
+          embeds:
+            - |-
+              {
+                "color": 5793266,
+                "description": "1. <@900000000000000002> — 480 XP\n2. <@900000000000000001> — 120 XP\n3. <@900000000000000003> — 45 XP\n",
+                "title": "XP leaderboard"
+              }
     db:
         - user_id: 900000000000000001
           key: xp
