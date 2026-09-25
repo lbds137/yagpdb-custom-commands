@@ -41,8 +41,6 @@ gets a failing test first.
 - `sendDM` turns any argument into text, where YAGPDB's takes an embed, a list of embeds
   or a complexMessage (context_funcs.go tmplSendDM). No command calls sendDM (git grep,
   2026-09-25); promote when one does.
-- avatar_viewer's branch for a YAGPDB `whois` message (it reads the message's embed
-  fields) has no test; test messages can carry embeds now (`embeds:`).
 - Ruled out (2026-09-25): YAGPDB's `LimitWriter` drops leading whitespace bytes, and
   `serializeValue` passes msgpack through it, but no value's encoding starts with one.
   msgpack v4.0.4 (YAGPDB's and the emulator's) writes one-byte fixints only with compact
@@ -152,6 +150,14 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] avatar_viewer: it never recognized real `whois` output (its field list lacked
+      "Roles", which whois always adds, and the tracking-off "Usernames"/"Nicknames");
+      it read only 5 of the mod log's actions (not warnings, timeouts, role changes);
+      it took a mod log ID from anywhere in the text; and a link it couldn't read sent
+      nothing (an empty ID field made Discord refuse the embed), where it now says no
+      avatar was found (Lila's call). Its first tests use whois and mod log embeds as
+      YAGPDB builds them (logs/plugin_bot.go, moderation/modlog.go) (2026-09-25)
 
 - [x] A message's embeds read back as discordgo's (`.Title`, `.Author.Name`, `.Fields`
       with `.Name`/`.Value`, `.Image.URL`), not the emulator's maps; test messages take
