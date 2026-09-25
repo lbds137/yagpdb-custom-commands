@@ -182,6 +182,15 @@ func TestLongDBCheckKeyIsCut(t *testing.T) {
 	}
 }
 
+// A header setting the emulator can't read fails the test instead of defaulting
+func TestBadHeaderSettingIsAnError(t *testing.T) {
+	tc := &TestCase{Name: "bad header", TemplateSource: "{{/*\n  Show errors: `no`\n*/}}hi"}
+	tc.applyDefaults()
+	if res := NewRunner(RunnerConfig{}).RunTest(tc); res.Error == nil || !strings.Contains(res.Error.Error(), "isn't true or false") {
+		t.Errorf("got %v", res.Error)
+	}
+}
+
 func TestExpectedErrorStillChecksWhatTheRunDid(t *testing.T) {
 	tc := &TestCase{
 		Name:           "fails late",

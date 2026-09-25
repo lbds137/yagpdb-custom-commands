@@ -143,6 +143,32 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 
 // Execute parses and executes a template.
 func (e *Engine) Execute(source string) (string, error) {
+	out, err := e.execute(source)
+	if err == nil {
+		return out, nil
+	}
+	settings := ReadErrorSettings(source)
+	if settings.ShowErrors {
+		// ExecuteCustomCommand posts the output and the error in the command's (or the
+		// redirect-errors) channel with ChannelMessageSend, whose empty allowed mentions
+		// ping no one, and sends no response
+		errChannel := e.ctx.ChannelID
+		if settings.RedirectChannel != 0 {
+			errChannel = settings.RedirectChannel
+		}
+		e.ctx.RecordSentMessage(errChannel, out+"\nAn error caused the execution of the custom command template to stop:\n"+
+			formatCustomCommandRunErr(source, err), nil, Pings{})
+		e.ctx.ResponsePings = Pings{}
+	} else if e.ctx.delResponse && e.ctx.delResponseDelay < 1 {
+		// Without show_errors the output is the response, which deleteResponse can drop
+		e.ctx.ResponsePings = Pings{}
+		return "", err
+	}
+	return out, err
+}
+
+// execute runs the template and returns its response, or what it printed before an error.
+func (e *Engine) execute(source string) (string, error) {
 	e.ctx.StartTime = time.Now()
 
 	if err := e.ctx.checkSourceLength(source); err != nil {
@@ -755,15 +781,13 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 
 	// Execute child template
 	childEngine := NewEngine(childCtx)
+	if err := ValidateHeader(string(templateContent)); err != nil {
+		return "", fmt.Errorf("execCC %d (%s): %w", commandID, filepath.Base(templatePath), err)
+	}
+	// The output is the child's response, sent to its channel with its pings, unless the
+	// child failed with show_errors on (Execute has posted the error message instead)
 	out, err := childEngine.Execute(string(templateContent))
-	if err != nil {
-		// With show_errors (the default) ExecuteCustomCommand posts the output and the error
-		// in the target (or redirect-errors) channel; ChannelMessageSend's empty allowed
-		// mentions ping no one
-		childCtx.RecordSentMessage(channelID, out+"\nAn error caused the execution of the custom command template to stop:\n"+
-			formatCustomCommandRunErr(string(templateContent), err), nil, Pings{})
-	} else if out != "" {
-		// Otherwise it sends the child's response to its channel, with its pings
+	if out != "" && (err == nil || !ReadErrorSettings(string(templateContent)).ShowErrors) {
 		childCtx.RecordSentMessage(channelID, out, nil, childCtx.ResponsePings)
 	}
 
