@@ -4,98 +4,50 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ## Emulator Enhancements
 
-### Watch Mode
-Auto-rerun tests when `.gohtml` files change. Would improve development workflow significantly.
+### Template operation limit
+YAGPDB stops a template after 1M operations (2.5M with premium). Go's standard
+`text/template` can't count operations, so `-strict` doesn't enforce this limit.
 
 **Implementation approach:**
-- Use `fsnotify` or similar file watcher in Go
-- Trigger test re-run on file save
-- Clear terminal and show results immediately
+- Vendor YAGPDB's fork of `text/template` (`vendor/yagpdb/lib/template`, which has `MaxOps`)
+  into the emulator instead of the standard library
 
-### Schema Validation
-Warn when database values don't match expected types. Helps catch data corruption early.
-
-**Implementation approach:**
-- Define `schema.yaml` with expected types for each db key
-- Validate on `dbSet` calls in emulator
-- Show warnings (not errors) for type mismatches
-
-### Query Efficiency Warnings
-Detect N+1 database access patterns (e.g., `dbGet` inside loops).
+### Smoke test noise
+`scripts/test-all-templates.sh` runs every command with no arguments, so every command that
+requires arguments "fails" at `parseArgs` (23 of 45 on 2026-09-24), which hides real failures.
 
 **Implementation approach:**
-- Track db calls during execution
-- Flag patterns like: loop iteration count matches db call count
-- Suggest `dbGetPattern` or batch fetching
-
-### Rate Limit Simulation
-YAGPDB has strict execution limits. Emulator could enforce these in "strict mode".
-
-**Implementation approach:**
-- Track operation count, execution time, output size
-- Configurable limits matching YAGPDB's actual limits
-- Option to run in permissive vs strict mode
-
-## Testing Improvements
-
-### Fix the two failing database tests
-`make test` fails 2 of 58: "Database set and get" and "execCC shares database state". The emulator returns stored values wrapped (`{"V":"TestValue"}`, printed as `{TestValue}`) where the tests expect the plain value. Already failing at aa08d2f (2026-01-03); found 2026-09-23.
-
-**Implementation approach:**
-- Check how real YAGPDB returns `dbGet` values in `vendor/yagpdb/`, then fix the emulator or the test expectations to match.
-- Go isn't installed on the dev machine. `bin/yagtest` is a prebuilt binary from 2026-01-03, so install Go before `make build-emulator`.
-
-### CI/CD Integration
-Run emulator tests in GitHub Actions on push/PR.
-
-**Implementation approach:**
-- Add `.github/workflows/test.yml`
-- Build emulator and run test suite
-- Fail PR if tests fail
-
-### Snapshot Testing
-Capture command output and compare against saved snapshots.
-
-**Implementation approach:**
-- Save embed structure, text output as JSON snapshots
-- Compare on test run, flag differences
-- Easy update command for intentional changes
+- Treat a `parseArgs` usage error as a pass, or give each command a default argument set
 
 ## IDE Integration
 
 ### GoLand Plugin
-Syntax highlighting and snippets for YAGPDB templates in GoLand.
+Live templates are done (`tools/ide/`). A plugin would add what they can't:
 
 **Features:**
 - Highlight YAGPDB-specific functions
-- Snippets for common patterns (parseArgs, embedbuilding)
-- Inline documentation on hover
-- Error highlighting for common mistakes
+- Inline documentation on hover (the function list is in
+  `tools/emulator/internal/runtime/yagpdb_funcs.go`)
+- Error highlighting for common mistakes (the emulator's hints could be reused)
 
-**Note:** This would be a JetBrains plugin, not VS Code.
-
-## Documentation
-
-### Interactive Cookbook
-Recipe-based documentation showing common patterns:
-- Currency/economy system
-- Moderation logging
-- Welcome messages with roles
-- Reaction roles
-- Leveling system
-
-### Error Message Improvements
-When emulator crashes, link to relevant documentation.
-
-**Implementation approach:**
-- Parse error messages for function names
-- Map functions to doc URLs
-- Include helpful suggestions in error output
+**Note:** This would be a JetBrains plugin (Kotlin/Gradle), not VS Code.
 
 ---
 
 ## Completed Improvements
 
+- [x] Fixed the two failing database tests: `dbGet` returned stored strings and numbers
+      wrapped in `TemplateValue` (2026-09-24)
+- [x] CI: `.github/workflows/test.yml` runs `make ci` (2026-09-24)
+- [x] Strict mode: YAGPDB's execution limits (call counters, output, response, template
+      length, time), warnings by default and failures with `-strict` (2026-09-24)
+- [x] Warnings for database calls inside `range` loops (2026-09-24)
+- [x] Schema validation (`-schema db_schema.yaml`) (2026-09-24)
+- [x] Snapshot testing (`snapshot: true`, `-update-snapshots`) (2026-09-24)
+- [x] Watch mode (`yagtest watch`, `make watch`) (2026-09-24)
+- [x] Error hints with typo suggestions and docs links (2026-09-24)
+- [x] Cookbook of tested recipes (`docs/COOKBOOK.md`) (2026-09-24)
+- [x] GoLand live templates (`tools/ide/`) (2026-09-24)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")
 - [x] `db dump` operation for exporting database entries
 - [x] Direct array append syntax for `db add`
