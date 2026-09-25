@@ -30,8 +30,8 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   Discord's 2000-character limit. That it pings no one is read from the code, not probed.
   With `-strict`, a child over the source-length or time limit sends that error as the
   message; YAGPDB wouldn't save such a command, and has no time-limit error there.
-  `deleteResponse` is a no-op, so a response it deletes at once (delay under 1) is still
-  recorded; YAGPDB doesn't send it. `editMessageNoEscape` is `editMessage` (edits notify
+  `deleteResponse`, `deleteMessage` and `deleteTrigger` record no deletions.
+  `editMessageNoEscape` is `editMessage` (edits notify
   no one either way).
 - `editMessage` gaps: the channel argument is read as a number (YAGPDB also takes channel
   names and refuses floats and unknown channels up front); a stored message keeps only its
@@ -52,8 +52,7 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   emulator has no channel list. Its `role` argument uses the role functions' lookup;
   dcmd's RoleArg matches names case-sensitively and falls back from a numeric ID to a name.
 - Role gaps: a test that declares no guild roles treats any role ID as existing, with a
-  `[role]` warning per ID (a stale ID would be nil in production); getRole* over the call
-  limit gives the API-call message, not YAGPDB's "too many calls to this function".
+  `[role]` warning per ID (a stale ID would be nil in production).
 - A command run by `execCC` from a reaction-triggered command sees the test's
   `message_content` as `.Message`; YAGPDB passes on the reacted-to message.
 - Interval and None runs get a `.Message` with empty content; YAGPDB gives them none.
@@ -162,6 +161,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] getRole* over the API-call limit fail with YAGPDB's "too many calls to this
+      function" (2026-09-25)
+- [x] `deleteResponse` with a delay under 1 sends no response (the output is empty, pings
+      no one and gets a `[response]` note, for execCC children too), as YAGPDB's
+      SendResponse skips it; a failed run's error message (show_errors on) still carries
+      the output (2026-09-25)
 - [x] DB patterns use a port of Postgres's MatchText (like_match.c), checked against
       Postgres 15 on 24,000 random cases: a trailing backslash is "LIKE pattern must not
       end with escape character" when matching reaches it, and a failed dbDelMultiple

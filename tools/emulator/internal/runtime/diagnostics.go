@@ -4,12 +4,13 @@ import "fmt"
 
 // Diagnostic kinds.
 const (
-	KindLimit  = "limit"   // a YAGPDB execution limit was reached
-	KindLoopDB = "loop-db" // a database call runs once per loop iteration
-	KindSchema = "schema"  // a stored value does not match the schema
-	KindExecCC = "execcc"  // a command run by execCC failed
-	KindRole   = "role"    // a role was assumed to exist
-	KindDB     = "db"      // a query production may fail where the mock doesn't
+	KindLimit    = "limit"    // a YAGPDB execution limit was reached
+	KindLoopDB   = "loop-db"  // a database call runs once per loop iteration
+	KindSchema   = "schema"   // a stored value does not match the schema
+	KindExecCC   = "execcc"   // a command run by execCC failed
+	KindRole     = "role"     // a role was assumed to exist
+	KindDB       = "db"       // a query production may fail where the mock doesn't
+	KindResponse = "response" // what YAGPDB sends differs from the template's output
 )
 
 // Diagnostic is a warning found while checking or running a template.

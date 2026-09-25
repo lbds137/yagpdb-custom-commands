@@ -378,7 +378,19 @@ func (e *Engine) deleteTrigger(args ...interface{}) string {
 	return ""
 }
 
+// deleteResponse is YAGPDB's tmplDelResponse: the response is deleted after the delay (10
+// seconds by default, at most a day). The emulator records no deletions, but a delay under
+// 1 means the response isn't sent at all.
 func (e *Engine) deleteResponse(args ...interface{}) string {
+	dur := 10
+	if len(args) > 0 {
+		dur = int(funcs.ToInt64(args[0]))
+	}
+	if dur > 86400 {
+		dur = 86400
+	}
+	e.ctx.delResponseDelay = dur
+	e.ctx.delResponse = true
 	return ""
 }
 
