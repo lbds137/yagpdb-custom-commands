@@ -81,7 +81,7 @@ setup_db:
       Show NSFW: false
 
 command_map:
-  123: "templates/mock_embed_exec.gohtml"
+  123: "templates/recording_embed_exec.gohtml"
   124: "templates/mock_gematria.gohtml"
   125: "templates/mock_message_link.gohtml"
   126: "templates/mock_db_get_embed.gohtml"

@@ -45,7 +45,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
   setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]  # run first, same DB
-  command_map: { 123: "templates/mock_embed_exec.gohtml" }  # execCC targets
+  command_map: { 1: "templates/recording_embed_exec.gohtml" }  # execCC targets; a target's
+                                      # output is a sent message in its channel, as in YAGPDB
   expected:
     output_contains: "..."            # also output_equals, output_matches, error_contains
                                       # (with error_contains, the other checks still run)

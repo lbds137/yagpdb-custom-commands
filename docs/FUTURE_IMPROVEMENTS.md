@@ -27,9 +27,14 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   mentionable or the bot may mention everyone, and @everyone/@here only with that
   permission; the emulator assumes the bot has it. A complexMessage `reply` isn't modelled,
   so the replied-to author's ping (NoEscape, or `replied_user: true`) isn't recorded.
-- An execCC child's output is dropped; YAGPDB sends it to the target channel (with its own
-  pings), so it can't be asserted.
-  `editMessageNoEscape` is `editMessage` (edits notify no one either way).
+- A failed execCC child is a warning and sends nothing. YAGPDB, with the command's
+  show_errors (on by default), sends its output and the error (with the CC number, line
+  and source) to the child's channel or its redirect-errors channel, pinging no one (read
+  from the code, not probed); with show_errors off it sends the partial output as a normal
+  response.
+  `deleteResponse` is a no-op, so a response it deletes at once (delay under 1) is still
+  recorded; YAGPDB doesn't send it. `editMessageNoEscape` is `editMessage` (edits notify
+  no one either way).
 - `editMessage` gaps: the channel argument is read as a number (YAGPDB also takes channel
   names and refuses floats and unknown channels up front); a stored message keeps only its
   first embed and no file, so edits of multi-embed or file messages can differ; edits don't
@@ -150,6 +155,8 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       who they notify, from YAGPDB's allowed mentions (users only by default; roles and
       @everyone via mentionRole*/mentionEveryone/mentionHere, a complexMessage's
       `allowed_mentions`, or NoEscape); `pings` and `response_pings` assertions (2026-09-25)
+- [x] An execCC child's response (its trimmed output) is a sent message in its channel,
+      with its pings; the over-2k notice names the child's number (2026-09-25)
 - [x] A role lookup that assumes an undeclared role exists warns (`[role]`), and the
       suites declare the roles they use; with no roles declared, the guild ID is
       @everyone (2026-09-25)
