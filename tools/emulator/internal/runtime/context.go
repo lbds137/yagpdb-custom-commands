@@ -4,6 +4,7 @@ package runtime
 import (
 	"cmp"
 	"fmt"
+	"math/rand"
 	"slices"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // SentMessage represents a message that was "sent" during template execution.
@@ -168,7 +170,17 @@ type ExecutionContext struct {
 	// as in YAGPDB's errors, and the over-2k notice
 	CCID int64
 
+	// StartTime is when the run started, by Clock: the trigger's timestamp and members'
+	// join times count from it
 	StartTime time.Time
+	// Clock is the run's clock (currentTime, timestamps, database entry times); nil is the
+	// system clock. A test's clock: sets a fixed one
+	Clock func() time.Time
+	// Random is where randInt, shuffle, adjective, noun and verb draw from; nil is
+	// math/rand's global source. A test's seed: sets a seeded one
+	Random yagstd.Random
+	// started is when the run started, by the system clock, for the time limit
+	started time.Time
 
 	// Available roles (for hasRole checks)
 	AvailableRoles map[int64]types.CtxRole
@@ -217,6 +229,34 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 // SetNonPremium configures the context for non-premium limits.
 func (ctx *ExecutionContext) SetNonPremium() {
 	ctx.IsPremium = false
+}
+
+// Now is the time by the run's clock.
+func (ctx *ExecutionContext) Now() time.Time {
+	if ctx.Clock != nil {
+		return ctx.Clock()
+	}
+	return time.Now()
+}
+
+// random is the run's random source.
+func (ctx *ExecutionContext) random() yagstd.Random {
+	if ctx.Random != nil {
+		return ctx.Random
+	}
+	return yagstd.GlobalRandom{}
+}
+
+// FixClock stops the run's clock at t, the database's too.
+func (ctx *ExecutionContext) FixClock(t time.Time) {
+	ctx.Clock = func() time.Time { return t }
+	ctx.StartTime = t
+	ctx.DB.SetClock(ctx.Clock)
+}
+
+// Seed makes the random functions draw from a source seeded with seed.
+func (ctx *ExecutionContext) Seed(seed int64) {
+	ctx.Random = rand.New(rand.NewSource(seed))
 }
 
 // BuildTemplateData creates the data map passed to template execution (the "dot").
@@ -402,7 +442,7 @@ func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, 
 		GuildID:   ctx.GuildID,
 		Author:    botUser,
 		Content:   content,
-		Timestamp: time.Now(),
+		Timestamp: types.NewTimestamp(ctx.Now()),
 	}
 	if embed != nil {
 		msg.Embeds = []interface{}{embed}
@@ -531,7 +571,7 @@ func (ctx *ExecutionContext) message() types.CtxMessage {
 		GuildID:   ctx.GuildID,
 		Author:    types.DiscordUser{ID: ctx.UserID, Username: ctx.Username, Discriminator: ctx.Discriminator},
 		Content:   ctx.MessageContent,
-		Timestamp: ctx.StartTime,
+		Timestamp: types.NewTimestamp(ctx.StartTime),
 	}
 }
 

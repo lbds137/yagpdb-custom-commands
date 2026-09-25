@@ -245,10 +245,11 @@ tests:
       args: ["hello"]
 
   - name: "rand_hebrew - Generate random letters"
-    # no snapshot: the letters are random
+    snapshot: true
     template: "../../../utility/rand_hebrew.gohtml"
     context:
       args: ["5"]
+      seed: 1 # the letters are random
 
   - name: "rule - View rule 1"
     snapshot: true
@@ -363,18 +364,20 @@ tests:
   # ===== Database Dump =====
 
   - name: "db dump - Dump all keys"
-    # no snapshot: the file name holds the current time
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
       args: ["dump:0"]
       user: { roles: [111111111] }
+      clock: 2026-01-02T03:04:05Z # the file name holds the time
 
   - name: "db dump - Dump specific key"
-    # no snapshot: the file name holds the current time
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
       args: ["dump:0", "Global"]
       user: { roles: [111111111] }
+      clock: 2026-01-02T03:04:05Z # the file name holds the time
 
   # ===== Database Add (Array Append) =====
 

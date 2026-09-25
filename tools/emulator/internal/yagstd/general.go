@@ -2,7 +2,9 @@
 // MIT license, see LICENSE-YAGPDB. Changes: stdlib errors instead of
 // emperror.dev/errors; functions that need YAGPDB's bot and Discord packages removed
 // (cembed, complexMessage(Edit), component builders, roleAbove, humanize*, snowflakeToTime);
-// ParseDuration from common/parseduration.go.
+// ParseDuration from common/parseduration.go. randInt, shuffle and tmplCurrentTime are
+// built for a run from its random source and clock (see runfuncs.go), and shuffle doesn't
+// reseed from the clock.
 
 package templates
 
@@ -11,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -607,23 +608,25 @@ func tmplHumanizeThousands(input interface{}) string {
 	return f2
 }
 
-func randInt(args ...interface{}) (int, error) {
-	min := int64(0)
-	max := int64(10)
-	if len(args) >= 2 {
-		min = ToInt64(args[0])
-		max = ToInt64(args[1])
-	} else if len(args) == 1 {
-		max = ToInt64(args[0])
-	}
+func randInt(random Random) func(args ...interface{}) (int, error) {
+	return func(args ...interface{}) (int, error) {
+		min := int64(0)
+		max := int64(10)
+		if len(args) >= 2 {
+			min = ToInt64(args[0])
+			max = ToInt64(args[1])
+		} else if len(args) == 1 {
+			max = ToInt64(args[0])
+		}
 
-	diff := max - min
-	if diff <= 0 {
-		return 0, errors.New("start must be strictly less than stop")
-	}
+		diff := max - min
+		if diff <= 0 {
+			return 0, errors.New("start must be strictly less than stop")
+		}
 
-	r := rand.Int63n(diff)
-	return int(r + min), nil
+		r := random.Int63n(diff)
+		return int(r + min), nil
+	}
 }
 
 func tmplRound(args ...interface{}) float64 {
@@ -756,31 +759,32 @@ func sequence(start, stop int) ([]int, error) {
 }
 
 // shuffle returns the given rangeable list in a randomised order.
-func shuffle(seq interface{}) (interface{}, error) {
-	if seq == nil {
-		return nil, errors.New("both count and seq must be provided")
+func shuffle(random Random) func(seq interface{}) (interface{}, error) {
+	return func(seq interface{}) (interface{}, error) {
+		if seq == nil {
+			return nil, errors.New("both count and seq must be provided")
+		}
+
+		seqv := reflect.ValueOf(seq)
+		seqv, isNil := indirect(seqv)
+		if isNil {
+			return nil, errors.New("can't iterate over a nil value")
+		}
+
+		if seqv.Kind() != reflect.Slice {
+			return nil, errors.New("can't iterate over " + reflect.ValueOf(seq).Type().String())
+		}
+
+		shuffled := reflect.MakeSlice(seqv.Type(), seqv.Len(), seqv.Len())
+
+		randomIndices := random.Perm(seqv.Len())
+
+		for index, value := range randomIndices {
+			shuffled.Index(value).Set(seqv.Index(index))
+		}
+
+		return shuffled.Interface(), nil
 	}
-
-	seqv := reflect.ValueOf(seq)
-	seqv, isNil := indirect(seqv)
-	if isNil {
-		return nil, errors.New("can't iterate over a nil value")
-	}
-
-	if seqv.Kind() != reflect.Slice {
-		return nil, errors.New("can't iterate over " + reflect.ValueOf(seq).Type().String())
-	}
-
-	shuffled := reflect.MakeSlice(seqv.Type(), seqv.Len(), seqv.Len())
-
-	rand.Seed(time.Now().UTC().UnixNano())
-	randomIndices := rand.Perm(seqv.Len())
-
-	for index, value := range randomIndices {
-		shuffled.Index(value).Set(seqv.Index(index))
-	}
-
-	return shuffled.Interface(), nil
 }
 
 func tmplToInt(from interface{}) int {
@@ -1047,8 +1051,10 @@ func slice(item reflect.Value, indices ...reflect.Value) (reflect.Value, error) 
 	}
 }
 
-func tmplCurrentTime() time.Time {
-	return time.Now().UTC()
+func tmplCurrentTime(now func() time.Time) func() time.Time {
+	return func() time.Time {
+		return now().UTC()
+	}
 }
 
 func tmplParseTime(input string, layout interface{}, locations ...string) (time.Time, error) {

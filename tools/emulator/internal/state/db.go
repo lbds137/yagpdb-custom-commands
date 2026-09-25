@@ -25,6 +25,21 @@ type MockDB struct {
 	valueNums map[string]float64
 	guildID   int64
 	nextID    int64
+	clock     func() time.Time // nil is the system clock
+}
+
+// SetClock sets the clock entry times and expiry read (a test's fixed clock).
+func (m *MockDB) SetClock(clock func() time.Time) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.clock = clock
+}
+
+func (m *MockDB) now() time.Time {
+	if m.clock != nil {
+		return m.clock()
+	}
+	return time.Now()
 }
 
 // NewMockDB creates a new mock database for the given guild.
@@ -67,7 +82,7 @@ func (m *MockDB) Get(userID int64, key string) *types.LightDBEntry {
 		return nil
 	}
 
-	if expired(entry, time.Now()) {
+	if expired(entry, m.now()) {
 		return nil
 	}
 
@@ -91,7 +106,7 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 	defer m.mu.Unlock()
 
 	compositeKey := makeKey(userID, key)
-	now := time.Now()
+	now := m.now()
 
 	var expiresAt time.Time
 	if ttlSeconds > 0 {
@@ -168,7 +183,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 	defer m.mu.Unlock()
 
 	compositeKey := makeKey(userID, key)
-	now := time.Now()
+	now := m.now()
 
 	existing, exists := m.entries[compositeKey]
 	if !exists {
@@ -207,7 +222,7 @@ func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int, desce
 	defer m.mu.RUnlock()
 
 	var results []*types.LightDBEntry
-	now := time.Now()
+	now := m.now()
 
 	for _, entry := range m.entries {
 		if entry.UserID != userID {
@@ -240,7 +255,7 @@ func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) ([]
 	defer m.mu.RUnlock()
 
 	var results []*types.LightDBEntry
-	now := time.Now()
+	now := m.now()
 	for _, entry := range m.entries {
 		if expired(entry, now) {
 			continue
@@ -278,7 +293,7 @@ func (m *MockDB) Rank(userID *int64, pattern *string, ascending bool, targetUser
 	defer m.mu.RUnlock()
 
 	var results []*types.LightDBEntry
-	now := time.Now()
+	now := m.now()
 	for _, entry := range m.entries {
 		if expired(entry, now) || (userID != nil && entry.UserID != *userID) {
 			continue
@@ -367,7 +382,7 @@ func (m *MockDB) Count(userID *int64, pattern *string) (int, error) {
 	defer m.mu.RUnlock()
 
 	count := 0
-	now := time.Now()
+	now := m.now()
 
 	for _, entry := range m.entries {
 		if expired(entry, now) {
@@ -393,7 +408,7 @@ func (m *MockDB) GetAll() []*types.LightDBEntry {
 	defer m.mu.RUnlock()
 
 	var results []*types.LightDBEntry
-	now := time.Now()
+	now := m.now()
 
 	for _, entry := range m.entries {
 		if expired(entry, now) {

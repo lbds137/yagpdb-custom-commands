@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
@@ -103,10 +104,23 @@ func TestParseArgsChannelMentionCut(t *testing.T) {
 	}
 }
 
-// An edit sets the message's EditedTimestamp, as Discord does
+// An edit sets the message's EditedTimestamp, as Discord does; like discordgo's, the
+// timestamps are strings ("" until edited) with a Parse method
 func TestEditSetsEditedTimestamp(t *testing.T) {
-	out, err := run(t, channelCtx(), `{{$id := sendMessageRetID nil "a"}}{{(getMessage nil $id).EditedTimestamp.IsZero}} {{editMessage nil $id "b"}}{{(getMessage nil $id).EditedTimestamp.IsZero}}`)
-	if err != nil || out != "true false" {
+	ctx := channelCtx()
+	ctx.FixClock(time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC))
+	out, err := run(t, ctx, `{{$id := sendMessageRetID nil "a"}}{{$m := getMessage nil $id}}{{$m.Timestamp}} [{{$m.EditedTimestamp}}] {{editMessage nil $id "b"}}{{((getMessage nil $id).EditedTimestamp.Parse).Unix}}`)
+	if err != nil || out != "2001-02-03T04:05:06.000000+00:00 [] 981173106" {
+		t.Errorf("got %q, %v", out, err)
+	}
+}
+
+// A fixed clock is the database's clock too
+func TestFixClockReachesTheDatabase(t *testing.T) {
+	ctx := channelCtx()
+	ctx.FixClock(time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC))
+	out, err := run(t, ctx, `{{dbSet 0 "k" 1}}{{(dbGet 0 "k").CreatedAt.Unix}}`)
+	if err != nil || out != "981173106" {
 		t.Errorf("got %q, %v", out, err)
 	}
 }
