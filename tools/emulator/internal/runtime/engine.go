@@ -653,20 +653,24 @@ func (e *Engine) createTicket(user, reason interface{}) types.SDict {
 
 // Cross-command execution
 
-func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) string {
+// execCC is YAGPDB's tmplRunCC. With a delay it schedules the run (see schedule.go);
+// otherwise it runs the command now, at most two levels deep.
+func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (string, error) {
 	commandID := funcs.ToInt64(ccID)
 
-	// Check depth limit
+	if yagstd.ToInt64(delay) > 0 {
+		return "", e.ctx.schedule(commandID, e.channelArg(channel), delay, nil, data)
+	}
+
 	if e.ctx.ExecCCDepth >= e.ctx.MaxExecCCDepth {
-		// YAGPDB silently fails when depth is exceeded
-		return ""
+		return "", errors.New("Max nested immediate execCC calls reached (2)")
 	}
 
 	// Look up command template path
 	templatePath, ok := e.ctx.CommandIDMap[commandID]
 	if !ok {
 		// Command not found in registry - this is normal for unmapped commands
-		return ""
+		return "", nil
 	}
 
 	// Resolve template path
@@ -678,14 +682,10 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 	templateContent, err := os.ReadFile(templatePath)
 	if err != nil {
 		// Template file not found
-		return ""
+		return "", nil
 	}
 
-	// YAGPDB's ChannelArg: nil is the current channel
-	channelID := e.ctx.ChannelID
-	if channel != nil {
-		channelID = funcs.ToInt64(channel)
-	}
+	channelID := e.channelArg(channel)
 
 	// Create child context (shares DB and other state)
 	childCtx := &ExecutionContext{
@@ -720,6 +720,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 		MemberRoles:     e.ctx.MemberRoles,
 		MemberNicks:     e.ctx.MemberNicks,
 		MemberJoinedAgo: e.ctx.MemberJoinedAgo,
+		scheduled:       e.ctx.scheduledRuns(),
 	}
 
 	// Execute child template
@@ -741,15 +742,15 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 	}
 
 	// execCC doesn't return output to the caller
-	return ""
+	return "", nil
 }
 
-func (e *Engine) scheduleUniqueCC(ccID, channel, delay, key, data interface{}) string {
-	return ""
-}
-
-func (e *Engine) cancelScheduledUniqueCC(ccID, key interface{}) string {
-	return ""
+// channelArg is YAGPDB's ChannelArg as the mocks read it: nil is the current channel.
+func (e *Engine) channelArg(channel interface{}) int64 {
+	if channel == nil {
+		return e.ctx.ChannelID
+	}
+	return funcs.ToInt64(channel)
 }
 
 // sleep is a no-op in emulator (YAGPDB uses this to delay execution)

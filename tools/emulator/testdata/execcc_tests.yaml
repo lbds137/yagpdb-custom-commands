@@ -39,6 +39,12 @@ tests:
       101: "templates/recursive_command.gohtml"
     expected:
       output_contains: "Parent complete"
+      # The third level's execCC fails, and YAGPDB posts the error; the callers carry on
+      warning_contains: "Max nested immediate execCC calls reached (2)"
+    assertions:
+      db_checks: # the child and grandchild ran; the next level didn't
+        - { user_id: 0, key: "ran2", value_equals: 1 }
+        - { user_id: 0, key: "ran3", not_exists: true }
 
   - name: "execCC shares database state"
     template_source: |
@@ -50,3 +56,20 @@ tests:
       102: "templates/db_modifier.gohtml"
     expected:
       output_contains: "Final: ChildModified"
+
+  - name: "execCC with a delay schedules the run instead of running it"
+    template_source: |
+      {{ execCC 100 999 90 (sdict "Message" "later") }}
+      {{ scheduleUniqueCC 100 nil 60 "reminder" (sdict "n" 1) }}
+      {{ scheduleUniqueCC 100 nil 120 "reminder" (sdict "n" 2) }}
+    assertions:
+      scheduled_runs:
+        - { cc_id: 100, channel_id: 999, delay: 90s, exec_data_contains: '"Message":"later"' }
+        - { cc_id: 100, delay: 2m, key: "reminder", exec_data_contains: '"n":2' }
+
+  - name: "cancelScheduledUniqueCC removes the run"
+    template_source: |
+      {{ scheduleUniqueCC 100 nil 60 "reminder" nil }}
+      {{ cancelScheduledUniqueCC 100 "reminder" }}
+    assertions:
+      scheduled_runs: []

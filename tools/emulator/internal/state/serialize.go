@@ -26,3 +26,15 @@ func serializeValue(v interface{}) ([]byte, error) {
 	err := enc.Encode(v)
 	return b.Bytes(), err
 }
+
+// RoundTripExecData is what a delayed execCC does to its data (customcommands
+// tmplextensions.go and bot.go handleDelayedRunCC): msgpack.Marshal when scheduled,
+// msgpack.Unmarshal into an interface{} when the run starts. size is the encoded length.
+func RoundTripExecData(v interface{}) (decoded interface{}, size int, err error) {
+	encoded, err := msgpack.Marshal(v)
+	if err != nil {
+		return nil, 0, err
+	}
+	err = msgpack.Unmarshal(encoded, &decoded)
+	return decoded, len(encoded), err
+}

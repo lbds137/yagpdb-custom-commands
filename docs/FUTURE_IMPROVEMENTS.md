@@ -12,8 +12,14 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - A NaN value_num (`dbSet` of "NaN") sorts unpredictably in dbTopEntries, dbRank and
   dbDelMultiple; Postgres puts NaN above every number. setup_db keys aren't cut to 256
   bytes, so a longer fixture key can't be read back.
-- `execCC` with a delay passes its data as is; YAGPDB msgpack-encodes it (so types change
-  and over 1000000 bytes fails with "ExecData is too big").
+- An immediate `execCC` runs inline, before the caller goes on; YAGPDB starts it in a
+  goroutine, so it races with the rest of the caller (a `dbGet` right after an `execCC`
+  that writes the key may read the old value in production). Scheduled runs are recorded,
+  not run: test the scheduled command on its own with the recorded `exec_data` (a test's
+  exec_data is a plain map, while the real run gets an `*sdict` with `.Get`/`.Set`).
+- `execCC` and `scheduleUniqueCC` don't check that the command exists or the channel is
+  known; YAGPDB errors first ("Couldn't find custom command", "Unknown channel"). An
+  unmapped command is skipped, since `command_map` is only the commands a test runs.
 - Discord functions are mocks: reaction calls only record, role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
   is a no-op, and there are no components or threads yet.
@@ -135,6 +141,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       content, empty messages): a warning, or with `-strict` Discord's 400 error from
       `sendMessage` and a silently dropped DM from `sendDM`; `cembed` itself doesn't check,
       as in production (2026-09-25)
+- [x] `execCC` with a delay and `scheduleUniqueCC` record a scheduled run instead of running
+      it now, their data through YAGPDB's msgpack round trip ("ExecData is too big" over
+      1000000 bytes for execCC); a unique key replaces, `cancelScheduledUniqueCC` removes;
+      a third level of immediate execCC is YAGPDB's error; `scheduled_runs` assertion
+      (2026-09-25)
 - [x] Pings: `sendMessageNoEscape`(`RetID`) ported; sent messages and the response record
       who they notify, from YAGPDB's allowed mentions (users only by default; roles and
       @everyone via mentionRole*/mentionEveryone/mentionHere, a complexMessage's

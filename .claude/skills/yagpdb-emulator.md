@@ -59,6 +59,10 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     response_pings: { everyone: true, users: [1], roles: [111] }  # exactly who the output notifies
     # (sent/edited message checks take pings: too). Typed <@&id>/@everyone ping only through
     # mentionRole*/mentionEveryone, a complexMessage's allowed_mentions, or the NoEscape functions
+    scheduled_runs: [{ cc_id: 5, channel_id: 9, delay: 90s, key: "k", exec_data_contains: '"n":1' }]
+    # exactly the runs execCC with a delay / scheduleUniqueCC left, in the order scheduled
+    # (a replaced one moves last; [] for none). They aren't run: test that command separately
+    # (its exec_data there is a plain map; the real run gets an *sdict)
 ```
 
 ## Project Structure

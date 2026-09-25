@@ -129,6 +129,18 @@ type Assertions struct {
 	NoRoleChanges bool `yaml:"no_role_changes"`
 	// ResponsePings is exactly who the response (the template's output) notifies
 	ResponsePings *PingsCheck `yaml:"response_pings"`
+	// ScheduledRuns are exactly the runs execCC with a delay and scheduleUniqueCC left
+	// scheduled, in order (`[]` for none)
+	ScheduledRuns *[]ScheduledRunCheck `yaml:"scheduled_runs"`
+}
+
+// ScheduledRunCheck matches a scheduled run; unset fields match anything.
+type ScheduledRunCheck struct {
+	CCID             int64    `yaml:"cc_id"`
+	ChannelID        int64    `yaml:"channel_id"`
+	Delay            Duration `yaml:"delay"`
+	Key              *string  `yaml:"key"`                // scheduleUniqueCC's key
+	ExecDataContains string   `yaml:"exec_data_contains"` // substring of the data as JSON
 }
 
 // PingsCheck is exactly who a message notifies; unset fields expect no one.
