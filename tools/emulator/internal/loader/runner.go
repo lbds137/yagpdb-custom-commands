@@ -120,6 +120,10 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 		})
 	}
 	ctx.Members = tc.Context.Members
+	ctx.MemberRoles = tc.Context.MemberRoles
+	for _, r := range tc.Context.Guild.Roles {
+		ctx.AvailableRoles[r.ID] = types.CtxRole{ID: r.ID, Name: r.Name, Color: r.Color}
+	}
 	ctx.MessageContent = tc.Context.MessageContent
 
 	if rd := tc.Context.Reaction; rd != nil {

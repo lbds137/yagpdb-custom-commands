@@ -4,29 +4,50 @@ package state
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
-	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
-// MockDB provides an in-memory implementation of YAGPDB's database.
+// MockDB provides an in-memory implementation of YAGPDB's database. Like YAGPDB's
+// templates_user_database table, each entry has a raw value (entries[k].Value) and a
+// numeric column (valueNums[k]): dbSet writes both, dbIncr changes only value_num, and
+// reading an entry whose raw value is a number gives value_num.
 type MockDB struct {
-	mu      sync.RWMutex
-	entries map[string]*types.LightDBEntry
-	guildID int64
-	nextID  int64
+	mu        sync.RWMutex
+	entries   map[string]*types.LightDBEntry
+	valueNums map[string]float64
+	guildID   int64
+	nextID    int64
 }
 
 // NewMockDB creates a new mock database for the given guild.
 func NewMockDB(guildID int64) *MockDB {
 	return &MockDB{
-		entries: make(map[string]*types.LightDBEntry),
-		guildID: guildID,
-		nextID:  1,
+		entries:   make(map[string]*types.LightDBEntry),
+		valueNums: make(map[string]float64),
+		guildID:   guildID,
+		nextID:    1,
 	}
+}
+
+// view is an entry as YAGPDB's ToLightDBEntry reads it: a raw number reads as value_num.
+func (m *MockDB) view(e *types.LightDBEntry) *types.LightDBEntry {
+	if !isNumber(e.Value) {
+		return e
+	}
+	c := *e
+	c.Value = m.valueNums[makeKey(e.UserID, e.Key)]
+	return &c
+}
+
+func expired(e *types.LightDBEntry, now time.Time) bool {
+	return !e.ExpiresAt.IsZero() && now.After(e.ExpiresAt)
 }
 
 // makeKey creates a composite key from userID and key name.
@@ -45,12 +66,11 @@ func (m *MockDB) Get(userID int64, key string) *types.LightDBEntry {
 		return nil
 	}
 
-	// Check expiration
-	if !entry.ExpiresAt.IsZero() && time.Now().After(entry.ExpiresAt) {
+	if expired(entry, time.Now()) {
 		return nil
 	}
 
-	return entry
+	return m.view(entry)
 }
 
 // Set stores a value in the database.
@@ -84,12 +104,9 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		createdAt = now
 	}
 
-	// Store a copy, as YAGPDB stores a serialized value. Numbers come back from YAGPDB as
-	// float64 (ToLightDBEntry substitutes value_num), so store them so.
+	// Store a copy, as YAGPDB stores a serialized value, and value_num = ToFloat64(value)
 	convertedValue := types.ForStorage(value)
-	if isNumber(convertedValue) {
-		convertedValue = toFloat(convertedValue)
-	}
+	m.valueNums[compositeKey] = yagstd.ToFloat64(convertedValue)
 
 	entry := &types.LightDBEntry{
 		ID:        id,
@@ -115,6 +132,7 @@ func (m *MockDB) Del(userID int64, key string) bool {
 	compositeKey := makeKey(userID, key)
 	if _, ok := m.entries[compositeKey]; ok {
 		delete(m.entries, compositeKey)
+		delete(m.valueNums, compositeKey)
 		return true
 	}
 	return false
@@ -128,13 +146,16 @@ func (m *MockDB) DelByID(userID int64, id int64) bool {
 	for compositeKey, entry := range m.entries {
 		if entry.ID == id && entry.UserID == userID {
 			delete(m.entries, compositeKey)
+			delete(m.valueNums, compositeKey)
 			return true
 		}
 	}
 	return false
 }
 
-// Incr increments a numeric value, creating it if it doesn't exist.
+// Incr follows YAGPDB's dbIncr upsert: a new entry stores the amount; an existing one
+// only adds to value_num, keeping its raw value, creation time and expiry; an expired
+// one restarts value_num at the amount and loses its expiry (its raw value stays).
 func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -143,48 +164,33 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 	now := time.Now()
 
 	existing, exists := m.entries[compositeKey]
-	var currentVal float64
-	var id int64
-	var createdAt time.Time
-	var expiresAt time.Time
-
-	if exists {
-		// Check expiration
-		if !existing.ExpiresAt.IsZero() && now.After(existing.ExpiresAt) {
-			// Treat as non-existent
-			id = m.nextID
-			m.nextID++
-			createdAt = now
-			currentVal = 0
-		} else {
-			id = existing.ID
-			createdAt = existing.CreatedAt
-			expiresAt = existing.ExpiresAt // YAGPDB's upsert keeps the expiry
-			// YAGPDB adds to value_num, which is 0 for values that aren't numbers
-			currentVal = valueNum(existing)
+	if !exists {
+		m.entries[compositeKey] = &types.LightDBEntry{
+			ID:        m.nextID,
+			GuildID:   m.guildID,
+			UserID:    userID,
+			CreatedAt: now,
+			UpdatedAt: now,
+			Key:       key,
+			Value:     amount,
+			ValueSize: 9, // msgpack float64
 		}
-	} else {
-		id = m.nextID
 		m.nextID++
-		createdAt = now
-		currentVal = 0
+		m.valueNums[compositeKey] = amount
+		return amount, nil
 	}
 
-	newVal := currentVal + amount
-	entry := &types.LightDBEntry{
-		ID:        id,
-		GuildID:   m.guildID,
-		UserID:    userID,
-		CreatedAt: createdAt,
-		UpdatedAt: now,
-		Key:       key,
-		Value:     newVal,
-		ValueSize: 8, // float64 size
-		ExpiresAt: expiresAt,
+	updated := *existing
+	updated.UpdatedAt = now
+	if expired(existing, now) {
+		m.valueNums[compositeKey] = amount
+		updated.CreatedAt = now
+		updated.ExpiresAt = time.Time{}
+	} else {
+		m.valueNums[compositeKey] += amount
 	}
-
-	m.entries[compositeKey] = entry
-	return newVal, nil
+	m.entries[compositeKey] = &updated
+	return m.valueNums[compositeKey], nil
 }
 
 // GetPattern retrieves entries matching a LIKE pattern, ordered by ID like YAGPDB
@@ -200,13 +206,11 @@ func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int, desce
 		if entry.UserID != userID {
 			continue
 		}
-		// Check expiration
-		if !entry.ExpiresAt.IsZero() && now.After(entry.ExpiresAt) {
+		if expired(entry, now) {
 			continue
 		}
-		// Simple pattern matching (% is wildcard)
 		if matchPattern(entry.Key, pattern) {
-			results = append(results, entry)
+			results = append(results, m.view(entry))
 		}
 	}
 
@@ -229,7 +233,7 @@ func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*
 	var results []*types.LightDBEntry
 	now := time.Now()
 	for _, entry := range m.entries {
-		if !entry.ExpiresAt.IsZero() && now.After(entry.ExpiresAt) {
+		if expired(entry, now) {
 			continue
 		}
 		if matchPattern(entry.Key, pattern) {
@@ -238,13 +242,17 @@ func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*
 	}
 
 	sort.Slice(results, func(i, j int) bool {
-		a, b := valueNum(results[i]), valueNum(results[j])
+		a, b := m.valueNum(results[i]), m.valueNum(results[j])
 		if a != b {
 			return (a < b) == ascending
 		}
 		return (results[i].ID < results[j].ID) == ascending
 	})
-	return page(results, limit, skip)
+	results = page(results, limit, skip)
+	for i, e := range results {
+		results[i] = m.view(e)
+	}
+	return results
 }
 
 func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry {
@@ -258,32 +266,14 @@ func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry 
 	return results
 }
 
-// valueNum is YAGPDB's value_num column: ToFloat64 of the value (strings are parsed,
-// anything else that isn't a number is 0).
-func valueNum(e *types.LightDBEntry) float64 {
-	return toFloat(e.Value)
+// valueNum is the entry's value_num column.
+func (m *MockDB) valueNum(e *types.LightDBEntry) float64 {
+	return m.valueNums[makeKey(e.UserID, e.Key)]
 }
 
 func isNumber(v interface{}) bool {
 	rv := reflect.ValueOf(v)
 	return rv.CanInt() || rv.CanUint() || rv.CanFloat()
-}
-
-func toFloat(v interface{}) float64 {
-	rv := reflect.ValueOf(v)
-	switch {
-	case rv.CanInt():
-		return float64(rv.Int())
-	case rv.CanUint():
-		return float64(rv.Uint())
-	case rv.CanFloat():
-		return rv.Float()
-	case rv.Kind() == reflect.String:
-		f, _ := strconv.ParseFloat(rv.String(), 64)
-		return f
-	default:
-		return 0
-	}
 }
 
 // Count returns the number of entries matching optional criteria.
@@ -295,8 +285,7 @@ func (m *MockDB) Count(userID *int64, pattern *string) int {
 	now := time.Now()
 
 	for _, entry := range m.entries {
-		// Check expiration
-		if !entry.ExpiresAt.IsZero() && now.After(entry.ExpiresAt) {
+		if expired(entry, now) {
 			continue
 		}
 		// Filter by userID if provided
@@ -322,39 +311,55 @@ func (m *MockDB) GetAll() []*types.LightDBEntry {
 	now := time.Now()
 
 	for _, entry := range m.entries {
-		if !entry.ExpiresAt.IsZero() && now.After(entry.ExpiresAt) {
+		if expired(entry, now) {
 			continue
 		}
-		results = append(results, entry)
+		results = append(results, m.view(entry))
 	}
 
 	return results
 }
 
-// matchPattern implements simple SQL LIKE pattern matching.
-// % matches any sequence of characters.
+// matchPattern is Postgres LIKE, which YAGPDB's pattern functions use: % matches any run
+// of characters, _ matches one, a backslash escapes the next character, and the match is
+// case-sensitive and covers the whole key.
 func matchPattern(s, pattern string) bool {
-	// Simple implementation - could be improved
-	if pattern == "%" {
-		return true
-	}
-	if pattern == s {
-		return true
-	}
+	return likeRegexp(pattern).MatchString(s)
+}
 
-	// Handle prefix match (pattern%)
-	if len(pattern) > 1 && pattern[len(pattern)-1] == '%' {
-		prefix := pattern[:len(pattern)-1]
-		return len(s) >= len(prefix) && s[:len(prefix)] == prefix
-	}
+var (
+	likeMu    sync.Mutex
+	likeCache = map[string]*regexp.Regexp{}
+)
 
-	// Handle suffix match (%pattern)
-	if len(pattern) > 1 && pattern[0] == '%' {
-		suffix := pattern[1:]
-		return len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
+func likeRegexp(pattern string) *regexp.Regexp {
+	likeMu.Lock()
+	defer likeMu.Unlock()
+	if re, ok := likeCache[pattern]; ok {
+		return re
 	}
-
-	return false
+	var b strings.Builder
+	b.WriteString(`(?s)\A`)
+	runes := []rune(pattern)
+	for i := 0; i < len(runes); i++ {
+		switch r := runes[i]; r {
+		case '%':
+			b.WriteString(".*")
+		case '_':
+			b.WriteString(".")
+		case '\\':
+			if i+1 < len(runes) {
+				i++
+				b.WriteString(regexp.QuoteMeta(string(runes[i])))
+			}
+		default:
+			b.WriteString(regexp.QuoteMeta(string(r)))
+		}
+	}
+	b.WriteString(`\z`)
+	re := regexp.MustCompile(b.String())
+	likeCache[pattern] = re
+	return re
 }
 
 // estimateSize provides a rough estimate of the serialized size of a value.

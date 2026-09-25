@@ -65,6 +65,8 @@ type ExecutionContext struct {
 	// Messages that exist, for getMessage; Members, if set, are the only users in the server
 	Messages []types.CtxMessage
 	Members  []int64
+	// MemberRoles are other members' roles; the triggering user's are UserRoles
+	MemberRoles map[int64][]int64
 
 	// Reaction trigger: set for commands triggered by a reaction
 	Reaction      *types.CtxReaction
@@ -330,4 +332,25 @@ func (ctx *ExecutionContext) RecordFileUpload(channelID int64, filename, content
 		Filename:  filename,
 		Content:   content,
 	})
+}
+
+// isMember reports whether a user is in the server: anyone, unless the test lists members.
+func (ctx *ExecutionContext) isMember(userID int64) bool {
+	if userID == ctx.UserID || ctx.Members == nil {
+		return true
+	}
+	for _, m := range ctx.Members {
+		if m == userID {
+			return true
+		}
+	}
+	return false
+}
+
+// rolesOf returns a member's role IDs.
+func (ctx *ExecutionContext) rolesOf(userID int64) []int64 {
+	if userID == ctx.UserID {
+		return ctx.UserRoles
+	}
+	return ctx.MemberRoles[userID]
 }
