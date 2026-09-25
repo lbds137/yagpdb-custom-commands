@@ -49,9 +49,7 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   for a pattern that isn't an exact match: there the emulator warns (`[db]`) instead of
   guessing. Keys that aren't valid UTF-8 or hold a NUL byte are stored; Postgres
   rejects them.
-- `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
-  declares no guild roles accepts any role). Its `role` argument uses the role functions' lookup;
-  dcmd's RoleArg matches names case-sensitively and falls back from a numeric ID to a name.
+- `parseArgs` resolves `user` and `member` arguments through the mocks.
 - Role gaps: a test that declares no guild roles treats any role ID as existing, with a
   `[role]` warning per ID (a stale ID would be nil in production).
 - Component and modal triggers aren't modelled (YAGPDB's `.Message` there is the
@@ -168,6 +166,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
       used to return the previous message's ID after a refused send). Edits set
       EditedTimestamp (2026-09-25)
+- [x] parseArgs' role argument is YAGPDB's RoleArg (copied): a mention or ID matches a
+      role's ID or, as text, its exact (case-sensitive) name, the first role in guild order
+      winning; a mention's last character is cut whatever it is; a mention that isn't a
+      number panics, as there, so no try catches it. With no roles declared an ID is an
+      assumed role (2026-09-25)
 - [x] Message checks take `nth` (the nth message in the channel, or of all; 1 = first, the
       default), and an explicit `""` in content_equals or output_equals asserts emptiness
       (2026-09-25)

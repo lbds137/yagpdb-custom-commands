@@ -134,3 +134,54 @@ func TestGetRoleOverTheLimit(t *testing.T) {
 		t.Errorf("targetHasRoleID: got %v", err)
 	}
 }
+
+// parseArgs' role argument is YAGPDB's RoleArg: a mention or ID matches a role's ID or, as
+// text, its exact name, whichever role comes first in guild order
+func TestParseArgsRole(t *testing.T) {
+	cases := []struct{ arg, out, err string }{
+		{"Staff", "10", ""},
+		{"staff", "caught", ""}, // names are case-sensitive here
+		{"<@&10>", "10", ""},
+		{"<@&100", "10", ""}, // the mention's last character is cut, whatever it is
+		{"20", "30", ""},     // role 30, named "20", outranks role 20
+		{"99", "caught", ""}, // "Invalid role mention or id", which try catches
+		// the bad mention's -1 is an int, and RoleArg's int64 assertion panics: no try
+		// catches a panic
+		{"<@&x>", "", "error calling parseArgs: interface conversion: interface {} is int, not int64"},
+		{"<@&>", "", "error calling parseArgs: interface conversion: interface {} is int, not int64"},
+	}
+	for _, c := range cases {
+		ctx := roleCtx()
+		ctx.AvailableRoles[30] = types.CtxRole{ID: 30, Name: "20", Position: 5}
+		if err := ctx.SetTriggerMessage(Trigger{Type: "Command", Text: "c"}, "-c "+c.arg); err != nil {
+			t.Fatal(err)
+		}
+		out, err := run(t, ctx, `{{try}}{{((parseArgs 1 "" (carg "role" "r")).Get 0).ID}}{{catch}}caught{{end}}`)
+		if c.err == "" && (err != nil || out != c.out) || c.err != "" && (err == nil || !strings.Contains(err.Error(), c.err)) {
+			t.Errorf("%s: got %q, %v; want %q, %q", c.arg, out, err, c.out, c.err)
+		}
+	}
+	ctx := roleCtx()
+	if err := ctx.SetTriggerMessage(Trigger{Type: "Command", Text: "c"}, "-c 99"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run(t, ctx, `{{parseArgs 1 "" (carg "role" "r")}}`); err == nil || !strings.Contains(err.Error(), "Invalid role mention or id") {
+		t.Errorf("unknown role: %v", err)
+	}
+}
+
+// With no roles declared, a role argument's ID is assumed to exist, with a warning, and
+// @everyone is found by name
+func TestParseArgsRoleAssumed(t *testing.T) {
+	ctx := newCtx(false, true)
+	if err := ctx.SetTriggerMessage(Trigger{Type: "Command", Text: "c"}, "-c <@&99> @everyone"); err != nil {
+		t.Fatal(err)
+	}
+	out, err := run(t, ctx, `{{$a := parseArgs 2 "" (carg "role" "r") (carg "role" "s")}}{{($a.Get 0).ID}} {{eq ($a.Get 1).ID .Guild.ID}}`)
+	if err != nil || out != "99 true" {
+		t.Fatalf("got %q, %v", out, err)
+	}
+	if w := kinds(ctx, KindRole); len(w) != 1 || !strings.Contains(w[0], "role 99 is assumed") {
+		t.Errorf("want one warning for role 99, got %q", w)
+	}
+}

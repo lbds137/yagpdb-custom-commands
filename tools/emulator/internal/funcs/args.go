@@ -48,7 +48,9 @@ type Lookups struct {
 	User    func(id int64) interface{}
 	Member  func(id int64) interface{}
 	Channel func(id int64) interface{}
-	Role    func(arg string) interface{}
+	// Role gets RoleArg's extracted ID (an int64, int -1 for a bad mention, or the string)
+	// and its name form, and returns the first role in guild order matching either.
+	Role func(id interface{}, idName string) interface{}
 }
 
 // ParsedArgs is the result of parseArgs.
@@ -239,12 +241,46 @@ func parseArg(def *ArgDef, part string, lookups Lookups) (interface{}, error) {
 		}
 		return nil, fmt.Errorf("Improper mention %q", part)
 	case "role":
-		if r := lookups.Role(part); r != nil {
+		// YAGPDB's commands.RoleArg, whose bad-mention -1 is an int: the int64 assertion
+		// panics, as it does there
+		id := extractRoleID(part)
+		var idName string
+		switch t := id.(type) {
+		case int, int32, int64:
+			idName = strconv.FormatInt(t.(int64), 10)
+		case string:
+			idName = t
+		default:
+			idName = ""
+		}
+		if r := lookups.Role(id, idName); r != nil {
 			return r, nil
 		}
 		return nil, errors.New("Invalid role mention or id")
 	}
 	return nil, fmt.Errorf("unknown argument type %q", def.Type)
+}
+
+// extractRoleID is RoleArg.ExtractID.
+func extractRoleID(part string) interface{} {
+	if strings.HasPrefix(part, "<@&") && len(part) > 3 {
+		// Direct mention
+		id := part[3 : len(part)-1]
+
+		parsed, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			return -1
+		}
+
+		return parsed
+	}
+
+	id, err := strconv.ParseInt(part, 10, 64)
+	if err == nil {
+		return id
+	}
+
+	return part
 }
 
 // rangeError is dcmd's OutOfRangeError message.

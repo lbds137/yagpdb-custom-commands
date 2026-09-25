@@ -913,8 +913,8 @@ func (e *Engine) parseArgs(numRequired int, failedMessage string, argDefs ...*fu
 			}
 			return nil
 		},
-		Role: func(arg string) interface{} {
-			if r := e.findRole(arg, acceptAllRoleInput); r != nil {
+		Role: func(id interface{}, idName string) interface{} {
+			if r := e.roleArg(id, idName); r != nil {
 				return r
 			}
 			return nil
