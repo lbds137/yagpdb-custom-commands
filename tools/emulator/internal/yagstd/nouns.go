@@ -1,7 +1,7 @@
 // Copied from YAGPDB (github.com/botlabs-gg/yagpdb, commit 0cf2ec5), common/nouns.go.
 // MIT license, see LICENSE-YAGPDB. Changes: package name.
 
-package yagstd
+package templates
 
 var Nouns = []string{
 	"ability",

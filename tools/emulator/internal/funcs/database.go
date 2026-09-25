@@ -6,7 +6,7 @@ import (
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // DatabaseFuncs provides database-related template functions.

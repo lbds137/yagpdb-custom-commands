@@ -444,7 +444,9 @@ func (ctx *ExecutionContext) recordResponseSent(channelID, messageID int64) {
 // BotUserID is the emulated bot's user ID.
 const BotUserID = 1234567890
 
-var botUser = types.DiscordUser{ID: BotUserID, Username: "YAGPDB.xyz", Bot: true}
+// botUser is the emulated bot. Its discriminator "0" (printed as the bare name) is a stand-in:
+// the real bot's isn't recorded in YAGPDB's source.
+var botUser = types.DiscordUser{ID: BotUserID, Username: "YAGPDB.xyz", Discriminator: "0", Bot: true}
 
 // RecordRoleChange records a role change during execution.
 func (ctx *ExecutionContext) RecordRoleChange(userID, roleID int64, action string, delay time.Duration) {
@@ -483,7 +485,7 @@ const DefaultJoinedAgo = 30 * 24 * time.Hour
 
 // member is what YAGPDB's getMember gives for a server member.
 func (ctx *ExecutionContext) member(userID int64) types.CtxMember {
-	user := types.DiscordUser{ID: userID, Username: "MockUser"}
+	user := types.DiscordUser{ID: userID, Username: "MockUser", Discriminator: "0"}
 	if userID == ctx.UserID {
 		user = types.DiscordUser{ID: userID, Username: ctx.Username, Discriminator: ctx.Discriminator}
 	}

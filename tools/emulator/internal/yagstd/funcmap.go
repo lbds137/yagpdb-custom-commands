@@ -1,4 +1,4 @@
-package yagstd
+package templates
 
 import (
 	"fmt"

@@ -1,7 +1,7 @@
 // Copied from YAGPDB (github.com/botlabs-gg/yagpdb, commit 0cf2ec5), common/parseduration.go.
 // MIT license, see LICENSE-YAGPDB. Changes: package name, stdlib errors.
 
-package yagstd
+package templates
 
 import (
 	"strconv"

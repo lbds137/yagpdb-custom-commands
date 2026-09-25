@@ -1,9 +1,9 @@
 // Copied from YAGPDB (github.com/botlabs-gg/yagpdb, commit 0cf2ec5), common/templates/
 // context_funcs.go: the regex functions with their per-run cache, and sort. MIT license, see
-// LICENSE-YAGPDB. Changes: package name, a minimal Context holding the regex cache, and
+// LICENSE-YAGPDB. Changes: a minimal Context holding the regex cache, and
 // sort's call counter removed (the emulator's limits wrapper counts sort calls).
 
-package yagstd
+package templates
 
 import (
 	"errors"

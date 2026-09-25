@@ -15,6 +15,7 @@ make update-snapshots  # accept an intended change in snapshot output
 ./bin/yagtest run -message "#ff8800" utility/hex_to_int.gohtml # whole message (Regex triggers need it)
 ./bin/yagtest run -no-premium -strict utility/db.gohtml   # free-server limits, fail on breach
 ./bin/yagtest check utility/*.gohtml                      # parse + static warnings
+./bin/yagtest test tools/emulator/testdata/db_tests.yaml tools/emulator/testdata/pings_tests.yaml  # several suites
 make test-templates                # smoke-run every command with no args on a bootstrapped DB (in make ci)
 ./scripts/find-missing-functions.sh
 ```
@@ -102,7 +103,8 @@ tools/emulator/
 ├── internal/
 │   ├── yagtemplate/      # YAGPDB's text/template fork, copied (try/catch, while, return,
 │   │                     # execTemplate, built-ins, op limit); one EMULATOR PATCH (OnMaxOps)
-│   ├── yagstd/           # YAGPDB's standard functions, sdict/dict/cslice, regex, sort, copied
+│   ├── yagstd/           # `package templates` (YAGPDB's name, so %T prints *templates.SDict),
+│   │                     # imported as yagstd: standard functions, sdict/dict/cslice, regex, sort, copied
 │   ├── runtime/          # engine.go (Discord/database mocks, Execute), context.go, limits.go
 │   │                     # (YAGPDB call counters), loopcheck.go, hints.go
 │   ├── funcs/            # database functions, parseArgs, conversion helpers for the mocks

@@ -39,6 +39,12 @@ func TestFidelityOutputs(t *testing.T) {
 			`{{.Message.Link}}`, "https://discord.com/channels/1/123456789/234567890"},
 		{"the guild has an owner who is a member (the triggering user by default)",
 			`{{(userArg .Guild.OwnerID).Mention}}`, "<@987654321>"},
+		{"%T gives YAGPDB's type names, which commands compare against",
+			`{{dbSet 0 "d" (sdict "a" 1)}}{{printf "%T %T %T" (dbGet 0 "d").Value (dict 1 2) (cslice)}}`, "*templates.SDict templates.Dict templates.Slice"},
+		{"a user prints as username#discriminator (discordgo's User.String)",
+			`{{.User}} {{.User.String}}`, "TestUser#0001 TestUser#0001"},
+		{"the default avatar is discriminator % 5, and a size is added only when given",
+			`{{.User.AvatarURL "64"}} {{.User.AvatarURL ""}}`, "https://cdn.discordapp.com/embed/avatars/1.png?size=64 https://cdn.discordapp.com/embed/avatars/1.png"},
 		{"and evaluates every argument",
 			`{{$x := sdict}}{{if and false ($x.Set "k" 1)}}{{end}}{{$x.HasKey "k"}}`, "true"},
 	}

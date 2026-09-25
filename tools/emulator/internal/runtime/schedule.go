@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // ScheduledRun is a custom command run that execCC with a delay or scheduleUniqueCC set up.

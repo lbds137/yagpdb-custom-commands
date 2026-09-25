@@ -1,7 +1,7 @@
 // Copied from YAGPDB (github.com/botlabs-gg/yagpdb, commit 0cf2ec5), common/templates/context.go.
-// MIT license, see LICENSE-YAGPDB. Changes: package name.
+// MIT license, see LICENSE-YAGPDB. Unchanged.
 
-package yagstd
+package templates
 
 import (
 	"bytes"

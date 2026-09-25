@@ -1,10 +1,10 @@
 // Copied from YAGPDB (github.com/botlabs-gg/yagpdb, commit 0cf2ec5), common/templates/general.go.
-// MIT license, see LICENSE-YAGPDB. Changes: package name; stdlib errors instead of
+// MIT license, see LICENSE-YAGPDB. Changes: stdlib errors instead of
 // emperror.dev/errors; functions that need YAGPDB's bot and Discord packages removed
 // (cembed, complexMessage(Edit), component builders, roleAbove, humanize*, snowflakeToTime);
 // ParseDuration from common/parseduration.go.
 
-package yagstd
+package templates
 
 import (
 	"encoding/json"

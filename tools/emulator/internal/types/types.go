@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // SDict, Dict and Slice are YAGPDB's own container types (sdict, dict, cslice), with
@@ -227,21 +229,30 @@ type DiscordUser struct {
 	Bot           bool
 }
 
-// AvatarURL returns the user's avatar URL.
-func (u DiscordUser) AvatarURL(size ...string) string {
+// AvatarURL is discordgo's User.AvatarURL: size is required, and "" adds no size.
+func (u DiscordUser) AvatarURL(size string) string {
+	var URL string
 	if u.Avatar == "" {
-		// Default avatar based on discriminator
-		return fmt.Sprintf("https://cdn.discordapp.com/embed/avatars/%d.png", u.ID%5)
+		// "For users on the new username system, `index` will be `(user_id >> 22) % 6`.
+		// For users on the legacy username system, `index` will be `discriminator % 5`."
+		var index int
+		if u.Discriminator == "0" {
+			index = int((u.ID >> 22) % 6)
+		} else {
+			discrim, _ := strconv.Atoi(u.Discriminator)
+			index = discrim % 5
+		}
+		URL = "https://cdn.discordapp.com/embed/avatars/" + strconv.Itoa(index) + ".png"
+	} else if strings.HasPrefix(u.Avatar, "a_") {
+		URL = fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s.gif", u.ID, u.Avatar)
+	} else {
+		URL = fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s.png", u.ID, u.Avatar)
 	}
-	ext := "png"
-	if len(u.Avatar) > 2 && u.Avatar[:2] == "a_" {
-		ext = "gif"
+
+	if size != "" {
+		return URL + "?size=" + size
 	}
-	s := "128"
-	if len(size) > 0 {
-		s = size[0]
-	}
-	return fmt.Sprintf("https://cdn.discordapp.com/avatars/%d/%s.%s?size=%s", u.ID, u.Avatar, ext, s)
+	return URL
 }
 
 // Mention returns the user mention string.
@@ -249,9 +260,13 @@ func (u DiscordUser) Mention() string {
 	return fmt.Sprintf("<@%d>", u.ID)
 }
 
-// String returns the user's username.
+// String is discordgo's User.String: username#discriminator, or the username alone on the
+// new username system (discriminator "0").
 func (u DiscordUser) String() string {
-	return u.Username
+	if u.Discriminator == "0" {
+		return u.Username
+	}
+	return fmt.Sprintf("%s#%s", u.Username, u.Discriminator)
 }
 
 // CtxChannel represents a Discord channel context.

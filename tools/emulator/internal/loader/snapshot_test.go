@@ -20,7 +20,8 @@ func snapshotTest(dir, source string) *TestCase {
 
 func TestSnapshotLifecycle(t *testing.T) {
 	dir := t.TempDir()
-	src := `{{dbSet 0 "count" 1}}{{sendMessage nil (cembed "title" "Hi")}}hello`
+	src := `{{dbSet 0 "count" 1}}{{sendMessage nil (cembed "title" "Hi")}}` +
+		`{{sendMessage nil (complexMessage "file" "file body" "filename" "notes")}}hello`
 
 	// CI refuses to invent a missing snapshot
 	ci := NewRunner(RunnerConfig{BaseDir: dir, CI: true})
@@ -38,7 +39,7 @@ func TestSnapshotLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"greets:", "output: hello", `"title": "Hi"`, "key: count"} {
+	for _, want := range []string{"greets:", "output: hello", `"title": "Hi"`, "key: count", "filename: notes.txt", "content: file body"} {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("snapshot missing %q:\n%s", want, data)
 		}

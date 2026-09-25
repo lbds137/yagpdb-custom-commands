@@ -14,7 +14,7 @@ import (
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 	template "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate"
 )
 
@@ -493,7 +493,7 @@ func (e *Engine) userArg(arg interface{}) interface{} {
 	if id == e.ctx.UserID {
 		return &types.DiscordUser{ID: id, Username: e.ctx.Username, Discriminator: e.ctx.Discriminator}
 	}
-	return &types.DiscordUser{ID: id, Username: "MockUser"}
+	return &types.DiscordUser{ID: id, Username: "MockUser", Discriminator: "0"}
 }
 
 func (e *Engine) getTargetPermissionsIn(userID, channelID interface{}) int64 {

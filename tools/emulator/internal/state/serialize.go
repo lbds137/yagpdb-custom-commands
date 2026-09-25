@@ -6,7 +6,7 @@ import (
 	"github.com/vmihailenco/msgpack"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // YAGPDB registers its template types so they come back as themselves

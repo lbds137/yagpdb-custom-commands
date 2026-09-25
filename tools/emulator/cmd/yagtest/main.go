@@ -102,6 +102,7 @@ Examples:
     yagtest run -message "#ff8800" utility/hex_to_int.gohtml
     yagtest run -db initial_db.json -context context.json utility/db.gohtml
     yagtest test testdata/simple_tests.yaml
+    yagtest test testdata/db_tests.yaml testdata/pings_tests.yaml
     yagtest test testdata/
     yagtest test -strict -schema db_schema.yaml testdata/
     yagtest watch -watch tools/emulator/testdata,utility testdata/
@@ -540,9 +541,15 @@ func testCommand(args []string) {
 		fmt.Fprintln(os.Stderr, "Error: test file or directory required")
 		os.Exit(1)
 	}
-	opts.path = fs.Arg(0)
-
-	os.Exit(runTests(opts))
+	// Each path is run in turn; any failure fails the whole run
+	code := 0
+	for _, path := range fs.Args() {
+		opts.path = path
+		if c := runTests(opts); c != 0 {
+			code = c
+		}
+	}
+	os.Exit(code)
 }
 
 // runTests loads and runs the tests at opts.path and returns the exit code.

@@ -14,6 +14,8 @@ defaults:
       - { id: 999999999, name: "yagpdb" }
     id: 111222333444555666
     name: "Test Server"
+    roles:
+      - { id: 888888888, name: "Staff" }
 
 # Shared database setup
 setup_db:
@@ -38,27 +40,35 @@ setup_db:
 command_map:
   123: "../../../utility/embed_exec.gohtml"
 
+# The global-data tests use `<op>:0`, which switches to user 0 only for a member with the
+# Staff role (Roles "Staff" = 888888888)
 tests:
   - name: "Get existing database entry"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
-      args: ["get", "Global"]
+      args: ["get:0", "Global"]
+      user: { roles: [888888888] }
     # db.gohtml's embed_exec child is the real command; a child that fails fails the test
 
-  - name: "Get non-existent key"
+  - name: "Get non-existent key in a regular user's own namespace"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
       args: ["get", "NonExistent"]
-    # Should complete without error (shows "No value found" via embed)
+    # A regular (non-staff) user reads their own data (user ID = theirs): "No value found"
 
   - name: "Invalid operation"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
       args: ["invalid_op", "SomeKey"]
     # Should complete without error (shows error message via embed)
 
   - name: "Keys operation on dictionary"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
-      args: ["keys", "Global"]
+      args: ["keys:0", "Global"]
+      user: { roles: [888888888] }
     # Lists keys in the Global dictionary
