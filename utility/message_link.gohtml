@@ -30,12 +30,18 @@
 {{ $tMsg := $tMsgObj.Content }}
 {{ $trigger := or .ExecData.MessageLink (reFind $fullRegex $tMsg) }}
 
-{{ $gcmStr := reReplace $baseURLRegex $trigger "" }}
-{{ $gcmSlice := split $gcmStr "/" }}
-{{ $gID := index $gcmSlice 0 }}
-{{ $cID := index $gcmSlice 1 }}
-{{ $mID := index $gcmSlice 2 }}
-{{ $msg := getMessage $cID $mID }}
+{{/* The IDs stay empty when there's no link (e.g. bad ExecData from another command) */}}
+{{ $gID := "" }}
+{{ $cID := "" }}
+{{ $mID := "" }}
+{{ $msg := "" }}
+{{ if $trigger }}
+  {{ $gcmSlice := split (reReplace $baseURLRegex $trigger "") "/" }}
+  {{ $gID = index $gcmSlice 0 }}
+  {{ $cID = index $gcmSlice 1 }}
+  {{ $mID = index $gcmSlice 2 }}
+  {{ $msg = getMessage $cID $mID }}
+{{ end }}
 
 {{ $execDataCheck := .ExecData.Message }}
 {{ $ignoreCheck := not (or
@@ -224,8 +230,11 @@
   {{ $tAuthor := $tMsgObj.Author }}
   {{ $tAuthorFull := $tAuthor.String }}
   {{ $tMember := getMember $tAuthor.ID }}
-  {{ if $tMember.Nick }}
-    {{ $tAuthorFull = joinStr "" $tMember.Nick " (" $tAuthorFull ")" }}
+  {{/* getMember is nil if the author left; `and` wouldn't guard .Nick (YAGPDB's and is eager) */}}
+  {{ if $tMember }}
+    {{ if $tMember.Nick }}
+      {{ $tAuthorFull = joinStr "" $tMember.Nick " (" $tAuthorFull ")" }}
+    {{ end }}
   {{ end }}
 
   {{ $cMsgContent := "" }}

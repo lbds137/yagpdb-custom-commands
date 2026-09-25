@@ -37,7 +37,9 @@ type ContextDef struct {
 	Premium  *bool                  `yaml:"premium"`  // Default true
 	Reaction *ReactionDef           `yaml:"reaction"` // Makes this a reaction-triggered run
 	Messages []MessageDef           `yaml:"messages"` // Messages getMessage can find
-	Members  []int64                `yaml:"members"`  // If set, the only users getMember finds
+	// MessageContent is the triggering message's text (.Message.Content), for regex triggers
+	MessageContent string  `yaml:"message_content"`
+	Members        []int64 `yaml:"members"` // If set, the only users getMember finds
 }
 
 // MessageDef is an existing Discord message.

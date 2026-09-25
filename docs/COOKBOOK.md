@@ -55,8 +55,11 @@ are matched by the character; custom emoji by `.Emoji.APIName`, which is `name:i
   missing. Check first with a separate `if` (see the economy recipe). The emulator
   reproduces this.
 - **`dbGet` returns an entry, not the value.** Read the stored data with `.Value`. When
-  the key doesn't exist, `dbGet` returns nil and `(dbGet 0 "Key").Value` is an error, so
-  guard it with `with` or `if`.
+  the key doesn't exist, `dbGet` returns nil and `.Value` gives no value, so use `with`
+  or `or` to fall back to a default (see the economy recipe).
+- **`getMessage` and `getMember` return a nil pointer** for a deleted message or a member
+  who left, and reading a field of it (`$msg.Author`) stops the command with an error.
+  Check `{{ if $msg }}` first.
 - **Database calls are limited per run**: 10 without premium, 50 with it, and calls that
   read many entries (`dbGetPattern`, `dbTopEntries`, `dbCount`) also count against a
   second limit of 2 / 10. `yagtest -strict` fails a run that would hit these limits, and
