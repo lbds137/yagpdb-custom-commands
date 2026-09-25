@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/confusables"
 )
 
 // StandardFuncs returns YAGPDB's standard template functions that don't need Discord,
@@ -13,9 +15,8 @@ import (
 // 0cf2ec5). The emulator adds its own mocks for the Discord-dependent ones (cembed,
 // complexMessage, ...) and for context functions.
 //
-// Not included, because they need YAGPDB's bot or third-party data: sanitizeText,
-// componentBuilder and the other component builders, roleAbove, adjective/noun/verb,
-// snowflakeToTime, humanizeDuration*, humanizeTimeSinceDays.
+// Not included, because they need Discord data: componentBuilder and the other component
+// builders, and roleAbove (the emulator's roles are its own type).
 func StandardFuncs() map[string]interface{} {
 	return map[string]interface{}{
 		// conversion functions
@@ -78,18 +79,28 @@ func StandardFuncs() map[string]interface{} {
 
 		// misc
 		"humanizeThousands": tmplHumanizeThousands,
-		"dict":              Dictionary,
-		"sdict":             StringKeyDictionary,
-		"structToSdict":     StructToSdict,
-		"cslice":            CreateSlice,
-		"kindOf":            KindOf,
-		"in":                in,
-		"inFold":            inFold,
-		"json":              tmplJson,
-		"jsonToSdict":       tmplJSONToSDict,
-		"randInt":           randInt,
-		"seq":               sequence,
-		"shuffle":           shuffle,
+
+		"humanizeDurationHours":   tmplHumanizeDurationHours,
+		"humanizeDurationMinutes": tmplHumanizeDurationMinutes,
+		"humanizeDurationSeconds": tmplHumanizeDurationSeconds,
+		"humanizeTimeSinceDays":   tmplHumanizeTimeSinceDays,
+
+		"adjective":     RandomAdjective,
+		"noun":          RandomNoun,
+		"verb":          RandomVerb,
+		"sanitizeText":  confusables.SanitizeText,
+		"dict":          Dictionary,
+		"sdict":         StringKeyDictionary,
+		"structToSdict": StructToSdict,
+		"cslice":        CreateSlice,
+		"kindOf":        KindOf,
+		"in":            in,
+		"inFold":        inFold,
+		"json":          tmplJson,
+		"jsonToSdict":   tmplJSONToSDict,
+		"randInt":       randInt,
+		"seq":           sequence,
+		"shuffle":       shuffle,
 
 		// time functions
 		"currentTime":     tmplCurrentTime,
@@ -97,6 +108,7 @@ func StandardFuncs() map[string]interface{} {
 		"formatTime":      tmplFormatTime,
 		"loadLocation":    time.LoadLocation,
 		"newDate":         tmplNewDate,
+		"snowflakeToTime": tmplSnowflakeToTime,
 		"timestampToTime": tmplTimestampToTime,
 		"weekNumber":      tmplWeekNumber,
 	}

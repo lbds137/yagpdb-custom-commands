@@ -106,7 +106,8 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"getChannelOrThread": e.getChannelOrThread,
 
 		// Discord - Roles (lookup)
-		"getRole": e.getRole,
+		"roleAbove": e.roleAbove,
+		"getRole":   e.getRole,
 
 		// Discord - Tickets
 		"createTicket": e.createTicket,
@@ -698,6 +699,28 @@ func (e *Engine) complexMessageEdit(args ...interface{}) (*types.MessageEdit, er
 
 func (e *Engine) sendTemplate(args ...interface{}) string {
 	return ""
+}
+
+// roleAbove is YAGPDB's roleAbove (common.IsRoleAbove): a is above b by position, ties
+// going to the lower ID; a nil a is never above, and anything is above a nil b.
+func (e *Engine) roleAbove(a, b *types.CtxRole) bool {
+	if a == nil {
+		return false
+	}
+
+	if b == nil {
+		return true
+	}
+
+	if a.Position != b.Position {
+		return a.Position > b.Position
+	}
+
+	if a.ID == b.ID {
+		return false
+	}
+
+	return a.ID < b.ID
 }
 
 // getRole returns the role, or a nil *CtxRole for a role the guild doesn't have (YAGPDB

@@ -186,7 +186,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		}
 	}
 	for _, role := range tc.Context.Guild.Roles {
-		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color}
+		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position}
 	}
 	if rd := tc.Context.Reaction; rd != nil {
 		ctx.Reaction = &types.CtxReaction{

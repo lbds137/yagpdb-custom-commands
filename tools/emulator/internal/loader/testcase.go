@@ -96,9 +96,10 @@ type GuildDef struct {
 
 // RoleDef is a role in the guild.
 type RoleDef struct {
-	ID    int64  `yaml:"id"`
-	Name  string `yaml:"name"`
-	Color int    `yaml:"color"`
+	ID       int64  `yaml:"id"`
+	Name     string `yaml:"name"`
+	Color    int    `yaml:"color"`
+	Position int    `yaml:"position"` // Higher is above; roleAbove compares these
 }
 
 // DBEntry represents a database entry for setup.
