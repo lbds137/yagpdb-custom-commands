@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -17,7 +19,15 @@ import (
 // Engine handles template parsing and execution.
 type Engine struct {
 	ctx *ExecutionContext
+
+	tmpl    *template.Template // the parsed template, for execTemplate
+	out     io.Writer          // where execTemplate output goes (the main output)
+	returns []interface{}      // values passed to return, innermost last
 }
+
+// errReturn stops execution at {{return}}. YAGPDB's return is a parser keyword; here it
+// is a function whose error unwinds text/template to Execute or execTemplate.
+var errReturn = errors.New("return")
 
 // NewEngine creates a new template engine with the given context.
 func NewEngine(ctx *ExecutionContext) *Engine {
@@ -236,8 +246,9 @@ func (e *Engine) Execute(source string) (string, error) {
 
 	var buf bytes.Buffer
 	data := e.ctx.BuildTemplateData()
+	e.tmpl, e.out = tmpl, &buf
 
-	if err := tmpl.Execute(&buf, data); err != nil {
+	if err := tmpl.Execute(&buf, data); err != nil && !errors.Is(err, errReturn) {
 		return "", fmt.Errorf("template execution error: %w", err)
 	}
 
@@ -616,55 +627,96 @@ func (e *Engine) notFunc(arg interface{}) bool {
 	return arg == nil || arg == false || arg == "" || arg == 0
 }
 
-// eqFunc follows text/template's eq: true if a equals any of bs, with integers of
-// different kinds (int, int64, ...) compared by value.
-func (e *Engine) eqFunc(a interface{}, bs ...interface{}) bool {
+// eqFunc and neFunc port YAGPDB's eq/ne (vendor/yagpdb/lib/template/funcs.go): true if
+// a equals any of bs; integers compare across signedness, but int vs float, nil, maps
+// and other non-basic values are errors, as they are in production.
+func (e *Engine) eqFunc(a interface{}, bs ...interface{}) (bool, error) {
+	k1, err := basicKind(a)
+	if err != nil {
+		return false, err
+	}
+	if len(bs) == 0 {
+		return false, errNoComparison
+	}
+	v1 := reflect.ValueOf(a)
 	for _, b := range bs {
-		if valuesEqual(a, b) {
-			return true
+		k2, err := basicKind(b)
+		if err != nil {
+			return false, err
+		}
+		v2 := reflect.ValueOf(b)
+		truth := false
+		if k1 != k2 {
+			switch {
+			case k1 == intKind && k2 == uintKind:
+				truth = v1.Int() >= 0 && uint64(v1.Int()) == v2.Uint()
+			case k1 == uintKind && k2 == intKind:
+				truth = v2.Int() >= 0 && v1.Uint() == uint64(v2.Int())
+			default:
+				return false, errBadComparison
+			}
+		} else {
+			switch k1 {
+			case boolKind:
+				truth = v1.Bool() == v2.Bool()
+			case complexKind:
+				truth = v1.Complex() == v2.Complex()
+			case floatKind:
+				truth = v1.Float() == v2.Float()
+			case intKind:
+				truth = v1.Int() == v2.Int()
+			case stringKind:
+				truth = v1.String() == v2.String()
+			case uintKind:
+				truth = v1.Uint() == v2.Uint()
+			}
+		}
+		if truth {
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
-func (e *Engine) neFunc(a, b interface{}) bool {
-	return !valuesEqual(a, b)
+func (e *Engine) neFunc(a interface{}, bs ...interface{}) (bool, error) {
+	equal, err := e.eqFunc(a, bs...)
+	return !equal, err
 }
 
-func valuesEqual(a, b interface{}) bool {
-	av, bv := reflect.ValueOf(a), reflect.ValueOf(b)
-	if av.IsValid() && bv.IsValid() {
-		switch {
-		case isInt(av) && isInt(bv):
-			return av.Int() == bv.Int()
-		case isUint(av) && isUint(bv):
-			return av.Uint() == bv.Uint()
-		case isInt(av) && isUint(bv):
-			return av.Int() >= 0 && uint64(av.Int()) == bv.Uint()
-		case isUint(av) && isInt(bv):
-			return bv.Int() >= 0 && av.Uint() == uint64(bv.Int())
-		}
-		if !av.Type().Comparable() || !bv.Type().Comparable() {
-			return false
-		}
-	}
-	return a == b
-}
+var (
+	errBadComparisonType = errors.New("invalid type for comparison")
+	errBadComparison     = errors.New("incompatible types for comparison")
+	errNoComparison      = errors.New("missing argument for comparison")
+)
 
-func isInt(v reflect.Value) bool {
-	switch v.Kind() {
+type kind int
+
+const (
+	invalidKind kind = iota
+	boolKind
+	complexKind
+	intKind
+	floatKind
+	stringKind
+	uintKind
+)
+
+func basicKind(x interface{}) (kind, error) {
+	switch reflect.ValueOf(x).Kind() {
+	case reflect.Bool:
+		return boolKind, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return true
-	}
-	return false
-}
-
-func isUint(v reflect.Value) bool {
-	switch v.Kind() {
+		return intKind, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return true
+		return uintKind, nil
+	case reflect.Float32, reflect.Float64:
+		return floatKind, nil
+	case reflect.Complex64, reflect.Complex128:
+		return complexKind, nil
+	case reflect.String:
+		return stringKind, nil
 	}
-	return false
+	return invalidKind, errBadComparisonType
 }
 
 func (e *Engine) ltFunc(a, b interface{}) bool {
@@ -683,28 +735,35 @@ func (e *Engine) geFunc(a, b interface{}) bool {
 	return funcs.ToFloat64(a) >= funcs.ToFloat64(b)
 }
 
-func (e *Engine) lenFunc(item interface{}) int {
-	switch v := item.(type) {
-	case string:
-		return len(v)
-	case []interface{}:
-		return len(v)
-	case types.Slice:
-		return len(v)
-	case types.SDict:
-		return len(v)
-	case types.Dict:
-		return len(v)
-	case map[string]interface{}:
-		return len(v)
-	default:
-		return 0
+// lenFunc follows YAGPDB's len: strings, slices, arrays and maps; anything else is an
+// error. Dicts wrapped for .Get/.Set count their entries.
+func (e *Engine) lenFunc(item interface{}) (int, error) {
+	v := reflect.ValueOf(types.UnwrapValue(item))
+	if !v.IsValid() {
+		return 0, fmt.Errorf("len of untyped nil")
 	}
+	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return 0, fmt.Errorf("len of nil pointer")
+		}
+		v = v.Elem()
+	}
+	switch v.Kind() {
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len(), nil
+	}
+	return 0, fmt.Errorf("len of type %s", v.Type())
 }
 
-func (e *Engine) indexFunc(item interface{}, indices ...interface{}) interface{} {
+// indexFunc follows YAGPDB's index: a missing map key gives nil, but an out-of-range
+// slice index or indexing nil is an error.
+func (e *Engine) indexFunc(item interface{}, indices ...interface{}) (interface{}, error) {
 	if len(indices) == 0 {
-		return nil
+		return item, nil
+	}
+	item = types.UnwrapValue(item)
+	if item == nil {
+		return nil, fmt.Errorf("index of untyped nil")
 	}
 
 	current := item
@@ -715,28 +774,28 @@ func (e *Engine) indexFunc(item interface{}, indices ...interface{}) interface{}
 			if i >= 0 && i < len(v) {
 				current = v[i]
 			} else {
-				return nil
+				return nil, fmt.Errorf("index out of range: %d", i)
 			}
 		case []interface{}:
 			i := funcs.ToInt(idx)
 			if i >= 0 && i < len(v) {
 				current = v[i]
 			} else {
-				return nil
+				return nil, fmt.Errorf("index out of range: %d", i)
 			}
 		case []string:
 			i := funcs.ToInt(idx)
 			if i >= 0 && i < len(v) {
 				current = v[i]
 			} else {
-				return nil
+				return nil, fmt.Errorf("index out of range: %d", i)
 			}
 		case []int:
 			i := funcs.ToInt(idx)
 			if i >= 0 && i < len(v) {
 				current = v[i]
 			} else {
-				return nil
+				return nil, fmt.Errorf("index out of range: %d", i)
 			}
 		case string:
 			// Index into string returns a character
@@ -745,7 +804,7 @@ func (e *Engine) indexFunc(item interface{}, indices ...interface{}) interface{}
 			if i >= 0 && i < len(runes) {
 				current = string(runes[i])
 			} else {
-				return nil
+				return nil, fmt.Errorf("index out of range: %d", i)
 			}
 		case types.SDict:
 			current = v[funcs.ToString(idx)]
@@ -754,10 +813,10 @@ func (e *Engine) indexFunc(item interface{}, indices ...interface{}) interface{}
 		case types.Dict:
 			current = v[idx]
 		default:
-			return nil
+			return nil, fmt.Errorf("can't index item of type %T", current)
 		}
 	}
-	return current
+	return current, nil
 }
 
 // getFunc is a universal getter that works with any dict-like type.
@@ -778,9 +837,14 @@ func (e *Engine) getFunc(collection, key interface{}) interface{} {
 	}
 }
 
-func (e *Engine) returnFunc(args ...interface{}) string {
-	// In templates, return just stops execution
-	return ""
+// returnFunc stops the current template; execTemplate receives the value.
+func (e *Engine) returnFunc(args ...interface{}) (string, error) {
+	var v interface{}
+	if len(args) > 0 {
+		v = args[0]
+	}
+	e.returns = append(e.returns, v)
+	return "", errReturn
 }
 
 func (e *Engine) tryFunc(args ...interface{}) interface{} {
@@ -810,12 +874,28 @@ func (e *Engine) execAdmin(name string, data ...interface{}) string {
 	return e.exec(name, data...)
 }
 
-// execTemplateFunc executes a defined template and returns its output
-func (e *Engine) execTemplateFunc(name string, data interface{}) interface{} {
-	// This is used with {{define "name"}} blocks
-	// The actual execution happens via Go's template system
-	// Return nil as we can't easily capture defined template output here
-	return nil
+// execTemplateFunc runs a {{define}}d template with data as its dot and returns the
+// value it passes to return (nil if it doesn't return). Like YAGPDB, what the template
+// prints goes into the command's output.
+func (e *Engine) execTemplateFunc(name string, data ...interface{}) (interface{}, error) {
+	if len(data) > 1 {
+		return nil, fmt.Errorf("too many args for execTemplate: want at most 2 got %d", len(data)+1)
+	}
+	if e.tmpl == nil || e.tmpl.Lookup(name) == nil {
+		return nil, fmt.Errorf("template %q not defined", name)
+	}
+	var dot interface{}
+	if len(data) == 1 {
+		dot = data[0]
+	}
+	depth := len(e.returns)
+	err := e.tmpl.ExecuteTemplate(e.out, name, dot)
+	if errors.Is(err, errReturn) && len(e.returns) > depth {
+		v := e.returns[len(e.returns)-1]
+		e.returns = e.returns[:depth]
+		return v, nil
+	}
+	return nil, err
 }
 
 // Mention functions

@@ -13,8 +13,14 @@ YAGPDB stops a template after 1M operations (2.5M with premium). Go's standard
   into the emulator instead of the standard library
 
 ### Smoke test noise
-`scripts/test-all-templates.sh` runs every command with no arguments, so every command that
-requires arguments "fails" at `parseArgs` (23 of 45 on 2026-09-24), which hides real failures.
+`scripts/test-all-templates.sh` runs every command with no arguments and an empty database,
+so every command that needs input or config "fails" (26 of 45 on 2026-09-24), which hides
+real failures.
+
+### Malformed message links crash staff commands
+`admit_user`, `reject_user`, `screen_user`, `archive` (and `message_link`) take a message link
+but don't check that the regex matched, so a malformed link fails with "index out of range"
+instead of a usage message.
 
 **Implementation approach:**
 - Treat a `parseArgs` usage error as a pass, or give each command a default argument set

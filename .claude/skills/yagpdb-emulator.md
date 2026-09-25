@@ -74,7 +74,12 @@ tools/emulator/
 ## Fidelity Notes
 
 - YAGPDB's `and`/`or` evaluate every argument (no short-circuit); the emulator matches.
-- `dbGet` returns strings and numbers as-is; dicts come back wrapped for `.Get`/`.Set`.
+- `eq`/`ne`/`index`/`len` are ports of YAGPDB's: `eq 1 1.0`, `eq nil 1` and an out-of-range
+  `index` are errors, as in production.
+- Stored numbers come back as float64 (YAGPDB returns value_num), so `eq (dbGet 0 "n").Value 5`
+  is an error; compare with `5.0` or convert with `toInt`. Strings come back as-is; dicts come
+  back wrapped for `.Get`/`.Set`.
+- `execTemplate` returns the value a `{{define}}`d template passes to `return`.
 - The template operation limit (1M / 2.5M ops) is not enforced: stdlib text/template can't count ops.
 - Output is not whitespace-trimmed like YAGPDB's response; assertions trim it.
 

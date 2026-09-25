@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
 // YAGPDB's per-execution limits. Sources are in vendor/yagpdb (see the comments).
@@ -155,7 +156,7 @@ func perEmoji(first int, l callLimit) func(*ExecutionContext, string, []reflect.
 }
 
 func checkDeleteReactions(ctx *ExecutionContext, name string, args []reflect.Value) error {
-	if n := len(flatArgs(args)) - 2; n > 0 {
+	if n := countFlattened(args, 2); n > 0 {
 		for i := 0; i < n; i++ {
 			if err := ctx.countCall(name, limitDelReactMsg); err != nil {
 				return err
@@ -172,7 +173,10 @@ func checkSetRoles(ctx *ExecutionContext, name string, args []reflect.Value) err
 	}
 	target := ctx.UserID
 	if all := flatArgs(args); len(all) > 0 && all[0] != nil {
-		target = funcs.ToInt64(all[0])
+		target = targetUserID(all[0])
+	}
+	if target == 0 {
+		return nil // YAGPDB returns early without counting
 	}
 	return ctx.count(name, fmt.Sprintf("set_roles%d", target), 1,
 		errors.New("too many calls for specific user ID (max 1 / user)"))
@@ -193,20 +197,46 @@ func flatArgs(args []reflect.Value) []interface{} {
 	return out
 }
 
-// countFlattened counts arguments from index first on, counting each element of a slice.
+// countFlattened counts arguments from index first on, counting each element of a slice
+// and skipping nils, as YAGPDB's callVariadic does.
 func countFlattened(args []reflect.Value, first int) int {
 	n := 0
 	for i, a := range flatArgs(args) {
-		if i < first {
+		if i < first || a == nil {
 			continue
 		}
-		if v := reflect.ValueOf(a); v.IsValid() && (v.Kind() == reflect.Slice || v.Kind() == reflect.Array) && v.Type().Elem().Kind() != reflect.Uint8 {
-			n += v.Len()
+		if v := reflect.ValueOf(a); (v.Kind() == reflect.Slice || v.Kind() == reflect.Array) && v.Type().Elem().Kind() != reflect.Uint8 {
+			for j := 0; j < v.Len(); j++ {
+				if v.Index(j).Interface() != nil {
+					n++
+				}
+			}
 		} else {
 			n++
 		}
 	}
 	return n
+}
+
+// targetUserID follows YAGPDB's TargetUserID: a user, a mention ("<@id>" or "<@!id>"),
+// or anything ToInt64 understands.
+func targetUserID(input interface{}) int64 {
+	switch t := input.(type) {
+	case types.DiscordUser:
+		return t.ID
+	case *types.DiscordUser:
+		return t.ID
+	case types.CtxMember:
+		return t.User.ID
+	case string:
+		s := strings.TrimSpace(t)
+		if strings.HasPrefix(s, "<@") && strings.HasSuffix(s, ">") && len(s) > 4 {
+			s = strings.TrimPrefix(s[2:len(s)-1], "!")
+		}
+		return funcs.ToInt64(s)
+	default:
+		return funcs.ToInt64(input)
+	}
 }
 
 // limitBreach handles a breached limit: strict mode returns the error, otherwise it is

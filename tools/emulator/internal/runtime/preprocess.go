@@ -90,16 +90,21 @@ func processSingleTryCatch(source string) (string, bool) {
 		// Replace the entire block with just the try content. The removed tags and catch
 		// block become a comment of the same height, so error and warning line numbers
 		// still match the source file and nothing is printed.
-		filler := ""
-		removedLines := strings.Count(source[tryStart:tryEnd], "\n") + strings.Count(source[catchStart:endEnd], "\n")
-		if removedLines > 0 {
-			filler = "{{/*" + strings.Repeat("\n", removedLines) + "*/}}"
-		}
-		result := source[:tryStart] + tryContent + filler + source[endEnd:]
+		result := source[:tryStart] + lineFiller(source[tryStart:tryEnd]) + tryContent +
+			lineFiller(source[catchStart:endEnd]) + source[endEnd:]
 		return result, true
 	}
 
 	return source, false
+}
+
+// lineFiller returns a comment spanning as many lines as removed did, or "".
+func lineFiller(removed string) string {
+	n := strings.Count(removed, "\n")
+	if n == 0 {
+		return ""
+	}
+	return "{{/*" + strings.Repeat("\n", n) + "*/}}"
 }
 
 // PreprocessForParsing handles constructs that would cause parse errors.
