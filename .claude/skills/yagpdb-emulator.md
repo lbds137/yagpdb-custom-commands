@@ -2,79 +2,81 @@
 
 ## Quick Commands
 
+Run from the repo root. Needs Go (mise pins 1.27 on the dev machine).
+
 ```bash
-# Build emulator
-cd tools/emulator && go build -o bin/yagtest ./cmd/yagtest
+make test              # template tests in tools/emulator/testdata/, with db_schema.yaml
+make test-go           # go vet + Go unit tests
+make ci                # everything CI runs (.github/workflows/test.yml): test-go, test, lint, gofmt
+make watch             # rerun template tests on changes
+make update-snapshots  # accept an intended change in snapshot output
 
-# Run single template
-./bin/yagtest run ../../utility/timestamp.gohtml
-
-# Run test suite
-./bin/yagtest test testdata/command_tests.yaml
-
-# Run all templates (check for parse errors)
-./scripts/test-all-templates.sh
-
-# Find missing functions
+./bin/yagtest run -args "get,Global" -verbose utility/db.gohtml
+./bin/yagtest run -no-premium -strict utility/db.gohtml   # free-server limits, fail on breach
+./bin/yagtest check utility/*.gohtml                      # parse + static warnings
+./scripts/test-all-templates.sh   # smoke-run every command with no args (parseArgs failures are expected)
 ./scripts/find-missing-functions.sh
 ```
+
+Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
 
 ## Test Case Format
 
 ```yaml
-- name: "Test description"
-  template: "../../../utility/example.gohtml"
+- name: "Test description"            # unique within the file (snapshots are keyed by name)
+  template: "../../../utility/example.gohtml"   # or template_source: |
+  strict: true                        # optional: fail on YAGPDB limits
+  snapshot: true                      # optional: compare with __snapshots__/<file>.snap.yaml
   context:
     args: ["arg1", "arg2"]
-    cmd_args: ["arg1", "arg2"]
-  # Optional: override database values
+    premium: false                    # optional, default true
+    user: { id: 1, roles: [111] }
+    reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run
   setup_db:
-    - user_id: 0
-      key: "Global"
-      value:
-        Delete Trigger Delay: 5
+    - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
+  command_map: { 123: "templates/mock_embed_exec.gohtml" }  # execCC targets
+  expected:
+    output_contains: "..."            # also output_equals, output_matches, error_contains
+    warning_contains: "..."
+  assertions:
+    db_checks: [{ user_id: 0, key: "K", value_equals: 1 }]   # or value_contains, not_exists
+    sent_messages: [{ channel_id: 9, embed_title: "Title" }]
+    role_changes: [{ user_id: 1, role_id: 111, action: "add" }]
 ```
 
 ## Project Structure
 
 ```
 tools/emulator/
-├── cmd/yagtest/        # CLI entry point
+├── cmd/yagtest/          # CLI: main.go (run/test/check), watch.go
 ├── internal/
-│   ├── context/        # Mock Discord context (users, channels, guilds)
-│   ├── funcs/          # Template function implementations
-│   ├── runtime/        # Template engine and execution
-│   └── test/           # Test runner and YAML parsing
-├── testdata/
-│   ├── command_tests.yaml    # Main test suite
-│   └── templates/            # Mock templates for execCC
-└── bin/                # Built binaries
+│   ├── runtime/          # engine.go (FuncMap, Execute), context.go, limits.go (YAGPDB call
+│   │                     # counters), loopcheck.go, hints.go, preprocess.go (try/catch)
+│   ├── funcs/            # function implementations (standard, database, args, discord)
+│   ├── loader/           # YAML tests, runner, snapshots
+│   ├── schema/           # db_schema.yaml checks
+│   ├── state/            # mock database
+│   └── types/            # SDict, Slice, TemplateValue, context structs
+└── testdata/             # *.yaml suites, templates/ for execCC, __snapshots__/
 ```
 
 ## Adding Missing Functions
 
-1. Check if function exists in `internal/funcs/` or `internal/runtime/engine.go`
-2. Add implementation to appropriate file
-3. Register in `engine.go` FuncMap
-4. Update `scripts/find-missing-functions.sh` IMPLEMENTED array
-5. Rebuild and test
+1. Check YAGPDB's implementation in `vendor/yagpdb/common/templates/` (fetch with
+   `vendor/update-yagpdb.sh`)
+2. Implement it in `internal/funcs/` or on the Engine in `internal/runtime/engine.go`
+3. Register it in `BuildFuncMap` in `engine.go`
+4. If YAGPDB limits it (`IncreaseCheckCallCounter` in its source), add it to
+   `limitedFuncs` in `limits.go`
+5. Update the IMPLEMENTED array in `scripts/find-missing-functions.sh`
+6. After updating vendor/yagpdb, rerun `scripts/gen-yagpdb-funcs.sh` (function list for hints)
 
-## Key Files
+## Fidelity Notes
 
-| File | Purpose |
-|------|---------|
-| `engine.go` | Template FuncMap and execution |
-| `funcs/standard.go` | Core template functions |
-| `funcs/database.go` | dbGet/dbSet implementations |
-| `context/mock.go` | Discord context mocking |
-
-## Common Issues
-
-**"function X not defined"**: Add to FuncMap in `engine.go`
-
-**"no args for template"**: Template expects `.CmdArgs` - add to test context
-
-**"nil pointer"**: Check mock context has required fields
+- YAGPDB's `and`/`or` evaluate every argument (no short-circuit); the emulator matches.
+- `dbGet` returns strings and numbers as-is; dicts come back wrapped for `.Get`/`.Set`.
+- The template operation limit (1M / 2.5M ops) is not enforced: stdlib text/template can't count ops.
+- Output is not whitespace-trimmed like YAGPDB's response; assertions trim it.
 
 ## When to Use This Skill
 

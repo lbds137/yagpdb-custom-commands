@@ -269,25 +269,33 @@ The system implements comprehensive error handling:
 
 ### Local Testing with Emulator
 
-This repository includes a Go-based YAGPDB template emulator for testing commands without a live Discord server:
+This repository includes a Go-based YAGPDB template emulator for testing commands without a live Discord server. It needs Go (1.21+; the dev machine uses 1.27 via mise).
 
 ```bash
-# Build the emulator
-cd tools/emulator
-go build -o bin/yagtest ./cmd/yagtest
+make test          # all template tests (tools/emulator/testdata/), checked against db_schema.yaml
+make watch         # rerun them whenever a command or test file changes
+make ci            # everything CI runs: Go vet + unit tests, template tests, linter, gofmt
 
-# Run a single template
-./bin/yagtest run ../../utility/timestamp.gohtml
-
-# Run the full test suite
-./bin/yagtest test testdata/command_tests.yaml
+./bin/yagtest run utility/timestamp.gohtml                  # run one command
+./bin/yagtest run -args "get,Global" -verbose utility/db.gohtml
+./bin/yagtest run -no-premium -strict utility/db.gohtml     # fail where a free server would
+./bin/yagtest check utility/*.gohtml                        # parse only, plus static warnings
 ```
 
 The emulator supports:
-- All standard YAGPDB template functions
-- Mock database with persistent state during test runs
-- YAML-based test case definitions with custom context
-- `execCC` chaining between templates
+- YAGPDB's template functions, a mock database, `execCC` chaining, and reaction triggers
+- **Execution limits** taken from YAGPDB's source: database calls (10, or 50 with premium),
+  Discord API calls, DMs, `execCC`, output size, response length and template length.
+  By default a breached limit is a warning; `-strict` fails the run the way production does
+- **Warnings** for database calls inside `range` loops, and for values that don't match
+  `db_schema.yaml` (`-schema`)
+- **Error hints**: typo suggestions from YAGPDB's function list, links to its docs
+- **YAML tests** with output, database, message and role assertions, `strict: true`,
+  `context.premium: false`, `expected.warning_contains`, and `snapshot: true`
+  (saved under `__snapshots__/`; `make update-snapshots` accepts an intended change)
+
+[`docs/COOKBOOK.md`](docs/COOKBOOK.md) has tested example commands, and
+[`tools/ide/`](tools/ide/) has GoLand snippets.
 
 ### Project Structure
 

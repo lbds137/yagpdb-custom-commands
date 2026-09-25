@@ -342,10 +342,12 @@ The `tools/emulator/` directory contains a Go-based YAGPDB template emulator for
 
 #### Features
 - Execute `.gohtml` templates locally
-- Mock Discord context (users, channels, roles)
-- Simulated database with full CRUD support
-- YAML-based test case definitions
+- Mock Discord context (users, channels, roles, reactions)
+- Simulated database with full CRUD support, ordered like YAGPDB's queries
+- YAML-based test case definitions, with snapshot tests
 - Support for `execCC` chaining between templates
+- YAGPDB's execution limits (warnings, or failures with `-strict`), loop and schema
+  warnings, and error hints. See the README's Development section for commands.
 
 #### Usage
 ```bash
