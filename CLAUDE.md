@@ -10,17 +10,17 @@ This repository contains a comprehensive suite of custom commands for the YAGPDB
 
 ### Key Features
 
-- **User Onboarding**: Automated guest admission and agreement system
-- **Staff Management**: Administrative tools for user screening, role management, and moderation
+- **Staff Management**: Administrative tools for role management and moderation
 - **Server Utilities**: General-purpose commands including Hebrew/Gematria calculators, color analysis, bump management, and more
 - **Database-Driven Configuration**: Flexible settings management through YAGPDB's built-in database
 - **Modular Architecture**: Service-oriented design with reusable components
 
 ### Command Categories
 
-1. **Guest Commands** (`guests/`) - User onboarding and agreement acceptance
-2. **Staff Utility Commands** (`staff_utility/`) - Administrative and moderation tools
-3. **Utility Commands** (`utility/`) - General-purpose commands for all users
+1. **Staff Utility Commands** (`staff_utility/`) - Administrative and moderation tools
+2. **Utility Commands** (`utility/`) - General-purpose commands for all users
+
+Retired commands (`retired/`) are kept for reference and never deployed.
 
 ### Development Resources
 
