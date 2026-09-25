@@ -74,3 +74,20 @@ func TestRoleChangesHappenOnlyWhenYAGPDBMakesThem(t *testing.T) {
 		}
 	}
 }
+
+func TestAnAssumedRoleWarns(t *testing.T) {
+	ctx := newCtx(false, true) // declares no guild roles
+	out, err := run(t, ctx, `{{mentionRoleID 99}} {{(getRole 99).ID}} {{(getRole .Guild.ID).Name}}`)
+	if err != nil || out != "<@&99> 99 @everyone" {
+		t.Fatalf("got %q, %v", out, err)
+	}
+	if len(ctx.Diagnostics) != 1 || ctx.Diagnostics[0].Kind != KindRole ||
+		!strings.Contains(ctx.Diagnostics[0].Message, "role 99 is assumed to exist") {
+		t.Errorf("want one warning for role 99, got %q", ctx.Diagnostics)
+	}
+
+	ctx = roleCtx() // declared roles are looked up without a warning
+	if _, err := run(t, ctx, `{{mentionRoleID 10}}{{mentionRoleID 99}}`); err != nil || len(ctx.Diagnostics) != 0 {
+		t.Errorf("got %v, %q", err, ctx.Diagnostics)
+	}
+}

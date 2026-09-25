@@ -11,6 +11,8 @@ defaults:
   guild:
     id: 111222333444555666
     name: "Test Server"
+    roles:
+      - { id: 111111111111111111, name: "Staff" }
   messages:
     - id: 700000000000000001
       channel_id: 900000000000000002

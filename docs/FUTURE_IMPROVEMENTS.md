@@ -43,10 +43,10 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   declares no guild roles accepts any role), and accepts any channel ID, since the
   emulator has no channel list. Its `role` argument uses the role functions' lookup;
   dcmd's RoleArg matches names case-sensitively and falls back from a numeric ID to a name.
-- Role gaps: a test that declares no guild roles treats any role ID as existing (so a
-  stale ID in the database still mentions and gives); mentionRole doesn't add to the
-  allowed mentions; getRole* over the call limit gives the API-call message, not YAGPDB's
-  "too many calls to this function".
+- Role gaps: a test that declares no guild roles treats any role ID as existing, with a
+  `[role]` warning per ID (a stale ID would be nil in production), and `.Guild.Roles`
+  is empty (no @everyone either); getRole* over the call
+  limit gives the API-call message, not YAGPDB's "too many calls to this function".
 - A command run by `execCC` from a reaction-triggered command sees the test's
   `message_content` as `.Message`; YAGPDB passes on the reacted-to message.
 - Interval and None runs get a `.Message` with empty content; YAGPDB gives them none.
@@ -150,6 +150,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       who they notify, from YAGPDB's allowed mentions (users only by default; roles and
       @everyone via mentionRole*/mentionEveryone/mentionHere, a complexMessage's
       `allowed_mentions`, or NoEscape); `pings` and `response_pings` assertions (2026-09-25)
+- [x] A role lookup that assumes an undeclared role exists warns (`[role]`), and the
+      suites declare the roles they use; with no roles declared, the guild ID is
+      @everyone (2026-09-25)
 - [x] `.ExecData` is set as in YAGPDB: always in an immediate execCC child, even for nil
       data (so `.ExecData.Key` is a "nil pointer evaluating" error there), and elsewhere
       only when there is data (a test's `exec_data`, like a delayed run). Without it
