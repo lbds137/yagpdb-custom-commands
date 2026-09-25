@@ -393,7 +393,7 @@ func loadDatabaseState(db *state.MockDB, filename string) error {
 		Value  interface{} `json:"value"`
 	}
 
-	if err := json.Unmarshal(data, &entries); err != nil {
+	if err := types.StrictJSON(data, &entries); err != nil {
 		return err
 	}
 
@@ -424,7 +424,7 @@ func loadContextFromFile(ctx *runtime.ExecutionContext, filename string) ([]stri
 		IsPremium   *bool    `json:"is_premium"`
 	}
 
-	if err := json.Unmarshal(data, &contextData); err != nil {
+	if err := types.StrictJSON(data, &contextData); err != nil {
 		return nil, err
 	}
 

@@ -6,8 +6,6 @@ import (
 	"os"
 	"path"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
@@ -50,7 +48,7 @@ func Load(filename string) (*Schema, error) {
 		return nil, fmt.Errorf("reading schema: %w", err)
 	}
 	var s Schema
-	if err := yaml.Unmarshal(data, &s); err != nil {
+	if err := types.StrictYAML(data, &s); err != nil {
 		return nil, fmt.Errorf("parsing schema %s: %w", filename, err)
 	}
 	for i, r := range s.Entries {
