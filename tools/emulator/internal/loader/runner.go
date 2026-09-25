@@ -70,7 +70,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	// Set up database
 	db := state.NewMockDB(tc.Context.Guild.ID)
 	if c := tc.Context.Clock; c != nil {
-		db.SetClock(func() time.Time { return *c })
+		db.SetClock(func() time.Time { return time.Time(*c) })
 	}
 	for _, entry := range tc.SetupDB {
 		// Fixture maps stand in for sdicts a command stored, and keys are cut as dbSet cuts them
@@ -186,10 +186,10 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		ctx.SetNonPremium()
 	}
 	if tc.Context.Clock != nil {
-		ctx.FixClock(*tc.Context.Clock)
+		ctx.FixClock(time.Time(*tc.Context.Clock))
 	}
 	if tc.Context.Seed != nil {
-		ctx.Seed(*tc.Context.Seed)
+		ctx.Seed(int64(*tc.Context.Seed))
 	}
 	ctx.GuildName = tc.Context.Guild.Name
 	ctx.OwnerID = tc.Context.Guild.OwnerID
