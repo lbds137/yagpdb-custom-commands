@@ -39,7 +39,7 @@ entries:
 		bad   bool
 	}{
 		{0, "Global", types.SDict{"a": 1}, false},
-		{0, "Global", types.TemplateValue{V: types.SDict{}}, false},
+		{0, "Global", &types.SDict{}, false}, // read with dbGet, stored back
 		{0, "Global", "text", true},
 		{9, "Global", "text", false}, // rule is for user 0 only; "*" matches
 		{3, "score_ann", 12.5, false},

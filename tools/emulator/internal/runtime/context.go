@@ -305,11 +305,6 @@ func (ctx *ExecutionContext) HasRole(roleID int64) bool {
 	return false
 }
 
-// HasRoleID is an alias for HasRole.
-func (ctx *ExecutionContext) HasRoleID(roleID int64) bool {
-	return ctx.HasRole(roleID)
-}
-
 // RecordSentMessage records a message that was "sent" during execution.
 func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embed interface{}) {
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{

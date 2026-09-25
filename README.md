@@ -269,7 +269,7 @@ The system implements comprehensive error handling:
 
 ### Local Testing with Emulator
 
-This repository includes a Go-based YAGPDB template emulator for testing commands without a live Discord server. It needs Go (1.21+; the dev machine uses 1.27 via mise).
+This repository includes a Go-based YAGPDB template emulator for testing commands without a live Discord server. It needs Go (1.24+; the dev machine uses 1.27 via mise).
 
 ```bash
 make test          # all template tests (tools/emulator/testdata/), checked against db_schema.yaml

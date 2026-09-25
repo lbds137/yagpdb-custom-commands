@@ -84,9 +84,9 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		createdAt = now
 	}
 
-	// Convert nested maps to SDict for proper template method access. Numbers come back
-	// from YAGPDB as float64 (ToLightDBEntry substitutes value_num), so store them so.
-	convertedValue := convertToSDict(value)
+	// Store a copy, as YAGPDB stores a serialized value. Numbers come back from YAGPDB as
+	// float64 (ToLightDBEntry substitutes value_num), so store them so.
+	convertedValue := types.ForStorage(value)
 	if isNumber(convertedValue) {
 		convertedValue = toFloat(convertedValue)
 	}
@@ -98,41 +98,13 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		CreatedAt: createdAt,
 		UpdatedAt: now,
 		Key:       key,
-		Value:     types.WrapValue(convertedValue),
+		Value:     convertedValue,
 		ValueSize: estimateSize(convertedValue),
 		ExpiresAt: expiresAt,
 	}
 
 	m.entries[compositeKey] = entry
 	return entry
-}
-
-// convertToSDict recursively converts map[string]interface{} to types.SDict
-// so that template methods like .Get work properly.
-func convertToSDict(v interface{}) interface{} {
-	switch val := v.(type) {
-	case map[string]interface{}:
-		result := make(types.SDict)
-		for k, v := range val {
-			result[k] = convertToSDict(v)
-		}
-		return result
-	case map[interface{}]interface{}:
-		// YAML sometimes produces this type
-		result := make(types.SDict)
-		for k, v := range val {
-			result[fmt.Sprint(k)] = convertToSDict(v)
-		}
-		return result
-	case []interface{}:
-		result := make(types.Slice, len(val))
-		for i, item := range val {
-			result[i] = convertToSDict(item)
-		}
-		return result
-	default:
-		return v
-	}
 }
 
 // Del deletes a database entry by key.
@@ -289,7 +261,7 @@ func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry 
 // valueNum is YAGPDB's value_num column: ToFloat64 of the value (strings are parsed,
 // anything else that isn't a number is 0).
 func valueNum(e *types.LightDBEntry) float64 {
-	return toFloat(types.UnwrapValue(e.Value))
+	return toFloat(e.Value)
 }
 
 func isNumber(v interface{}) bool {

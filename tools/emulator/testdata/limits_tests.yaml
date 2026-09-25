@@ -30,7 +30,7 @@ tests:
     template_source: |
       {{ range $k := cslice "A" "B" }}{{ $e := dbGet 0 $k }}{{ end }}
     expected:
-      warning_contains: "dbGet inside a range loop"
+      warning_contains: "dbGet inside a loop"
 
   - name: "Strict: a second DM is dropped silently"
     strict: true

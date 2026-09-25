@@ -38,7 +38,24 @@ func (d *DatabaseFuncs) DbGet(userID interface{}, key interface{}) interface{} {
 	if entry == nil {
 		return nil
 	}
-	return entry
+	return forTemplate(entry)
+}
+
+// forTemplate is an entry as YAGPDB's database functions return it: a copy whose Value is
+// freshly decoded (containers as *SDict/*Dict/*Slice) and whose User has the entry's ID.
+func forTemplate(e *types.LightDBEntry) *types.LightDBEntry {
+	c := *e
+	c.Value = types.ForTemplate(e.Value)
+	c.User.ID = e.UserID
+	return &c
+}
+
+func forTemplateSlice(entries []*types.LightDBEntry) types.Slice {
+	result := make(types.Slice, len(entries))
+	for i, entry := range entries {
+		result[i] = forTemplate(entry)
+	}
+	return result
 }
 
 // DbSet stores a value in the database.
@@ -102,11 +119,7 @@ func (d *DatabaseFuncs) DbGetPattern(userID interface{}, pattern interface{}, am
 	entries := d.DB.GetPattern(uid, p, a, s, false)
 
 	// Convert to slice of interfaces for template use
-	result := make(types.Slice, len(entries))
-	for i, entry := range entries {
-		result[i] = entry
-	}
-	return result
+	return forTemplateSlice(entries)
 }
 
 // DbGetPatternReverse retrieves entries matching a pattern in reverse order.
@@ -122,11 +135,7 @@ func (d *DatabaseFuncs) DbGetPatternReverse(userID interface{}, pattern interfac
 
 	entries := d.DB.GetPattern(uid, p, a, s, true)
 
-	result := make(types.Slice, len(entries))
-	for i, entry := range entries {
-		result[i] = entry
-	}
-	return result
+	return forTemplateSlice(entries)
 }
 
 // DbCount returns the number of database entries.
@@ -164,11 +173,7 @@ func (d *DatabaseFuncs) DbTopEntries(pattern interface{}, amount interface{}, sk
 
 	entries := d.DB.TopEntries(p, a, s, false)
 
-	result := make(types.Slice, len(entries))
-	for i, entry := range entries {
-		result[i] = entry
-	}
-	return result
+	return forTemplateSlice(entries)
 }
 
 // DbBottomEntries returns the bottom N entries by value_num.
@@ -183,11 +188,7 @@ func (d *DatabaseFuncs) DbBottomEntries(pattern interface{}, amount interface{},
 
 	entries := d.DB.TopEntries(p, a, s, true)
 
-	result := make(types.Slice, len(entries))
-	for i, entry := range entries {
-		result[i] = entry
-	}
-	return result
+	return forTemplateSlice(entries)
 }
 
 // DbRank returns the rank of an entry (simplified).

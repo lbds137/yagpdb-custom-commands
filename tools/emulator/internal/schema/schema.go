@@ -94,10 +94,10 @@ func (s *Schema) Check(userID int64, key string, value interface{}) string {
 
 // TypeOf classifies a template value using the schema's type names.
 func TypeOf(value interface{}) string {
-	switch types.UnwrapValue(value).(type) {
-	case types.SDict, map[string]interface{}, types.Dict, map[interface{}]interface{}:
+	switch value.(type) {
+	case types.SDict, *types.SDict, map[string]interface{}, types.Dict, *types.Dict, map[interface{}]interface{}:
 		return TypeDict
-	case types.Slice, []interface{}, []string, []int, []int64, []float64:
+	case types.Slice, *types.Slice, []interface{}, []string, []int, []int64, []float64:
 		return TypeSlice
 	case string:
 		return TypeString
@@ -113,7 +113,7 @@ func TypeOf(value interface{}) string {
 }
 
 func preview(value interface{}) string {
-	r := []rune(fmt.Sprintf("%v", types.UnwrapValue(value)))
+	r := []rune(fmt.Sprintf("%v", value))
 	s := string(r)
 	if len(r) > 40 {
 		s = string(r[:37]) + "..."
