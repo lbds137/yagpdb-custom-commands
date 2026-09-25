@@ -26,6 +26,10 @@ tests:
   - name: "directory - lists the channels by category"
     template: "../../../staff_utility/directory.gohtml"
     snapshot: true
+    context:
+      # Clean returns dcmd.NewTemporaryResponse (moderation/commands.go ~805), which exec's
+      # type switch (commands/tmplexec.go ~202-215) doesn't match, so exec returns ""
+      exec_responses: { 'Clean 100 "<@204255221017214977>"': "" }
     assertions:
       execs: [{ line: 'Clean 100 "<@204255221017214977>"' }]
       sent_messages:

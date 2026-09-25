@@ -282,6 +282,9 @@ tests:
       args: ["prune", "<@222333444555666777>"]
       user: { roles: [111111111] }
       member_roles: { 222333444555666777: [333333333, 121212121] }
+      # YAGPDB's kick response (moderation/commands.go ~330, GenericCmdResp with noDur=true),
+      # with the target's String() as the emulator gives it here ("MockUser", discriminator "0")
+      exec_responses: { 'kick 222333444555666777 "pruned due to inactivity"': "👢 Kicked `MockUser`" }
       guild:
         roles:
           - { id: 111111111, name: "Staff" }
