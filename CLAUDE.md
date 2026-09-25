@@ -153,7 +153,8 @@ This repository contains a comprehensive suite of custom commands for the YAGPDB
    - Use minification for large commands
 
 2. **Execution Limits**:
-   - Commands timeout after 10 seconds
+   - No time limit: a run stops at its operation limit (1M, 2.5M premium), 60 seconds of
+     `sleep` in all, or 25,000 bytes of output (vendor/yagpdb/common/templates)
    - Database operations have rate limits
    - Nested `execCC` calls have depth limits
 

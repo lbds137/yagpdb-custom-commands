@@ -115,6 +115,12 @@ func StandardFuncs() map[string]interface{} {
 	return m
 }
 
+// ToIntTmpl is tmplToInt (the toInt function), for the emulator's copies of YAGPDB's
+// context functions that call it (sleep).
+func ToIntTmpl(from interface{}) int {
+	return tmplToInt(from)
+}
+
 // CallVariadic is callVariadic, for the emulator's copies of YAGPDB's variadic context
 // functions (addReactions and the like).
 func CallVariadic(f func([]reflect.Value) (reflect.Value, error), skipNil bool, values ...reflect.Value) (reflect.Value, error) {

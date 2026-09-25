@@ -4,8 +4,14 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ## Known command bugs
 
-None open: the snapshot audit's list (2026-09-25) is fixed (see Completed Improvements).
-Each fix gets a failing test first.
+The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
+gets a failing test first.
+- The Global "ExecCC Limit" setting (bootstrap default 10) is trusted as is: YAGPDB allows
+  10 immediate execCC calls per run on premium (1 on a free server), so a setting above
+  that makes rules, contrasts, hugemoji and pyramid fail at the 11th call instead of
+  skipping.
+  Harmless at the default; clamp it to 10 in those commands if the setting is ever
+  raised (read, not run).
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
@@ -21,16 +27,10 @@ Each fix gets a failing test first.
   (testdata/templates) keeps the title, description, fields, color, image and thumbnail,
   but not embed_exec's author, its author-color fallback, its description cut or its
   DeleteResponse.
-- NEXT UNIT: `sleep` is a no-op, where YAGPDB's (context_funcs.go tmplSleep) refuses under
-  1 second or over 60 combined ("can sleep for max 60 seconds combined") and waits.
-  hugemoji (`sleep 10`) and screen_user (`sleep 1` twice) use it. And the emulator's
-  strict "10-second" run limit (limits.go maxDuration) has no source in the vendored
-  YAGPDB (commit 0cf2ec5): no deadline or timeout in common/templates, lib/template or
-  customcommands, and Context.Execute's timing is commented out; a run is bounded by
-  the operation limit, sleep's 60 seconds and the 25k output. The same unsourced
-  "10 seconds" is in CLAUDE.md, .claude/skills/yagpdb-templates.md and
-  docs/API_REFERENCE.md. Plan: model sleep's limits without waiting, drop or re-source
-  the time limit, fix those docs.
+- The limit tables in docs/API_REFERENCE.md and .claude/skills/yagpdb-templates.md
+  weren't written from the vendored source (the 10-second timeout was wrong); check each
+  remaining row (embed description 2,048, "ExecCC concurrent calls typically 10-20", ...)
+  against vendor/yagpdb and Discord's limits.
 - directory (`exec "Clean" ...`) and ticket_adduser_exec (`exec "ticket adduser"`) have no
   test that checks their exec lines (screen_user's test maps ticket_adduser_exec to a
   recording mock).
@@ -69,7 +69,9 @@ Each fix gets a failing test first.
 - Without -strict, a function over its call limit warns "YAGPDB stops the command here"
   and runs on, even inside `{{try}}`, where YAGPDB's error would go to `{{catch}}` instead.
 - A fixed clock (`clock:`) stands still for the whole run, where YAGPDB's moves on by
-  milliseconds; the 10-second limit is still measured on the system clock. A bad `clock:`
+  milliseconds (sleep moves it on). The database's entry times follow the calling run's
+  clock, so a sleep inside an execCC child doesn't move them, and a setup template's sleeps
+  aren't carried into the test (its entries can look newer than the test's clock). A bad `clock:`
   value's error names neither the field nor the line (yaml.v3's time parse error), and a
   fractional `seed:` is truncated silently (1.5 is 1).
 - `printf "%T"` of the emulator's Discord types prints their Go names (`types.CtxMessage`,
@@ -89,8 +91,8 @@ Each fix gets a failing test first.
   A `silent` message still counts its pings, though Discord sends no notification for it.
 - A failed execCC child's show_errors message isn't checked against Discord's
   2000-character limit. That it pings no one is read from the code, not probed.
-  With `-strict`, a child over the source-length or time limit sends that error as the
-  message; YAGPDB wouldn't save such a command, and has no time-limit error there.
+  With `-strict`, a child over the source-length limit sends that error as the message;
+  YAGPDB wouldn't save such a command.
   Deletions are recorded, not made: a deleted message stays findable by getMessage for the
   rest of the run (YAGPDB deletes from a goroutine or a scheduled event, so usually after
   the run ends, but a short delay can land mid-run). `editMessageNoEscape` is
@@ -137,7 +139,8 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       wrapped in `TemplateValue` (2026-09-24)
 - [x] CI: `.github/workflows/test.yml` runs `make ci` (2026-09-24)
 - [x] Strict mode: YAGPDB's execution limits (call counters, output, response, template
-      length, time), warnings by default and failures with `-strict` (2026-09-24)
+      length; a time limit too, removed 2026-09-25 as unsourced), warnings by default and
+      failures with `-strict` (2026-09-24)
 - [x] Warnings for database calls inside `range` loops (2026-09-24)
 - [x] Schema validation (`-schema db_schema.yaml`) (2026-09-24)
 - [x] Snapshot testing (`snapshot: true`, `-update-snapshots`) (2026-09-24)
@@ -348,6 +351,14 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
         only the error (the message went out unpinged).
       - `admit_user` with no Welcome Message skips the welcome; it stopped there with
         "invalid value; expected string", before the admission record.
+- [x] `sleep` is YAGPDB's tmplSleep without the wait: under 1 second or over 60 in all is
+      "can sleep for max 60 seconds combined", and the run's clock moves on by the
+      seconds slept (an execCC child starts its own 60 on its caller's clock). The strict
+      "10-second" run limit is gone: the vendored YAGPDB (commit 0cf2ec5) has no time
+      limit (no deadline in common/templates, lib/template or customcommands;
+      Context.Execute's timing is commented out; commands.CommandExecTimeout wraps only
+      built-in commands). A run is bounded by its operation count, sleep's 60 seconds and
+      25k of output (2026-09-25)
 - [x] exec and execAdmin record the command line as YAGPDB builds it (`execs:`,
       snapshots), so the kicks in guest, reject_user and inactivity are pinned; they
       were silent no-ops (2026-09-25)

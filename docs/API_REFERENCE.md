@@ -34,7 +34,8 @@ This document provides detailed reference information for developers working wit
 
 **Command Execution Limits:**
 - ExecCC concurrent calls: Configurable per server (typically 10-20)
-- Command execution timeout: 10 seconds
+- No time limit: a run is bounded by its operation count (1M, 2.5M premium), 60 seconds
+  of `sleep` in all and 25,000 bytes of output (vendor/yagpdb/common/templates)
 - Template recursion depth: Limited to prevent infinite loops
 
 ## Core Services API
