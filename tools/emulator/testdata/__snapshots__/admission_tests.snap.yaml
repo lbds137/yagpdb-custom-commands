@@ -13,6 +13,9 @@
         - remove role 222222222222222222 for user 500000000000000001
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
+    reactions:
+        - remove_all on message 700000000000000001 in channel 900000000000000002
+        - "add \U0001F44B on message 700000000000000001 in channel 900000000000000002"
     db:
         - user_id: 0
           key: Admin
@@ -124,6 +127,8 @@
             >>> Needs a second look
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
+    reactions:
+        - "add \U0001F39F️ on message 700000000000000001 in channel 900000000000000002"
     db:
         - user_id: 0
           key: Admin

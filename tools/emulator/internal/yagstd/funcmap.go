@@ -3,6 +3,7 @@ package yagstd
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -112,4 +113,10 @@ func StandardFuncs() map[string]interface{} {
 		"timestampToTime": tmplTimestampToTime,
 		"weekNumber":      tmplWeekNumber,
 	}
+}
+
+// CallVariadic is callVariadic, for the emulator's copies of YAGPDB's variadic context
+// functions (addReactions and the like).
+func CallVariadic(f func([]reflect.Value) (reflect.Value, error), skipNil bool, values ...reflect.Value) (reflect.Value, error) {
+	return callVariadic(f, skipNil, values...)
 }

@@ -200,6 +200,8 @@ tests:
     assertions:
       sent_messages:
         - { channel_id: 900000000000000003, content_equals: "message_link copy" }
+      reactions:
+        - { action: add, emoji: "👋", channel_id: 900000000000000002, message_id: 700000000000000001 }
 
   - name: "archive: member with neither age role"
     template: "../../../staff_utility/archive.gohtml"

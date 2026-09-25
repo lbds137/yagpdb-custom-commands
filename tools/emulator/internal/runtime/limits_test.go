@@ -203,28 +203,39 @@ func TestExecCCChildFailureIsReported(t *testing.T) {
 	}
 }
 
+// msgCtx is a strict context whose channel has message 1, to react to
+func msgCtx() *ExecutionContext {
+	ctx := newCtx(true, true)
+	ctx.Messages = []types.CtxMessage{{ID: 1, ChannelID: ctx.ChannelID}}
+	return ctx
+}
+
 func TestReactionsCountPerEmoji(t *testing.T) {
 	emoji := `"a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t"`
-	ctx := newCtx(true, true)
+	ctx := msgCtx()
 	if _, err := run(t, ctx, `{{addReactions `+emoji+`}}`); err != nil {
 		t.Fatalf("20 emoji are allowed: %v", err)
 	}
-	ctx = newCtx(true, true)
+	ctx = msgCtx()
 	if _, err := run(t, ctx, `{{addReactions `+emoji+` "u"}}`); err == nil || !strings.Contains(err.Error(), ErrTooManyCalls.Error()) {
 		t.Errorf("21 emoji in one call should fail, got %v", err)
 	}
-	ctx = newCtx(true, true)
+	ctx = msgCtx()
 	if _, err := run(t, ctx, `{{addMessageReactions nil 1 (cslice `+emoji+` "u")}}`); err == nil || !strings.Contains(err.Error(), ErrTooManyCalls.Error()) {
 		t.Errorf("a slice of 21 emoji should fail, got %v", err)
 	}
 }
 
 func TestDeleteReactionsCounters(t *testing.T) {
-	ctx := newCtx(true, true)
+	ctx := msgCtx()
 	if _, err := run(t, ctx, `{{range seq 0 11}}{{deleteAllMessageReactions nil 1}}{{end}}`); err != nil {
 		t.Errorf("without emoji each call is one API call (limit 100): %v", err)
 	}
-	ctx = newCtx(true, true)
+	ctx = msgCtx()
+	if _, err := run(t, ctx, `{{range seq 0 101}}{{deleteAllMessageReactions nil 1}}{{end}}`); err == nil || !strings.Contains(err.Error(), ErrTooManyAPICalls.Error()) {
+		t.Errorf("the 101st is over the API call limit: %v", err)
+	}
+	ctx = msgCtx()
 	_, err := run(t, ctx, `{{deleteAllMessageReactions nil 1 "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k"}}`)
 	if err == nil || !strings.Contains(err.Error(), "del_reaction_message") {
 		t.Errorf("11 emoji should pass the del_reaction_message limit of 10, got %v", err)
@@ -341,11 +352,11 @@ func TestSetRolesTargets(t *testing.T) {
 }
 
 func TestDeleteReactionsFlattensSlices(t *testing.T) {
-	_, err := run(t, newCtx(true, true), `{{deleteAllMessageReactions nil 1 (cslice "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k")}}`)
+	_, err := run(t, msgCtx(), `{{deleteAllMessageReactions nil 1 (cslice "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k")}}`)
 	if err == nil || !strings.Contains(err.Error(), "del_reaction_message") {
 		t.Errorf("11 emoji in a slice should hit the limit, got %v", err)
 	}
-	if _, err := run(t, newCtx(true, true), `{{addReactions nil nil "a"}}`); err != nil {
+	if _, err := run(t, msgCtx(), `{{addReactions nil nil "a"}}`); err != nil {
 		t.Errorf("nil emoji are skipped: %v", err)
 	}
 }

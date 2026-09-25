@@ -278,6 +278,13 @@ func runCommand(args []string) {
 		}
 	}
 
+	if len(ctx.Reactions) > 0 && *verbose {
+		fmt.Println("\n=== Reactions ===")
+		for _, r := range ctx.Reactions {
+			fmt.Println(r)
+		}
+	}
+
 	if len(ctx.Deletions) > 0 && *verbose {
 		fmt.Println("\n=== Deletions ===")
 		for _, d := range ctx.Deletions {

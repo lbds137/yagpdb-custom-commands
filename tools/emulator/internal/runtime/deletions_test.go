@@ -39,8 +39,8 @@ func TestDeleteTriggerAndMessage(t *testing.T) {
 	}
 }
 
-// deleteTrigger deletes the run's message: none in an interval run, the reacted-to message
-// in a reaction run, the caller's in an execCC child
+// deleteTrigger deletes the run's message: the reacted-to message in a reaction run, the
+// caller's in an execCC child; an interval run's stand-in (ID 0) deletes nothing
 func TestDeleteTriggerByRunKind(t *testing.T) {
 	ctx := channelCtx()
 	ctx.NoMessage = true

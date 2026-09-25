@@ -348,3 +348,45 @@ func TestDeletionsCheckFailsTheTest(t *testing.T) {
 		t.Errorf("got %v, %q", res.Error, res.Failures)
 	}
 }
+
+// A reactions check lists every reaction change in order; unset fields match anything
+func TestCheckReactions(t *testing.T) {
+	got := []runtime.ReactionChange{
+		{Action: "remove_all", ChannelID: 9, MessageID: 5},
+		{Action: "add", ChannelID: 9, MessageID: 5, Emoji: "👋"},
+		{Action: "remove", ChannelID: 9, MessageID: 5, UserID: 3, Emoji: "a"},
+	}
+	cases := []struct {
+		checks []ReactionCheck
+		fail   string
+	}{
+		{[]ReactionCheck{{Action: "remove_all"}, {Emoji: "👋", MessageID: 5}, {UserID: 3, ChannelID: 9}}, ""},
+		{[]ReactionCheck{{}, {}}, "expected 2 reaction changes, got 3"},
+		{[]ReactionCheck{{Action: "add"}, {}, {}}, "reaction change 0 doesn't match"},
+		{[]ReactionCheck{{}, {Emoji: "👍"}, {}}, "reaction change 1 doesn't match"},
+		{[]ReactionCheck{{}, {}, {UserID: 4}}, "reaction change 2 doesn't match"},
+		{[]ReactionCheck{{ChannelID: 8}, {}, {}}, "reaction change 0 doesn't match"},
+		{[]ReactionCheck{{MessageID: 6}, {}, {}}, "reaction change 0 doesn't match"},
+		{[]ReactionCheck{{Action: "react"}, {}, {}}, `action is "react"`},
+		{[]ReactionCheck{{}, {Response: true}, {}}, "reaction change 1 doesn't match"},
+	}
+	for i, c := range cases {
+		failures := strings.Join(checkReactions(got, &c.checks), "\n")
+		if (c.fail == "") != (failures == "") || !strings.Contains(failures, c.fail) {
+			t.Errorf("case %d: failures %q, want %q", i, failures, c.fail)
+		}
+	}
+	if f := checkReactions([]runtime.ReactionChange{{Action: "add", ChannelID: 9, Emoji: "a"}}, &[]ReactionCheck{{Response: true}}); f != nil {
+		t.Errorf("a reaction on the response: %q", f)
+	}
+	if f := checkReactions(got, nil); f != nil {
+		t.Errorf("no check: %q", f)
+	}
+	r := NewRunner(RunnerConfig{})
+	tc := &TestCase{Name: "react", TemplateSource: `{{addReactions "a"}}`,
+		Assertions: Assertions{Reactions: &[]ReactionCheck{}}}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 1 || !strings.Contains(res.Failures[0], "expected 0 reaction changes, got 1") {
+		t.Errorf("a wrong reactions check fails the test: %v, %q", res.Error, res.Failures)
+	}
+}

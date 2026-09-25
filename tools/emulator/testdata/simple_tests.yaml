@@ -113,3 +113,15 @@ tests:
     template_source: "hi"
     assertions:
       deletions: []
+
+  - name: "Reactions: on the trigger, a declared message and the response"
+    context:
+      messages: [{ id: 42, channel_id: 900000000000000002, author_id: 5, content: "intro" }]
+    template_source: |
+      {{ addReactions "✅" }}{{ deleteAllMessageReactions 900000000000000002 42 }}{{ addMessageReactions 900000000000000002 42 "👋" }}{{ addResponseReactions "🎉" }}done
+    assertions:
+      reactions:
+        - { action: add, emoji: "✅" }
+        - { action: remove_all, channel_id: 900000000000000002, message_id: 42 }
+        - { action: add, emoji: "👋", message_id: 42 }
+        - { action: add, emoji: "🎉", response: true }
