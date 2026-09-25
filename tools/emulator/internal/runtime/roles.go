@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -167,6 +168,10 @@ func (e *Engine) mentionRole(roleInput interface{}, accept roleInputType) string
 	role := e.findRole(roleInput, accept)
 	if role == nil {
 		return ""
+	}
+	// The response pings the roles mentionRole returned
+	if !slices.Contains(e.ctx.mentionRoles, role.ID) {
+		e.ctx.mentionRoles = append(e.ctx.mentionRoles, role.ID)
 	}
 	return fmt.Sprintf("<@&%d>", role.ID)
 }

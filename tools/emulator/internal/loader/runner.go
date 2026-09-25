@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -125,6 +126,9 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 
 	// Check sent messages
 	failures = r.checkMessages(ctx.SentMessages, tc.Assertions.SentMessages, "sent")
+	if f := checkPings(ctx.ResponsePings, tc.Assertions.ResponsePings); f != "" {
+		failures = append(failures, "response "+f)
+	}
 	failures = append(failures, r.checkMessages(ctx.EditedMessages, tc.Assertions.EditedMessages, "edited")...)
 	result.Failures = append(result.Failures, failures...)
 
@@ -433,9 +437,27 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 				}
 			}
 		}
+
+		if f := checkPings(found.Pings, check.Pings); f != "" {
+			failures = append(failures, fmt.Sprintf("message check %d: %s", i, f))
+		}
 	}
 
 	return failures
+}
+
+// checkPings compares who a message notifies with the expected pings, if any.
+func checkPings(got runtime.Pings, check *PingsCheck) string {
+	if check == nil {
+		return ""
+	}
+	users := slices.Compact(slices.Sorted(slices.Values(check.Users)))
+	roles := slices.Compact(slices.Sorted(slices.Values(check.Roles)))
+	if got.Everyone == check.Everyone && slices.Equal(got.Users, users) && slices.Equal(got.Roles, roles) {
+		return ""
+	}
+	want := runtime.Pings{Everyone: check.Everyone, Users: users, Roles: roles}
+	return fmt.Sprintf("pings mismatch:\n  expected: %s\n  got:      %s", want, got)
 }
 
 // checkRoleChanges verifies role change assertions.

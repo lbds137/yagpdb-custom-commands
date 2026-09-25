@@ -398,6 +398,17 @@ type MessageSend struct {
 	// HasOther is set by keys that make a message non-empty without content, embeds or a
 	// file: buttons, menus, components, a sticker or a forward (not otherwise modelled).
 	HasOther bool
+	// AllowedMentions says which mentions in Content ping; complexMessage allows users
+	AllowedMentions AllowedMentions
+}
+
+// AllowedMentions stands in for discordgo.AllowedMentions: Parse holds "users", "roles"
+// and "everyone", and Users and Roles allow single IDs.
+type AllowedMentions struct {
+	Parse       []string
+	Users       []int64
+	Roles       []int64
+	RepliedUser bool
 }
 
 // MessageEdit is what complexMessageEdit builds (YAGPDB's CreateMessageEdit): only the

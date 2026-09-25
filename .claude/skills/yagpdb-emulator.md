@@ -56,6 +56,9 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits, first per channel (as edited)
     role_changes: [{ user_id: 1, role_id: 111, action: "add" }]  # delay: 90s for a scheduled one
     no_role_changes: true             # give/take of a role they have/lack, or a non-member, change nothing
+    response_pings: { everyone: true, users: [1], roles: [111] }  # exactly who the output notifies
+    # (sent/edited message checks take pings: too). Typed <@&id>/@everyone ping only through
+    # mentionRole*/mentionEveryone, a complexMessage's allowed_mentions, or the NoEscape functions
 ```
 
 ## Project Structure

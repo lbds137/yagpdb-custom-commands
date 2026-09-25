@@ -127,6 +127,15 @@ type Assertions struct {
 	RoleChanges    []RoleCheck    `yaml:"role_changes"`
 	// NoRoleChanges asserts the run changed no roles (a give of a role the member has, say)
 	NoRoleChanges bool `yaml:"no_role_changes"`
+	// ResponsePings is exactly who the response (the template's output) notifies
+	ResponsePings *PingsCheck `yaml:"response_pings"`
+}
+
+// PingsCheck is exactly who a message notifies; unset fields expect no one.
+type PingsCheck struct {
+	Everyone bool    `yaml:"everyone"` // @everyone or @here
+	Users    []int64 `yaml:"users"`
+	Roles    []int64 `yaml:"roles"`
 }
 
 // DBCheck defines a database assertion.
@@ -146,6 +155,8 @@ type MessageCheck struct {
 	HasEmbed        bool   `yaml:"has_embed"`
 	EmbedTitle      string `yaml:"embed_title"`
 	EmbedContains   string `yaml:"embed_contains"` // Substring of the embed as JSON (title, fields, ...)
+	// Pings is exactly who the message notifies (edits notify no one)
+	Pings *PingsCheck `yaml:"pings"`
 }
 
 // RoleCheck defines a role change assertion.

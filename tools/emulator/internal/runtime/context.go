@@ -15,6 +15,7 @@ type SentMessage struct {
 	ChannelID int64
 	Content   string
 	Embed     interface{}
+	Pings     Pings // who the message notifies
 }
 
 // RoleChange represents a role change that occurred during template execution.
@@ -101,6 +102,12 @@ type ExecutionContext struct {
 	EditedMessages []SentMessage
 	RoleChanges    []RoleChange
 	FileUploads    []FileUpload
+	// ResponsePings are who the response (the template's output) notifies
+	ResponsePings Pings
+
+	// Set by mentionEveryone/mentionHere and mentionRole, so the response pings them
+	mentionEveryone bool
+	mentionRoles    []int64
 
 	// Warnings found during execution (limits, db calls in loops, schema mismatches)
 	Diagnostics []Diagnostic
@@ -321,7 +328,7 @@ func (ctx *ExecutionContext) HasRole(roleID int64) bool {
 
 // RecordSentMessage records a message sent during execution. Messages the bot sends to a
 // channel can be fetched with getMessage, as on Discord; it returns their ID.
-func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embed interface{}) int64 {
+func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embed interface{}, pings Pings) int64 {
 	*ctx.sentMessageIDs()++
 	id := firstSentMessageID + *ctx.sentIDs
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{
@@ -329,6 +336,7 @@ func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, 
 		ChannelID: channelID,
 		Content:   content,
 		Embed:     embed,
+		Pings:     pings,
 	})
 	msg := types.CtxMessage{
 		ID:        id,
