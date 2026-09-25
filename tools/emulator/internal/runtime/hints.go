@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"errors"
 	"regexp"
 	"sort"
 	"strings"
@@ -25,10 +24,16 @@ func Hint(err error) string {
 	}
 	msg := err.Error()
 
-	if errors.Is(err, ErrTooManyCalls) || errors.Is(err, ErrTooManyAPICalls) {
+	// YAGPDB's template package formats function errors with %v, so match the text
+	if strings.Contains(msg, ErrTooManyCalls.Error()) || strings.Contains(msg, ErrTooManyAPICalls.Error()) {
 		return "YAGPDB caps how often a function can run in one execution. Move the call out of " +
 			"loops, reuse earlier results, or fetch many entries with one dbGetPattern. " +
 			"Run without -strict to see every limit as a warning."
+	}
+
+	if strings.Contains(msg, "exceeded max operations") {
+		return "YAGPDB stops a custom command after 1,000,000 template operations (2,500,000 with " +
+			"premium). Every action, loop iteration and function call counts; shrink large loops."
 	}
 
 	if m := reUndefinedFunc.FindStringSubmatch(msg); m != nil {
@@ -49,7 +54,7 @@ func Hint(err error) string {
 			return "dbGet returns an entry, not the stored value. Read the value with .Value " +
 				"(for example (dbGet 0 \"Key\").Value." + field + ")."
 		}
-		if strings.Contains(typ, "TemplateValue") || strings.Contains(typ, "interface") {
+		if strings.Contains(typ, "SDict") || strings.Contains(typ, "Dict") || strings.Contains(typ, "interface") {
 			return "the value has no field " + field + ". For a dict, use .Get \"" + field + "\" or (index $d \"" + field + "\")."
 		}
 		return typ + " has no field " + field + ". Field names are case-sensitive."

@@ -13,14 +13,14 @@ import (
 )
 
 // YAGPDB's per-execution limits. Sources are in vendor/yagpdb (see the comments).
-// YAGPDB also caps template operations (1M, or 2.5M with premium); Go's text/template
-// can't count those, so the emulator doesn't enforce that limit.
 const (
 	maxOutputBytes        = 25000            // common/templates/context.go: LimitWriter in executeParsed
 	maxResponseRunes      = 2000             // customcommands/bot.go replaces longer responses
 	maxSourceRunes        = 10000            // customcommands.MaxCCResponsesLength
 	maxSourceRunesPremium = 20000            // customcommands.MaxCCResponsesLengthPremium
 	maxDuration           = 10 * time.Second // custom command execution timeout
+	maxOpsNormal          = 1000000          // common/templates/context.go: MaxOpsNormal
+	maxOpsPremium         = 2500000          // MaxOpsPremium
 )
 
 // callLimit is one of YAGPDB's Context.Counters with its normal and premium limits.
@@ -352,4 +352,12 @@ func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration) (
 		ctx.Warn(KindLimit, "the response is %d characters; YAGPDB replaces responses over %d with a notice", n, maxResponseRunes)
 	}
 	return output, nil
+}
+
+// maxOps is YAGPDB's operation limit for this run.
+func (ctx *ExecutionContext) maxOps() int {
+	if ctx.IsPremium {
+		return maxOpsPremium
+	}
+	return maxOpsNormal
 }

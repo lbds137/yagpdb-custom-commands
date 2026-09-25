@@ -1,10 +1,9 @@
 package runtime
 
 import (
-	"errors"
+	template "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate"
 	"strings"
 	"testing"
-	"text/template"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
@@ -41,7 +40,7 @@ const elevenDBGets = `{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"}}{{dbGet 0 "a"
 func TestDBLimitStrictFree(t *testing.T) {
 	ctx := newCtx(true, false)
 	_, err := run(t, ctx, elevenDBGets)
-	if !errors.Is(err, ErrTooManyCalls) {
+	if err == nil || !strings.Contains(err.Error(), ErrTooManyCalls.Error()) {
 		t.Fatalf("want ErrTooManyCalls, got %v", err)
 	}
 	if !strings.Contains(err.Error(), "dbGet: over the limit of 10 db_interactions") {
@@ -138,7 +137,7 @@ func TestResponseOver2000Replaced(t *testing.T) {
 
 func TestOutputOver25kFailsInStrictMode(t *testing.T) {
 	ctx := newCtx(true, true)
-	_, err := run(t, ctx, `{{range seq 0 25001}}x{{end}}`)
+	_, err := run(t, ctx, `{{range seq 0 5001}}xxxxx{{end}}`)
 	if err == nil || !strings.Contains(err.Error(), "response grew too big") {
 		t.Errorf("want output error, got %v", err)
 	}
@@ -207,11 +206,11 @@ func TestReactionsCountPerEmoji(t *testing.T) {
 		t.Fatalf("20 emoji are allowed: %v", err)
 	}
 	ctx = newCtx(true, true)
-	if _, err := run(t, ctx, `{{addReactions `+emoji+` "u"}}`); !errors.Is(err, ErrTooManyCalls) {
+	if _, err := run(t, ctx, `{{addReactions `+emoji+` "u"}}`); err == nil || !strings.Contains(err.Error(), ErrTooManyCalls.Error()) {
 		t.Errorf("21 emoji in one call should fail, got %v", err)
 	}
 	ctx = newCtx(true, true)
-	if _, err := run(t, ctx, `{{addMessageReactions nil 1 (cslice `+emoji+` "u")}}`); !errors.Is(err, ErrTooManyCalls) {
+	if _, err := run(t, ctx, `{{addMessageReactions nil 1 (cslice `+emoji+` "u")}}`); err == nil || !strings.Contains(err.Error(), ErrTooManyCalls.Error()) {
 		t.Errorf("a slice of 21 emoji should fail, got %v", err)
 	}
 }

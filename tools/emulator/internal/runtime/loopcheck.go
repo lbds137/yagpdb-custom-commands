@@ -2,12 +2,12 @@ package runtime
 
 import (
 	"fmt"
+	template "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate/parse"
 	"strings"
-	"text/template"
-	"text/template/parse"
 )
 
-// loopFinding is a database call inside a range loop.
+// loopFinding is a database call inside a loop.
 type loopFinding struct {
 	Line int
 	Func string
@@ -19,12 +19,12 @@ func (f loopFinding) Message(source string) string {
 	if source != "" {
 		where = fmt.Sprintf("%s:%d", source, f.Line)
 	}
-	return fmt.Sprintf("%s: %s inside a range loop makes one database call per iteration "+
+	return fmt.Sprintf("%s: %s inside a loop makes one database call per iteration "+
 		"(YAGPDB allows %d per run, %d with premium). Fetch once before the loop, "+
 		"or read many keys with one dbGetPattern.", where, f.Func, limitDB.normal, limitDB.premium)
 }
 
-// findLoopDBCalls finds database calls inside range loops. Each iteration is a separate
+// findLoopDBCalls finds database calls inside range and while loops. Each iteration is a separate
 // call against YAGPDB's per-run database limit, so a loop over user input or a large
 // list can run out of calls in production. A {{template}} call inside a loop counts
 // when the named template makes database calls.
@@ -106,6 +106,16 @@ func (w *loopWalker) walk(node parse.Node, loopDepth int) {
 		w.pipe(n.Pipe, loopDepth)
 		w.walk(n.List, loopDepth+1)
 		w.walk(n.ElseList, loopDepth)
+	case *parse.WhileNode:
+		// The condition is evaluated again before every iteration.
+		w.pipe(n.Pipe, loopDepth+1)
+		w.walk(n.List, loopDepth+1)
+		w.walk(n.ElseList, loopDepth)
+	case *parse.TryNode:
+		w.walk(n.List, loopDepth)
+		w.walk(n.CatchList, loopDepth)
+	case *parse.ReturnNode:
+		w.pipe(n.Pipe, loopDepth)
 	case *parse.TemplateNode:
 		w.pipe(n.Pipe, loopDepth)
 		w.calledTemplate(n.Name, n, loopDepth)

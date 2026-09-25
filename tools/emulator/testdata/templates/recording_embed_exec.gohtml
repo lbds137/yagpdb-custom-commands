@@ -1,2 +1,4 @@
-{{- /* Mock embed_exec that sends its embed, so tests can assert the channel and title */ -}}
-{{ sendMessage (or .ExecData.ChannelID nil) (cembed "title" .ExecData.Title "description" (or .ExecData.Description "")) }}
+{{- /* Mock embed_exec that sends its embed, so tests can assert the channel, title and fields */ -}}
+{{ $embed := sdict "title" .ExecData.Title "description" (or .ExecData.Description "") }}
+{{ with .ExecData.Fields }}{{ $embed.Set "fields" . }}{{ end }}
+{{ sendMessage (or .ExecData.ChannelID nil) (cembed $embed) }}

@@ -2,188 +2,128 @@
 package types
 
 import (
-	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
-// SDict is a string-keyed dictionary, matching YAGPDB's SDict type.
-type SDict map[string]interface{}
+// SDict, Dict and Slice are YAGPDB's own container types (sdict, dict, cslice), with
+// their methods, from internal/yagstd.
+type (
+	SDict = yagstd.SDict
+	Dict  = yagstd.Dict
+	Slice = yagstd.Slice
+)
 
-// Set sets a key-value pair and returns an empty string (for template compatibility).
-func (s SDict) Set(key string, value interface{}) string {
-	s[key] = value
-	return ""
-}
-
-// Get retrieves a value by key, returning nil if not found.
-// Accepts interface{} for template compatibility.
-func (s SDict) Get(key interface{}) interface{} {
-	return s[fmt.Sprint(key)]
-}
-
-// Del deletes a key and returns an empty string.
-func (s SDict) Del(key string) string {
-	delete(s, key)
-	return ""
-}
-
-// HasKey returns true if the key exists.
-func (s SDict) HasKey(key string) bool {
-	_, ok := s[key]
-	return ok
-}
-
-// Dict is a dictionary with any key type, matching YAGPDB's Dict type.
-type Dict map[interface{}]interface{}
-
-// Set sets a key-value pair and returns an empty string.
-func (d Dict) Set(key, value interface{}) string {
-	d[key] = value
-	return ""
-}
-
-// Get retrieves a value by key, returning nil if not found.
-func (d Dict) Get(key interface{}) interface{} {
-	return d[key]
-}
-
-// Del deletes a key and returns an empty string.
-func (d Dict) Del(key interface{}) string {
-	delete(d, key)
-	return ""
-}
-
-// HasKey returns true if the key exists.
-func (d Dict) HasKey(key interface{}) bool {
-	_, ok := d[key]
-	return ok
-}
-
-// Slice is a dynamic slice type, matching YAGPDB's Slice type.
-type Slice []interface{}
-
-// Append adds an item and returns the new slice.
-func (s Slice) Append(item interface{}) Slice {
-	return append(s, item)
-}
-
-// AppendSlice appends another slice and returns the new slice.
-func (s Slice) AppendSlice(other Slice) Slice {
-	return append(s, other...)
-}
-
-// Set sets an item at an index and returns an empty string.
-func (s Slice) Set(index int, value interface{}) (string, error) {
-	if index < 0 || index >= len(s) {
-		return "", fmt.Errorf("index out of range: %d", index)
-	}
-	s[index] = value
-	return "", nil
-}
-
-// StringSlice converts the slice to []string.
-func (s Slice) StringSlice(strict ...bool) ([]string, error) {
-	isStrict := len(strict) > 0 && strict[0]
-	result := make([]string, len(s))
-	for i, v := range s {
-		if str, ok := v.(string); ok {
-			result[i] = str
-		} else if isStrict {
-			return nil, fmt.Errorf("element %d is not a string", i)
-		} else {
-			result[i] = fmt.Sprint(v)
+// ForStorage returns a value as the mock database keeps it: a deep copy, with maps and
+// slices as SDict, Dict and Slice. YAGPDB serializes what dbSet stores, so changing the
+// original afterwards doesn't change the database; the copy gives the emulator the same
+// behavior. Maps from YAML or JSON become SDicts, or Dicts when they have non-string keys.
+func ForStorage(v interface{}) interface{} {
+	switch t := v.(type) {
+	case SDict:
+		return copySDict(t, ForStorage)
+	case *SDict:
+		if t == nil {
+			return nil
 		}
+		return copySDict(*t, ForStorage)
+	case map[string]interface{}:
+		return copySDict(t, ForStorage)
+	case Dict:
+		return copyDict(t, ForStorage)
+	case *Dict:
+		if t == nil {
+			return nil
+		}
+		return copyDict(*t, ForStorage)
+	case map[interface{}]interface{}:
+		// YAML gives this type for maps with non-string keys (a dict with int keys)
+		allStrings := true
+		for k := range t {
+			if _, ok := k.(string); !ok {
+				allStrings = false
+				break
+			}
+		}
+		if !allStrings {
+			return copyDict(Dict(t), ForStorage)
+		}
+		out := make(SDict, len(t))
+		for k, e := range t {
+			out[k.(string)] = ForStorage(e)
+		}
+		return out
+	case Slice:
+		return copySlice(t, ForStorage)
+	case *Slice:
+		if t == nil {
+			return nil
+		}
+		return copySlice(*t, ForStorage)
 	}
-	return result, nil
-}
-
-// TemplateValue wraps any value and provides Get/Set methods for template access.
-// This ensures that when templates call .Value.Get, the method is always available.
-type TemplateValue struct {
-	V interface{}
-}
-
-// WrapValue wraps dict-like values in TemplateValue and returns everything else
-// unchanged, matching YAGPDB, where a stored string or number comes back as itself.
-func WrapValue(v interface{}) interface{} {
-	switch v.(type) {
-	case SDict, map[string]interface{}, Dict, map[interface{}]interface{}:
-		return TemplateValue{V: v}
-	default:
-		return v
-	}
-}
-
-// UnwrapValue returns the value inside a TemplateValue, or v itself.
-func UnwrapValue(v interface{}) interface{} {
-	if tv, ok := v.(TemplateValue); ok {
-		return tv.V
+	// Other slices ([]string from split, ...) are stored as plain arrays, which is how
+	// YAGPDB's msgpack decoding returns them: []interface{}
+	rv := reflect.ValueOf(v)
+	if rv.IsValid() && (rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array) && rv.Type().Elem().Kind() != reflect.Uint8 {
+		out := make([]interface{}, rv.Len())
+		for i := range out {
+			out[i] = ForStorage(rv.Index(i).Interface())
+		}
+		return out
 	}
 	return v
 }
 
-// MarshalJSON encodes the wrapped value, so dumps show {"a":1} rather than {"V":{"a":1}}.
-func (tv TemplateValue) MarshalJSON() ([]byte, error) {
-	return json.Marshal(tv.V)
+// ForTemplate returns a stored value the way YAGPDB's dbGet hands it to a template: a
+// fresh copy in which every sdict, dict and cslice is a pointer (*SDict, *Dict, *Slice),
+// as YAGPDB's msgpack decoding produces them. Changing it doesn't change the database
+// until the template calls dbSet.
+func ForTemplate(v interface{}) interface{} {
+	switch t := v.(type) {
+	case SDict:
+		c := copySDict(t, ForTemplate)
+		return &c
+	case Dict:
+		c := copyDict(t, ForTemplate)
+		return &c
+	case Slice:
+		c := copySlice(t, ForTemplate)
+		return &c
+	case []interface{}:
+		out := make([]interface{}, len(t))
+		for i, e := range t {
+			out[i] = ForTemplate(e)
+		}
+		return out
+	}
+	return v
 }
 
-// Get retrieves a value from the wrapped dict-like type.
-// Returns a TemplateValue for dict-like results to enable method chaining.
-func (tv TemplateValue) Get(key interface{}) interface{} {
-	var result interface{}
-	switch v := tv.V.(type) {
-	case SDict:
-		result = v.Get(key)
-	case map[string]interface{}:
-		result = v[fmt.Sprint(key)]
-	case Dict:
-		result = v.Get(key)
-	case map[interface{}]interface{}:
-		result = v[key]
-	default:
-		return tv.V // Return the raw value if not a dict type
+func copySDict(in map[string]interface{}, conv func(interface{}) interface{}) SDict {
+	out := make(SDict, len(in))
+	for k, e := range in {
+		out[k] = conv(e)
 	}
-	// Wrap dict-like results in TemplateValue for method chaining
-	switch result.(type) {
-	case SDict, map[string]interface{}, Dict, map[interface{}]interface{}:
-		return TemplateValue{V: result}
-	default:
-		return result
-	}
+	return out
 }
 
-// Set sets a value in the wrapped dict-like type.
-func (tv TemplateValue) Set(key interface{}, value interface{}) string {
-	switch v := tv.V.(type) {
-	case SDict:
-		return v.Set(fmt.Sprint(key), value)
-	case map[string]interface{}:
-		v[fmt.Sprint(key)] = value
-	case Dict:
-		return v.Set(key, value)
-	case map[interface{}]interface{}:
-		v[key] = value
+func copyDict(in Dict, conv func(interface{}) interface{}) Dict {
+	out := make(Dict, len(in))
+	for k, e := range in {
+		out[k] = conv(e)
 	}
-	return ""
+	return out
 }
 
-// HasKey returns true if the key exists in the wrapped dict-like type.
-func (tv TemplateValue) HasKey(key interface{}) bool {
-	switch v := tv.V.(type) {
-	case SDict:
-		return v.HasKey(fmt.Sprint(key))
-	case map[string]interface{}:
-		_, ok := v[fmt.Sprint(key)]
-		return ok
-	case Dict:
-		return v.HasKey(key)
-	case map[interface{}]interface{}:
-		_, ok := v[key]
-		return ok
-	default:
-		return false
+func copySlice(in []interface{}, conv func(interface{}) interface{}) Slice {
+	out := make(Slice, len(in))
+	for i, e := range in {
+		out[i] = conv(e)
 	}
+	return out
 }
 
 // LightDBEntry represents a database entry, matching YAGPDB's LightDBEntry.
@@ -360,59 +300,11 @@ func (e CtxEmoji) APIName() string {
 	return fmt.Sprint(e.ID)
 }
 
-// StringKeyDictionary creates an SDict from key-value pairs.
-func StringKeyDictionary(pairs ...interface{}) (SDict, error) {
-	if len(pairs)%2 != 0 {
-		return nil, fmt.Errorf("sdict requires an even number of arguments")
-	}
-	result := make(SDict)
-	for i := 0; i < len(pairs); i += 2 {
-		key, ok := pairs[i].(string)
-		if !ok {
-			return nil, fmt.Errorf("sdict keys must be strings, got %T", pairs[i])
-		}
-		result[key] = pairs[i+1]
-	}
-	return result, nil
-}
-
-// Dictionary creates a Dict from key-value pairs.
-func Dictionary(pairs ...interface{}) (Dict, error) {
-	if len(pairs)%2 != 0 {
-		return nil, fmt.Errorf("dict requires an even number of arguments")
-	}
-	result := make(Dict)
-	for i := 0; i < len(pairs); i += 2 {
-		result[pairs[i]] = pairs[i+1]
-	}
-	return result, nil
-}
-
-// CreateSlice creates a Slice from the given items.
-func CreateSlice(items ...interface{}) Slice {
-	return Slice(items)
-}
-
-// JSONToSDict parses a JSON string into an SDict.
-func JSONToSDict(jsonStr string) (SDict, error) {
-	var result SDict
-	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %w", err)
-	}
-	return result, nil
-}
-
-// ToJSON converts a value to a JSON string.
-func ToJSON(v interface{}, pretty ...bool) (string, error) {
-	var data []byte
-	var err error
-	if len(pretty) > 0 && pretty[0] {
-		data, err = json.MarshalIndent(v, "", "  ")
-	} else {
-		data, err = json.Marshal(v)
-	}
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+// MessageSend stands in for the *discordgo.MessageSend that YAGPDB's complexMessage builds.
+type MessageSend struct {
+	Content  string
+	Embeds   []interface{} // each as cembed built it
+	File     string        // attached file contents, if any
+	Filename string        // with YAGPDB's forced .txt extension
+	HasFile  bool
 }

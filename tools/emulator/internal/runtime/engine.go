@@ -2,32 +2,26 @@ package runtime
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	template "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate"
 )
 
-// Engine handles template parsing and execution.
+// Engine handles template parsing and execution with YAGPDB's template package
+// (internal/yagtemplate), which provides try/catch, while, return, execTemplate and the
+// built-ins (and, or, not, eq, ne, lt, le, gt, ge, len, index) exactly as YAGPDB has them.
 type Engine struct {
 	ctx *ExecutionContext
-
-	tmpl    *template.Template // the parsed template, for execTemplate
-	out     io.Writer          // where execTemplate output goes (the main output)
-	returns []interface{}      // values passed to return, innermost last
+	yag yagstd.Context // per-run state of YAGPDB's context functions (regex cache)
 }
-
-// errReturn stops execution at {{return}}. YAGPDB's return is a parser keyword; here it
-// is a function whose error unwinds text/template to Execute or execTemplate.
-var errReturn = errors.New("return")
 
 // NewEngine creates a new template engine with the given context.
 func NewEngine(ctx *ExecutionContext) *Engine {
@@ -43,81 +37,16 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		}
 	}
 
-	m := template.FuncMap{
-		// Type conversion
-		"str":        funcs.ToString,
-		"toString":   funcs.ToString,
-		"toInt":      funcs.ToInt,
-		"toInt64":    funcs.ToInt64,
-		"toFloat":    funcs.ToFloat64,
-		"toDuration": funcs.ToDuration,
-		"toRune":     funcs.ToRune,
-		"toByte":     funcs.ToByte,
-
-		// String manipulation
-		"lower":       strings.ToLower,
-		"upper":       strings.ToUpper,
-		"title":       strings.Title,
-		"hasPrefix":   strings.HasPrefix,
-		"hasSuffix":   strings.HasSuffix,
-		"trimSpace":   strings.TrimSpace,
-		"split":       strings.Split,
-		"joinStr":     funcs.JoinStrings,
-		"slice":       funcs.SliceFunc,
-		"urlescape":   funcs.URLEscape,
-		"urlunescape": funcs.URLUnescape,
-		"print":       fmt.Sprint,
-		"println":     fmt.Sprintln,
-		"printf":      fmt.Sprintf,
-
-		// Math
-		"add":        funcs.Add,
-		"sub":        funcs.Sub,
-		"mult":       funcs.Mult,
-		"div":        funcs.Div,
-		"fdiv":       funcs.FDiv,
-		"mod":        funcs.Mod,
-		"abs":        funcs.Abs,
-		"sqrt":       funcs.Sqrt,
-		"cbrt":       funcs.Cbrt,
-		"pow":        funcs.Pow,
-		"log":        funcs.Log,
-		"round":      funcs.Round,
-		"roundCeil":  funcs.RoundCeil,
-		"roundFloor": funcs.RoundFloor,
-		"roundEven":  funcs.RoundEven,
-		"min":        funcs.Min,
-		"max":        funcs.Max,
-
-		// Collections
-		"dict":        types.Dictionary,
-		"sdict":       types.StringKeyDictionary,
-		"cslice":      types.CreateSlice,
-		"json":        types.ToJSON,
-		"jsonToSdict": types.JSONToSDict,
-		"sort":        funcs.Sort,
-
-		// Time
-		"currentTime": funcs.CurrentTime,
-		"formatTime":  funcs.FormatTime,
-		"parseTime":   funcs.ParseTime,
-		"newDate":     funcs.NewDate,
-
-		// Regex
-		"reFind":      funcs.ReFind,
-		"reFindAll":   funcs.ReFindAll,
-		"reReplace":   funcs.ReReplace,
-		"reSplit":     funcs.ReSplit,
-		"reQuoteMeta": funcs.ReQuoteMeta,
-
-		// Utilities
-		"in":      funcs.In,
-		"inFold":  funcs.InFold,
-		"kindOf":  funcs.KindOf,
-		"seq":     funcs.Seq,
-		"randInt": funcs.RandInt,
-		"get":     e.getFunc, // Universal getter that works with interface{}
-
+	// YAGPDB's own implementations: standard functions, and the context functions that
+	// keep per-run state (regex cache, sort). The rest are emulator mocks.
+	m := template.FuncMap{}
+	for name, fn := range yagstd.StandardFuncs() {
+		m[name] = fn
+	}
+	for name, fn := range e.yag.Funcs() {
+		m[name] = fn
+	}
+	mocks := template.FuncMap{
 		// Database
 		"dbGet":               dbFuncs.DbGet,
 		"dbSet":               dbFuncs.DbSet,
@@ -176,7 +105,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		// Discord - Tickets
 		"createTicket": e.createTicket,
 
-		// Embed building
+		// Message builders (YAGPDB's build Discord structs)
 		"cembed":             e.cembed,
 		"complexMessage":     e.complexMessage,
 		"complexMessageEdit": e.complexMessageEdit,
@@ -186,7 +115,6 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"execCC":                  e.execCC,
 		"exec":                    e.exec,
 		"execAdmin":               e.execAdmin,
-		"execTemplate":            e.execTemplateFunc,
 		"scheduleUniqueCC":        e.scheduleUniqueCC,
 		"cancelScheduledUniqueCC": e.cancelScheduledUniqueCC,
 		"sleep":                   e.sleep,
@@ -200,21 +128,9 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		// Argument parsing
 		"parseArgs": e.parseArgs,
 		"carg":      funcs.Carg,
-
-		// Misc
-		"or":     e.orFunc,
-		"and":    e.andFunc,
-		"not":    e.notFunc,
-		"eq":     e.eqFunc,
-		"ne":     e.neFunc,
-		"lt":     e.ltFunc,
-		"le":     e.leFunc,
-		"gt":     e.gtFunc,
-		"ge":     e.geFunc,
-		"len":    e.lenFunc,
-		"index":  e.indexFunc,
-		"return": e.returnFunc,
-		"try":    e.tryFunc,
+	}
+	for name, fn := range mocks {
+		m[name] = fn
 	}
 	for name, fn := range m {
 		m[name] = e.withLimits(name, fn)
@@ -230,12 +146,14 @@ func (e *Engine) Execute(source string) (string, error) {
 		return "", err
 	}
 
-	// Preprocess the template to handle YAGPDB-specific constructs
-	source = PreprocessTemplate(source)
-
-	tmpl, err := template.New("yagtest").
-		Funcs(e.BuildFuncMap()).
-		Parse(source)
+	tmpl := template.New("yagtest").Funcs(e.BuildFuncMap()).MaxOps(e.ctx.maxOps())
+	if !e.ctx.Strict {
+		tmpl = tmpl.OnMaxOps(func(ops, max int) {
+			e.ctx.Warn(KindLimit, "the template ran over %d operations; YAGPDB stops a custom command at %d "+
+				"(\"exceeded max operations\"). Loops over large ranges are the usual cause.", max, max)
+		})
+	}
+	tmpl, err := tmpl.Parse(source)
 	if err != nil {
 		return "", fmt.Errorf("template parse error: %w", err)
 	}
@@ -245,10 +163,7 @@ func (e *Engine) Execute(source string) (string, error) {
 	}
 
 	var buf bytes.Buffer
-	data := e.ctx.BuildTemplateData()
-	e.tmpl, e.out = tmpl, &buf
-
-	if err := tmpl.Execute(&buf, data); err != nil && !errors.Is(err, errReturn) {
+	if err := tmpl.Execute(&buf, e.ctx.BuildTemplateData()); err != nil {
 		return "", fmt.Errorf("template execution error: %w", err)
 	}
 
@@ -271,15 +186,15 @@ func (e *Engine) sendMessage(args ...interface{}) string {
 		switch v := args[1].(type) {
 		case string:
 			content = v
-		case types.SDict:
-			// Check if this is a complexMessage with file upload
-			if fileContent, hasFile := v["_file_content"]; hasFile {
-				filename := "file.txt"
-				if fn, hasFn := v["_file_name"]; hasFn {
-					filename = funcs.ToString(fn)
-				}
-				e.ctx.RecordFileUpload(channelID, filename, funcs.ToString(fileContent))
+		case *types.MessageSend:
+			content = v.Content
+			if len(v.Embeds) > 0 {
+				embed = v.Embeds[0]
 			}
+			if v.HasFile {
+				e.ctx.RecordFileUpload(channelID, v.Filename, v.File)
+			}
+		case types.SDict:
 			embed = v
 		default:
 			content = funcs.ToString(v)
@@ -461,42 +376,82 @@ func (e *Engine) getChannelOrThread(channelID interface{}) interface{} {
 
 // Embed/message building
 
+// cembed takes its arguments as YAGPDB's CreateEmbed does: one sdict (or map) as the embed,
+// or key/value pairs under sdict's rules. YAGPDB then converts it to a Discord embed; the
+// emulator keeps the dict.
 func (e *Engine) cembed(args ...interface{}) (types.SDict, error) {
-	result := make(types.SDict)
-	for i := 0; i+1 < len(args); i += 2 {
-		key := funcs.ToString(args[i])
-		result[key] = args[i+1]
+	if len(args) < 1 {
+		return types.SDict{}, nil
 	}
-	return result, nil
+	switch t := args[0].(type) {
+	case types.SDict:
+		return t, nil
+	case *types.SDict:
+		return *t, nil
+	case map[string]interface{}:
+		return types.SDict(t), nil
+	}
+	return yagstd.StringKeyDictionary(args...)
 }
 
-func (e *Engine) complexMessage(args ...interface{}) (types.SDict, error) {
-	result, err := e.cembed(args...)
-	if err != nil {
-		return nil, err
+// complexMessage follows YAGPDB's CreateMessageSend (common/templates/general.go): known keys
+// are case-insensitive, an unknown key is an error, "embed" takes one embed or a slice of
+// up to 10, and a file gets a .txt name.
+func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error) {
+	if len(args) < 1 {
+		return &types.MessageSend{}, nil
+	}
+	if m, ok := args[0].(*types.MessageSend); len(args) == 1 && ok {
+		return m, nil
+	}
+	if len(args)%2 != 0 {
+		return nil, fmt.Errorf("invalid dict call")
 	}
 
-	// Handle file upload if "file" key is present
-	if fileContent, hasFile := result["file"]; hasFile {
-		filename := "file"
-		if fn, hasFn := result["filename"]; hasFn {
-			filename = funcs.ToString(fn)
+	msg := &types.MessageSend{}
+	filename := "attachment_" + time.Now().Format("2006-01-02_15-04-05")
+	for i := 0; i < len(args); i += 2 {
+		key, val := funcs.ToString(args[i]), args[i+1]
+		switch strings.ToLower(key) {
+		case "content":
+			msg.Content = funcs.ToString(val)
+		case "embed":
+			if val == nil {
+				continue
+			}
+			rv := reflect.ValueOf(val)
+			for rv.Kind() == reflect.Pointer {
+				rv = rv.Elem()
+			}
+			if rv.Kind() == reflect.Slice {
+				for j := 0; j < rv.Len() && j < 10; j++ {
+					msg.Embeds = append(msg.Embeds, rv.Index(j).Interface())
+				}
+			} else {
+				msg.Embeds = append(msg.Embeds, val)
+			}
+		case "file":
+			file := funcs.ToString(val)
+			if len(file) > 100000 {
+				return nil, fmt.Errorf("file length for send message builder exceeded size limit")
+			}
+			msg.File, msg.HasFile = file, true
+		case "filename":
+			filename = funcs.ToString(val)
+			if r := []rune(filename); len(r) > 64 {
+				filename = string(r[:64])
+			}
+		case "allowed_mentions", "reply", "silent", "components", "ephemeral", "buttons", "menus",
+			"forward", "channel", "message", "sticker", "suppress_embeds":
+			// Accepted; the emulator doesn't model these
+		default:
+			return nil, fmt.Errorf(`invalid key "%s" passed to send message builder.`, key)
 		}
-		// YAGPDB forces .txt extension for safety
-		filename = filename + ".txt"
-
-		content := funcs.ToString(fileContent)
-		// Check 100KB limit as per YAGPDB
-		if len(content) > 100000 {
-			return nil, fmt.Errorf("file length for send message builder exceeded size limit (100KB)")
-		}
-
-		// Record the file upload for later retrieval
-		result["_file_content"] = content
-		result["_file_name"] = filename
 	}
-
-	return result, nil
+	if msg.HasFile {
+		msg.Filename = filename + ".txt"
+	}
+	return msg, nil
 }
 
 func (e *Engine) complexMessageEdit(args ...interface{}) (types.SDict, error) {
@@ -620,263 +575,6 @@ func (e *Engine) cancelScheduledUniqueCC(ccID, key interface{}) string {
 	return ""
 }
 
-// Logic/comparison functions
-
-func (e *Engine) orFunc(args ...interface{}) interface{} {
-	for _, arg := range args {
-		if arg != nil && arg != false && arg != "" && arg != 0 {
-			return arg
-		}
-	}
-	if len(args) > 0 {
-		return args[len(args)-1]
-	}
-	return nil
-}
-
-func (e *Engine) andFunc(args ...interface{}) interface{} {
-	var result interface{}
-	for _, arg := range args {
-		result = arg
-		if arg == nil || arg == false || arg == "" || arg == 0 {
-			return arg
-		}
-	}
-	return result
-}
-
-func (e *Engine) notFunc(arg interface{}) bool {
-	return arg == nil || arg == false || arg == "" || arg == 0
-}
-
-// eqFunc and neFunc port YAGPDB's eq/ne (vendor/yagpdb/lib/template/funcs.go): true if
-// a equals any of bs; integers compare across signedness, but int vs float, nil, maps
-// and other non-basic values are errors, as they are in production.
-func (e *Engine) eqFunc(a interface{}, bs ...interface{}) (bool, error) {
-	k1, err := basicKind(a)
-	if err != nil {
-		return false, err
-	}
-	if len(bs) == 0 {
-		return false, errNoComparison
-	}
-	v1 := reflect.ValueOf(a)
-	for _, b := range bs {
-		k2, err := basicKind(b)
-		if err != nil {
-			return false, err
-		}
-		v2 := reflect.ValueOf(b)
-		truth := false
-		if k1 != k2 {
-			switch {
-			case k1 == intKind && k2 == uintKind:
-				truth = v1.Int() >= 0 && uint64(v1.Int()) == v2.Uint()
-			case k1 == uintKind && k2 == intKind:
-				truth = v2.Int() >= 0 && v1.Uint() == uint64(v2.Int())
-			default:
-				return false, errBadComparison
-			}
-		} else {
-			switch k1 {
-			case boolKind:
-				truth = v1.Bool() == v2.Bool()
-			case complexKind:
-				truth = v1.Complex() == v2.Complex()
-			case floatKind:
-				truth = v1.Float() == v2.Float()
-			case intKind:
-				truth = v1.Int() == v2.Int()
-			case stringKind:
-				truth = v1.String() == v2.String()
-			case uintKind:
-				truth = v1.Uint() == v2.Uint()
-			}
-		}
-		if truth {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (e *Engine) neFunc(a interface{}, bs ...interface{}) (bool, error) {
-	equal, err := e.eqFunc(a, bs...)
-	return !equal, err
-}
-
-var (
-	errBadComparisonType = errors.New("invalid type for comparison")
-	errBadComparison     = errors.New("incompatible types for comparison")
-	errNoComparison      = errors.New("missing argument for comparison")
-)
-
-type kind int
-
-const (
-	invalidKind kind = iota
-	boolKind
-	complexKind
-	intKind
-	floatKind
-	stringKind
-	uintKind
-)
-
-func basicKind(x interface{}) (kind, error) {
-	switch reflect.ValueOf(x).Kind() {
-	case reflect.Bool:
-		return boolKind, nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return intKind, nil
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return uintKind, nil
-	case reflect.Float32, reflect.Float64:
-		return floatKind, nil
-	case reflect.Complex64, reflect.Complex128:
-		return complexKind, nil
-	case reflect.String:
-		return stringKind, nil
-	}
-	return invalidKind, errBadComparisonType
-}
-
-func (e *Engine) ltFunc(a, b interface{}) bool {
-	return funcs.ToFloat64(a) < funcs.ToFloat64(b)
-}
-
-func (e *Engine) leFunc(a, b interface{}) bool {
-	return funcs.ToFloat64(a) <= funcs.ToFloat64(b)
-}
-
-func (e *Engine) gtFunc(a, b interface{}) bool {
-	return funcs.ToFloat64(a) > funcs.ToFloat64(b)
-}
-
-func (e *Engine) geFunc(a, b interface{}) bool {
-	return funcs.ToFloat64(a) >= funcs.ToFloat64(b)
-}
-
-// lenFunc follows YAGPDB's len: strings, slices, arrays and maps; anything else is an
-// error. Dicts wrapped for .Get/.Set count their entries.
-func (e *Engine) lenFunc(item interface{}) (int, error) {
-	v := reflect.ValueOf(types.UnwrapValue(item))
-	if !v.IsValid() {
-		return 0, fmt.Errorf("len of untyped nil")
-	}
-	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
-		if v.IsNil() {
-			return 0, fmt.Errorf("len of nil pointer")
-		}
-		v = v.Elem()
-	}
-	switch v.Kind() {
-	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
-		return v.Len(), nil
-	}
-	return 0, fmt.Errorf("len of type %s", v.Type())
-}
-
-// indexFunc follows YAGPDB's index: a missing map key gives nil, but an out-of-range
-// slice index or indexing nil is an error.
-func (e *Engine) indexFunc(item interface{}, indices ...interface{}) (interface{}, error) {
-	if len(indices) == 0 {
-		return item, nil
-	}
-	item = types.UnwrapValue(item)
-	if item == nil {
-		return nil, fmt.Errorf("index of untyped nil")
-	}
-
-	current := item
-	for _, idx := range indices {
-		switch v := current.(type) {
-		case types.Slice:
-			i := funcs.ToInt(idx)
-			if i >= 0 && i < len(v) {
-				current = v[i]
-			} else {
-				return nil, fmt.Errorf("index out of range: %d", i)
-			}
-		case []interface{}:
-			i := funcs.ToInt(idx)
-			if i >= 0 && i < len(v) {
-				current = v[i]
-			} else {
-				return nil, fmt.Errorf("index out of range: %d", i)
-			}
-		case []string:
-			i := funcs.ToInt(idx)
-			if i >= 0 && i < len(v) {
-				current = v[i]
-			} else {
-				return nil, fmt.Errorf("index out of range: %d", i)
-			}
-		case []int:
-			i := funcs.ToInt(idx)
-			if i >= 0 && i < len(v) {
-				current = v[i]
-			} else {
-				return nil, fmt.Errorf("index out of range: %d", i)
-			}
-		case string:
-			// Index into string returns a character
-			i := funcs.ToInt(idx)
-			runes := []rune(v)
-			if i >= 0 && i < len(runes) {
-				current = string(runes[i])
-			} else {
-				return nil, fmt.Errorf("index out of range: %d", i)
-			}
-		case types.SDict:
-			current = v[funcs.ToString(idx)]
-		case map[string]interface{}:
-			current = v[funcs.ToString(idx)]
-		case types.Dict:
-			current = v[idx]
-		default:
-			return nil, fmt.Errorf("can't index item of type %T", current)
-		}
-	}
-	return current, nil
-}
-
-// getFunc is a universal getter that works with any dict-like type.
-// This handles the case where SDict.Get returns interface{} and the
-// template engine loses track of the underlying type's methods.
-func (e *Engine) getFunc(collection, key interface{}) interface{} {
-	switch v := collection.(type) {
-	case types.SDict:
-		return v.Get(key)
-	case map[string]interface{}:
-		return v[funcs.ToString(key)]
-	case types.Dict:
-		return v.Get(key)
-	case map[interface{}]interface{}:
-		return v[key]
-	default:
-		return nil
-	}
-}
-
-// returnFunc stops the current template; execTemplate receives the value.
-func (e *Engine) returnFunc(args ...interface{}) (string, error) {
-	var v interface{}
-	if len(args) > 0 {
-		v = args[0]
-	}
-	e.returns = append(e.returns, v)
-	return "", errReturn
-}
-
-func (e *Engine) tryFunc(args ...interface{}) interface{} {
-	// Simplified try - in real implementation would catch panics
-	if len(args) > 0 {
-		return args[0]
-	}
-	return nil
-}
-
 // sleep is a no-op in emulator (YAGPDB uses this to delay execution)
 func (e *Engine) sleep(args ...interface{}) string {
 	// In real YAGPDB this pauses execution; we skip for testing speed
@@ -894,30 +592,6 @@ func (e *Engine) execAdmin(name string, data ...interface{}) string {
 	// In YAGPDB this executes a template with admin privileges
 	// For testing, same as exec
 	return e.exec(name, data...)
-}
-
-// execTemplateFunc runs a {{define}}d template with data as its dot and returns the
-// value it passes to return (nil if it doesn't return). Like YAGPDB, what the template
-// prints goes into the command's output.
-func (e *Engine) execTemplateFunc(name string, data ...interface{}) (interface{}, error) {
-	if len(data) > 1 {
-		return nil, fmt.Errorf("too many args for execTemplate: want at most 2 got %d", len(data)+1)
-	}
-	if e.tmpl == nil || e.tmpl.Lookup(name) == nil {
-		return nil, fmt.Errorf("template %q not defined", name)
-	}
-	var dot interface{}
-	if len(data) == 1 {
-		dot = data[0]
-	}
-	depth := len(e.returns)
-	err := e.tmpl.ExecuteTemplate(e.out, name, dot)
-	if errors.Is(err, errReturn) && len(e.returns) > depth {
-		v := e.returns[len(e.returns)-1]
-		e.returns = e.returns[:depth]
-		return v, nil
-	}
-	return nil, err
 }
 
 // Mention functions
