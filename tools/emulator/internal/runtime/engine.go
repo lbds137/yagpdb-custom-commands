@@ -170,8 +170,13 @@ func (e *Engine) Execute(source string) (string, error) {
 		if settings.RedirectChannel != 0 {
 			errChannel = settings.RedirectChannel
 		}
-		e.ctx.RecordSentMessage(errChannel, out+"\nAn error caused the execution of the custom command template to stop:\n"+
-			formatCustomCommandRunErr(source, err), nil, Pings{})
+		msg := out + "\nAn error caused the execution of the custom command template to stop:\n" +
+			formatCustomCommandRunErr(source, err)
+		// ChannelMessageSend's error is discarded (bot.go), so a message Discord would
+		// reject (over 2000 runes, on top of out's own cap) is silently never posted
+		if ok, _ := e.ctx.checkSend("show_errors message", msg, nil, false, true); ok {
+			e.ctx.RecordSentMessage(errChannel, msg, nil, Pings{})
+		}
 		e.ctx.ResponsePings = Pings{}
 	} else if e.ctx.delResponse && e.ctx.delResponseDelay < 1 {
 		// Without show_errors the output is the response, which deleteResponse can drop

@@ -412,20 +412,27 @@ func TestMultiLineTryTagKeepsLines(t *testing.T) {
 }
 
 func TestEmbedLimitsStrictFailsTheSend(t *testing.T) {
-	cases := map[string]struct{ src, want string }{
-		"title":       {`{{sendMessage nil (cembed "title" ` + q(257) + `)}}`, "embed 1 title is 257 characters (max 256)"},
-		"description": {`{{sendMessage nil (cembed "description" ` + q(4097) + `)}}`, "description is 4097 characters (max 4096)"},
-		"field value": {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" "n" "value" ` + q(1025) + `)))}}`, "field 1 value is 1025 characters (max 1024)"},
-		"empty value": {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" "n" "value" "")))}}`, "field 1 value is empty"},
-		"footer":      {`{{sendMessage nil (cembed "footer" (sdict "text" ` + q(2049) + `))}}`, "footer text is 2049 characters (max 2048)"},
-		"author":      {`{{sendMessage nil (cembed "author" (sdict "name" ` + q(257) + `))}}`, "author name is 257 characters (max 256)"},
+	// overLong: the run's show_errors message quotes the rejected call in full (the
+	// template error's untruncated "at <...>" context, which YAGPDB's message keeps too),
+	// so a big enough rejected embed pushes that message over Discord's 2000-character
+	// limit; strict mode then drops it, as Discord refuses it in production
+	cases := map[string]struct {
+		src, want string
+		overLong  bool
+	}{
+		"title":       {`{{sendMessage nil (cembed "title" ` + q(257) + `)}}`, "embed 1 title is 257 characters (max 256)", false},
+		"description": {`{{sendMessage nil (cembed "description" ` + q(4097) + `)}}`, "description is 4097 characters (max 4096)", true},
+		"field value": {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" "n" "value" ` + q(1025) + `)))}}`, "field 1 value is 1025 characters (max 1024)", false},
+		"empty value": {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" "n" "value" "")))}}`, "field 1 value is empty", false},
+		"footer":      {`{{sendMessage nil (cembed "footer" (sdict "text" ` + q(2049) + `))}}`, "footer text is 2049 characters (max 2048)", true},
+		"author":      {`{{sendMessage nil (cembed "author" (sdict "name" ` + q(257) + `))}}`, "author name is 257 characters (max 256)", false},
 		"total": {`{{sendMessage nil (complexMessage "embed" (cslice (cembed "description" ` + q(4000) + `) (cembed "description" ` + q(2001) + `)))}}`,
-			"the embeds total 6001 characters (max 6000)"},
-		"content":     {`{{sendMessage nil ` + q(2001) + `}}`, "content is 2001 characters (max 2000)"},
-		"blank name":  {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" " " "value" "v")))}}`, "field 1 name is empty"},
-		"empty":       {`{{sendMessage nil ""}}`, "the message is empty"},
-		"empty embed": {`{{sendMessage nil (cembed)}}`, "the message is empty"},
-		"retid":       {`{{sendMessageRetID nil (cembed "title" ` + q(257) + `)}}`, "title is 257 characters"},
+			"the embeds total 6001 characters (max 6000)", true},
+		"content":     {`{{sendMessage nil ` + q(2001) + `}}`, "content is 2001 characters (max 2000)", true},
+		"blank name":  {`{{sendMessage nil (cembed "fields" (cslice (sdict "name" " " "value" "v")))}}`, "field 1 name is empty", false},
+		"empty":       {`{{sendMessage nil ""}}`, "the message is empty", false},
+		"empty embed": {`{{sendMessage nil (cembed)}}`, "the message is empty", false},
+		"retid":       {`{{sendMessageRetID nil (cembed "title" ` + q(257) + `)}}`, "title is 257 characters", false},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -433,6 +440,13 @@ func TestEmbedLimitsStrictFailsTheSend(t *testing.T) {
 			_, err := run(t, ctx, c.src)
 			if err == nil || !strings.Contains(explained(ctx, err), c.want) || !strings.Contains(err.Error(), "HTTP 400") {
 				t.Fatalf("want %q, got %v", c.want, err)
+			}
+			if c.overLong {
+				// The show_errors message is itself over Discord's limit; strict drops it
+				if len(ctx.SentMessages) != 0 {
+					t.Errorf("an over-limit show_errors message must not be recorded: %+v", ctx.SentMessages)
+				}
+				return
 			}
 			// The rejected message isn't recorded; the run's show_errors message is
 			if len(ctx.SentMessages) != 1 || !strings.HasPrefix(ctx.SentMessages[0].Content, "\nAn error caused") {
@@ -797,8 +811,10 @@ func TestOutputBreachBeforeAnErrorIsReported(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "index out of range") {
 		t.Fatalf("want the later error, got %v", err)
 	}
-	// The 25k warning, then the 2k one for the partial response
-	if w := kinds(ctx, KindLimit); len(w) != 2 || !strings.Contains(w[0], "grew too big (>25k)") || !strings.Contains(w[1], "over 2000") {
+	// The 25k warning, then the 2k one for the partial response, then the show_errors
+	// message's own Discord-rejection warning (it embeds that same over-2k output)
+	if w := kinds(ctx, KindLimit); len(w) != 3 || !strings.Contains(w[0], "grew too big (>25k)") ||
+		!strings.Contains(w[1], "over 2000") || !strings.Contains(w[2], "show_errors message") {
 		t.Errorf("want the 25k warning too, got %q", ctx.Diagnostics)
 	}
 }
