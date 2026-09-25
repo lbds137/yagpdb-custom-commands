@@ -120,15 +120,13 @@ func (e *Engine) findRole(role interface{}, accept roleInputType) *types.CtxRole
 				return e.guildRole(e.ctx.GuildID)
 			}
 
-			// It's a name after all. YAGPDB takes the first match in the guild's role
-			// order; the emulator's roles are a map, so it goes by ID for a stable result.
-			var found *types.CtxRole
-			for _, r := range e.ctx.AvailableRoles {
-				if strings.EqualFold(r.Name, t) && (found == nil || r.ID < found.ID) {
-					found = &r
+			// It's a name after all: the first match in the guild's role order
+			for _, r := range e.ctx.sortedRoles() {
+				if strings.EqualFold(r.Name, t) {
+					return &r
 				}
 			}
-			return found
+			return nil
 		}
 	case *types.CtxRole:
 		if (accept & acceptRoleObject) != 0 {
