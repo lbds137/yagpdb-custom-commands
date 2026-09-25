@@ -33,6 +33,9 @@ IMPLEMENTED=(
     "currentTime" "formatTime" "parseTime" "newDate"
     # Regex
     "reFind" "reFindAll" "reReplace" "reSplit" "reQuoteMeta"
+    # Discord-free extras (copied from YAGPDB)
+    "snowflakeToTime" "humanizeDurationHours" "humanizeDurationMinutes" "humanizeDurationSeconds"
+    "humanizeTimeSinceDays" "sanitizeText" "adjective" "noun" "verb" "roleAbove"
     # Utilities
     "in" "inFold" "kindOf" "seq" "randInt"
     # Database

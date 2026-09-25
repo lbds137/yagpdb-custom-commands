@@ -15,8 +15,6 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - `execCC` with a delay passes its data as is; YAGPDB msgpack-encodes it (so types change
   and over 1000000 bytes fails with "ExecData is too big").
 - Discord functions are mocks: the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
-- Missing standard functions that need Discord data: `snowflakeToTime`, `humanize*`,
-  `roleAbove`, `sanitizeText`, `adjective`/`noun`/`verb`.
 - Role lookups accept IDs, mentions and names everywhere; YAGPDB's `FindRole` accepts a
   different set per function.
 - `editMessage` gaps: the channel argument is read as a number (YAGPDB also takes channel
@@ -86,6 +84,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       30 days ago); `.Member` and `getMember` build the same member, and `JoinedAt` is
       discordgo's `Timestamp` string, formatted as Discord sends it. guest's grace-period
       path is tested. A suite that doesn't parse reports its own error (2026-09-25)
+- [x] `snowflakeToTime`, `humanizeDuration*`, `humanizeTimeSinceDays`, `sanitizeText`
+      (YAGPDB's confusables tables), `adjective`/`noun`/`verb` (its word lists) and
+      `roleAbove` are copied from YAGPDB; test roles take a `position` (2026-09-25)
 - [x] Output is what YAGPDB sends: trimmed, with the 2k notice under -strict, and a
       failed run keeps what it printed before the error (`yagtest run` prints it). A test
       that expects an error still checks its other assertions (2026-09-25)

@@ -309,3 +309,27 @@ func TestExecCCChildSeesMemberData(t *testing.T) {
 		t.Errorf("sent %+v", ctx.SentMessages)
 	}
 }
+
+func TestDiscordFreeStandardFunctions(t *testing.T) {
+	ctx := newCtx(false, true)
+	ctx.AvailableRoles = map[int64]types.CtxRole{
+		1: {ID: 1, Position: 5}, 2: {ID: 2, Position: 3}, 3: {ID: 3, Position: 3},
+	}
+	cases := []struct{ src, want string }{
+		// Discord's documented example snowflake, created 2016-04-30 11:18:25.796 UTC
+		{`{{(snowflakeToTime 175928847299117063).Format "2006-01-02 15:04:05.000"}}`, "2016-04-30 11:18:25.000"},
+		{`{{humanizeDurationHours (toDuration "25h30m")}}`, "1 day and 1 hour"},
+		{`{{humanizeDurationSeconds (toDuration "1h2m3s")}}`, "1 hour 2 minutes and 3 seconds"},
+		{`{{humanizeDurationMinutes 0}}`, "less than 1 minute"},
+		{`{{humanizeTimeSinceDays (currentTime.AddDate 0 0 -2)}}`, "2 days"},
+		{`{{sanitizeText "Ĥéĺĺó"}}`, "Hello"},
+		{`{{roleAbove (getRole 1) (getRole 2)}} {{roleAbove (getRole 2) (getRole 3)}} {{roleAbove (getRole 3) (getRole 2)}} {{roleAbove (getRole 2) (getRole 2)}}`, "true true false false"},
+		{`{{gt (len adjective) 0}} {{gt (len noun) 0}} {{gt (len verb) 0}}`, "true true true"},
+	}
+	for _, c := range cases {
+		out, err := run(t, ctx, c.src)
+		if err != nil || out != c.want {
+			t.Errorf("%s: got %q, %v; want %q", c.src, out, err, c.want)
+		}
+	}
+}
