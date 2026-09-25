@@ -186,7 +186,7 @@ func TestSchemaWarning(t *testing.T) {
 
 func TestExecCCChildFailureIsReported(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir+"/child.gohtml", `{{sendDM "a"}}{{parseArgs 1 "needs an arg"}}`)
+	writeFile(t, dir+"/child.gohtml", `{{sendDM "a"}}{{index (cslice) 3}}`)
 	ctx := newCtx(false, true)
 	ctx.TemplateBaseDir = dir
 	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}

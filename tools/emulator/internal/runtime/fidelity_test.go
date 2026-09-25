@@ -242,3 +242,25 @@ func TestSentMessageIDsAreUniqueAcrossExecCC(t *testing.T) {
 		t.Errorf("the child sees the same guild owner: %q", got)
 	}
 }
+
+func TestParseArgsOnlyParsesMessageTriggers(t *testing.T) {
+	dir := t.TempDir()
+	// Like gematria: parseArgs for the trigger, .ExecData when another command runs it
+	writeFile(t, dir+"/child.gohtml", `{{$a := parseArgs 1 "Usage: [text]" (carg "string" "text")}}`+
+		`{{sendMessage nil (or .ExecData.Text ($a.Get 0))}}`)
+	ctx := newCtx(false, true)
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	ctx.CmdArgs = []interface{}{"two words", "more"}
+	out, err := run(t, ctx, `{{(parseArgs 1 "" (carg "string" "s")).Get 0}}|{{.StrippedMsg}}{{execCC 7 nil 0 (sdict "Text" "from exec data")}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// the last argument takes the rest of the message, quotes and all, as in dcmd
+	if out != `"two words" more|"two words" more` {
+		t.Errorf("out = %q", out)
+	}
+	if len(kinds(ctx, KindExecCC)) != 0 || len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != "from exec data" {
+		t.Errorf("the execCC run parses nothing and fails nothing: %q %+v", ctx.Diagnostics, ctx.SentMessages)
+	}
+}
