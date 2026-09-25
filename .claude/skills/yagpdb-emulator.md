@@ -77,6 +77,9 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # A complexMessage "reply" pings the replied-to author when replied_user is on (NoEscape
     # turns it on); the trigger's .Message.ID is 234567890; replying to a message that isn't
     # the trigger, a sent one or in messages: warns [message]
+    deletions: [{ of: trigger, delay: 5s }, { of: message, channel_id: 9, message_id: 7 }]
+    # exactly the deletions asked for, in order ([] for none): of = trigger|message|response;
+    # unset fields match anything, delay: 0s = at once. Snapshots record deletions too
     scheduled_runs: [{ cc_id: 5, channel_id: 9, delay: 90s, key: "k", exec_data_contains: '"n":1' }]
     # exactly the runs execCC with a delay / scheduleUniqueCC left, in the order scheduled
     # (a replaced one moves last; [] for none). They aren't run: test that command separately

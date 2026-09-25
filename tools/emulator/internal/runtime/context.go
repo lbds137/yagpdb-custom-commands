@@ -3,6 +3,7 @@ package runtime
 
 import (
 	"cmp"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -27,6 +28,23 @@ type RoleChange struct {
 	RoleID int64
 	Action string        // "add" or "remove"
 	Delay  time.Duration // scheduled this far ahead (0 = now)
+}
+
+// Deletion is a message deletion a run asked for: deleteTrigger ("trigger"), deleteMessage
+// ("message") or deleteResponse ("response"; a top-level response has no MessageID).
+type Deletion struct {
+	Of        string
+	ChannelID int64
+	MessageID int64
+	Delay     time.Duration // how long after the run asked (0 = at once)
+}
+
+func (d Deletion) String() string {
+	s := d.Of
+	if d.MessageID != 0 {
+		s += fmt.Sprintf(" %d", d.MessageID)
+	}
+	return s + fmt.Sprintf(" in channel %d after %s", d.ChannelID, d.Delay)
 }
 
 // FileUpload represents a file that was "uploaded" during template execution.
@@ -119,7 +137,10 @@ type ExecutionContext struct {
 	// EditedMessages are messages as editMessage left them, in the order they were edited
 	EditedMessages []SentMessage
 	RoleChanges    []RoleChange
-	FileUploads    []FileUpload
+	// Deletions are the message deletions the run asked for, in order (none happen within
+	// the run: YAGPDB deletes later, from a goroutine or a scheduled event)
+	Deletions   []Deletion
+	FileUploads []FileUpload
 	// ResponsePings are who the response (the template's output) notifies
 	ResponsePings Pings
 
@@ -398,6 +419,13 @@ func (ctx *ExecutionContext) sentMessageIDs() *int64 {
 		ctx.sentIDs = new(int64)
 	}
 	return ctx.sentIDs
+}
+
+// recordDeletion records a deletion after delay seconds (YAGPDB's MaybeScheduledDeleteMessage
+// deletes at once for a delay under 1).
+func (ctx *ExecutionContext) recordDeletion(of string, channelID, messageID int64, delay int) {
+	ctx.Deletions = append(ctx.Deletions, Deletion{Of: of, ChannelID: channelID, MessageID: messageID,
+		Delay: time.Duration(max(delay, 0)) * time.Second})
 }
 
 // BotUserID is the emulated bot's user ID.

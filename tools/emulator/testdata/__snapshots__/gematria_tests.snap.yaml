@@ -41,6 +41,8 @@
               ],
               "title": "Gematria Calculator"
             }
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
     db:
         - user_id: 0
           key: Channels

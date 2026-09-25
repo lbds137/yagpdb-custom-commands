@@ -142,6 +142,17 @@ type Assertions struct {
 	// ScheduledRuns are exactly the runs execCC with a delay and scheduleUniqueCC left
 	// scheduled, in order (`[]` for none)
 	ScheduledRuns *[]ScheduledRunCheck `yaml:"scheduled_runs"`
+	// Deletions are exactly the message deletions the run asked for (deleteTrigger,
+	// deleteMessage, a deleteResponse whose response was sent), in order (`[]` for none)
+	Deletions *[]DeletionCheck `yaml:"deletions"`
+}
+
+// DeletionCheck matches a deletion; unset fields match anything.
+type DeletionCheck struct {
+	Of        string    `yaml:"of"` // "trigger", "message" or "response"
+	ChannelID int64     `yaml:"channel_id"`
+	MessageID int64     `yaml:"message_id"`
+	Delay     *Duration `yaml:"delay"` // 0s = at once
 }
 
 // ScheduledRunCheck matches a scheduled run; unset fields match anything.

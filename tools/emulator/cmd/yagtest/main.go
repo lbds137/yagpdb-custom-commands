@@ -278,6 +278,13 @@ func runCommand(args []string) {
 		}
 	}
 
+	if len(ctx.Deletions) > 0 && *verbose {
+		fmt.Println("\n=== Deletions ===")
+		for _, d := range ctx.Deletions {
+			fmt.Println(d)
+		}
+	}
+
 	if runs := ctx.ScheduledRuns(); len(runs) > 0 && *verbose {
 		fmt.Println("\n=== Scheduled Runs ===")
 		for _, r := range runs {
