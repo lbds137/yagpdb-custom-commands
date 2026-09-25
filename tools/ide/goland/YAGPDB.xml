@@ -1,0 +1,88 @@
+<!--
+  GoLand live templates for YAGPDB custom commands (.gohtml, the Go Template file type).
+  Install: scripts/install-goland-templates.sh, then restart GoLand.
+  Use: type the abbreviation in a .gohtml file and press Tab.
+-->
+<templateSet group="YAGPDB">
+  <template name="yhead" value="{{- /*&#10;  Author: $AUTHOR$&#10;  Trigger type: `$TYPE$`&#10;  Trigger: `$TRIGGER$`&#10;  Dependencies: `$DEPS$`&#10;*/ -}}&#10;&#10;$END$"
+            description="Command header (Author, Trigger type, Trigger, Dependencies)" toReformat="false" toShortenFQNames="false">
+    <variable name="AUTHOR" expression="" defaultValue="&quot;Vladlena Costescu (@lbds137)&quot;" alwaysStopAt="true"/>
+    <variable name="TYPE" expression="enum(&quot;Command&quot;, &quot;Regex&quot;, &quot;Reaction&quot;, &quot;Interval&quot;, &quot;None&quot;)" defaultValue="&quot;Command&quot;" alwaysStopAt="true"/>
+    <variable name="TRIGGER" expression="fileNameWithoutExtension()" defaultValue="" alwaysStopAt="true"/>
+    <variable name="DEPS" expression="" defaultValue="&quot;embed_exec&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="ycfg" value="{{ $$globalDict := (dbGet 0 &quot;Global&quot;).Value }}&#10;{{ $$deleteTriggerDelay := toInt ($$globalDict.Get &quot;Delete Trigger Delay&quot;) }}&#10;{{ $$deleteResponseDelay := toInt ($$globalDict.Get &quot;Delete Response Delay&quot;) }}&#10;&#10;{{ $$commandsDict := (dbGet 0 &quot;Commands&quot;).Value }}&#10;{{ $$embed_exec := toInt ($$commandsDict.Get &quot;embed_exec&quot;) }}&#10;&#10;{{ $$channelsDict := (dbGet 0 &quot;Channels&quot;).Value }}&#10;{{ $$yagpdbChannelID := toInt ($$channelsDict.Get &quot;YAGPDB&quot;) }}&#10;$END$"
+            description="Load Global/Commands/Channels config (delays, embed_exec, YAGPDB channel)" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="yargs" value="{{ $args := parseArgs $REQUIRED$ &quot;Usage: $USAGE$&quot;&#10;  (carg &quot;$TYPE$&quot; &quot;$NAME$&quot;)&#10;}}&#10;$END$"
+            description="parseArgs with one argument" toReformat="false" toShortenFQNames="false">
+    <variable name="REQUIRED" expression="" defaultValue="&quot;1&quot;" alwaysStopAt="true"/>
+    <variable name="USAGE" expression="" defaultValue="&quot;[argument]&quot;" alwaysStopAt="true"/>
+    <variable name="TYPE" expression="enum(&quot;string&quot;, &quot;int&quot;, &quot;userid&quot;, &quot;member&quot;, &quot;channel&quot;, &quot;role&quot;, &quot;duration&quot;)" defaultValue="&quot;string&quot;" alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue="&quot;argument&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="ydbget" value="{{ $$$VAR$ := $DEFAULT$ }}&#10;{{ with dbGet $USER$ &quot;$KEY$&quot; }}{{ $$$VAR$ = .Value }}{{ end }}&#10;$END$"
+            description="Read a database value with a default (dbGet returns nil for a missing key)" toReformat="false" toShortenFQNames="false">
+    <variable name="VAR" expression="" defaultValue="&quot;value&quot;" alwaysStopAt="true"/>
+    <variable name="DEFAULT" expression="" defaultValue="&quot;sdict&quot;" alwaysStopAt="true"/>
+    <variable name="USER" expression="" defaultValue="&quot;0&quot;" alwaysStopAt="true"/>
+    <variable name="KEY" expression="" defaultValue="" alwaysStopAt="true"/>
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="yembed" value="{{ execCC $$embed_exec $$yagpdbChannelID 0 (sdict&#10;  &quot;AuthorID&quot; .User.ID&#10;  &quot;ChannelID&quot; .Channel.ID&#10;  &quot;Title&quot; &quot;$TITLE$&quot;&#10;  &quot;Description&quot; $DESCRIPTION$&#10;  &quot;DeleteDelay&quot; $$deleteResponseDelay&#10;) }}&#10;$END$"
+            description="Send an embed through the embed_exec service (needs ycfg)" toReformat="false" toShortenFQNames="false">
+    <variable name="TITLE" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="DESCRIPTION" expression="" defaultValue="&quot;\&quot;\&quot;&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="ycembed" value="{{ sendMessage nil (cembed&#10;  &quot;title&quot; &quot;$TITLE$&quot;&#10;  &quot;description&quot; $DESCRIPTION$&#10;  &quot;color&quot; $COLOR$&#10;) }}&#10;$END$"
+            description="sendMessage with a cembed" toReformat="false" toShortenFQNames="false">
+    <variable name="TITLE" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="DESCRIPTION" expression="" defaultValue="&quot;\&quot;\&quot;&quot;" alwaysStopAt="true"/>
+    <variable name="COLOR" expression="" defaultValue="&quot;0x5865f2&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="ytry" value="{{ try }}&#10;  $SELECTION$&#10;  $END$&#10;{{ catch }}&#10;  {{ sendMessage nil (cembed &quot;title&quot; &quot;Error&quot; &quot;color&quot; 0xff0000 &quot;description&quot; (print &quot;An error occurred: &quot; .Error)) }}&#10;{{ end }}"
+            description="Surround with try/catch that reports the error" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="ystaff" value="{{ $$rolesDict := (dbGet 0 &quot;Roles&quot;).Value }}&#10;{{ $$staffRoleID := toInt ($$rolesDict.Get &quot;Staff&quot;) }}&#10;{{ if not (hasRoleID $$staffRoleID) }}&#10;  $DENIED$&#10;{{ else }}&#10;  $END$&#10;{{ end }}"
+            description="Staff role check from the Roles config" toReformat="false" toShortenFQNames="false">
+    <variable name="DENIED" expression="" defaultValue="&quot;You need the staff role to use this command.&quot;" alwaysStopAt="true"/>
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="yexec" value="{{ execCC $$$COMMAND$ $CHANNEL$ 0 (sdict&#10;  $DATA$&#10;) }}&#10;$END$"
+            description="Run another custom command with execCC" toReformat="false" toShortenFQNames="false">
+    <variable name="COMMAND" expression="" defaultValue="&quot;embed_exec&quot;" alwaysStopAt="true"/>
+    <variable name="CHANNEL" expression="" defaultValue="&quot;nil&quot;" alwaysStopAt="true"/>
+    <variable name="DATA" expression="" defaultValue="" alwaysStopAt="true"/>
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+  <template name="ydel" value="{{ deleteTrigger $$deleteTriggerDelay }}$END$"
+            description="Delete the trigger message after the configured delay (needs ycfg)" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="GO_TEMPLATE" value="true"/>
+    </context>
+  </template>
+</templateSet>
