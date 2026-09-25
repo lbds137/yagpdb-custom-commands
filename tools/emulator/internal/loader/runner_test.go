@@ -138,3 +138,15 @@ func TestSuiteDefaultsCantTriggerACommand(t *testing.T) {
 		t.Errorf("args in defaults should be an error, got %v", err)
 	}
 }
+
+func TestOversizedSetupValueIsAnError(t *testing.T) {
+	tc := &TestCase{
+		Name:           "big",
+		TemplateSource: "hi",
+		SetupDB:        []DBEntry{{Key: "big", Value: strings.Repeat("x", 100000)}},
+	}
+	tc.applyDefaults()
+	if res := NewRunner(RunnerConfig{}).RunTest(tc); res.Error == nil || !strings.Contains(res.Error.Error(), "short write") {
+		t.Errorf("want a setup_db error naming the short write, got %v", res.Error)
+	}
+}

@@ -176,7 +176,7 @@ func (e *Engine) Execute(source string) (string, error) {
 		outCap = maxOutputBytesLenient
 	}
 	if err := tmpl.Execute(&limitWriter{w: &buf, n: outCap}, e.ctx.BuildTemplateData()); err != nil {
-		if errors.Is(err, io.ErrShortWrite) || strings.Contains(err.Error(), io.ErrShortWrite.Error()) {
+		if err == io.ErrShortWrite { // the output writer's own error, as in YAGPDB; not a function's
 			err = fmt.Errorf("response grew too big (>%d bytes)", outCap)
 		}
 		return "", fmt.Errorf("template execution error: %w", err)

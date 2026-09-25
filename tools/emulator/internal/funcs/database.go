@@ -60,23 +60,27 @@ func forTemplateSlice(entries []*types.LightDBEntry) types.Slice {
 
 // DbSet stores a value in the database.
 // Returns an empty string (for template compatibility).
-func (d *DatabaseFuncs) DbSet(userID interface{}, key interface{}, value interface{}) string {
+func (d *DatabaseFuncs) DbSet(userID interface{}, key interface{}, value interface{}) (string, error) {
 	uid := ToInt64(userID)
 	k := ToString(key)
-	d.stored("dbSet", uid, k, value)
-	d.DB.Set(uid, k, value)
-	return ""
+	_, err := d.DB.Set(uid, k, value)
+	if err == nil {
+		d.stored("dbSet", uid, k, value)
+	}
+	return "", err
 }
 
 // DbSetExpire stores a value with an expiration time.
 // ttl is in seconds.
-func (d *DatabaseFuncs) DbSetExpire(userID interface{}, key interface{}, value interface{}, ttl interface{}) string {
+func (d *DatabaseFuncs) DbSetExpire(userID interface{}, key interface{}, value interface{}, ttl interface{}) (string, error) {
 	uid := ToInt64(userID)
 	k := ToString(key)
 	t := ToInt(ttl)
-	d.stored("dbSetExpire", uid, k, value)
-	d.DB.SetWithExpiry(uid, k, value, t)
-	return ""
+	_, err := d.DB.SetWithExpiry(uid, k, value, t)
+	if err == nil {
+		d.stored("dbSetExpire", uid, k, value)
+	}
+	return "", err
 }
 
 // DbDel deletes a database entry by key.

@@ -595,3 +595,14 @@ func TestExecCCEditsAreRecorded(t *testing.T) {
 		t.Errorf("edits %+v; diagnostics %q", ctx.EditedMessages, ctx.Diagnostics)
 	}
 }
+
+func TestDBSetOverTheLimitFails(t *testing.T) {
+	_, err := run(t, newCtx(false, true), `{{dbSet 0 "big" (printf "%100000s" "x")}}`)
+	if err == nil || !strings.Contains(err.Error(), "short write") {
+		t.Errorf("want YAGPDB's short write, got %v", err)
+	}
+	out, err := run(t, newCtx(false, true), `{{dbSet 0 "k" "x"}}{{(dbGet 0 "k").ValueSize}}`)
+	if err != nil || out != "2" {
+		t.Errorf("got %q, %v", out, err)
+	}
+}
