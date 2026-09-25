@@ -179,6 +179,9 @@ func runCommand(args []string) {
 
 	// The triggering message: -message, or the trigger the header names (or the file name)
 	// followed by the args
+	if err := runtime.ValidateHeader(string(templateContent)); err != nil {
+		fatalf("%v", err)
+	}
 	trigger, ok := runtime.ReadTrigger(string(templateContent))
 	if !ok {
 		trigger = runtime.Trigger{Type: "Command", Text: strings.TrimSuffix(filepath.Base(templatePath), ".gohtml")}

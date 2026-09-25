@@ -24,10 +24,8 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   mentionable or the bot may mention everyone, and @everyone/@here only with that
   permission; the emulator assumes the bot has it. A complexMessage `reply` isn't modelled,
   so the replied-to author's ping (NoEscape, or `replied_user: true`) isn't recorded.
-- A failed execCC child sends YAGPDB's show_errors message (the default) to its own
-  channel; a command's show_errors off (YAGPDB sends the partial output as a normal
-  response) or redirect-errors channel can't be set, and the message isn't checked against
-  Discord's 2000-character limit. That it pings no one is read from the code, not probed.
+- A failed execCC child's show_errors message isn't checked against Discord's
+  2000-character limit. That it pings no one is read from the code, not probed.
   With `-strict`, a child over the source-length or time limit sends that error as the
   message; YAGPDB wouldn't save such a command, and has no time-limit error there.
   `deleteResponse`, `deleteMessage` and `deleteTrigger` record no deletions.
@@ -160,6 +158,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] A command's header can set its error settings: "Show errors: `false`" (a failed run
+      then sends its partial output as a normal response) and "Redirect errors: `<channel
+      ID>`" (where its error message goes). A failed run, top-level or execCC, posts the
+      show_errors message as a sent message and its response pings no one. Header lines
+      are read from the leading comment only, keys in any case, and a value the emulator
+      can't read fails the test (2026-09-25)
 - [x] A header line "Case sensitive: `true`" makes the trigger case-sensitive, as the
       control panel's checkbox drops CheckMatch's (?i) (2026-09-25)
 - [x] `.Message` follows what started the run: an interval or cron run has none, and no

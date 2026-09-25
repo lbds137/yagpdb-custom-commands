@@ -89,6 +89,10 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	if ctx.SourceName == "" {
 		ctx.SourceName = fmt.Sprintf("inline template of %q", tc.Name)
 	}
+	if err := runtime.ValidateHeader(source); err != nil {
+		result.Error = err
+		return result
+	}
 	if err := setTriggerMessage(tc, source, ctx); err != nil {
 		result.Error = err
 		return result

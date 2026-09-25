@@ -413,8 +413,9 @@ func TestEmbedLimitsStrictFailsTheSend(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), c.want) || !strings.Contains(err.Error(), "HTTP 400") {
 				t.Fatalf("want %q, got %v", c.want, err)
 			}
-			if len(ctx.SentMessages) != 0 {
-				t.Errorf("a rejected message must not be recorded as sent")
+			// The rejected message isn't recorded; the run's show_errors message is
+			if len(ctx.SentMessages) != 1 || !strings.HasPrefix(ctx.SentMessages[0].Content, "\nAn error caused") {
+				t.Errorf("a rejected message must not be recorded as sent: %+v", ctx.SentMessages)
 			}
 		})
 	}

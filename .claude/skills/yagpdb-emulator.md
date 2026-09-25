@@ -45,13 +45,18 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run; its .Message is
                                       # the messages entry with that id in the run's channel
     # an interval/cron header: no .Message, .User or .Member; a None command keeps a message
-    # a header line  Case sensitive: `true`  makes the trigger case-sensitive (default: not)
+    # a header line  Case sensitive: `true`  makes the trigger case-sensitive (default: not);
+    # Show errors: `false` and Redirect errors: `<channel ID>` set how a failed run's error
+    # is posted (default: a sent message in its own channel; with Show errors false, the
+    # partial output as the response). Header keys are case-insensitive; a bad value fails
+    # the test
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
   setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]  # run first, same DB
   command_map: { 1: "templates/recording_embed_exec.gohtml" }  # execCC targets; a target's
                                       # output is a sent message in its channel, as in YAGPDB
-                                      # (a failed one: YAGPDB's error message)
+                                      # (a failed one: YAGPDB's error message, unless its
+                                      # header turns Show errors off)
   expected:
     output_contains: "..."            # also output_equals, output_matches, error_contains
                                       # (with error_contains, the other checks still run)

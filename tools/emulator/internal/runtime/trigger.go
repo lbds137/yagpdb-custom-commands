@@ -22,25 +22,89 @@ type Trigger struct {
 	CaseSensitive bool
 }
 
+// Header lines are read from the template's leading comment only, keys in any case.
 var (
-	headerTriggerType = regexp.MustCompile("Trigger type: `([^`]*)`")
-	headerTrigger     = regexp.MustCompile("Trigger: `([^`]*)`")
-	headerCase        = regexp.MustCompile("Case sensitive: `([^`]*)`")
+	headerTriggerType = regexp.MustCompile("(?i:Trigger type): `([^`]*)`")
+	headerTrigger     = regexp.MustCompile("(?i:Trigger): `([^`]*)`")
+	headerCase        = regexp.MustCompile("(?i:Case sensitive): `([^`]*)`")
+	headerShowErrors  = regexp.MustCompile("(?i:Show errors): `([^`]*)`")
+	headerRedirect    = regexp.MustCompile("(?i:Redirect errors): `([^`]*)`")
 )
+
+// headerComment is the template's leading {{/* ... */}} comment, or "" without one.
+func headerComment(source string) string {
+	s := strings.TrimLeft(source, " \t\r\n")
+	if !strings.HasPrefix(s, "{{") {
+		return ""
+	}
+	s = strings.TrimLeft(s[2:], "- ")
+	if !strings.HasPrefix(s, "/*") {
+		return ""
+	}
+	if end := strings.Index(s, "*/"); end >= 0 {
+		return s[:end]
+	}
+	return ""
+}
+
+// headerValue is the value of a header line, and whether the header has it.
+func headerValue(re *regexp.Regexp, source string) (string, bool) {
+	if m := re.FindStringSubmatch(headerComment(source)); m != nil {
+		return m[1], true
+	}
+	return "", false
+}
+
+// ErrorSettings are a command's error settings from the control panel: show_errors (on
+// by default) and the channel errors are redirected to (0: the command's own). A header
+// sets them with "Show errors: `false`" and "Redirect errors: `<channel ID>`".
+type ErrorSettings struct {
+	ShowErrors      bool
+	RedirectChannel int64
+}
+
+// ReadErrorSettings reads a command's error settings from its header (see ValidateHeader).
+func ReadErrorSettings(source string) ErrorSettings {
+	s := ErrorSettings{ShowErrors: true}
+	if v, ok := headerValue(headerShowErrors, source); ok {
+		s.ShowErrors = !strings.EqualFold(v, "false")
+	}
+	if v, ok := headerValue(headerRedirect, source); ok {
+		s.RedirectChannel, _ = strconv.ParseInt(v, 10, 64)
+	}
+	return s
+}
+
+// ValidateHeader rejects header settings the emulator would otherwise read as their
+// defaults: the switches take true or false, the redirect a channel ID.
+func ValidateHeader(source string) error {
+	for _, sw := range []struct {
+		name string
+		re   *regexp.Regexp
+	}{{"Case sensitive", headerCase}, {"Show errors", headerShowErrors}} {
+		if v, ok := headerValue(sw.re, source); ok && !strings.EqualFold(v, "true") && !strings.EqualFold(v, "false") {
+			return fmt.Errorf("header %s: `%s` isn't true or false", sw.name, v)
+		}
+	}
+	if v, ok := headerValue(headerRedirect, source); ok {
+		if id, err := strconv.ParseInt(v, 10, 64); err != nil || id <= 0 {
+			return fmt.Errorf("header Redirect errors: `%s` isn't a channel ID", v)
+		}
+	}
+	return nil
+}
 
 // ReadTrigger reads a command's trigger from its header comment ("Trigger type: `Command`",
 // "Trigger: `db`"). ok is false if the header names no trigger type.
 func ReadTrigger(source string) (t Trigger, ok bool) {
-	m := headerTriggerType.FindStringSubmatch(source)
-	if m == nil {
+	v, ok := headerValue(headerTriggerType, source)
+	if !ok {
 		return Trigger{}, false
 	}
-	t.Type = m[1]
-	if m := headerTrigger.FindStringSubmatch(source); m != nil {
-		t.Text = m[1]
-	}
-	if m := headerCase.FindStringSubmatch(source); m != nil {
-		t.CaseSensitive = strings.EqualFold(m[1], "true")
+	t.Type = v
+	t.Text, _ = headerValue(headerTrigger, source)
+	if v, ok := headerValue(headerCase, source); ok {
+		t.CaseSensitive = strings.EqualFold(v, "true")
 	}
 	return t, true
 }
