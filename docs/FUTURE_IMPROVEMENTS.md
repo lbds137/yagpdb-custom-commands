@@ -20,11 +20,9 @@ gets a failing test first.
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
-- Snapshots can't hold a string that starts with a newline inside a list: yaml.v3
-  v3.0.1 writes it as a `|4-` block it can't read back ("did not find expected key";
-  reproduced 2026-09-25). A failed run with no output of its own posts
-  "\nAn error caused...", so snapshotting a failing command corrupts the snapshot file
-  (CI then fails on the corrupt file). Next unit.
+- Left as is (2026-09-25): a test whose name starts with a newline can't be
+  snapshotted. The name is a YAML map key, which yaml.v3 can't write for such text; the
+  write is refused with an error, so nothing is corrupted. Promote if a test needs it.
 - Test messages can't carry embeds, so message_link's quoted-embed branch (description
   cut to 1024, fields, images) has no test.
 - Ruled out (2026-09-25): YAGPDB's `LimitWriter` drops leading whitespace bytes, and
@@ -141,6 +139,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] Snapshot files always read back: yaml.v3 v3.0.1 wrote text starting with "\n"
+      (or "\t\n") as a block scalar that lost the newline or couldn't be parsed, so
+      snapshotting a failed run ("\nAn error caused...") corrupted the file. Such text
+      is now double-quoted, and a write that wouldn't read back is refused (2026-09-25)
 
 - [x] `embed_exec` cut every description to 1,998 characters; it now cuts only past
       Discord's 4,096, or less when the title, fields and author would push the whole
