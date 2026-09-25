@@ -850,6 +850,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		MemberRoles:     e.ctx.MemberRoles,
 		MemberNicks:     e.ctx.MemberNicks,
 		MemberJoinedAgo: e.ctx.MemberJoinedAgo,
+		ExecResponses:   e.ctx.ExecResponses,
 		scheduled:       e.ctx.scheduledRuns(),
 	}
 

@@ -90,6 +90,10 @@ type ContextDef struct {
 	MemberNicks map[int64]string `yaml:"member_nicks"`
 	// MemberJoinedAgo gives how long before the run members joined, like "12h" (default 30 days)
 	MemberJoinedAgo map[int64]Duration `yaml:"member_joined_ago"`
+	// ExecResponses declares what exec/execAdmin return for a given command line (the line
+	// an execs: assertion takes); a call whose line isn't a key returns "" and warns, since
+	// the emulator can't run the bot command YAGPDB would
+	ExecResponses map[string]string `yaml:"exec_responses"`
 }
 
 // MessageDef is an existing Discord message.
@@ -538,6 +542,9 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.MemberJoinedAgo == nil {
 		tc.Context.MemberJoinedAgo = defaults.MemberJoinedAgo
+	}
+	if tc.Context.ExecResponses == nil {
+		tc.Context.ExecResponses = defaults.ExecResponses
 	}
 	if tc.Context.Guild.Roles == nil {
 		tc.Context.Guild.Roles = defaults.Guild.Roles

@@ -48,9 +48,11 @@ gets a failing test first.
   arrays and strings with header bytes outside 0x09-0x0d and 0x20. In the emulator,
   `dbSet` of 32 and 10 read back as 32 and 10.
 - `exec`/`execAdmin` record the command line (`execs:`, snapshots) but don't run the bot
-  command: the call returns "", where YAGPDB returns the command's response ("Unknown
-  command" for a name it doesn't have, "Error: ..." when it fails), and execAdmin's
-  "Failed fetching member" isn't modelled. The recording mock of embed_exec
+  command: a test declares what a call returns per line (`exec_responses:`; an
+  undeclared line returns "" and warns `[exec]`). The command's own checks aren't
+  modelled: errors that fail the run ("exec/execadmin, run: ...", a parse error,
+  execAdmin's "Failed fetching member", a guild cooldown), nor the text YAGPDB returns
+  ("Unknown command", "Error: ...") unless a test declares it. The recording mock of embed_exec
   (testdata/templates) keeps the title, description, fields, color, image and thumbnail,
   but not embed_exec's author, its author-color fallback, its description cut or its
   DeleteResponse.
@@ -153,6 +155,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] A test can declare what `exec`/`execAdmin` return per command line
+      (`context: { exec_responses: { '<line>': '<response>' } }`, inherited by execCC
+      children); an undeclared call still returns "" but now warns `[exec]` instead of
+      silently doing so (2026-09-25)
 
 - [x] `.Guild.Channels` holds YAGPDB's dstate.ChannelState shape, not `.Channel`'s: no
       IsThread or IsForum (reading one errors, as in production), IsPrivate and Mention

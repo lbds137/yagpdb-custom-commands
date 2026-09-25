@@ -228,6 +228,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	ctx.Members = tc.Context.Members
 	ctx.MemberRoles = tc.Context.MemberRoles
 	ctx.MemberNicks = tc.Context.MemberNicks
+	ctx.ExecResponses = tc.Context.ExecResponses
 	if len(tc.Context.MemberJoinedAgo) > 0 {
 		ctx.MemberJoinedAgo = make(map[int64]time.Duration, len(tc.Context.MemberJoinedAgo))
 		for id, ago := range tc.Context.MemberJoinedAgo {

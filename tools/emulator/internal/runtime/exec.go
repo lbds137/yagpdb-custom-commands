@@ -11,7 +11,9 @@ import (
 )
 
 // Exec is a bot command a run executed with exec or execAdmin. The emulator records it
-// and doesn't run it: the call returns "", where YAGPDB returns the command's response.
+// and doesn't run it: the call returns the test's declared ExecResponses entry for the
+// line, or "" (with a warning) if the test declares none, where YAGPDB returns the
+// command's response.
 type Exec struct {
 	Admin     bool // execAdmin: run as the bot, not the triggering user
 	ChannelID int64
@@ -37,13 +39,26 @@ func (e *Engine) execAdmin(cmd string, args ...interface{}) (interface{}, error)
 	return e.recordExec(true, cmd, args...)
 }
 
+// recordExec records the exec/execAdmin call and returns the test's declared response for
+// its line (ExecResponses), or "" with a KindExec warning if the test declares none: the
+// emulator can't run the bot command YAGPDB would.
 func (e *Engine) recordExec(admin bool, cmd string, args ...interface{}) (interface{}, error) {
 	line, err := buildExecCmdLine(cmd, args...)
 	if err != nil {
 		return "", err
 	}
-	e.ctx.Execs = append(e.ctx.Execs, Exec{Admin: admin, ChannelID: e.ctx.ChannelID,
-		Line: strings.TrimSuffix(line, " ")})
+	line = strings.TrimSuffix(line, " ")
+	e.ctx.Execs = append(e.ctx.Execs, Exec{Admin: admin, ChannelID: e.ctx.ChannelID, Line: line})
+
+	if resp, ok := e.ctx.ExecResponses[line]; ok {
+		return resp, nil
+	}
+	fn := "exec"
+	if admin {
+		fn = "execAdmin"
+	}
+	e.ctx.Warn(KindExec, "%s %s isn't run by the emulator: it returns \"\", where YAGPDB "+
+		"returns the command's response; declare one in exec_responses", fn, line)
 	return "", nil
 }
 
