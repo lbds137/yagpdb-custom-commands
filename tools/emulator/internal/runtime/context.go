@@ -2,6 +2,8 @@
 package runtime
 
 import (
+	"cmp"
+	"slices"
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
@@ -183,10 +185,10 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		Name:    ctx.ChannelName,
 	}
 
-	// Build guild object with roles
-	guildRoles := make([]types.CtxRole, 0, len(ctx.AvailableRoles))
-	for _, role := range ctx.AvailableRoles {
-		guildRoles = append(guildRoles, role)
+	// With no roles declared, @everyone, as getRole has it
+	guildRoles := ctx.sortedRoles()
+	if len(guildRoles) == 0 && ctx.GuildID != 0 {
+		guildRoles = append(guildRoles, types.CtxRole{ID: ctx.GuildID, Name: "@everyone"})
 	}
 	ownerID := ctx.OwnerID
 	if ownerID == 0 {
@@ -432,4 +434,17 @@ func (ctx *ExecutionContext) rolesOf(userID int64) []int64 {
 		return ctx.UserRoles
 	}
 	return ctx.MemberRoles[userID]
+}
+
+// sortedRoles is the guild's roles in YAGPDB's order: its state tracker sorts them as
+// dstate.Roles (IsRoleAbove), highest position first and the lower ID on a tie.
+func (ctx *ExecutionContext) sortedRoles() []types.CtxRole {
+	roles := make([]types.CtxRole, 0, len(ctx.AvailableRoles))
+	for _, role := range ctx.AvailableRoles {
+		roles = append(roles, role)
+	}
+	slices.SortFunc(roles, func(a, b types.CtxRole) int {
+		return cmp.Or(cmp.Compare(b.Position, a.Position), cmp.Compare(a.ID, b.ID))
+	})
+	return roles
 }

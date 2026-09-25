@@ -50,8 +50,7 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   emulator has no channel list. Its `role` argument uses the role functions' lookup;
   dcmd's RoleArg matches names case-sensitively and falls back from a numeric ID to a name.
 - Role gaps: a test that declares no guild roles treats any role ID as existing, with a
-  `[role]` warning per ID (a stale ID would be nil in production), and `.Guild.Roles`
-  is empty (no @everyone either); getRole* over the call
+  `[role]` warning per ID (a stale ID would be nil in production); getRole* over the call
   limit gives the API-call message, not YAGPDB's "too many calls to this function".
 - A command run by `execCC` from a reaction-triggered command sees the test's
   `message_content` as `.Message`; YAGPDB passes on the reacted-to message.
@@ -161,6 +160,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] `.Guild.Roles` is in YAGPDB's order (its state tracker sorts roles as dstate.Roles:
+      highest position first, the lower ID on a tie) instead of Go's random map order, and
+      holds @everyone when a test declares no roles; a role name lookup takes the first
+      match in that order, as YAGPDB's findRoleByName does (2026-09-25)
 - [x] A role lookup that assumes an undeclared role exists warns (`[role]`), and the
       suites declare the roles they use; with no roles declared, the guild ID is
       @everyone (2026-09-25)

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -89,5 +90,31 @@ func TestAnAssumedRoleWarns(t *testing.T) {
 	ctx = roleCtx() // declared roles are looked up without a warning
 	if _, err := run(t, ctx, `{{mentionRoleID 10}}{{mentionRoleID 99}}`); err != nil || len(ctx.Diagnostics) != 0 {
 		t.Errorf("got %v, %q", err, ctx.Diagnostics)
+	}
+}
+
+// .Guild.Roles is in YAGPDB's order (highest position first, the lower ID on a tie), which
+// a name lookup follows, and has @everyone when the test declares no roles
+func TestGuildRolesAreInYAGPDBOrder(t *testing.T) {
+	src := `{{range .Guild.Roles}}{{.ID}}/{{.Name}} {{end}}{{(getRole "A").ID}}`
+	for i := 0; i < 20; i++ {
+		ctx := newCtx(false, true)
+		ctx.AvailableRoles = map[int64]types.CtxRole{
+			30: {ID: 30, Name: "a", Position: 1}, 20: {ID: 20, Name: "a"}, 10: {ID: 10, Name: "b", Position: 1},
+		}
+		if out, err := run(t, ctx, src); err != nil || out != "10/b 30/a 20/a 30" {
+			t.Fatalf("got %q, %v", out, err)
+		}
+	}
+	src = `{{range .Guild.Roles}}{{.ID}}/{{.Name}}{{end}}`
+	ctx := newCtx(false, true)
+	want := fmt.Sprintf("%d/@everyone", ctx.GuildID)
+	if out, err := run(t, ctx, src); err != nil || out != want {
+		t.Errorf("got %q, %v; want %q", out, err, want)
+	}
+	ctx = newCtx(false, true)
+	ctx.GuildID = 0 // no guild, no @everyone
+	if out, err := run(t, ctx, src); err != nil || out != "" {
+		t.Errorf("got %q, %v", out, err)
 	}
 }
