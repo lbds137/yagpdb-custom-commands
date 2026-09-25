@@ -41,7 +41,9 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     guild: { roles: [{ id: 111, name: "Staff", color: 3447003, position: 2 }] }  # if set, unknown roles are nil/errors
     # guild.bot_mention_everyone: false -> only roles with mentionable: true ping, never @everyone/@here
     # guild.channels: [{ id: 9, name: "staff-log" }]: if set, channel arguments accept only these
-    # (and the test's channel), by ID or name; else any ID, with a [channel] warning
+    # (and the test's channel), by ID or name; else any ID, with a [channel] warning.
+    # A channel also takes type (0 text, 2 voice, 4 category, 5 announcement, 15 forum),
+    # parent_id, position, topic, nsfw; .Guild.Channels is sorted by position
     # guild.owner_id: .Guild.OwnerID (default: the triggering user); guild.prefix (default "-")
     members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
     member_roles: { 2: [111] }        # other members' roles (takeRoleID only takes a role they have)

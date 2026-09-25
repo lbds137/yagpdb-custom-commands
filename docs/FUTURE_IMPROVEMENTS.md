@@ -31,9 +31,6 @@ gets a failing test first.
   weren't written from the vendored source (the 10-second timeout was wrong); check each
   remaining row (embed description 2,048, "ExecCC concurrent calls typically 10-20", ...)
   against vendor/yagpdb and Discord's limits.
-- directory (`exec "Clean" ...`) and ticket_adduser_exec (`exec "ticket adduser"`) have no
-  test that checks their exec lines (screen_user's test maps ticket_adduser_exec to a
-  recording mock).
 - `yagtest watch` takes one path, and `-stop-on-fail` with several test paths stops only
   within the current one.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
@@ -53,12 +50,15 @@ gets a failing test first.
   production: execCC of one warns (`[execcc]`) and runs nothing, and a delayed run or
   scheduleUniqueCC of one is scheduled. YAGPDB's disabled-command and disabled-group
   errors aren't modelled.
-- Channels have only an ID and a name: no types, so threads, voice channels and DMs
-  aren't told apart (YAGPDB's name lookup skips some types, and getMessage/editMessage
-  refuse DMs), and getChannel has no other fields. A test that declares no channels
-  treats any channel ID as existing, with a `[channel]` warning per ID. Names are looked
-  up in declared order, standing in for Discord's positions. getTargetPermissionsIn and
-  sendTemplate ignore their channel (YAGPDB's sendTemplate errors "unknown channel").
+- `.Guild.Channels` holds the emulator's channel type, as `.Channel` does; YAGPDB's holds
+  dstate.ChannelState, which has no IsThread/IsForum fields, so a template reading those
+  on a `.Guild.Channels` item works here and errors in production.
+- Channels: a declared channel has a type, parent, position, topic and NSFW flag, but no
+  threads (YAGPDB's .Guild.Threads, thread name lookups, ChannelArgNoDMNoThread), no DMs
+  (getMessage/editMessage refuse them) and no permission overwrites. A test that declares
+  no channels treats any channel ID as existing, with a `[channel]` warning per ID, and
+  its .Guild.Channels is empty. getTargetPermissionsIn and sendTemplate ignore their
+  channel (YAGPDB's sendTemplate errors "unknown channel").
 - Reactions: an emoji is refused only when it isn't a string ("<int Value>"); an unknown
   or misspelled emoji, which Discord refuses (10014), is recorded. Reacting to a message
   the emulator doesn't know is Discord's 10008 refusal, though the message may exist in
@@ -349,6 +349,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
         only the error (the message went out unpinged).
       - `admit_user` with no Welcome Message skips the welcome; it stopped there with
         "invalid value; expected string", before the admission record.
+- [x] `.Guild.Channels` holds the declared channels, sorted by position as YAGPDB's state
+      tracker sorts them (an unstable sort.Sort, copied); a declared channel's `type`,
+      `parent_id`, `position`, `topic` and `nsfw` reach `.Channel`, getChannel and
+      `.Guild.Channels`, and a name finds only text, voice, announcement and forum
+      channels. directory and ticket_adduser_exec have their first tests (2026-09-25)
 - [x] A snapshot entry no test has any more (a renamed or deleted test) is listed after
       the results: a warning from `make test`, a failure in `make ci` and CI; `make
       prune-snapshots` removes only those, `make update-snapshots` rewrites too

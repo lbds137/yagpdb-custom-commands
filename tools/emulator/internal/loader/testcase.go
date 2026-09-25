@@ -88,6 +88,13 @@ type UserDef struct {
 type ChannelDef struct {
 	ID   int64  `yaml:"id"`
 	Name string `yaml:"name"`
+	// Type is Discord's channel type: 0 text (the default), 2 voice, 4 category,
+	// 5 announcement, 15 forum
+	Type     int    `yaml:"type"`
+	ParentID int64  `yaml:"parent_id"` // the category it's in
+	Position int    `yaml:"position"`  // .Guild.Channels is sorted by position
+	Topic    string `yaml:"topic"`
+	NSFW     bool   `yaml:"nsfw"`
 }
 
 // GuildDef defines guild/server context.

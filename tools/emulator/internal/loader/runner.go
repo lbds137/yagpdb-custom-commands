@@ -227,14 +227,21 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 			ctx.MemberJoinedAgo[id] = time.Duration(ago)
 		}
 	}
+	ctx.ChannelDetails = map[int64]types.CtxChannel{}
 	for _, ch := range tc.Context.Guild.Channels {
 		ctx.Channels[ch.ID] = ch.Name
 		ctx.ChannelOrder = append(ctx.ChannelOrder, ch.ID)
+		ctx.ChannelDetails[ch.ID] = types.CtxChannel{ID: ch.ID, Name: ch.Name, Type: ch.Type,
+			ParentID: ch.ParentID, Position: ch.Position, Topic: ch.Topic, NSFW: ch.NSFW}
 	}
-	if _, ok := ctx.Channels[ctx.ChannelID]; len(ctx.Channels) > 0 && !ok {
-		ctx.Channels[ctx.ChannelID] = ctx.ChannelName // the test's channel, after the declared ones
+	if name, ok := ctx.Channels[ctx.ChannelID]; ok {
+		ctx.ChannelName = name // declared, the test's channel has its declared name
+	} else if len(ctx.Channels) > 0 {
+		// the test's channel, undeclared: a text channel at position 0
+		ctx.Channels[ctx.ChannelID] = ctx.ChannelName
 		ctx.ChannelOrder = append(ctx.ChannelOrder, ctx.ChannelID)
 	}
+	ctx.SortChannels()
 	for _, role := range tc.Context.Guild.Roles {
 		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position, Mentionable: role.Mentionable}
 	}

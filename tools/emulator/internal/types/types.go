@@ -281,6 +281,7 @@ type CtxChannel struct {
 	IsPrivate bool
 	IsThread  bool
 	IsForum   bool
+	Type      int // discordgo.ChannelType: 0 text, 2 voice, 4 category, 5 announcement, 15 forum
 }
 
 // CtxGuild represents a Discord guild/server context.
