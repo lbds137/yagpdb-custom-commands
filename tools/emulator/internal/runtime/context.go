@@ -62,6 +62,10 @@ type ExecutionContext struct {
 	// ExecData for execCC calls
 	ExecData interface{}
 
+	// Messages that exist, for getMessage; Members, if set, are the only users in the server
+	Messages []types.CtxMessage
+	Members  []int64
+
 	// Reaction trigger: set for commands triggered by a reaction
 	Reaction      *types.CtxReaction
 	ReactionAdded bool
