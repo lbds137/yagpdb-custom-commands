@@ -47,6 +47,14 @@ var (
 	limitDelReactMsg = callLimit{"del_reaction_message", 10, 10}
 )
 
+// overLimitErr is the error of a function that fails differently from its counter's usual
+// one: getRole* count generic API calls but return ErrTooManyCalls (context_funcs.go getRole).
+var overLimitErr = map[string]error{
+	"getRole":     ErrTooManyCalls,
+	"getRoleID":   ErrTooManyCalls,
+	"getRoleName": ErrTooManyCalls,
+}
+
 var errMaxExec = errors.New("Max number of commands executed in custom command")
 
 // limitedFunc lists the counters a template function increments, in YAGPDB's order.
@@ -145,6 +153,9 @@ func (ctx *ExecutionContext) countCall(fn string, l callLimit) error {
 		base = ErrTooManyAPICalls
 	case limitExec.key:
 		base = errMaxExec
+	}
+	if err, ok := overLimitErr[fn]; ok {
+		base = err
 	}
 	return ctx.count(fn, l.key, limit, base)
 }
@@ -360,6 +371,15 @@ func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration, o
 		if err := ctx.limitBreach(fmt.Errorf("response grew too big (>25k): the template printed %d bytes", len(output))); err != nil {
 			return output, err
 		}
+	}
+	if ctx.delResponse && ctx.delResponseDelay < 1 {
+		// SendResponse skips a response it would delete at once, the over-2k notice too (a
+		// failed run's show_errors message goes out another way, so errors keep the output)
+		if out := strings.TrimSpace(output); out != "" {
+			ctx.Warn(KindResponse, "deleteResponse %d: YAGPDB sends no response, so the output "+
+				"(%d characters) is dropped", ctx.delResponseDelay, utf8.RuneCountInString(out))
+		}
+		return "", nil
 	}
 	return ctx.response(output), nil
 }

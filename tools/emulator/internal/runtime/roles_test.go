@@ -118,3 +118,19 @@ func TestGuildRolesAreInYAGPDBOrder(t *testing.T) {
 		t.Errorf("got %q, %v", out, err)
 	}
 }
+
+// Over the API-call limit getRole* fail with "too many calls to this function", as YAGPDB's
+// getRole does; other API functions give the API-call error
+func TestGetRoleOverTheLimit(t *testing.T) {
+	strict := func() *ExecutionContext { ctx := roleCtx(); ctx.Strict = true; return ctx }
+	for _, fn := range []string{`getRole 10`, `getRoleID 10`, `getRoleName "Staff"`} {
+		_, err := run(t, strict(), `{{range seq 0 101}}{{`+fn+`}}{{end}}`)
+		if err == nil || !strings.Contains(err.Error(), "too many calls to this function") {
+			t.Errorf("%s: got %v", fn, err)
+		}
+	}
+	_, err := run(t, strict(), `{{range seq 0 101}}{{targetHasRoleID 5 20}}{{end}}`)
+	if err == nil || !strings.Contains(err.Error(), "too many potential Discord API calls") {
+		t.Errorf("targetHasRoleID: got %v", err)
+	}
+}

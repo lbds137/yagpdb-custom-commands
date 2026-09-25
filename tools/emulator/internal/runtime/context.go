@@ -112,6 +112,9 @@ type ExecutionContext struct {
 	// Set by mentionEveryone/mentionHere and mentionRole, so the response pings them
 	mentionEveryone bool
 	mentionRoles    []int64
+	// deleteResponse's setting: YAGPDB sends no response it would delete at once (delay < 1)
+	delResponse      bool
+	delResponseDelay int
 
 	// Warnings found during execution (limits, db calls in loops, schema mismatches)
 	Diagnostics []Diagnostic

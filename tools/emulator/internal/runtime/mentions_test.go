@@ -148,3 +148,47 @@ func TestExecCCLongResponseNamesTheChild(t *testing.T) {
 		t.Errorf("sent %+v", ctx.SentMessages)
 	}
 }
+
+// A response deleteResponse would delete at once (delay under 1) isn't sent; a failed run's
+// error message still carries the output
+func TestDeleteResponseAtOnceSendsNothing(t *testing.T) {
+	cases := []struct{ src, out, pings string }{
+		{`{{deleteResponse 0}}hi <@5>`, "", "nobody"},
+		{`{{deleteResponse -5}}hi`, "", "nobody"},
+		{`{{deleteResponse 0.5}}hi`, "", "nobody"}, // cut to 0
+		{`{{deleteResponse}}hi <@5>`, "hi <@5>", "<@5>"},
+		{`{{deleteResponse 1}}hi`, "hi", "nobody"},
+		{`{{deleteResponse 90000}}hi`, "hi", "nobody"},
+	}
+	for _, c := range cases {
+		ctx := roleCtx()
+		out, err := run(t, ctx, c.src)
+		if err != nil || out != c.out || ctx.ResponsePings.String() != c.pings {
+			t.Errorf("%s: got %q (%s), %v; want %q (%s)", c.src, out, ctx.ResponsePings, err, c.out, c.pings)
+		}
+	}
+
+	// The output YAGPDB drops gets a note, not the over-2k warning (the notice isn't sent)
+	ctx := roleCtx()
+	if out, err := run(t, ctx, `{{deleteResponse 0}}{{range seq 0 2100}}x{{end}}`); err != nil || out != "" ||
+		len(ctx.Diagnostics) != 1 || ctx.Diagnostics[0].Kind != KindResponse {
+		t.Errorf("got %q, %v, %q", out, err, ctx.Diagnostics)
+	}
+	ctx = roleCtx()
+	if _, err := run(t, ctx, `{{deleteResponse 0}}  `); err != nil || len(ctx.Diagnostics) != 0 {
+		t.Errorf("nothing dropped, no note: %v, %q", err, ctx.Diagnostics)
+	}
+
+	dir := t.TempDir()
+	writeFile(t, dir+"/quiet.gohtml", `{{deleteResponse 0}}reply`)
+	writeFile(t, dir+"/fails.gohtml", `{{deleteResponse 0}}partial{{.ExecData.X.Y}}`)
+	ctx = roleCtx()
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "quiet.gohtml", 8: "fails.gohtml"}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}{{execCC 8 nil 0 nil}}`); err != nil {
+		t.Fatal(err)
+	}
+	if len(ctx.SentMessages) != 1 || !strings.HasPrefix(ctx.SentMessages[0].Content, "partial\nAn error caused") {
+		t.Errorf("sent %+v", ctx.SentMessages)
+	}
+}
