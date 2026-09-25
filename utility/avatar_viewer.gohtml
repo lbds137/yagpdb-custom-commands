@@ -18,10 +18,12 @@
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $validSizes := cslice "32" "64" "128" "256" "512" "1024" }}
-{{ $modActions := cslice "Muted" "Kicked" "Banned" "Unmuted" "Unbanned" }}
+{{ $oldModActions := cslice "Muted" "Kicked" "Banned" "Unmuted" "Unbanned" }}
+{{- /* whois's fields (YAGPDB logs/plugin_bot.go); past names come in two forms */ -}}
 {{ $whoisFields := cslice
     "ID" "Avatar" "Account Created" "Account Age" "Joined Server At"
-    "Join Server Age" "Status" "5 last usernames" "5 last nicknames"
+    "Join Server Age" "Status" "Roles" "5 last usernames" "5 last nicknames"
+    "Usernames" "Nicknames"
 }}
 
 {{- /* regex */ -}}
@@ -31,7 +33,10 @@
 {{ $modLogUserIDRegex := joinStr "" " \\*\\(ID " $snowflakeRegex "\\)\\*" }}
 {{ $fullURLRegex := joinStr "" $baseURLRegex $snowflakeRegex "/" $snowflakeRegex "/" $snowflakeRegex }}
 
-{{ $modActionRegex := joinStr "" "(\\*){2}[^\\w]{1,}(" (joinStr "|" $modActions.StringSlice) ")(\\*\\*)? " }}
+{{- /* a mod log entry starts "**<emoji><action>** " (YAGPDB moderation/modlog.go; the
+  action can be several words, or name a role); older entries bolded the name too */ -}}
+{{ $oldModActionRegex := joinStr "" "[^\\w]{1,}(" (joinStr "|" $oldModActions.StringSlice) ") " }}
+{{ $modActionRegex := joinStr "" "\\*\\*([^\\n]+?\\*\\* |" $oldModActionRegex ")" }}
 {{ $usernameRegex := "[^#]{1,}(\\*\\*)?(#\\d{4})?" }} {{- /* yes, it's annoying that there are stars in the middle */ -}}
 {{ $modActionLogRegex := joinStr "" $modActionRegex $usernameRegex $modLogUserIDRegex }}
 
@@ -118,7 +123,8 @@
                         {{ $usernameAndID := reReplace $modActionRegex $modActionLog "" }}
                         {{ $usernameWithStars := reReplace $modLogUserIDRegex $usernameAndID "" }}
 
-                        {{ $avatarOwnerID = reFind $snowflakeRegex $embedDescription }}
+                        {{ $idPart := reFind $modLogUserIDRegex $modActionLog }}
+                        {{ $avatarOwnerID = reFind $snowflakeRegex $idPart }}
                         {{ $avatarOwner = reReplace "\\*\\*#" $usernameWithStars "#" }}
                         {{ $avatarURL = joinStr "" $embed.Thumbnail.URL "?size=" $size }}
                     {{ end }}
@@ -170,27 +176,38 @@
     {{- end -}}
 {{ end }}
 
-{{ $fields := cslice }}
-{{ $fields = $fields.Append (sdict "name" "ID" "value" (toString $avatarOwnerID) "inline" false) }}
-{{ $avatarOwnerTimestamp :=
-    div $avatarOwnerID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
-}}
-{{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $avatarOwnerTimestamp) "inline" false) }}
-{{ $fields = $fields.Append (sdict "name" "Name" "value" $avatarOwner "inline" false) }}
-{{ if $avatarOwnerNickname }}
-    {{ $fields = $fields.Append (sdict "name" "Nickname" "value" $avatarOwnerNickname "inline" false) }}
-{{ end }}
-{{ if $messageLink }}
-    {{ $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $messageLink ")" }}
-    {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) }}
-{{ end }}
+{{- /* a link found no one: the message is gone, or YAGPDB's but neither whois nor a mod log */ -}}
+{{ if and $messageLink (not $avatarOwnerID) }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "AuthorID" .User.ID
+        "ChannelID" .Channel.ID
+        "Title" "Avatar Viewer"
+        "Description" (print "⚠️ No avatar found in that message! Link someone's message, "
+            "or YAGPDB's `whois` output or mod log entry.")
+    ) }}
+{{ else }}
+    {{ $fields := cslice }}
+    {{ $fields = $fields.Append (sdict "name" "ID" "value" (toString $avatarOwnerID) "inline" false) }}
+    {{ $avatarOwnerTimestamp :=
+        div $avatarOwnerID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
+    }}
+    {{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $avatarOwnerTimestamp) "inline" false) }}
+    {{ $fields = $fields.Append (sdict "name" "Name" "value" $avatarOwner "inline" false) }}
+    {{ if $avatarOwnerNickname }}
+        {{ $fields = $fields.Append (sdict "name" "Nickname" "value" $avatarOwnerNickname "inline" false) }}
+    {{ end }}
+    {{ if $messageLink }}
+        {{ $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $messageLink ")" }}
+        {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) }}
+    {{ end }}
 
-{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-    "AuthorID" .User.ID
-    "ChannelID" .Channel.ID
-    "Title" "Avatar Viewer"
-    "ImageURL" (or $avatarURL $defaultAvatarURL)
-    "Fields" $fields
-) }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "AuthorID" .User.ID
+        "ChannelID" .Channel.ID
+        "Title" "Avatar Viewer"
+        "ImageURL" (or $avatarURL $defaultAvatarURL)
+        "Fields" $fields
+    ) }}
+{{ end }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
