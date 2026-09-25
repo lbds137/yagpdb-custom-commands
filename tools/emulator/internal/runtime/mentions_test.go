@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"fmt"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -86,5 +88,59 @@ func TestAllowedMentionsErrorsAsYAGPDB(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: got %v, want %q", c.arg, err, c.want)
 		}
+	}
+}
+
+// An execCC child's response is sent to its channel with its own pings; an empty or failed
+// one sends nothing (the failure is a warning)
+func TestExecCCResponseIsSent(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", "  {{.ExecData.Text}} <@5> <@&20> {{mentionRoleID 10}}\n")
+	writeFile(t, dir+"/sends.gohtml", `{{sendMessage nil "sent"}} reply`)
+	writeFile(t, dir+"/quiet.gohtml", `{{sendMessage nil "quiet"}}  `)
+	writeFile(t, dir+"/fails.gohtml", `partial{{.ExecData.Missing.Field}}`)
+	ctx := roleCtx()
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml", 8: "sends.gohtml", 9: "fails.gohtml", 10: "quiet.gohtml"}
+	src := `{{execCC 7 42 0 (sdict "Text" "hi")}}{{execCC 8 nil 0 nil}}{{execCC 9 nil 0 nil}}{{execCC 10 nil 0 nil}}`
+	if _, err := run(t, ctx, src); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, m := range ctx.SentMessages {
+		got = append(got, fmt.Sprintf("%d|%s|%s", m.ChannelID, m.Content, m.Pings))
+	}
+	// A child's own sends come before its response
+	here := ctx.ChannelID
+	want := []string{"42|hi <@5> <@&20> <@&10>|<@5> <@&10>", fmt.Sprintf("%d|sent|nobody", here),
+		fmt.Sprintf("%d|reply|nobody", here), fmt.Sprintf("%d|quiet|nobody", here)}
+	if !slices.Equal(got, want) {
+		t.Errorf("sent %q, want %q", got, want)
+	}
+	if len(ctx.Diagnostics) != 1 || !strings.Contains(ctx.Diagnostics[0].Message, "execCC 9") {
+		t.Errorf("want the failed child's warning, got %q", ctx.Diagnostics)
+	}
+	// The child runs after the caller in YAGPDB, so the caller can't getMessage its messages
+	for _, m := range ctx.Messages {
+		if m.Content == "reply" || m.Content == "sent" {
+			t.Errorf("the caller sees the child's message %q", m.Content)
+		}
+	}
+}
+
+// Over 2000 characters, a child's response is YAGPDB's notice with the child's number
+func TestExecCCLongResponseNamesTheChild(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/long.gohtml", `<@5>{{printf "%2001s" "x"}}`)
+	ctx := newCtx(true, true)
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "long.gohtml"}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil {
+		t.Fatal(err)
+	}
+	want := "Custom command (#7) response was longer than 2k (contact an admin on the server...)"
+	if len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != want ||
+		ctx.SentMessages[0].Pings.String() != "nobody" {
+		t.Errorf("sent %+v", ctx.SentMessages)
 	}
 }

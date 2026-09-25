@@ -29,7 +29,7 @@ setup_db:
 
 command_map:
   # Map embed_exec to a mock template
-  123: "templates/mock_embed_exec.gohtml"
+  123: "templates/recording_embed_exec.gohtml"
 
 tests:
   - name: "Valid dice roll 2d6"

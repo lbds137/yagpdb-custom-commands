@@ -710,6 +710,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 		AvailableRoles:  e.ctx.AvailableRoles,
 		OwnerID:         e.ctx.OwnerID,
 		CommandIDMap:    e.ctx.CommandIDMap,
+		CCID:            commandID,
 		ExecCCDepth:     e.ctx.ExecCCDepth + 1,
 		MaxExecCCDepth:  e.ctx.MaxExecCCDepth,
 		TemplateBaseDir: e.ctx.TemplateBaseDir,
@@ -726,7 +727,11 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 
 	// Execute child template
 	childEngine := NewEngine(childCtx)
-	_, err = childEngine.Execute(string(templateContent))
+	out, err := childEngine.Execute(string(templateContent))
+	if err == nil && out != "" {
+		// ExecuteCustomCommand sends the child's response to its channel, with its pings
+		childCtx.RecordSentMessage(channelID, out, nil, childCtx.ResponsePings)
+	}
 
 	// Propagate side effects back to parent
 	e.ctx.SentMessages = append(e.ctx.SentMessages, childCtx.SentMessages...)
@@ -734,7 +739,8 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
 	if err != nil {
-		// YAGPDB posts a failed execCC's error in the target channel; the caller carries on.
+		// YAGPDB posts a failed execCC's error in the target (or redirect-errors) channel;
+		// the caller carries on.
 		e.ctx.Warn(KindExecCC, "execCC %d (%s) failed: %v", commandID, filepath.Base(templatePath), err)
 	}
 	for _, d := range childCtx.Diagnostics {
