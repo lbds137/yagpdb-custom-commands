@@ -10,6 +10,10 @@ func TestReadTrigger(t *testing.T) {
 	if got, ok := ReadTrigger(src); !ok || got != (Trigger{Type: "Command", Text: "db"}) {
 		t.Errorf("got %+v, %v", got, ok)
 	}
+	src = "{{/*\n  Trigger type: `Exact match`\n  Trigger: `Hi`\n  Case sensitive: `true`\n*/}}"
+	if got, _ := ReadTrigger(src); got != (Trigger{Type: "Exact match", Text: "Hi", CaseSensitive: true}) {
+		t.Errorf("got %+v", got)
+	}
 	if _, ok := ReadTrigger("{{/* no header */}}"); ok {
 		t.Error("a template without a header has no trigger")
 	}
@@ -113,6 +117,25 @@ func TestScheduledTriggers(t *testing.T) {
 	} {
 		if got := (Trigger{Type: typ}).Scheduled(); got != want {
 			t.Errorf("%s: %v", typ, got)
+		}
+	}
+}
+
+// A case-sensitive trigger matches only its own case, as YAGPDB's CheckMatch without (?i)
+func TestCaseSensitiveTrigger(t *testing.T) {
+	for _, c := range []struct {
+		t    Trigger
+		msg  string
+		want bool
+	}{
+		{Trigger{Type: "Exact match", Text: "Hi"}, "hi", true},
+		{Trigger{Type: "Exact match", Text: "Hi", CaseSensitive: true}, "hi", false},
+		{Trigger{Type: "Exact match", Text: "Hi", CaseSensitive: true}, "Hi", true},
+		{Trigger{Type: "Command", Text: "db", CaseSensitive: true}, "-DB x", false},
+		{Trigger{Type: "Regex", Text: `a+`, CaseSensitive: true}, "AAA", false},
+	} {
+		if got, _, _ := CheckMatch(DefaultPrefix, c.t, c.msg); got != c.want {
+			t.Errorf("%+v on %q: %v", c.t, c.msg, got)
 		}
 	}
 }
