@@ -17,8 +17,11 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - A trailing backslash in a LIKE pattern is ignored; Postgres errors.
 - `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
   declares no guild roles accepts any role), and accepts any channel ID, since the
-  emulator has no channel list. Tests give arguments as a list, so `.Args` doesn't start
-  with the trigger.
+  emulator has no channel list.
+- A command run by `execCC` from a reaction-triggered command sees the test's
+  `message_content` as `.Message`; YAGPDB passes on the reacted-to message.
+- Interval and None runs get a `.Message` with empty content; YAGPDB gives them none.
+- Triggers are always case-insensitive (YAGPDB's default); a header can't say otherwise.
 
 ## IDE Integration
 
@@ -58,6 +61,14 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       so a failure is a real error (2026-09-25)
 - [x] Messages have `.Link`; sent messages get unique IDs and `getMessage` finds them (a nil
       channel is the current one, as in YAGPDB); tests can set `guild.owner_id` (bump_remind's owner ping is tested) (2026-09-25)
+- [x] The triggering message is built like YAGPDB's: tests give the arguments after the
+      trigger their template's header names (or the whole message), and `.Args`, `.Cmd`,
+      `.CmdArgs` and `.StrippedMsg` come from YAGPDB's `CheckMatch`, so `.Args` starts with
+      the trigger. A message that doesn't match the trigger is an error, and Regex triggers
+      need `message_content`. Without a message trigger (execCC, reaction, interval) those
+      fields are unset and `parseArgs` parses nothing, as in YAGPDB. `guild.prefix` sets
+      `.ServerPrefix`; `yagtest run -message` gives a whole message; commands run by
+      `execCC` see the caller's `.Message` (2026-09-25)
 - [x] `parseArgs` is ported from YAGPDB and dcmd: the last argument takes the rest of the
       message, quotes group words, types and bounds are checked with dcmd's errors, and a
       command run by execCC or a reaction parses nothing (2026-09-25)

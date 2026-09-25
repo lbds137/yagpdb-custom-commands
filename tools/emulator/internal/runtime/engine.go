@@ -631,14 +631,14 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 	childCtx := &ExecutionContext{
 		GuildID:         e.ctx.GuildID,
 		GuildName:       e.ctx.GuildName,
+		Prefix:          e.ctx.Prefix,
 		ChannelID:       funcs.ToInt64(channel),
 		ChannelName:     e.ctx.ChannelName,
 		UserID:          e.ctx.UserID,
 		Username:        e.ctx.Username,
 		Discriminator:   e.ctx.Discriminator,
 		UserRoles:       e.ctx.UserRoles,
-		Args:            []interface{}{},
-		CmdArgs:         []interface{}{},
+		MessageContent:  e.ctx.MessageContent, // YAGPDB passes the caller's message on
 		ExecData:        data,
 		IsPremium:       e.ctx.IsPremium,
 		Strict:          e.ctx.Strict,
@@ -727,14 +727,14 @@ func (e *Engine) mentionHere() string {
 	return "@here"
 }
 
-// parseArgs is YAGPDB's parseArgs. It parses only for a message trigger: run by execCC or
-// a reaction there is no message, so it returns no arguments and no error (commands called
-// both ways read .ExecData instead).
+// parseArgs is YAGPDB's parseArgs. It parses only for a message trigger: run by execCC, a
+// reaction or an interval there is no .StrippedMsg, so it returns no arguments and no error
+// (commands called both ways read .ExecData instead).
 func (e *Engine) parseArgs(numRequired int, failedMessage string, argDefs ...*funcs.ArgDef) (*funcs.ParsedArgs, error) {
-	if len(argDefs) == 0 || e.ctx.ExecCCDepth > 0 || e.ctx.Reaction != nil {
+	if len(argDefs) == 0 || !e.ctx.triggered {
 		return funcs.ParseArgs("", 0, "", nil, funcs.Lookups{})
 	}
-	return funcs.ParseArgs(e.ctx.strippedMsg(), numRequired, failedMessage, argDefs, funcs.Lookups{
+	return funcs.ParseArgs(e.ctx.StrippedMsg, numRequired, failedMessage, argDefs, funcs.Lookups{
 		User: func(id int64) interface{} {
 			if u := e.userArg(id); u != nil {
 				return u

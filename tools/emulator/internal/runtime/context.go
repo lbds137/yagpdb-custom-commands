@@ -2,7 +2,6 @@
 package runtime
 
 import (
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
@@ -37,6 +36,7 @@ type ExecutionContext struct {
 	GuildID   int64
 	GuildName string
 	OwnerID   int64 // The guild owner; 0 means the triggering user
+	Prefix    string
 
 	// Channel context
 	ChannelID   int64
@@ -52,11 +52,12 @@ type ExecutionContext struct {
 	MessageID      int64
 	MessageContent string
 
-	// Command arguments
+	// Command arguments, set by SetTriggerMessage; triggered is whether a message ran the command
 	Args        []interface{}
 	CmdArgs     []interface{}
 	StrippedMsg string
 	Cmd         string
+	triggered   bool
 
 	// SourceName names the template in warnings (usually its file path)
 	SourceName string
@@ -122,6 +123,7 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 	return &ExecutionContext{
 		GuildID:        guildID,
 		GuildName:      "Test Server",
+		Prefix:         DefaultPrefix,
 		ChannelID:      123456789,
 		ChannelName:    "test-channel",
 		UserID:         987654321,
@@ -244,8 +246,9 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		"Member": member,
 
 		// Guild/Server
-		"Guild":  guild,
-		"Server": guild,
+		"Guild":        guild,
+		"Server":       guild,
+		"ServerPrefix": ctx.Prefix,
 
 		// Channel
 		"Channel": channel,
@@ -253,12 +256,6 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 
 		// Message
 		"Message": message,
-
-		// Command arguments
-		"Args":        ctx.Args,
-		"CmdArgs":     ctx.CmdArgs,
-		"StrippedMsg": ctx.strippedMsg(),
-		"Cmd":         ctx.Cmd,
 
 		// ExecData (from execCC) - use empty SDict if nil to prevent nil pointer errors
 		"ExecData": func() interface{} {
@@ -298,6 +295,14 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		data["ReactionMessage"] = reactionMessage
 		data["Message"] = reactionMessage
 	}
+	// Only a message trigger sets the arguments; YAGPDB leaves them unset otherwise
+	if ctx.triggered {
+		data["Args"] = ctx.Args
+		data["CmdArgs"] = ctx.CmdArgs
+		data["StrippedMsg"] = ctx.StrippedMsg
+		data["Cmd"] = ctx.Cmd
+	}
+
 	return data
 }
 
@@ -389,13 +394,4 @@ func (ctx *ExecutionContext) rolesOf(userID int64) []int64 {
 		return ctx.UserRoles
 	}
 	return ctx.MemberRoles[userID]
-}
-
-// strippedMsg is the message after the trigger: the one the test gives, or its arguments
-// joined back together.
-func (ctx *ExecutionContext) strippedMsg() string {
-	if ctx.StrippedMsg != "" {
-		return ctx.StrippedMsg
-	}
-	return funcs.JoinArgs(ctx.CmdArgs)
 }

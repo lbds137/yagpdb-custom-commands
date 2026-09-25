@@ -88,91 +88,76 @@ tests:
     template: "../../../utility/alefbet.gohtml"
     context:
       args: ["שלום"]
-      cmd_args: ["שלום"]
 
   - name: "alefbet - Arabic to Hebrew"
     template: "../../../utility/alefbet.gohtml"
     context:
       args: ["سلام"]
-      cmd_args: ["سلام"]
 
   - name: "atbash - Basic cipher"
     template: "../../../utility/atbash.gohtml"
     context:
       args: ["אבגד"]
-      cmd_args: ["אבגד"]
 
   - name: "contrast - Valid hex color"
     template: "../../../utility/contrast.gohtml"
     context:
       args: ["#FF5500"]
-      cmd_args: ["#FF5500"]
 
   - name: "contrast - Hex without hash"
     template: "../../../utility/contrast.gohtml"
     context:
       args: ["00FF00"]
-      cmd_args: ["00FF00"]
 
   - name: "contrast - Role ID"
     template: "../../../utility/contrast.gohtml"
     context:
       args: ["111111111111111111"]
-      cmd_args: ["111111111111111111"]
 
   - name: "contrasts - Multiple colors"
     template: "../../../utility/contrasts.gohtml"
     context:
       args: ["FF0000 00FF00 0000FF"]
-      cmd_args: ["FF0000 00FF00 0000FF"]
 
   - name: "hugemoji - Discord custom emoji"
     template: "../../../utility/hugemoji.gohtml"
     context:
       args: ["<:test:123456789012345678>"]
-      cmd_args: ["<:test:123456789012345678>"]
 
   - name: "hugemoji - Animated emoji"
     template: "../../../utility/hugemoji.gohtml"
     context:
       args: ["<a:dance:987654321098765432>"]
-      cmd_args: ["<a:dance:987654321098765432>"]
 
   - name: "kb - Knowledge base lookup"
     template: "../../../utility/kb.gohtml"
     context:
       args: ["FAQ"]
-      cmd_args: ["FAQ"]
 
   - name: "message_pointer - Valid message link"
     template: "../../../utility/message_pointer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/123456789012345678/999888777666555444"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/123456789012345678/999888777666555444"]
 
   - name: "pyramid - Simple text"
     template: "../../../utility/pyramid.gohtml"
     context:
       args: ["hello"]
-      cmd_args: ["hello"]
 
   - name: "rand_hebrew - Generate random letters"
     template: "../../../utility/rand_hebrew.gohtml"
     context:
       args: ["5"]
-      cmd_args: ["5"]
 
   - name: "rule - View rule 1"
     template: "../../../utility/rule.gohtml"
     context:
       args: ["1"]
-      cmd_args: ["1"]
 
   - name: "rule - View rule 2"
     template: "../../../utility/rule.gohtml"
     context:
       args: ["2"]
-      cmd_args: ["2"]
 
   # ===== Staff Utility Commands =====
 
@@ -180,37 +165,31 @@ tests:
     template: "../../../staff_utility/bootstrap.gohtml"
     context:
       args: ["123", "127", "111111111"]
-      cmd_args: ["123", "127", "111111111"]
 
   - name: "inactivity - Check user inactivity"
     template: "../../../staff_utility/inactivity.gohtml"
     context:
       args: ["30"]
-      cmd_args: ["30"]
 
   - name: "role_ping - Ping a role"
     template: "../../../staff_utility/role_ping.gohtml"
     context:
       args: ["111111111", "Important announcement!"]
-      cmd_args: ["111111111", "Important announcement!"]
 
   - name: "rule_edit - Edit a rule"
     template: "../../../staff_utility/rule_edit.gohtml"
     context:
       args: ["1", "Updated rule text here."]
-      cmd_args: ["1", "Updated rule text here."]
 
   - name: "simple_db_lookup - Lookup knowledge entry"
     template: "../../../staff_utility/simple_db_lookup.gohtml"
     context:
       args: ["Knowledge", "FAQ"]
-      cmd_args: ["Knowledge", "FAQ"]
 
   - name: "simple_db_edit - Edit knowledge entry"
     template: "../../../staff_utility/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "FAQ", "Updated FAQ content"]
-      cmd_args: ["Knowledge", "FAQ", "Updated FAQ content"]
 
   # ===== Database Dump =====
 
@@ -218,13 +197,11 @@ tests:
     template: "../../../utility/db.gohtml"
     context:
       args: ["dump"]
-      cmd_args: ["dump"]
 
   - name: "db dump - Dump specific key"
     template: "../../../utility/db.gohtml"
     context:
       args: ["dump", "Global"]
-      cmd_args: ["dump", "Global"]
 
   # ===== Database Add (Array Append) =====
 
@@ -232,13 +209,11 @@ tests:
     template: "../../../utility/db.gohtml"
     context:
       args: ["add", "Directory:Exclude Categories", "New Category"]
-      cmd_args: ["add", "Directory:Exclude Categories", "New Category"]
 
   - name: "db get - Verify array contents"
     template: "../../../utility/db.gohtml"
     context:
       args: ["get", "Directory:Exclude Categories"]
-      cmd_args: ["get", "Directory:Exclude Categories"]
 
   # ===== Database Remove (Array Remove) =====
 
@@ -246,13 +221,11 @@ tests:
     template: "../../../utility/db.gohtml"
     context:
       args: ["remove", "Directory:Exclude Categories", "Staff Only"]
-      cmd_args: ["remove", "Directory:Exclude Categories", "Staff Only"]
 
   - name: "db remove - Remove with JSON from dict"
     template: "../../../utility/db.gohtml"
     context:
       args: ["remove", "Global", "{\"Delete Trigger Delay\": \"\"}"]
-      cmd_args: ["remove", "Global", "{\"Delete Trigger Delay\": \"\"}"]
 
   # ===== Database Edge Cases =====
 
@@ -260,10 +233,8 @@ tests:
     template: "../../../utility/db.gohtml"
     context:
       args: ["keys", "Global"]
-      cmd_args: ["keys", "Global"]
 
   - name: "db delete - Delete a nested key"
     template: "../../../utility/db.gohtml"
     context:
       args: ["delete", "Directory:Show Empty"]
-      cmd_args: ["delete", "Directory:Show Empty"]

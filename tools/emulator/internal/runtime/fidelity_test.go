@@ -251,7 +251,9 @@ func TestParseArgsOnlyParsesMessageTriggers(t *testing.T) {
 	ctx := newCtx(false, true)
 	ctx.TemplateBaseDir = dir
 	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
-	ctx.CmdArgs = []interface{}{"two words", "more"}
+	if err := ctx.SetTriggerMessage(Trigger{Type: "Command", Text: "t"}, `-t "two words" more`); err != nil {
+		t.Fatal(err)
+	}
 	out, err := run(t, ctx, `{{(parseArgs 1 "" (carg "string" "s")).Get 0}}|{{.StrippedMsg}}{{execCC 7 nil 0 (sdict "Text" "from exec data")}}`)
 	if err != nil {
 		t.Fatal(err)

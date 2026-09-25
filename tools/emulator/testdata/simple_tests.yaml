@@ -51,7 +51,6 @@ tests:
       First: {{ $args.Get 0 }}, Second: {{ $args.Get 1 }}
     context:
       args: ["hello", "world"]
-      cmd_args: ["hello", "world"]
     expected:
       output_contains: "First: hello, Second: world"
 
@@ -61,7 +60,6 @@ tests:
       Result: {{ $args.Get 0 }}
     context:
       args: ["only_one"]
-      cmd_args: ["only_one"]
     expected:
       error_contains: "Need 2 arguments!"
 

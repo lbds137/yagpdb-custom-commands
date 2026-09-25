@@ -75,7 +75,8 @@ Run Options:
     -db <file>        JSON file with initial database state
     -premium          Use premium limits (default: true)
     -no-premium       Use non-premium limits
-    -args <args>      Command arguments (comma-separated)
+    -args <args>      Command arguments after the trigger (comma-separated)
+    -message <text>   The whole triggering message (needed for Regex triggers)
     -strict           Fail on YAGPDB execution limits instead of warning
     -schema <file>    Warn when stored values don't match the schema's types
     -verbose          Show detailed output
@@ -97,6 +98,7 @@ Watch Options:
 Examples:
     yagtest run utility/db.gohtml
     yagtest run -args "get,Global" utility/db.gohtml
+    yagtest run -message "#ff8800" utility/hex_to_int.gohtml
     yagtest run -db initial_db.json -context context.json utility/db.gohtml
     yagtest test testdata/simple_tests.yaml
     yagtest test testdata/
@@ -113,7 +115,8 @@ func runCommand(args []string) {
 	dbFile := fs.String("db", "", "JSON file with initial database state")
 	premium := fs.Bool("premium", true, "Use premium limits")
 	noPremium := fs.Bool("no-premium", false, "Use non-premium limits")
-	cmdArgs := fs.String("args", "", "Command arguments (comma-separated)")
+	cmdArgs := fs.String("args", "", "Command arguments after the trigger (comma-separated)")
+	message := fs.String("message", "", "The whole triggering message (instead of -args)")
 	strict := fs.Bool("strict", false, "Fail on YAGPDB execution limits")
 	schemaFile := fs.String("schema", "", "Schema file with expected database value types")
 	verbose := fs.Bool("verbose", false, "Show detailed output")
@@ -153,8 +156,10 @@ func runCommand(args []string) {
 	ctx := runtime.NewExecutionContext(guildID, db)
 
 	// Load context from file if provided
+	var contextArgs []string
 	if *contextFile != "" {
-		if err := loadContextFromFile(ctx, *contextFile); err != nil {
+		var err error
+		if contextArgs, err = loadContextFromFile(ctx, *contextFile); err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading context: %v\n", err)
 			os.Exit(1)
 		}
@@ -171,19 +176,37 @@ func runCommand(args []string) {
 	ctx.Schema = mustLoadSchema(*schemaFile)
 	ctx.SourceName = templatePath
 
-	// Parse command arguments
+	// The triggering message: -message, or the trigger the header names (or the file name)
+	// followed by the args
+	trigger, ok := runtime.ReadTrigger(string(templateContent))
+	if !ok {
+		trigger = runtime.Trigger{Type: "Command", Text: strings.TrimSuffix(filepath.Base(templatePath), ".gohtml")}
+	}
+	parts := contextArgs
 	if *cmdArgs != "" {
-		parts := strings.Split(*cmdArgs, ",")
-		ctx.Args = make([]interface{}, len(parts))
-		ctx.CmdArgs = make([]interface{}, len(parts))
-		for i, p := range parts {
-			ctx.Args[i] = strings.TrimSpace(p)
-			ctx.CmdArgs[i] = strings.TrimSpace(p)
+		parts = nil
+		for _, p := range strings.Split(*cmdArgs, ",") {
+			parts = append(parts, strings.TrimSpace(p))
 		}
 	}
-
-	// Set command name from filename
-	ctx.Cmd = strings.TrimSuffix(filepath.Base(templatePath), ".gohtml")
+	msg := *message
+	switch {
+	case !trigger.MessageTriggered():
+		if len(parts) > 0 || msg != "" {
+			fatalf("arguments and -message need a message trigger; the template's is %q", trigger.Type)
+		}
+	case msg != "" && len(parts) > 0:
+		fatalf("give arguments or -message, not both")
+	case msg == "" && trigger.Type == "Regex":
+		fatalf("a Regex trigger needs -message (the whole message)")
+	default:
+		if msg == "" {
+			msg = runtime.TriggerMessage(ctx.Prefix, trigger, parts)
+		}
+		if err := ctx.SetTriggerMessage(trigger, msg); err != nil {
+			fatalf("%v", err)
+		}
+	}
 
 	// Execute template
 	engine := runtime.NewEngine(ctx)
@@ -382,10 +405,11 @@ func loadDatabaseState(db *state.MockDB, filename string) error {
 	return nil
 }
 
-func loadContextFromFile(ctx *runtime.ExecutionContext, filename string) error {
+// loadContextFromFile sets the context the file gives, and returns its args.
+func loadContextFromFile(ctx *runtime.ExecutionContext, filename string) ([]string, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var contextData struct {
@@ -396,13 +420,12 @@ func loadContextFromFile(ctx *runtime.ExecutionContext, filename string) error {
 		UserID      int64    `json:"user_id"`
 		Username    string   `json:"username"`
 		UserRoles   []int64  `json:"user_roles"`
-		Args        []string `json:"args"`
-		CmdArgs     []string `json:"cmd_args"`
+		Args        []string `json:"args"` // After the trigger, like -args
 		IsPremium   *bool    `json:"is_premium"`
 	}
 
 	if err := json.Unmarshal(data, &contextData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if contextData.GuildID != 0 {
@@ -426,23 +449,11 @@ func loadContextFromFile(ctx *runtime.ExecutionContext, filename string) error {
 	if contextData.UserRoles != nil {
 		ctx.UserRoles = contextData.UserRoles
 	}
-	if contextData.Args != nil {
-		ctx.Args = make([]interface{}, len(contextData.Args))
-		for i, a := range contextData.Args {
-			ctx.Args[i] = a
-		}
-	}
-	if contextData.CmdArgs != nil {
-		ctx.CmdArgs = make([]interface{}, len(contextData.CmdArgs))
-		for i, a := range contextData.CmdArgs {
-			ctx.CmdArgs[i] = a
-		}
-	}
 	if contextData.IsPremium != nil && !*contextData.IsPremium {
 		ctx.SetNonPremium()
 	}
 
-	return nil
+	return contextData.Args, nil
 }
 
 // ANSI color codes
@@ -681,4 +692,9 @@ func runTests(opts testOptions) int {
 		return 1
 	}
 	return 0
+}
+
+func fatalf(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)
+	os.Exit(1)
 }

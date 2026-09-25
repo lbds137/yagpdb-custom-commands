@@ -36,18 +36,15 @@ tests:
     template: "../../../utility/dice_roll.gohtml"
     context:
       args: ["2d6"]
-      cmd_args: ["2d6"]
     # Should execute without error - template calls execCC with embed data
 
   - name: "Valid dice roll 1d20"
     template: "../../../utility/dice_roll.gohtml"
     context:
       args: ["1d20"]
-      cmd_args: ["1d20"]
 
   - name: "Invalid dice format"
     template: "../../../utility/dice_roll.gohtml"
     context:
       args: ["invalid"]
-      cmd_args: ["invalid"]
     # Should still execute - shows error via execCC
