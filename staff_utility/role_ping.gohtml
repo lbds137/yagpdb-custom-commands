@@ -29,19 +29,21 @@
 {{ $argArray := reSplit ":" $arg 2 }}
 {{ if eq 2 (len $argArray) }}
   {{ $roleIDArg = index $argArray 0 }}
-  {{ if ne $roleIDArg $nilValue }}
-    {{ $roleIDArg = title $roleIDArg }}
-  {{ end }}
   {{ $messageArg = index $argArray 1 }}
 {{ end }}
-
-{{ if $messageArg }}
-  {{ sendMessage .Channel.ID $messageArg }}
+{{ if ne $roleIDArg $nilValue }}
+  {{ $roleIDArg = title $roleIDArg }}
 {{ end }}
+
 {{ $roleID := $rolesDict.Get $roleIDArg }}
-{{ if $roleID }}
-  {{ mentionRoleID $roleID }}
-{{ else if ne $roleIDArg $nilValue }}
+{{ if or $roleID (eq $roleIDArg $nilValue) }}
+  {{ if $messageArg }}
+    {{ sendMessage .Channel.ID $messageArg }}
+  {{ end }}
+  {{ if $roleID }}
+    {{ mentionRoleID $roleID }}
+  {{ end }}
+{{ else }}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "Title" "Invalid Argument"

@@ -4,32 +4,20 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ## Known command bugs
 
-Found by the snapshot audit (2026-09-25); each gets a failing test before its fix.
-- `db add`/`remove` report "✅ Value successfully added/removed!" when nothing was written:
-  a target that is neither an array nor a dict (a missing key, say) runs no branch and
-  leaves the input as the value (utility/db.gohtml:204-275).
-- `db add`/`remove` on a stored array fail with "range can't iterate" (uncatchable):
-  `kindOf $existingValue` without the indirect flag says "ptr" for the *templates.Slice
-  a stored array decodes to, so the dict branch runs (db.gohtml:210, :255). Pinned by the
-  "db add/remove ... nested key" tests.
-- `db get`/`delete` treat a stored `false`, `0` or `""` as missing (db.gohtml:181, and the
-  nested walk at :119).
-- `contrast #ffffff` gives embed color 33554430: the User and Light entries share the hex,
-  so the value is added twice (utility/contrast.gohtml:75-82).
-- `contrasts <role ID>` never uses the role: the unanchored color regex finds 6-digit runs
-  inside the ID, and `toInt` gets the whole match list (utility/contrasts.gohtml:20-43).
-- `message_pointer` with a non-link argument fails with "index out of range" instead of
-  its "Invalid Message Link" embed (utility/message_pointer.gohtml:30-35); a long comment
-  is cut by bytes, which can split a character (:43).
-- Minor: role_ping title-cases the role name only when the argument has a `:`;
-  gematria_bootstrap lists `Â`/`â` twice (probably meant `Á`/`á`).
+None open: the snapshot audit's list (2026-09-25) is fixed (see Completed Improvements).
+Each fix gets a failing test first.
+- Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
+  (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
+  the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
+  and a bootstrap rerun.
 
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
 - `exec` (a bot command, as `exec "kick"`) is a silent no-op: a snapshot can say "kicked"
-  with no kick recorded. The command_tests mock of embed_exec records only the title,
-  description and fields, so image URLs (hugemoji's .gif/.png) and thumbnails aren't pinned.
+  with no kick recorded. The recording mock of embed_exec (testdata/templates) keeps the
+  title, description, fields, color, image and thumbnail, but not embed_exec's author,
+  its author-color fallback, its description cut or its DeleteResponse.
 - `yagtest watch` takes one path, and `-stop-on-fail` with several test paths stops only
   within the current one.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
@@ -307,8 +295,36 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       values (`embed_contains`) (2026-09-25)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")
 - [x] `db dump` operation for exporting database entries
-- [x] Direct array append syntax for `db add` (broken for a stored array: see Known
-      command bugs)
-- [x] Array remove operation for `db remove` (same)
+- [x] Direct array append syntax for `db add`
+- [x] Array remove operation for `db remove`
+- [x] Command bugs from the snapshot audit, each with a test that fails on the old
+      command (2026-09-25):
+      - `db add`/`remove` on a stored array work (`kindOf ... true` looks through the
+        *templates.Slice), and a JSON array appended to one appends (also to an array
+        inside stored JSON, a plain slice).
+      - `db add`/`remove` report a missing key, a missing array item or dictionary key,
+        and text given for a dictionary, instead of a false success. A nested dictionary
+        target is changed itself, not its parent.
+      - Nested keys reach dictionaries inside JSON stored by `db set` (plain maps, which
+        the key walk turns into sdicts in their parent).
+      - `db get`/`delete` find a stored `false`, `0` or `""`. A path through a missing
+        key or a value that isn't a dictionary finds nothing, and `set` refuses it.
+      - `db` cuts a long value to fit embed_exec's description with its code fence, so
+        the fence survives.
+      - `contrast #ffffff` gives embed color 16777215 (was doubled).
+      - `contrasts` takes each word (split on anything but `#` and hex digits) that is a
+        whole color or a role ID (the regexes are anchored), so a role ID is no longer
+        read as 6-digit colors. An 8-digit `#rrggbbaa` is refused (it was read as its
+        first 6 digits).
+      - `message_pointer` answers a non-link with "Invalid Message Link" (was "index out
+        of range").
+      - Long text is cut between characters, not bytes, and only when it is over the
+        limit: db, embed_exec, message_link, message_pointer, directory.
+      - `role_ping` title-cases the role name without a `:` too, and an unknown role sends
+        only the error (the message went out unpinged).
+      - `admit_user` with no Welcome Message skips the welcome; it stopped there with
+        "invalid value; expected string", before the admission record.
+- [x] The recording embed_exec mock keeps color, image and thumbnail; an `embed_title`
+      check on a message without an embed fails (it passed) (2026-09-25)
 - [x] Test coverage for db operations (it passed only because the tests never reached the
       global data; rewritten 2026-09-25)

@@ -28,20 +28,24 @@
 {{ $commentArg := $args.Get 1 }}
 
 {{ $messageLink := reFind $fullRegex $linkArg }}
-{{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
-{{ $gcmSlice := split $gcmString "/" }}
-{{ $guildID := index $gcmSlice 0 }}
-{{ $channelID := index $gcmSlice 1 }}
-{{ $messageID := index $gcmSlice 2 }}
-{{ $targetChannel := getChannelOrThread $channelID }}
-{{ $msg := getMessage $channelID $messageID }}
+{{ $messageID := "" }}
+{{ $targetChannel := "" }}
+{{ $msg := "" }}
+{{ if $messageLink }}
+  {{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
+  {{ $gcmSlice := split $gcmString "/" }}
+  {{ $channelID := index $gcmSlice 1 }}
+  {{ $messageID = index $gcmSlice 2 }}
+  {{ $targetChannel = getChannelOrThread $channelID }}
+  {{ $msg = getMessage $channelID $messageID }}
+{{ end }}
 
 {{ if $msg }}
   {{ $fields := cslice }}
   {{ if $commentArg }}
     {{ $trimmedComment := $commentArg }}
-    {{ if ge (len (toRune $commentArg)) $embedFieldLimit }}
-      {{ $trimmedComment = joinStr "" (slice $commentArg 0 $embedFieldLimit) "…" }}
+    {{ if gt (len (toRune $commentArg)) $embedFieldLimit }}
+      {{ $trimmedComment = joinStr "" (slice (split $commentArg "") 0 $embedFieldLimit) "…" }}
     {{ end }}
     {{ $fields = $fields.Append (sdict
       "name" "Comment"

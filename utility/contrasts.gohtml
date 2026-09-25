@@ -17,30 +17,28 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
-{{ $colorRegex := "#?(\\d|[A-F]|[a-f]){6}" }}
-{{ $discordIDRegex := "\\d{16,}" }}
+{{ $colorRegex := "\\A#?(\\d|[A-F]|[a-f]){6}\\z" }}
+{{ $discordIDRegex := "\\A\\d{16,}\\z" }}
 
 {{ $args := parseArgs 1 "Usage: `[colors as hex codes]` OR `[role IDs]`"
   (carg "string" "colors as hex codes OR role IDs")
 }}
 
-{{ $arg := $args.Get 0 }}
+{{/* each word (split on anything but # and hex digits) that is a color or a role ID, up
+  to the execCC limit */}}
 {{ $chosenArg := cslice }}
-{{ $validArgPresent := false }}
-{{ $colorHexArg := reFindAll $colorRegex $arg $execCCLimit }}
-{{ if gt (len ($colorHexArg)) 0 }}
-  {{ $validArgPresent = true }}
-  {{ $chosenArg = $colorHexArg }}
-{{ end }}
-{{ $roleIDArg := reFindAll $discordIDRegex $arg $execCCLimit }}
-{{ $role := "" }}
-{{ if gt (len ($roleIDArg)) 0 }}
-  {{ $role = .Guild.GetRole (toInt $roleIDArg) }}
-  {{ if $role }}
-    {{ $validArgPresent = true }}
-    {{ $chosenArg = $roleIDArg }}
-  {{ end }}
-{{ end }}
+{{- range $word := reSplit "[^#0-9A-Fa-f]+" ($args.Get 0) -}}
+  {{- if lt (len $chosenArg) $execCCLimit -}}
+    {{- if reFind $colorRegex $word -}}
+      {{- $chosenArg = $chosenArg.Append $word -}}
+    {{- else if reFind $discordIDRegex $word -}}
+      {{- if $.Guild.GetRole (toInt $word) -}}
+        {{- $chosenArg = $chosenArg.Append $word -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{ $validArgPresent := gt (len $chosenArg) 0 }}
 
 {{ if $validArgPresent }}
   {{ $channelID := .Channel.ID }}

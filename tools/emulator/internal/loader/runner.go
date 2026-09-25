@@ -459,19 +459,18 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 			}
 		}
 
-		if check.EmbedTitle != "" && found.Embed != nil {
-			// Check embed title
-			if embedMap, ok := found.Embed.(types.Embed); ok {
-				if title, ok := embedMap["title"].(string); ok {
-					if title != check.EmbedTitle {
-						failures = append(failures,
-							fmt.Sprintf("message check %d: embed title mismatch:\n  expected: %q\n  got:      %q",
-								i, check.EmbedTitle, title))
-					}
-				} else {
-					failures = append(failures,
-						fmt.Sprintf("message check %d: embed has no title, expected %q", i, check.EmbedTitle))
-				}
+		if check.EmbedTitle != "" {
+			embedMap, ok := found.Embed.(types.Embed)
+			if !ok {
+				failures = append(failures,
+					fmt.Sprintf("message check %d: expected an embed titled %q but the message has none", i, check.EmbedTitle))
+			} else if title, ok := embedMap["title"].(string); !ok {
+				failures = append(failures,
+					fmt.Sprintf("message check %d: embed has no title, expected %q", i, check.EmbedTitle))
+			} else if title != check.EmbedTitle {
+				failures = append(failures,
+					fmt.Sprintf("message check %d: embed title mismatch:\n  expected: %q\n  got:      %q",
+						i, check.EmbedTitle, title))
 			}
 		}
 

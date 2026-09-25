@@ -1,0 +1,3 @@
+{{- /* Stores "Long": 1988 "a"s and two 3-byte characters (1990 characters) */ -}}
+{{ $s := "" }}{{ range seq 0 1988 }}{{ $s = print $s "a" }}{{ end }}
+{{ dbSet 0 "Long" (print $s "€€") }}
