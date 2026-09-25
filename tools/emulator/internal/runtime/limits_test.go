@@ -620,7 +620,7 @@ func TestExecDataIsSetOnlyByExecCC(t *testing.T) {
 	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil {
 		t.Fatal(err)
 	}
-	if len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != "depth 1" {
+	if len(ctx.SentMessages) != 2 || ctx.SentMessages[0].Content != "depth 1" {
 		t.Errorf("sent %+v", ctx.SentMessages)
 	}
 	want := "nil pointer evaluating interface {}.Title"

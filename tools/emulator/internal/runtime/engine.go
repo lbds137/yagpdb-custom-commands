@@ -144,7 +144,12 @@ func (e *Engine) Execute(source string) (string, error) {
 		return "", err
 	}
 
-	tmpl := template.New("yagtest").Funcs(e.BuildFuncMap()).MaxOps(e.ctx.maxOps())
+	// YAGPDB names a command's template "CC #<number>", which its errors quote
+	name := "yagtest"
+	if e.ctx.CCID != 0 {
+		name = fmt.Sprintf("CC #%d", e.ctx.CCID)
+	}
+	tmpl := template.New(name).Funcs(e.BuildFuncMap()).MaxOps(e.ctx.maxOps())
 	if !e.ctx.Strict {
 		tmpl = tmpl.OnMaxOps(func(ops, max int) {
 			e.ctx.Warn(KindLimit, "the template ran over %d operations; YAGPDB stops a custom command at %d "+
@@ -153,7 +158,7 @@ func (e *Engine) Execute(source string) (string, error) {
 	}
 	tmpl, err := tmpl.Parse(source)
 	if err != nil {
-		return "", fmt.Errorf("template parse error: %w", err)
+		return "", fmt.Errorf("Failed parsing template: %w", err)
 	}
 
 	for _, f := range findLoopDBCalls(tmpl) {
@@ -186,7 +191,7 @@ func (e *Engine) Execute(source string) (string, error) {
 			}
 		}
 		// YAGPDB still sends what the template printed before the error
-		return e.ctx.response(buf.String()), fmt.Errorf("template execution error: %w", err)
+		return e.ctx.response(buf.String()), fmt.Errorf("Failed executing template: %w", err)
 	}
 
 	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.StartTime), yagpdbCap != nil && yagpdbCap.err != nil)
@@ -715,7 +720,8 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 		MaxExecCCDepth:  e.ctx.MaxExecCCDepth,
 		TemplateBaseDir: e.ctx.TemplateBaseDir,
 		SourceName:      templatePath,
-		// The same server; a copy, since execCC runs after the caller finishes
+		// The same server; a copy, since YAGPDB runs the child in a goroutine alongside the
+		// caller (the emulator runs it inline, so messages are in call order)
 		Messages:        append([]types.CtxMessage(nil), e.ctx.Messages...),
 		sentIDs:         e.ctx.sentMessageIDs(),
 		Members:         e.ctx.Members,
@@ -728,8 +734,14 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 	// Execute child template
 	childEngine := NewEngine(childCtx)
 	out, err := childEngine.Execute(string(templateContent))
-	if err == nil && out != "" {
-		// ExecuteCustomCommand sends the child's response to its channel, with its pings
+	if err != nil {
+		// With show_errors (the default) ExecuteCustomCommand posts the output and the error
+		// in the target (or redirect-errors) channel; ChannelMessageSend's empty allowed
+		// mentions ping no one
+		childCtx.RecordSentMessage(channelID, out+"\nAn error caused the execution of the custom command template to stop:\n"+
+			formatCustomCommandRunErr(string(templateContent), err), nil, Pings{})
+	} else if out != "" {
+		// Otherwise it sends the child's response to its channel, with its pings
 		childCtx.RecordSentMessage(channelID, out, nil, childCtx.ResponsePings)
 	}
 
@@ -738,9 +750,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 	e.ctx.EditedMessages = append(e.ctx.EditedMessages, childCtx.EditedMessages...)
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
-	if err != nil {
-		// YAGPDB posts a failed execCC's error in the target (or redirect-errors) channel;
-		// the caller carries on.
+	if err != nil { // the caller carries on
 		e.ctx.Warn(KindExecCC, "execCC %d (%s) failed: %v", commandID, filepath.Base(templatePath), err)
 	}
 	for _, d := range childCtx.Diagnostics {

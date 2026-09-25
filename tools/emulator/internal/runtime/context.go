@@ -118,7 +118,8 @@ type ExecutionContext struct {
 	Counters map[string]int
 	warned   map[string]bool // limit warnings already recorded
 
-	// CCID is the custom command's number, shown in YAGPDB's over-2k notice
+	// CCID is the custom command's number (set for execCC children): it names the template,
+	// as in YAGPDB's errors, and the over-2k notice
 	CCID int64
 
 	StartTime time.Time

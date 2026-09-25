@@ -372,7 +372,7 @@ func checkCommand(args []string) {
 		_, parseErr := engine.Execute(string(content))
 		if parseErr != nil {
 			// Check if it's a parse error vs execution error
-			if strings.Contains(parseErr.Error(), "template parse error") {
+			if strings.Contains(parseErr.Error(), "Failed parsing template") {
 				fmt.Fprintf(os.Stderr, "FAIL %s: %v\n", file, parseErr)
 				printHint(parseErr)
 				hasErrors = true
