@@ -64,7 +64,7 @@ command_map:
 tests:
   # admit_user
   - name: "admit_user: admits an adult"
-    template: "../../../staff_utility/admit_user.gohtml"
+    template: "../../../retired/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
       member_roles: { 500000000000000001: [222222222222222222] } # the guest has the Guest role
@@ -81,7 +81,7 @@ tests:
 
   - name: "admit_user: no welcome message configured"
     # no welcome is sent (an empty message is Discord's 400); the rest goes on
-    template: "../../../staff_utility/admit_user.gohtml"
+    template: "../../../retired/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
       member_roles: { 500000000000000001: [222222222222222222] }
@@ -93,7 +93,7 @@ tests:
     snapshot: true
 
   - name: "admit_user: malformed link"
-    template: "../../../staff_utility/admit_user.gohtml"
+    template: "../../../retired/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/123/456", "adult"]
     assertions:
@@ -101,7 +101,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
 
   - name: "admit_user: deleted introduction"
-    template: "../../../staff_utility/admit_user.gohtml"
+    template: "../../../retired/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099", "adult"]
     assertions:
@@ -109,7 +109,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
 
   - name: "admit_user: link to another channel"
-    template: "../../../staff_utility/admit_user.gohtml"
+    template: "../../../retired/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000009/700000000000000001", "adult"]
     assertions:
@@ -117,7 +117,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
 
   - name: "admit_user: guest already left"
-    template: "../../../staff_utility/admit_user.gohtml"
+    template: "../../../retired/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
       members: [987654321098765432]
@@ -127,7 +127,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid User" }
 
   - name: "admit_user: missing user type"
-    template: "../../../staff_utility/admit_user.gohtml"
+    template: "../../../retired/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
     assertions:
@@ -136,7 +136,7 @@ tests:
 
   # reject_user
   - name: "reject_user: rejects with a reason"
-    template: "../../../staff_utility/reject_user.gohtml"
+    template: "../../../retired/reject_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "No introduction"]
       # YAGPDB's kick response (moderation/commands.go ~330, GenericCmdResp with noDur=true),
@@ -148,7 +148,7 @@ tests:
     snapshot: true
 
   - name: "reject_user: malformed link"
-    template: "../../../staff_utility/reject_user.gohtml"
+    template: "../../../retired/reject_user.gohtml"
     context:
       args: ["not a link", "No introduction"]
     assertions:
@@ -156,7 +156,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
 
   - name: "reject_user: guest already left"
-    template: "../../../staff_utility/reject_user.gohtml"
+    template: "../../../retired/reject_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "No introduction"]
       members: [987654321098765432]
@@ -166,7 +166,7 @@ tests:
 
   # screen_user
   - name: "screen_user: opens a screening ticket"
-    template: "../../../staff_utility/screen_user.gohtml"
+    template: "../../../retired/screen_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "Needs a second look"]
     assertions:
@@ -175,7 +175,7 @@ tests:
     snapshot: true
 
   - name: "screen_user: malformed link"
-    template: "../../../staff_utility/screen_user.gohtml"
+    template: "../../../retired/screen_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666", "Needs a second look"]
     assertions:
@@ -183,7 +183,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
 
   - name: "screen_user: guest already left"
-    template: "../../../staff_utility/screen_user.gohtml"
+    template: "../../../retired/screen_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "Needs a second look"]
       members: [987654321098765432]
@@ -193,7 +193,7 @@ tests:
 
   # archive
   - name: "archive: malformed link"
-    template: "../../../staff_utility/archive.gohtml"
+    template: "../../../retired/archive.gohtml"
     context:
       args: ["https://discord.com/channels/x/y/z"]
     assertions:
@@ -201,7 +201,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
 
   - name: "archive: deleted introduction"
-    template: "../../../staff_utility/archive.gohtml"
+    template: "../../../retired/archive.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"]
     assertions:
@@ -209,7 +209,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
 
   - name: "archive: archives an adult's introduction"
-    template: "../../../staff_utility/archive.gohtml"
+    template: "../../../retired/archive.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
       member_roles: { 500000000000000001: [333333333333333333, 555555555555555555] }
@@ -220,7 +220,7 @@ tests:
         - { action: add, emoji: "👋", channel_id: 900000000000000002, message_id: 700000000000000001 }
 
   - name: "archive: member with neither age role"
-    template: "../../../staff_utility/archive.gohtml"
+    template: "../../../retired/archive.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
       member_roles: { 500000000000000001: [333333333333333333] }
@@ -230,7 +230,7 @@ tests:
 
   # guest (members joined 30 days ago by default, past the 48-hour grace period)
   - name: "guest: kicks a guest past the grace period"
-    template: "../../../staff_utility/guest.gohtml"
+    template: "../../../retired/guest.gohtml"
     context:
       args: ["500000000000000001"]
       member_roles: { 500000000000000001: [222222222222222222] }
@@ -242,7 +242,7 @@ tests:
     snapshot: true
 
   - name: "guest: a guest within the grace period stays"
-    template: "../../../staff_utility/guest.gohtml"
+    template: "../../../retired/guest.gohtml"
     context:
       args: ["500000000000000001"]
       member_roles: { 500000000000000001: [222222222222222222] }
@@ -253,14 +253,14 @@ tests:
       execs: []
 
   - name: "guest: leaves a member alone"
-    template: "../../../staff_utility/guest.gohtml"
+    template: "../../../retired/guest.gohtml"
     context:
       args: ["500000000000000001"]
       member_roles: { 500000000000000001: [333333333333333333] }
     snapshot: true
 
   - name: "guest: user not in the server"
-    template: "../../../staff_utility/guest.gohtml"
+    template: "../../../retired/guest.gohtml"
     context:
       args: ["500000000000000009"]
     assertions:
@@ -268,7 +268,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Invalid User" }
 
   - name: "guest: not a user ID"
-    template: "../../../staff_utility/guest.gohtml"
+    template: "../../../retired/guest.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
     assertions:
@@ -278,7 +278,7 @@ tests:
 
   # ticket_adduser_exec (screen_user's execCC target, a recording mock in its tests)
   - name: "ticket_adduser_exec: adds the user to the ticket"
-    template: "../../../staff_utility/ticket_adduser_exec.gohtml"
+    template: "../../../retired/ticket_adduser_exec.gohtml"
     context:
       exec_data: { UserID: 500000000000000001 }
       # YAGPDB's ticket AddUser response (tickets/tickets_commands.go ~99), with the
@@ -290,7 +290,7 @@ tests:
       execs: [{ line: 'ticket adduser "500000000000000001"', admin: false }]
 
   - name: "ticket_adduser_exec: no user ID, no exec"
-    template: "../../../staff_utility/ticket_adduser_exec.gohtml"
+    template: "../../../retired/ticket_adduser_exec.gohtml"
     context:
       exec_data: { UserID: "not an ID" }
     assertions:
