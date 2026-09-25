@@ -56,8 +56,8 @@ func Hint(err error) string {
 	}
 
 	if strings.Contains(msg, "nil pointer evaluating") {
-		return "a value was nil. dbGet returns nil for a missing key; check it with {{if $entry}} " +
-			"or give a default with (or $value (sdict))."
+		return "a field was read from a nil pointer. getMessage and getMember return one for a " +
+			"deleted message or a member who left; check it first with {{if $msg}}."
 	}
 
 	if strings.Contains(msg, "error calling parseArgs") {

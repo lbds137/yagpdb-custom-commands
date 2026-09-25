@@ -120,6 +120,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 		})
 	}
 	ctx.Members = tc.Context.Members
+	ctx.MessageContent = tc.Context.MessageContent
 
 	if rd := tc.Context.Reaction; rd != nil {
 		ctx.Reaction = &types.CtxReaction{
