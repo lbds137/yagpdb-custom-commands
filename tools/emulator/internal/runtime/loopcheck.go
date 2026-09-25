@@ -108,14 +108,20 @@ func (w *loopWalker) walk(node parse.Node, loopDepth int) {
 		w.walk(n.ElseList, loopDepth)
 	case *parse.TemplateNode:
 		w.pipe(n.Pipe, loopDepth)
-		w.called = append(w.called, n.Name)
-		if loopDepth > 0 && w.resolveTemplates {
-			if f := w.dbFuncIn(n.Name, map[string]bool{}); f != "" {
-				w.findings = append(w.findings, loopFinding{
-					Line: w.line(n),
-					Func: fmt.Sprintf("template %q (which calls %s)", n.Name, f),
-				})
-			}
+		w.calledTemplate(n.Name, n, loopDepth)
+	}
+}
+
+// calledTemplate records a call to a defined template, flagging it when it happens in
+// a loop and the template makes database calls.
+func (w *loopWalker) calledTemplate(name string, at parse.Node, loopDepth int) {
+	w.called = append(w.called, name)
+	if loopDepth > 0 && w.resolveTemplates {
+		if f := w.dbFuncIn(name, map[string]bool{}); f != "" {
+			w.findings = append(w.findings, loopFinding{
+				Line: w.line(at),
+				Func: fmt.Sprintf("template %q (which calls %s)", name, f),
+			})
 		}
 	}
 }
@@ -128,8 +134,11 @@ func (w *loopWalker) pipe(p *parse.PipeNode, loopDepth int) {
 		if len(cmd.Args) == 0 {
 			continue
 		}
-		if id, ok := cmd.Args[0].(*parse.IdentifierNode); ok && loopDepth > 0 && isDBFunc(id.Ident) {
-			w.findings = append(w.findings, loopFinding{Line: w.line(id), Func: id.Ident})
+		// execTemplate "name" runs a defined template, like {{template "name"}}
+		if id, ok := cmd.Args[0].(*parse.IdentifierNode); ok && id.Ident == "execTemplate" && len(cmd.Args) > 1 {
+			if name, ok := cmd.Args[1].(*parse.StringNode); ok {
+				w.calledTemplate(name.Text, id, loopDepth)
+			}
 		}
 		for _, arg := range cmd.Args {
 			w.arg(arg, loopDepth)
@@ -137,10 +146,15 @@ func (w *loopWalker) pipe(p *parse.PipeNode, loopDepth int) {
 	}
 }
 
-// arg looks for calls inside an argument: a parenthesized pipeline, or one with a
-// field access such as (dbGet 0 "k").Value, which parses as a chain.
+// arg looks for calls in an argument: a function name, a parenthesized pipeline, or one
+// with a field access such as (dbGet 0 "k").Value, which parses as a chain.
 func (w *loopWalker) arg(node parse.Node, loopDepth int) {
 	switch n := node.(type) {
+	case *parse.IdentifierNode:
+		// A function name is a call wherever it appears: {{dbGet ...}}, {{return dbCount}}
+		if loopDepth > 0 && isDBFunc(n.Ident) {
+			w.findings = append(w.findings, loopFinding{Line: w.line(n), Func: n.Ident})
+		}
 	case *parse.PipeNode:
 		w.pipe(n, loopDepth)
 	case *parse.ChainNode:

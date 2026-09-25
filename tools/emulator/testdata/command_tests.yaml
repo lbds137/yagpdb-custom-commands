@@ -33,7 +33,7 @@ setup_db:
     key: "Channels"
     value:
       YAGPDB: 999999999
-      Introduction: 888888888
+      Introduction: 888888888888888888
       Introduction Archive: 777777777
       Welcome: 666666666
       Admission Log: 555555555
@@ -315,14 +315,14 @@ tests:
   - name: "admit_user - Admit with message link"
     template: "../../../staff_utility/admit_user.gohtml"
     context:
-      args: ["https://discord.com/channels/111222333444555666/888888888/123123123123123123", "adult"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/123123123123123123", "adult"]
+      args: ["https://discord.com/channels/111222333444555666/888888888888888888/123123123123123123", "adult"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/123123123123123123", "adult"]
 
   - name: "archive - Archive channel"
     template: "../../../staff_utility/archive.gohtml"
     context:
-      args: ["test-archive"]
-      cmd_args: ["test-archive"]
+      args: ["https://discord.com/channels/111222333444555666/888888888888888888/654654654654654654"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/654654654654654654"]
 
   - name: "bootstrap - Initialize with command IDs"
     template: "../../../staff_utility/bootstrap.gohtml"
@@ -333,8 +333,8 @@ tests:
   - name: "guest - Guest user processing"
     template: "../../../staff_utility/guest.gohtml"
     context:
-      args: ["https://discord.com/channels/111222333444555666/888888888/456456456456456456"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/456456456456456456"]
+      args: ["https://discord.com/channels/111222333444555666/888888888888888888/456456456456456456"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/456456456456456456"]
 
   - name: "inactivity - Check user inactivity"
     template: "../../../staff_utility/inactivity.gohtml"
@@ -345,8 +345,8 @@ tests:
   - name: "reject_user - Reject with message link"
     template: "../../../staff_utility/reject_user.gohtml"
     context:
-      args: ["https://discord.com/channels/111222333444555666/888888888/789789789789789789", "Did not meet requirements"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/789789789789789789", "Did not meet requirements"]
+      args: ["https://discord.com/channels/111222333444555666/888888888888888888/789789789789789789", "Did not meet requirements"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/789789789789789789", "Did not meet requirements"]
 
   - name: "role_ping - Ping a role"
     template: "../../../staff_utility/role_ping.gohtml"
@@ -363,8 +363,8 @@ tests:
   - name: "screen_user - Screen user for admission"
     template: "../../../staff_utility/screen_user.gohtml"
     context:
-      args: ["https://discord.com/channels/111222333444555666/888888888/321321321321321321", "Suspicious activity"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888/321321321321321321", "Suspicious activity"]
+      args: ["https://discord.com/channels/111222333444555666/888888888888888888/321321321321321321", "Suspicious activity"]
+      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/321321321321321321", "Suspicious activity"]
 
   - name: "simple_db_lookup - Lookup knowledge entry"
     template: "../../../staff_utility/simple_db_lookup.gohtml"

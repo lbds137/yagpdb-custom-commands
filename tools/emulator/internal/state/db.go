@@ -3,7 +3,9 @@ package state
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -82,8 +84,12 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		createdAt = now
 	}
 
-	// Convert nested maps to SDict for proper template method access
+	// Convert nested maps to SDict for proper template method access. Numbers come back
+	// from YAGPDB as float64 (ToLightDBEntry substitutes value_num), so store them so.
 	convertedValue := convertToSDict(value)
+	if isNumber(convertedValue) {
+		convertedValue = toFloat(convertedValue)
+	}
 
 	entry := &types.LightDBEntry{
 		ID:        id,
@@ -168,6 +174,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 	var currentVal float64
 	var id int64
 	var createdAt time.Time
+	var expiresAt time.Time
 
 	if exists {
 		// Check expiration
@@ -180,17 +187,9 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 		} else {
 			id = existing.ID
 			createdAt = existing.CreatedAt
-			// Try to get numeric value from the wrapped value
-			switch v := types.UnwrapValue(existing.Value).(type) {
-			case float64:
-				currentVal = v
-			case int:
-				currentVal = float64(v)
-			case int64:
-				currentVal = float64(v)
-			default:
-				return 0, fmt.Errorf("cannot increment non-numeric value of type %T", types.UnwrapValue(existing.Value))
-			}
+			expiresAt = existing.ExpiresAt // YAGPDB's upsert keeps the expiry
+			// YAGPDB adds to value_num, which is 0 for values that aren't numbers
+			currentVal = valueNum(existing)
 		}
 	} else {
 		id = m.nextID
@@ -209,6 +208,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 		Key:       key,
 		Value:     newVal,
 		ValueSize: 8, // float64 size
+		ExpiresAt: expiresAt,
 	}
 
 	m.entries[compositeKey] = entry
@@ -286,14 +286,29 @@ func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry 
 	return results
 }
 
+// valueNum is YAGPDB's value_num column: ToFloat64 of the value (strings are parsed,
+// anything else that isn't a number is 0).
 func valueNum(e *types.LightDBEntry) float64 {
-	switch v := types.UnwrapValue(e.Value).(type) {
-	case float64:
-		return v
-	case int:
-		return float64(v)
-	case int64:
-		return float64(v)
+	return toFloat(types.UnwrapValue(e.Value))
+}
+
+func isNumber(v interface{}) bool {
+	rv := reflect.ValueOf(v)
+	return rv.CanInt() || rv.CanUint() || rv.CanFloat()
+}
+
+func toFloat(v interface{}) float64 {
+	rv := reflect.ValueOf(v)
+	switch {
+	case rv.CanInt():
+		return float64(rv.Int())
+	case rv.CanUint():
+		return float64(rv.Uint())
+	case rv.CanFloat():
+		return rv.Float()
+	case rv.Kind() == reflect.String:
+		f, _ := strconv.ParseFloat(rv.String(), 64)
+		return f
 	default:
 		return 0
 	}

@@ -281,9 +281,12 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	if ctx.Reaction != nil {
 		data["Reaction"] = ctx.Reaction
 		data["ReactionAdded"] = ctx.ReactionAdded
+		// YAGPDB sets both to the message that was reacted to. The emulator only knows
+		// its ID; author and content stay the defaults.
 		reactionMessage := message
 		reactionMessage.ID = ctx.Reaction.MessageID
 		data["ReactionMessage"] = reactionMessage
+		data["Message"] = reactionMessage
 	}
 	return data
 }

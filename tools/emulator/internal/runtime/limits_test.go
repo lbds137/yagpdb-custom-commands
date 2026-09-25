@@ -280,10 +280,99 @@ func TestLoopDBWarningForms(t *testing.T) {
 	}
 }
 
-func TestEqComparesIntegerKinds(t *testing.T) {
-	out, err := run(t, newCtx(false, true), `{{eq (toInt64 5) 5}} {{ne (toInt64 5) 5}} {{eq 3 1 2 3}} {{eq "a" "b"}}`)
-	if err != nil || out != "true false true false" {
+func TestEqMatchesYAGPDB(t *testing.T) {
+	out, err := run(t, newCtx(false, true), `{{eq (toInt64 5) 5}} {{ne (toInt64 5) 5}} {{eq 3 1 2 3}} {{eq "a" "b"}} {{ne 1 2 1}}`)
+	if err != nil || out != "true false true false false" {
 		t.Errorf("out=%q err=%v", out, err)
+	}
+	for src, want := range map[string]string{
+		`{{eq 1 1.0}}`:              "incompatible types for comparison",
+		`{{eq nil 1}}`:              "invalid type for comparison",
+		`{{eq (sdict) 1}}`:          "invalid type for comparison",
+		`{{eq 1}}`:                  "missing argument for comparison",
+		`{{eq (dbIncr 0 "n" 1) 1}}`: "incompatible types", // stored numbers are float64
+		`{{dbSet 0 "n" 5}}{{eq (dbGet 0 "n").Value 5}}`: "incompatible types",
+	} {
+		if _, err := run(t, newCtx(false, true), src); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: want %q, got %v", src, want, err)
+		}
+	}
+}
+
+func TestReturnAndExecTemplate(t *testing.T) {
+	src := `{{define "double"}}x{{return (mult . 2)}}never{{end}}` +
+		`a{{$v := execTemplate "double" 21}}b{{$v}}{{return}}after`
+	out, err := run(t, newCtx(false, true), src)
+	if err != nil || out != "axb42" {
+		t.Errorf("out=%q err=%v", out, err)
+	}
+	if _, err := run(t, newCtx(false, true), `{{execTemplate "missing"}}`); err == nil ||
+		!strings.Contains(err.Error(), `template "missing" not defined`) {
+		t.Errorf("got %v", err)
+	}
+}
+
+func TestIndexAndLenMatchYAGPDB(t *testing.T) {
+	for src, want := range map[string]string{
+		`{{index (split "a" "/") 1}}`: "index out of range: 1",
+		`{{index nil 0}}`:             "index of untyped nil",
+		`{{len 5}}`:                   "len of type int",
+	} {
+		if _, err := run(t, newCtx(false, true), src); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: want %q, got %v", src, want, err)
+		}
+	}
+	out, err := run(t, newCtx(false, true), `{{len (split "a/b" "/")}} {{index (sdict "k" 1) "missing"}} {{dbSet 0 "d" (sdict "a" 1)}}{{len (dbGet 0 "d").Value}}`)
+	if err != nil || out != "2 <no value> 1" {
+		t.Errorf("out=%q err=%v", out, err)
+	}
+}
+
+func TestSetRolesTargets(t *testing.T) {
+	if _, err := run(t, newCtx(true, true), `{{setRoles "<@111>" (cslice)}}{{setRoles "<@!222>" (cslice)}}{{setRoles (userArg 333) (cslice)}}`); err != nil {
+		t.Errorf("different users by mention and user object are fine: %v", err)
+	}
+	if _, err := run(t, newCtx(true, true), `{{setRoles "<@111>" (cslice)}}{{setRoles 111 (cslice)}}`); err == nil {
+		t.Error("the same user by mention and by ID should hit the limit")
+	}
+}
+
+func TestDeleteReactionsFlattensSlices(t *testing.T) {
+	_, err := run(t, newCtx(true, true), `{{deleteAllMessageReactions nil 1 (cslice "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k")}}`)
+	if err == nil || !strings.Contains(err.Error(), "del_reaction_message") {
+		t.Errorf("11 emoji in a slice should hit the limit, got %v", err)
+	}
+	if _, err := run(t, newCtx(true, true), `{{addReactions nil nil "a"}}`); err != nil {
+		t.Errorf("nil emoji are skipped: %v", err)
+	}
+}
+
+func TestDBIncrKeepsExpiryAndReadsStrings(t *testing.T) {
+	ctx := newCtx(false, true)
+	out, err := run(t, ctx, `{{dbSetExpire 0 "c" "40" 3600}}{{dbIncr 0 "c" 2}}`)
+	if err != nil || out != "42" {
+		t.Fatalf("out=%q err=%v", out, err)
+	}
+	if e := ctx.DB.Get(0, "c"); e == nil || e.ExpiresAt.IsZero() {
+		t.Errorf("dbIncr should keep the expiry: %+v", e)
+	}
+}
+
+func TestMultiLineTryTagKeepsLinesInsideTheBody(t *testing.T) {
+	_, err := run(t, newCtx(false, true), "{{ try\n}}\n{{ nope }}\n{{ catch }}{{ end }}")
+	if err == nil || !strings.Contains(err.Error(), "yagtest:3:") {
+		t.Errorf("error should point at line 3, got %v", err)
+	}
+}
+
+func TestExecTemplateInLoopIsFlagged(t *testing.T) {
+	ctx := newCtx(false, true)
+	src := `{{define "d"}}{{return dbCount}}{{end}}` + "\n{{range seq 0 2}}{{$n := execTemplate \"d\"}}{{end}}"
+	if _, err := run(t, ctx, src); err != nil {
+		t.Fatal(err)
+	}
+	if w := kinds(ctx, KindLoopDB); len(w) != 1 || !strings.Contains(w[0], `line 2: template "d" (which calls dbCount)`) {
+		t.Errorf("got %q", w)
 	}
 }
 
