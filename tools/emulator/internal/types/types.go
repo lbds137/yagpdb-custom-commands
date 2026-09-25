@@ -3,6 +3,7 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -292,7 +293,54 @@ type CtxGuild struct {
 	OwnerID     int64
 	MemberCount int
 	Roles       []CtxRole
-	Channels    []CtxChannel
+	Channels    []ChannelState
+}
+
+// ChannelState is dstate.ChannelState, what YAGPDB's .Guild.Channels holds: unlike
+// .Channel's CtxChannel it has no IsThread or IsForum, so reading those is an error, as
+// in production, and IsPrivate is a method. Its thread, permission and forum fields
+// aren't modelled.
+type ChannelState struct {
+	ID               int64
+	GuildID          int64
+	Name             string
+	Topic            string
+	Type             int
+	NSFW             bool
+	Icon             string
+	Position         int
+	Bitrate          int
+	UserLimit        int
+	ParentID         int64
+	RateLimitPerUser int
+	Flags            int
+	OwnerID          int64
+}
+
+// Mention is YAGPDB's CtxChannel.Mention, a pointer receiver as there.
+func (c *CtxChannel) Mention() (string, error) {
+	if c == nil {
+		return "", errors.New("channel not found")
+	}
+	return "<#" + strconv.FormatInt(c.ID, 10) + ">", nil
+}
+
+// IsPrivate and Mention are dstate.ChannelState's, pointer receivers included.
+func (c *ChannelState) IsPrivate() bool {
+	return c.Type == 1 || c.Type == 3 // discordgo.ChannelTypeDM, ChannelTypeGroupDM
+}
+
+func (c *ChannelState) Mention() (string, error) {
+	if c == nil {
+		return "", errors.New("channel not found")
+	}
+	return "<#" + strconv.FormatInt(c.ID, 10) + ">", nil
+}
+
+// State is the channel as .Guild.Channels holds it.
+func (c CtxChannel) State() ChannelState {
+	return ChannelState{ID: c.ID, GuildID: c.GuildID, Name: c.Name, Topic: c.Topic,
+		Type: c.Type, NSFW: c.NSFW, Position: c.Position, ParentID: c.ParentID}
 }
 
 // GetRole returns a role by ID, or nil if not found.

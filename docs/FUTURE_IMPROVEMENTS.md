@@ -71,9 +71,14 @@ gets a failing test first.
   production: execCC of one warns (`[execcc]`) and runs nothing, and a delayed run or
   scheduleUniqueCC of one is scheduled. YAGPDB's disabled-command and disabled-group
   errors aren't modelled.
-- `.Guild.Channels` holds the emulator's channel type, as `.Channel` does; YAGPDB's holds
-  dstate.ChannelState, which has no IsThread/IsForum fields, so a template reading those
-  on a `.Guild.Channels` item works here and errors in production.
+- `.Guild.Channels` items (types.ChannelState) lack dstate.ChannelState's thread
+  metadata, permission overwrites, DefaultThreadRateLimitPerUser and forum fields (tags,
+  default reaction, sort order, layout), so reading one errors here where YAGPDB gives
+  the value. Promote when a command reads one.
+- `.User`, `.Member` and `.Message` are values here, where YAGPDB's are pointers
+  (`&c.MS.User`, `DgoMember()`, `*discordgo.Message`): a pointer-receiver method on them
+  isn't reachable, and `printf "%T"` and printing differ. `.Channel` and `.Guild` are
+  pointers already. Promote when a command calls such a method or prints one of them.
 - Channels: a declared channel has a type, parent, position, topic and NSFW flag, but no
   threads (YAGPDB's .Guild.Threads, thread name lookups, ChannelArgNoDMNoThread), no DMs
   (getMessage/editMessage refuse them) and no permission overwrites. A test that declares
@@ -148,6 +153,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] `.Guild.Channels` holds YAGPDB's dstate.ChannelState shape, not `.Channel`'s: no
+      IsThread or IsForum (reading one errors, as in production), IsPrivate and Mention
+      as methods, and Icon, Bitrate, UserLimit, RateLimitPerUser, Flags and OwnerID read
+      as zero. `.Channel`, `.Guild` and `.Server` are pointers, as YAGPDB's are, and
+      `.Channel.Mention` works; `.server` and `.ChannelOrThreadParent` exist (2026-09-25)
 
 - [x] getMessage returns a copy, as YAGPDB's fetches the message from Discord on each
       call: an editMessage after the fetch no longer shows through the fetched message's

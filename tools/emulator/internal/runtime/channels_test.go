@@ -250,6 +250,33 @@ func TestChannelDetails(t *testing.T) {
 	}
 }
 
+// .Guild.Channels holds dstate.ChannelState: a declared channel's details and the
+// server's ID, zero for what isn't modelled (Bitrate), its IsPrivate and Mention methods,
+// and no IsThread or IsForum, which fail as in production
+func TestGuildChannelsAreChannelStates(t *testing.T) {
+	ctx := channelCtx()
+	ctx.ChannelDetails = map[int64]types.CtxChannel{
+		ctx.ChannelID: {ID: ctx.ChannelID, Name: "general", Type: channelTypeForum, Topic: "t", NSFW: true, Position: 3, ParentID: 50},
+	}
+	out, err := run(t, ctx, `{{range .Guild.Channels}}{{if eq .ID $.Channel.ID}}`+
+		`{{.Name}} {{.Type}} {{.Topic}} {{.NSFW}} {{.Position}} {{.ParentID}} {{eq .GuildID $.Guild.ID}} {{.Bitrate}} `+
+		`{{.IsPrivate}} {{eq .Mention $.Channel.Mention}} {{(index $.Guild.Channels 0).IsPrivate}}{{end}}{{end}}`)
+	if err != nil || out != "general 15 t true 3 50 true 0 false true false" {
+		t.Errorf("got %q, %v", out, err)
+	}
+	// .Channel and .Guild are pointers, as YAGPDB's are; .server and .ChannelOrThreadParent
+	// are there too
+	out, err = run(t, channelCtx(), `{{printf "%T %T" .Channel .Guild}} {{eq .server.ID .Guild.ID}} {{.ChannelOrThreadParent.Mention}}`)
+	if want := fmt.Sprintf("*types.CtxChannel *types.CtxGuild true <#%d>", channelCtx().ChannelID); err != nil || out != want {
+		t.Errorf("got %q, %v; want %q", out, err, want)
+	}
+	for _, field := range []string{"IsThread", "IsForum"} {
+		if _, err := run(t, channelCtx(), `{{(index .Guild.Channels 0).`+field+`}}`); err == nil || !strings.Contains(err.Error(), "can't evaluate field "+field) {
+			t.Errorf("%s: want a field error, got %v", field, err)
+		}
+	}
+}
+
 // IsForum follows the type, as YAGPDB's CtxChannelFromCS sets it
 func TestChannelIsForum(t *testing.T) {
 	ctx := channelCtx()

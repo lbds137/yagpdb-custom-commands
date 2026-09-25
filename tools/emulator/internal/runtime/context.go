@@ -294,9 +294,9 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	if channel.Name == "" {
 		channel.Name = ctx.ChannelName
 	}
-	guildChannels := make([]types.CtxChannel, 0, len(ctx.ChannelOrder))
+	guildChannels := make([]types.ChannelState, 0, len(ctx.ChannelOrder))
 	for _, id := range ctx.ChannelOrder {
-		guildChannels = append(guildChannels, ctx.channelState(id))
+		guildChannels = append(guildChannels, ctx.channelState(id).State())
 	}
 
 	// With no roles declared, @everyone, as getRole has it
@@ -368,13 +368,15 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		"Member": member,
 
 		// Guild/Server
-		"Guild":        guild,
-		"Server":       guild,
+		"Guild":        &guild, // pointers, as YAGPDB's are (*dstate.GuildSet, *CtxChannel)
+		"Server":       &guild,
+		"server":       &guild,
 		"ServerPrefix": ctx.Prefix,
 
-		// Channel
-		"Channel": channel,
-		"channel": channel,
+		// Channel; with no threads modelled, a channel is its own parent
+		"Channel":               &channel,
+		"channel":               &channel,
+		"ChannelOrThreadParent": &channel,
 
 		// Message
 		"Message": message,
