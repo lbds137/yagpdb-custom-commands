@@ -12,6 +12,12 @@ defaults:
   guild:
     id: 111222333444555666
     name: "Test Server"
+    roles:
+      - { id: 111111111, name: "Staff" }
+      - { id: 222222222, name: "Guest" }
+      - { id: 333333333, name: "Member" }
+      - { id: 444444444, name: "Minor" }
+      - { id: 555555555, name: "Adult" }
 
 # The Gematria tables come from the real bootstrap (alefbet, atbash, pyramid and rand_hebrew
 # read them; gematria has its own suite)

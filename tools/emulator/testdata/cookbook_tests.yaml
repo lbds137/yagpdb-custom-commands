@@ -4,6 +4,12 @@ defaults:
   user:
     id: 900000000000000001
     username: "Ari"
+  guild:
+    roles:
+      - { id: 111111111111111111, name: "Staff" }
+      - { id: 333333333333333333, name: "Member" }
+      - { id: 666666666666666666, name: "Gamer" }
+      - { id: 777777777777777777, name: "Artist" }
 
 tests:
   # Economy

@@ -24,7 +24,8 @@ type Engine struct {
 	ctx *ExecutionContext
 	yag yagstd.Context // per-run state of YAGPDB's context functions (regex cache)
 
-	lastMessageID int64 // ID of the message sendMessage last sent, for sendMessageRetID
+	lastMessageID int64          // ID of the message sendMessage last sent, for sendMessageRetID
+	mockRoles     map[int64]bool // role IDs already warned about, see guildRole
 }
 
 // NewEngine creates a new template engine with the given context.

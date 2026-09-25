@@ -11,6 +11,8 @@ defaults:
   guild:
     id: 111222333444555666
     name: "Test Server"
+    roles:
+      - { id: 111111111111111111, name: "Staff" }
 
 setup_db:
   - user_id: 0

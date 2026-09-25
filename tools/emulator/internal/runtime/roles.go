@@ -152,13 +152,24 @@ func (e *Engine) findRole(role interface{}, accept roleInputType) *types.CtxRole
 }
 
 // guildRole is the guild's role with that ID, or nil. When the test declares no roles,
-// any role ID is taken to exist, so commands run without listing the server's roles.
+// any role ID is taken to exist, so commands run without listing the server's roles; a
+// warning names each such ID, since a stale one would be nil in production.
 func (e *Engine) guildRole(id int64) *types.CtxRole {
 	if role, ok := e.ctx.AvailableRoles[id]; ok {
 		return &role
 	}
 	if len(e.ctx.AvailableRoles) > 0 || id == 0 {
 		return nil
+	}
+	if id == e.ctx.GuildID {
+		return &types.CtxRole{ID: id, Name: "@everyone"}
+	}
+	if !e.mockRoles[id] {
+		if e.mockRoles == nil {
+			e.mockRoles = make(map[int64]bool)
+		}
+		e.mockRoles[id] = true
+		e.ctx.Warn(KindRole, "role %d is assumed to exist, since no guild roles are declared (a test's guild.roles)", id)
 	}
 	return &types.CtxRole{ID: id, Name: "MockRole", Color: 0x7289DA}
 }
