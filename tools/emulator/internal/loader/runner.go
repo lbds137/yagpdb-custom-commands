@@ -68,7 +68,10 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	db := state.NewMockDB(tc.Context.Guild.ID)
 	for _, entry := range tc.SetupDB {
 		// Fixture maps stand in for sdicts a command stored
-		db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value))
+		if _, err := db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value)); err != nil {
+			result.Error = fmt.Errorf("setup_db %q: %w", entry.Key, err)
+			return result
+		}
 	}
 
 	for _, path := range tc.SetupTemplates {

@@ -5,7 +5,15 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
-- `.ValueSize` of database entries is an estimate, not YAGPDB's msgpack size.
+- Database keys and patterns aren't cut to 256 bytes as YAGPDB cuts them, so a longer
+  key is stored under its full name. Values holding Discord objects (a member, a
+  message, a `cembed`, a whole `dbGet` entry) serialize as the emulator's types, so their
+  size differs from YAGPDB's. A value whose overflow past 100000 bytes is only whitespace
+  is stored whole; YAGPDB stores it cut off, so reading it back fails.
+- `execCC` with a delay passes its data as is; YAGPDB msgpack-encodes it (so types change
+  and over 1000000 bytes fails with "ExecData is too big").
+- The output limit doesn't drop leading whitespace as YAGPDB's LimitWriter does, so a
+  response that is mostly leading spaces can fail the 25k limit in the emulator only.
 - Discord functions are mocks: the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
 - Missing standard functions that need Discord data: `snowflakeToTime`, `humanize*`,
   `roleAbove`, `sanitizeText`, `adjective`/`noun`/`verb`.
@@ -78,6 +86,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       30 days ago); `.Member` and `getMember` build the same member, and `JoinedAt` is
       discordgo's `Timestamp` string, formatted as Discord sends it. guest's grace-period
       path is tested. A suite that doesn't parse reports its own error (2026-09-25)
+- [x] Database values are serialized as YAGPDB serializes them (msgpack v4 with its
+      sdict/dict/cslice extensions, through its LimitWriter): `.ValueSize` is exact, and
+      a value over 100000 bytes fails with YAGPDB's "short write", unless the overflow
+      is only whitespace (2026-09-25)
 - [x] `editMessage` edits the message: someone else's or a missing one is refused as
       Discord refuses it, the edited message gets the send checks, and `complexMessageEdit`
       is ported (with YAGPDB's "both content and embed cannot be null"). Tests assert with

@@ -399,7 +399,9 @@ func loadDatabaseState(db *state.MockDB, filename string) error {
 
 	for _, entry := range entries {
 		// Fixture maps stand in for sdicts a command stored
-		db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value))
+		if _, err := db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value)); err != nil {
+			return fmt.Errorf("%q: %w", entry.Key, err)
+		}
 	}
 
 	return nil

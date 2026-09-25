@@ -73,13 +73,19 @@ func (m *MockDB) Get(userID int64, key string) *types.LightDBEntry {
 	return m.view(entry)
 }
 
-// Set stores a value in the database.
-func (m *MockDB) Set(userID int64, key string, value interface{}) *types.LightDBEntry {
+// Set stores a value in the database. It fails, storing nothing, if the value doesn't
+// serialize within YAGPDB's limit.
+func (m *MockDB) Set(userID int64, key string, value interface{}) (*types.LightDBEntry, error) {
 	return m.SetWithExpiry(userID, key, value, 0)
 }
 
 // SetWithExpiry stores a value with an expiration time (in seconds, 0 = no expiry).
-func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlSeconds int) *types.LightDBEntry {
+func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlSeconds int) (*types.LightDBEntry, error) {
+	serialized, err := serializeValue(value)
+	if err != nil {
+		return nil, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -116,12 +122,12 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		UpdatedAt: now,
 		Key:       key,
 		Value:     convertedValue,
-		ValueSize: estimateSize(convertedValue),
+		ValueSize: len(serialized),
 		ExpiresAt: expiresAt,
 	}
 
 	m.entries[compositeKey] = entry
-	return entry
+	return entry, nil
 }
 
 // Del deletes a database entry by key.
@@ -360,23 +366,4 @@ func likeRegexp(pattern string) *regexp.Regexp {
 	re := regexp.MustCompile(b.String())
 	likeCache[pattern] = re
 	return re
-}
-
-// estimateSize provides a rough estimate of the serialized size of a value.
-func estimateSize(v interface{}) int {
-	switch val := v.(type) {
-	case string:
-		return len(val)
-	case []byte:
-		return len(val)
-	case int, int64, float64:
-		return 8
-	case bool:
-		return 1
-	case nil:
-		return 0
-	default:
-		// Rough estimate for complex types
-		return 100
-	}
 }
