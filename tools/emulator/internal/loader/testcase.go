@@ -32,6 +32,38 @@ type TestCase struct {
 	SourceFile string `yaml:"-"` // YAML file the test came from (for snapshots)
 }
 
+// TestClock is a test's `clock:`, a YAML timestamp (2026-01-02T15:04:05Z).
+type TestClock time.Time
+
+func (c *TestClock) UnmarshalYAML(node *yaml.Node) error {
+	const example = "write a time like 2026-01-02T15:04:05Z"
+	// node.Decode doesn't check fields, so a mapping would decode as the zero time
+	if node.Kind != yaml.ScalarNode {
+		return fmt.Errorf("line %d: clock: %s", node.Line, example)
+	}
+	var t time.Time
+	if err := node.Decode(&t); err != nil {
+		return fmt.Errorf("line %d: clock: %v (%s)", node.Line, err, example)
+	}
+	*c = TestClock(t)
+	return nil
+}
+
+// TestSeed is a test's `seed:`, a whole number.
+type TestSeed int64
+
+func (s *TestSeed) UnmarshalYAML(node *yaml.Node) error {
+	var n int64
+	if node.Kind != yaml.ScalarNode {
+		return fmt.Errorf("line %d: seed: write an integer, like 7", node.Line)
+	}
+	if node.Tag != "!!int" || node.Decode(&n) != nil {
+		return fmt.Errorf("line %d: seed: %q isn't an integer that fits in 64 bits (write one like 7)", node.Line, node.Value)
+	}
+	*s = TestSeed(n)
+	return nil
+}
+
 // ContextDef defines the execution context for a test.
 type ContextDef struct {
 	User    UserDef    `yaml:"user"`
@@ -43,9 +75,9 @@ type ContextDef struct {
 	Premium  *bool                  `yaml:"premium"` // Default true
 	// Clock stops the run's clock at this time (currentTime, timestamps, database entry
 	// times), so a snapshot can hold them; unset, it's the system clock
-	Clock *time.Time `yaml:"clock"`
+	Clock *TestClock `yaml:"clock"`
 	// Seed seeds randInt, shuffle, adjective, noun and verb; unset, they're random
-	Seed     *int64       `yaml:"seed"`
+	Seed     *TestSeed    `yaml:"seed"`
 	Reaction *ReactionDef `yaml:"reaction"` // Makes this a reaction-triggered run
 	Messages []MessageDef `yaml:"messages"` // Messages getMessage can find
 	// MessageContent is the whole triggering message, trigger included (instead of args);

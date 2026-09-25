@@ -420,11 +420,12 @@ func TestFixedClockAndSeed(t *testing.T) {
 		`{{humanizeTimeSinceDays (currentTime.Add -172800000000000)}} ` +
 		`{{dbSet 0 "k" 1}}{{(dbGet 0 "k").CreatedAt.Unix}} ` +
 		`{{randInt 1000000}} {{shuffle (seq 0 10)}} {{adjective}} {{noun}} {{verb}}`
-	clock := time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)
+	clock := TestClock(time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC))
 	run := func(seed int64) string {
 		tc := &TestCase{Name: "fixed", TemplateSource: src, Strict: true}
 		tc.Context.Clock = &clock
-		tc.Context.Seed = &seed
+		s := TestSeed(seed)
+		tc.Context.Seed = &s
 		tc.applyDefaults()
 		res := NewRunner(RunnerConfig{}).RunTest(tc)
 		if res.Error != nil || !res.Passed {

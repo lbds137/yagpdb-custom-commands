@@ -79,9 +79,7 @@ gets a failing test first.
 - A fixed clock (`clock:`) stands still for the whole run, where YAGPDB's moves on by
   milliseconds (sleep moves it on). The database's entry times follow the calling run's
   clock, so a sleep inside an execCC child doesn't move them, and a setup template's sleeps
-  aren't carried into the test (its entries can look newer than the test's clock). A bad `clock:`
-  value's error names neither the field nor the line (yaml.v3's time parse error), and a
-  fractional `seed:` is truncated silently (1.5 is 1).
+  aren't carried into the test (its entries can look newer than the test's clock).
 - `printf "%T"` of the emulator's Discord types prints their Go names (`types.CtxMessage`,
   `types.Timestamp`), not discordgo's (`*discordgo.Message`, `discordgo.Timestamp`); a
   command comparing those names would behave differently. None does today (the `%T`
@@ -142,6 +140,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] A bad `clock:` value's error names the field and line (a mapping is refused
+      rather than read as year 1), and a float `seed:` (1.5, 1.0, 1e3) is an error
+      instead of being truncated (2026-09-25)
 
 - [x] Without -strict, YAGPDB's function errors (call limits, Discord refusing a call or
       a message, reaction limits) were warnings even inside `{{try}}`, so the run went
