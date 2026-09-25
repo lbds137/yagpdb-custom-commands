@@ -89,7 +89,7 @@ setup_db:
       Show NSFW: false
 
 command_map:
-  123: "templates/recording_embed_exec.gohtml"
+  123: "../../../utility/embed_exec.gohtml"
   124: "../../../utility/gematria.gohtml"
   125: "../../../utility/message_link.gohtml"
   126: "../../../utility/db_get_embed.gohtml"

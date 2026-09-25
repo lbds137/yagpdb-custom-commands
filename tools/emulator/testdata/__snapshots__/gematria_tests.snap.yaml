@@ -4,6 +4,11 @@
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                "name": "TestUser#0001",
+                "url": "https://discordapp.com/users/987654321098765432"
+              },
               "description": "hello world",
               "fields": [
                 {
@@ -39,6 +44,8 @@
                   "value": "`VII` - The Chariot\n`XVII` - The Star\n`X` - Fortune (3)\n`XIII` - Death (2)\n`IV` - The Emperor\n`XVI` - The Tower\n`III` - The Empress"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Gematria Calculator"
             }
     deletions:

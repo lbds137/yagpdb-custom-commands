@@ -66,7 +66,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
   setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]  # run first, same DB
-  command_map: { 1: "templates/recording_embed_exec.gohtml" }  # execCC targets; a target's
+  command_map: { 1: "../../../utility/embed_exec.gohtml" }  # execCC targets; a target's
                                       # output is a sent message in its channel, as in YAGPDB
                                       # (a failed one: YAGPDB's error message, unless its
                                       # header turns Show errors off). Map the real command
