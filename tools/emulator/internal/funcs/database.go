@@ -2,6 +2,7 @@ package funcs
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
@@ -16,6 +17,8 @@ type DatabaseFuncs struct {
 
 	// OnStore, if set, sees every value written by dbSet, dbSetExpire and dbIncr.
 	OnStore func(fn string, userID int64, key string, value interface{})
+	// OnPlanRisk, if set, hears of a pattern Postgres may reject while planning the query
+	OnPlanRisk func(fn, pattern string)
 }
 
 func (d *DatabaseFuncs) stored(fn string, userID int64, key string, value interface{}) {
@@ -35,7 +38,7 @@ func NewDatabaseFuncs(db *state.MockDB, guildID int64) *DatabaseFuncs {
 // DbGet retrieves a value from the database.
 // Returns the LightDBEntry or nil if not found.
 func (d *DatabaseFuncs) DbGet(userID int64, key interface{}) interface{} {
-	k := limitString(ToString(key), 256)
+	k := LimitString(ToString(key), 256)
 	entry := d.DB.Get(userID, k)
 	if entry == nil {
 		return nil
@@ -63,7 +66,7 @@ func forTemplateSlice(entries []*types.LightDBEntry) types.Slice {
 // DbSet stores a value in the database.
 // Returns an empty string (for template compatibility).
 func (d *DatabaseFuncs) DbSet(userID int64, key interface{}, value interface{}) (string, error) {
-	k := limitString(ToString(key), 256)
+	k := LimitString(ToString(key), 256)
 	_, err := d.DB.Set(userID, k, value)
 	if err == nil {
 		d.stored("dbSet", userID, k, value)
@@ -74,7 +77,7 @@ func (d *DatabaseFuncs) DbSet(userID int64, key interface{}, value interface{}) 
 // DbSetExpire stores a value with an expiration time.
 // ttl is in seconds.
 func (d *DatabaseFuncs) DbSetExpire(userID int64, key interface{}, value interface{}, ttl int) (string, error) {
-	k := limitString(ToString(key), 256)
+	k := LimitString(ToString(key), 256)
 	_, err := d.DB.SetWithExpiry(userID, k, value, ttl)
 	if err == nil {
 		d.stored("dbSetExpire", userID, k, value)
@@ -84,7 +87,7 @@ func (d *DatabaseFuncs) DbSetExpire(userID int64, key interface{}, value interfa
 
 // DbDel deletes a database entry by key.
 func (d *DatabaseFuncs) DbDel(userID int64, key interface{}) interface{} {
-	k := limitString(ToString(key), 256)
+	k := LimitString(ToString(key), 256)
 	d.DB.Del(userID, k)
 	return ""
 }
@@ -97,7 +100,7 @@ func (d *DatabaseFuncs) DbDelByID(userID int64, id int64) interface{} {
 
 // DbIncr increments a numeric value in the database.
 func (d *DatabaseFuncs) DbIncr(userID int64, key interface{}, amount interface{}) (interface{}, error) {
-	k := limitString(ToString(key), 256)
+	k := LimitString(ToString(key), 256)
 	amt := ToFloat64(amount)
 	d.stored("dbIncr", userID, k, amt)
 	return d.DB.Incr(userID, k, amt)
@@ -105,11 +108,11 @@ func (d *DatabaseFuncs) DbIncr(userID int64, key interface{}, amount interface{}
 
 // DbGetPattern retrieves entries matching a pattern.
 func (d *DatabaseFuncs) DbGetPattern(userID int64, pattern interface{}, amount interface{}, skip interface{}) (interface{}, error) {
-	p := limitString(ToString(pattern), 256)
+	p := LimitString(ToString(pattern), 256)
 	a := ToInt(amount)
 	s := ToInt(skip)
 	if s < 0 {
-		return nil, errNegativeOffset
+		return nil, boilerErr(errNegativeOffset)
 	}
 
 	// Cap at 100 as YAGPDB does
@@ -117,7 +120,11 @@ func (d *DatabaseFuncs) DbGetPattern(userID int64, pattern interface{}, amount i
 		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
-	entries := d.DB.GetPattern(userID, p, a, s, false)
+	d.planRisk("dbGetPattern", &p)
+	entries, err := d.DB.GetPattern(userID, p, a, s, false)
+	if err != nil {
+		return nil, boilerErr(err)
+	}
 
 	// Convert to slice of interfaces for template use
 	return forTemplateSlice(entries), nil
@@ -125,18 +132,22 @@ func (d *DatabaseFuncs) DbGetPattern(userID int64, pattern interface{}, amount i
 
 // DbGetPatternReverse retrieves entries matching a pattern in reverse order.
 func (d *DatabaseFuncs) DbGetPatternReverse(userID int64, pattern interface{}, amount interface{}, skip interface{}) (interface{}, error) {
-	p := limitString(ToString(pattern), 256)
+	p := LimitString(ToString(pattern), 256)
 	a := ToInt(amount)
 	s := ToInt(skip)
 	if s < 0 {
-		return nil, errNegativeOffset
+		return nil, boilerErr(errNegativeOffset)
 	}
 
 	if a > 100 || a <= 0 {
 		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
-	entries := d.DB.GetPattern(userID, p, a, s, true)
+	d.planRisk("dbGetPatternReverse", &p)
+	entries, err := d.DB.GetPattern(userID, p, a, s, true)
+	if err != nil {
+		return nil, boilerErr(err)
+	}
 
 	return forTemplateSlice(entries), nil
 }
@@ -154,7 +165,7 @@ func (d *DatabaseFuncs) DbCount(args ...interface{}) (interface{}, error) {
 			uid := int64(arg)
 			userID = &uid
 		case string:
-			p := limitString(arg, 256)
+			p := LimitString(arg, 256)
 			pattern = &p
 		default:
 			q, err := queryFromArg(arg)
@@ -164,41 +175,54 @@ func (d *DatabaseFuncs) DbCount(args ...interface{}) (interface{}, error) {
 			userID, pattern = q.UserID, q.Pattern
 		}
 	}
-	return int64(d.DB.Count(userID, pattern)), nil
+	d.planRisk("dbCount", pattern)
+	count, err := d.DB.Count(userID, pattern)
+	if err != nil {
+		return int64(0), err
+	}
+	return int64(count), nil
 }
 
 // DbTopEntries returns the top N entries of all users by value_num.
 func (d *DatabaseFuncs) DbTopEntries(pattern interface{}, amount interface{}, skip interface{}) (interface{}, error) {
-	p := limitString(ToString(pattern), 256)
+	p := LimitString(ToString(pattern), 256)
 	a := ToInt(amount)
 	s := ToInt(skip)
 	if s < 0 {
-		return nil, errNegativeOffset
+		return nil, boilerErr(errNegativeOffset)
 	}
 
 	if a > 100 || a <= 0 {
 		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
-	entries := d.DB.TopEntries(p, a, s, false)
+	d.planRisk("dbTopEntries", &p)
+	entries, err := d.DB.TopEntries(p, a, s, false)
+	if err != nil {
+		return nil, boilerErr(err)
+	}
 
 	return forTemplateSlice(entries), nil
 }
 
 // DbBottomEntries returns the bottom N entries by value_num.
 func (d *DatabaseFuncs) DbBottomEntries(pattern interface{}, amount interface{}, skip interface{}) (interface{}, error) {
-	p := limitString(ToString(pattern), 256)
+	p := LimitString(ToString(pattern), 256)
 	a := ToInt(amount)
 	s := ToInt(skip)
 	if s < 0 {
-		return nil, errNegativeOffset
+		return nil, boilerErr(errNegativeOffset)
 	}
 
 	if a > 100 || a <= 0 {
 		a = 100 // YAGPDB's cap, and its default for 0 or less
 	}
 
-	entries := d.DB.TopEntries(p, a, s, true)
+	d.planRisk("dbBottomEntries", &p)
+	entries, err := d.DB.TopEntries(p, a, s, true)
+	if err != nil {
+		return nil, boilerErr(err)
+	}
 
 	return forTemplateSlice(entries), nil
 }
@@ -213,7 +237,12 @@ func (d *DatabaseFuncs) DbRank(query interface{}, userID int64, key string) (int
 	if q.UserID != nil && *q.UserID != userID { // some optimization
 		return 0, nil
 	}
-	if rank := d.DB.Rank(q.UserID, q.Pattern, q.Reverse, userID, key); rank > 0 {
+	d.planRisk("dbRank", q.Pattern)
+	rank, err := d.DB.Rank(q.UserID, q.Pattern, q.Reverse, userID, key)
+	if err != nil {
+		return int64(0), err
+	}
+	if rank > 0 {
 		return rank, nil
 	}
 	return 0, nil // YAGPDB's sql.ErrNoRows case: an untyped 0, so an int
@@ -232,16 +261,53 @@ func (d *DatabaseFuncs) DbDelMultiple(query interface{}, amount interface{}, ski
 	}
 	s := int(ToInt64(skip))
 	if s < 0 { // Postgres checks OFFSET before LIMIT
-		return "", errNegativeOffset
+		return "", boilerErr(errNegativeOffset)
 	}
 	if a < 0 {
-		return "", errors.New("pq: LIMIT must not be negative")
+		return "", boilerErr(errors.New("pq: LIMIT must not be negative"))
 	}
-	return d.DB.DelMultiple(q.UserID, q.Pattern, q.Reverse, a, s), nil
+	d.planRisk("dbDelMultiple", q.Pattern)
+	deleted, err := d.DB.DelMultiple(q.UserID, q.Pattern, q.Reverse, a, s)
+	if err != nil {
+		return "", boilerErr(err)
+	}
+	return deleted, nil
 }
 
 // errNegativeOffset is Postgres's answer to a negative skip.
 var errNegativeOffset = errors.New("pq: OFFSET must not be negative")
+
+// boilerErr is a query error as the functions that select through sqlboiler's AllG return
+// it: Bind wraps it, then the model's All (models/templates_user_database.go). dbCount and
+// dbRank query directly and return lib/pq's error as it is.
+func boilerErr(err error) error {
+	return fmt.Errorf("models: failed to assign all query results to TemplatesUserDatabase slice: "+
+		"bind failed to execute query: %w", err)
+}
+
+// planRisk reports a pattern that isn't an exact match and ends with an unpaired escape.
+// Postgres plans with the real pattern and estimates its selectivity by running LIKE on
+// the key column's statistics (every server's keys), so it may raise "LIKE pattern must
+// not end with escape character" even when no row of this server reaches the escape.
+func (d *DatabaseFuncs) planRisk(fn string, pattern *string) {
+	if d.OnPlanRisk == nil || pattern == nil {
+		return
+	}
+	wildcard, escaped := false, false
+	for i := 0; i < len(*pattern); i++ {
+		switch c := (*pattern)[i]; {
+		case escaped:
+			escaped = false
+		case c == '\\':
+			escaped = true
+		case c == '%' || c == '_':
+			wildcard = true // like_fixed_prefix stops here: not an exact match
+		}
+	}
+	if wildcard && escaped {
+		d.OnPlanRisk(fn, *pattern)
+	}
+}
 
 // query is YAGPDB's Query: nil fields match everything.
 type query struct {
@@ -269,7 +335,7 @@ func queryFromArg(arg interface{}) (*query, error) {
 				return &q, errors.New("Invalid UserID datatype in query. Must be a number")
 			}
 		case "pattern":
-			p := limitString(ToString(val), 256)
+			p := LimitString(ToString(val), 256)
 			q.Pattern = &p
 		case "reverse":
 			revFlag, ok := val.(bool)
@@ -284,8 +350,8 @@ func queryFromArg(arg interface{}) (*query, error) {
 	return &q, nil
 }
 
-// limitString is YAGPDB's: s cut to at most l bytes, on a character boundary.
-func limitString(s string, l int) string {
+// LimitString is YAGPDB's limitString: s cut to at most l bytes, on a character boundary.
+func LimitString(s string, l int) string {
 	if len(s) <= l {
 		return s
 	}

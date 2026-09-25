@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
@@ -68,8 +69,9 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	// Set up database
 	db := state.NewMockDB(tc.Context.Guild.ID)
 	for _, entry := range tc.SetupDB {
-		// Fixture maps stand in for sdicts a command stored
-		if _, err := db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value)); err != nil {
+		// Fixture maps stand in for sdicts a command stored, and keys are cut as dbSet cuts them
+		key := funcs.LimitString(entry.Key, 256)
+		if _, err := db.Set(entry.UserID, key, types.FixtureForStorage(entry.Value)); err != nil {
 			result.Error = fmt.Errorf("setup_db %q: %w", entry.Key, err)
 			return result
 		}
@@ -329,7 +331,7 @@ func (r *Runner) checkDatabase(db *state.MockDB, checks []DBCheck) []string {
 	var failures []string
 
 	for _, check := range checks {
-		entry := db.Get(check.UserID, check.Key)
+		entry := db.Get(check.UserID, funcs.LimitString(check.Key, 256)) // as dbGet looks it up
 
 		if check.NotExists {
 			if entry != nil {

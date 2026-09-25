@@ -41,6 +41,11 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 			e.ctx.Warn(KindSchema, "%s: %s", fn, msg)
 		}
 	}
+	dbFuncs.OnPlanRisk = func(fn, pattern string) {
+		e.ctx.Warn(KindDB, "%s: the pattern %q ends with the escape character after a wildcard; "+
+			"Postgres may reject it (\"LIKE pattern must not end with escape character\") while "+
+			"planning, whatever this server's keys are", fn, pattern)
+	}
 
 	// YAGPDB's own implementations: standard functions, and the context functions that
 	// keep per-run state (regex cache, sort). The rest are emulator mocks.

@@ -629,6 +629,55 @@ func TestExecDataIsSetOnlyByExecCC(t *testing.T) {
 	}
 }
 
+// Query errors read as in production: the functions that select through sqlboiler wrap
+// lib/pq's error twice, dbCount and dbRank don't
+func TestDBQueryErrorsAsProductionWrapsThem(t *testing.T) {
+	boiler := "models: failed to assign all query results to TemplatesUserDatabase slice: " +
+		"bind failed to execute query: pq: "
+	cases := []struct{ src, want string }{
+		{`{{dbGetPattern 1 "%\\" 5 0}}`, "error calling dbGetPattern: " + boiler + "LIKE pattern must not end"},
+		{`{{dbGetPatternReverse 1 "a" 5 -1}}`, "error calling dbGetPatternReverse: " + boiler + "OFFSET must not be negative"},
+		{`{{dbTopEntries "%\\" 5 0}}`, "error calling dbTopEntries: " + boiler + "LIKE pattern must not end"},
+		{`{{dbBottomEntries "%\\" 5 0}}`, "error calling dbBottomEntries: " + boiler + "LIKE pattern must not end"},
+		{`{{dbDelMultiple (sdict) -1 0}}`, "error calling dbDelMultiple: " + boiler + "LIMIT must not be negative"},
+		{`{{dbDelMultiple (sdict "pattern" "%\\") 5 0}}`, "error calling dbDelMultiple: " + boiler + "LIKE pattern must not end"},
+		{`{{dbCount "%\\"}}`, "error calling dbCount: pq: LIKE pattern must not end"},
+		{`{{dbRank (sdict "pattern" "%\\") 1 "a"}}`, "error calling dbRank: pq: LIKE pattern must not end"},
+	}
+	for _, c := range cases {
+		ctx := newCtx(false, true)
+		_, err := run(t, ctx, `{{dbSet 1 "a" 1}}`+c.src)
+		if err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: got %v, want %q", c.src, err, c.want)
+		}
+	}
+}
+
+// A pattern that isn't an exact match and ends with the escape may fail while Postgres
+// plans the query, so it warns even when no key reaches the escape
+func TestPatternPlanRiskWarns(t *testing.T) {
+	cases := []struct {
+		src  string
+		warn bool
+	}{
+		{`{{dbCount "%\\"}}`, true},     // no rows: the mock can't fail, production may
+		{`{{dbCount "a_\\"}}`, true},    // a _ is a wildcard too
+		{`{{dbCount "a\\"}}`, false},    // an exact match: the planner runs no LIKE
+		{`{{dbCount "a\\%\\"}}`, false}, // the % is escaped, so still exact
+		{`{{dbCount "a%\\\\"}}`, false}, // the last backslash is escaped
+	}
+	for _, c := range cases {
+		ctx := newCtx(false, true)
+		if _, err := run(t, ctx, c.src); err != nil {
+			t.Fatalf("%s: %v", c.src, err)
+		}
+		warned := len(ctx.Diagnostics) == 1 && ctx.Diagnostics[0].Kind == KindDB
+		if warned != c.warn || (!c.warn && len(ctx.Diagnostics) != 0) {
+			t.Errorf("%s: diagnostics %q, want a [db] warning: %v", c.src, ctx.Diagnostics, c.warn)
+		}
+	}
+}
+
 func TestDBSetOverTheLimitFails(t *testing.T) {
 	_, err := run(t, newCtx(false, true), `{{dbSet 0 "big" (printf "%100000s" "x")}}`)
 	if err == nil || !strings.Contains(err.Error(), "short write") {
@@ -656,6 +705,9 @@ func TestDBQueries(t *testing.T) {
 		{"rank of a missing key", `{{dbRank (sdict) 1 "zzz"}}`, "0", ""},
 		{"delete the lowest two", `{{dbDelMultiple (sdict "reverse" true) 2 0}} {{dbCount}} {{(dbGet 1 "b").Value}}`, "2 2 7", ""},
 		{"negative skip", `{{dbDelMultiple (sdict) 1 -1}}`, "", "OFFSET must not be negative"},
+		{"a trailing escape the match never reaches", `{{dbCount "a\\"}}`, "0", ""},
+		{"a trailing escape the match reaches", `{{dbCount "%\\"}}`, "", "LIKE pattern must not end with escape character"},
+		{"a failed delete deletes nothing", `{{try}}{{dbDelMultiple (sdict "pattern" "%\\") 5 0}}{{catch}}{{end}}{{dbCount}}`, "4", ""},
 		{"negative skip in a pattern", `{{dbGetPattern 1 "%" 1 -1}}`, "", "OFFSET must not be negative"},
 		{"negative skip in top entries", `{{dbTopEntries "%" 1 -1}}`, "", "OFFSET must not be negative"},
 		{"a float user ID fails as in YAGPDB", `{{dbRank (sdict) (toFloat 1) "a"}}`, "", "wrong type for value; expected int64; got float64"},

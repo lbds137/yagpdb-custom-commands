@@ -152,6 +152,34 @@ func TestOversizedSetupValueIsAnError(t *testing.T) {
 	}
 }
 
+// A setup_db key over 256 bytes is stored cut, as dbSet stores it, so dbGet (which cuts
+// the same way) finds it
+func TestLongSetupKeyIsCut(t *testing.T) {
+	tc := &TestCase{
+		Name:           "long key",
+		TemplateSource: `{{(dbGet 0 (printf "%0300d" 0)).Value}} {{dbCount}}`,
+		SetupDB:        []DBEntry{{Key: strings.Repeat("0", 300), Value: "found"}},
+	}
+	tc.applyDefaults()
+	if res := NewRunner(RunnerConfig{}).RunTest(tc); res.Error != nil || res.Output != "found 1" {
+		t.Errorf("got %q, %v", res.Output, res.Error)
+	}
+}
+
+// A db_checks key over 256 bytes is looked up cut, as the command stored it
+func TestLongDBCheckKeyIsCut(t *testing.T) {
+	long := strings.Repeat("0", 300)
+	tc := &TestCase{
+		Name:           "long check key",
+		TemplateSource: `{{dbSet 0 (printf "%0300d" 0) "v"}}`,
+		Assertions:     Assertions{DBChecks: []DBCheck{{Key: long, ValueEquals: "v"}}},
+	}
+	tc.applyDefaults()
+	if res := NewRunner(RunnerConfig{}).RunTest(tc); res.Error != nil || len(res.Failures) != 0 {
+		t.Errorf("got %v, %q", res.Error, res.Failures)
+	}
+}
+
 func TestExpectedErrorStillChecksWhatTheRunDid(t *testing.T) {
 	tc := &TestCase{
 		Name:           "fails late",

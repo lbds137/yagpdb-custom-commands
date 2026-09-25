@@ -2,11 +2,12 @@
 package state
 
 import (
+	"cmp"
+	"errors"
 	"fmt"
+	"math"
 	"reflect"
-	"regexp"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -201,7 +202,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 
 // GetPattern retrieves entries matching a LIKE pattern, ordered by ID like YAGPDB
 // ("id asc", or "id desc" for dbGetPatternReverse).
-func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int, descending bool) []*types.LightDBEntry {
+func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int, descending bool) ([]*types.LightDBEntry, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -215,7 +216,9 @@ func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int, desce
 		if expired(entry, now) {
 			continue
 		}
-		if matchPattern(entry.Key, pattern) {
+		if ok, err := matchPattern(entry.Key, pattern); err != nil {
+			return nil, err
+		} else if ok {
 			results = append(results, m.view(entry))
 		}
 	}
@@ -226,13 +229,13 @@ func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int, desce
 		}
 		return results[i].ID < results[j].ID
 	})
-	return page(results, limit, skip)
+	return page(results, limit, skip), nil
 }
 
 // TopEntries returns entries of every user whose key matches the LIKE pattern, ordered
 // like YAGPDB's dbTopEntries ("value_num DESC, id DESC") or dbBottomEntries (ascending).
 // Non-numeric values count as 0, as they do in YAGPDB's value_num column.
-func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*types.LightDBEntry {
+func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) ([]*types.LightDBEntry, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -242,7 +245,9 @@ func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*
 		if expired(entry, now) {
 			continue
 		}
-		if matchPattern(entry.Key, pattern) {
+		if ok, err := matchPattern(entry.Key, pattern); err != nil {
+			return nil, err
+		} else if ok {
 			results = append(results, entry)
 		}
 	}
@@ -252,15 +257,14 @@ func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*
 	for i, e := range results {
 		results[i] = m.view(e)
 	}
-	return results
+	return results, nil
 }
 
 // sortByValueNum orders entries as "value_num DESC, id DESC", or ascending.
 func (m *MockDB) sortByValueNum(results []*types.LightDBEntry, ascending bool) {
 	sort.Slice(results, func(i, j int) bool {
-		a, b := m.valueNum(results[i]), m.valueNum(results[j])
-		if a != b {
-			return (a < b) == ascending
+		if c := pgCompare(m.valueNum(results[i]), m.valueNum(results[j])); c != 0 {
+			return (c < 0) == ascending
 		}
 		return (results[i].ID < results[j].ID) == ascending
 	})
@@ -269,41 +273,48 @@ func (m *MockDB) sortByValueNum(results []*types.LightDBEntry, ascending bool) {
 // Rank is YAGPDB's dbRank query: the 1-based position of the user's key among the
 // unexpired entries matching userID and pattern (nil matches all), ordered by value_num
 // then id, descending unless ascending. 0 if the entry isn't among them.
-func (m *MockDB) Rank(userID *int64, pattern *string, ascending bool, targetUser int64, key string) int64 {
+func (m *MockDB) Rank(userID *int64, pattern *string, ascending bool, targetUser int64, key string) (int64, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	var results []*types.LightDBEntry
 	now := time.Now()
 	for _, entry := range m.entries {
-		if expired(entry, now) || (userID != nil && entry.UserID != *userID) ||
-			(pattern != nil && !matchPattern(entry.Key, *pattern)) {
+		if expired(entry, now) || (userID != nil && entry.UserID != *userID) {
 			continue
 		}
-		results = append(results, entry)
+		if ok, err := matchOptional(entry.Key, pattern); err != nil {
+			return 0, err
+		} else if ok {
+			results = append(results, entry)
+		}
 	}
 	m.sortByValueNum(results, ascending)
 	for i, e := range results {
 		if e.UserID == targetUser && e.Key == key {
-			return int64(i + 1)
+			return int64(i + 1), nil
 		}
 	}
-	return 0
+	return 0, nil
 }
 
 // DelMultiple is YAGPDB's dbDelMultiple query: it deletes up to limit entries matching
 // userID and pattern (nil matches all), expired ones included, in value_num order after
 // skipping skip, and returns how many it deleted.
-func (m *MockDB) DelMultiple(userID *int64, pattern *string, ascending bool, limit, skip int) int64 {
+func (m *MockDB) DelMultiple(userID *int64, pattern *string, ascending bool, limit, skip int) (int64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	var results []*types.LightDBEntry
 	for _, entry := range m.entries {
-		if (userID != nil && entry.UserID != *userID) || (pattern != nil && !matchPattern(entry.Key, *pattern)) {
+		if userID != nil && entry.UserID != *userID {
 			continue
 		}
-		results = append(results, entry)
+		if ok, err := matchOptional(entry.Key, pattern); err != nil {
+			return 0, err // the statement fails whole: nothing is deleted
+		} else if ok {
+			results = append(results, entry)
+		}
 	}
 	m.sortByValueNum(results, ascending)
 	results = page(results, limit, skip)
@@ -312,7 +323,7 @@ func (m *MockDB) DelMultiple(userID *int64, pattern *string, ascending bool, lim
 		delete(m.entries, compositeKey)
 		delete(m.valueNums, compositeKey)
 	}
-	return int64(len(results))
+	return int64(len(results)), nil
 }
 
 func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry {
@@ -326,6 +337,20 @@ func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry 
 	return results
 }
 
+// pgCompare orders float8 values as Postgres does: NaN equals NaN and sorts above every
+// number (Go's cmp.Compare puts it below).
+func pgCompare(a, b float64) int {
+	switch an, bn := math.IsNaN(a), math.IsNaN(b); {
+	case an && bn:
+		return 0
+	case an:
+		return 1
+	case bn:
+		return -1
+	}
+	return cmp.Compare(a, b)
+}
+
 // valueNum is the entry's value_num column.
 func (m *MockDB) valueNum(e *types.LightDBEntry) float64 {
 	return m.valueNums[makeKey(e.UserID, e.Key)]
@@ -337,7 +362,7 @@ func isNumber(v interface{}) bool {
 }
 
 // Count returns the number of entries matching optional criteria.
-func (m *MockDB) Count(userID *int64, pattern *string) int {
+func (m *MockDB) Count(userID *int64, pattern *string) (int, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -352,14 +377,14 @@ func (m *MockDB) Count(userID *int64, pattern *string) int {
 		if userID != nil && entry.UserID != *userID {
 			continue
 		}
-		// Filter by pattern if provided
-		if pattern != nil && !matchPattern(entry.Key, *pattern) {
-			continue
+		if ok, err := matchOptional(entry.Key, pattern); err != nil {
+			return 0, err
+		} else if ok {
+			count++
 		}
-		count++
 	}
 
-	return count
+	return count, nil
 }
 
 // GetAll returns all non-expired entries (for debugging).
@@ -382,42 +407,119 @@ func (m *MockDB) GetAll() []*types.LightDBEntry {
 
 // matchPattern is Postgres LIKE, which YAGPDB's pattern functions use: % matches any run
 // of characters, _ matches one, a backslash escapes the next character, and the match is
-// case-sensitive and covers the whole key.
-func matchPattern(s, pattern string) bool {
-	return likeRegexp(pattern).MatchString(s)
+// case-sensitive and covers the whole key. A pattern ending in the escape is an error only
+// when matching reaches it, as in Postgres.
+func matchPattern(s, pattern string) (bool, error) {
+	matched, err := matchText(s, pattern)
+	return matched == likeTrue, err
 }
 
-var (
-	likeMu    sync.Mutex
-	likeCache = map[string]*regexp.Regexp{}
+// matchOptional is matchPattern where a nil pattern matches every key.
+func matchOptional(s string, pattern *string) (bool, error) {
+	if pattern == nil {
+		return true, nil
+	}
+	return matchPattern(s, *pattern)
+}
+
+// ErrLikeEscape is Postgres's error for a LIKE pattern that ends with its escape character.
+var ErrLikeEscape = errors.New("pq: LIKE pattern must not end with escape character")
+
+const (
+	likeFalse = iota
+	likeTrue
+	likeAbort // no match, and no later start in the text can match either
 )
 
-func likeRegexp(pattern string) *regexp.Regexp {
-	likeMu.Lock()
-	defer likeMu.Unlock()
-	if re, ok := likeCache[pattern]; ok {
-		return re
+// matchText is Postgres's MatchText (src/backend/utils/adt/like_match.c, the UTF-8,
+// case-sensitive variant) on bytes: it steps by byte in lockstep and by character after
+// a wildcard.
+func matchText(t, p string) (int, error) {
+	// Fast path for match-everything pattern
+	if len(p) == 1 && p[0] == '%' {
+		return likeTrue, nil
 	}
-	var b strings.Builder
-	b.WriteString(`(?s)\A`)
-	runes := []rune(pattern)
-	for i := 0; i < len(runes); i++ {
-		switch r := runes[i]; r {
-		case '%':
-			b.WriteString(".*")
-		case '_':
-			b.WriteString(".")
-		case '\\':
-			if i+1 < len(runes) {
-				i++
-				b.WriteString(regexp.QuoteMeta(string(runes[i])))
+	for len(t) > 0 && len(p) > 0 {
+		if p[0] == '\\' {
+			// Next pattern byte must match literally, whatever it is
+			p = p[1:]
+			// ... and there had better be one, per SQL standard
+			if len(p) == 0 {
+				return likeFalse, ErrLikeEscape
 			}
-		default:
-			b.WriteString(regexp.QuoteMeta(string(r)))
+			if p[0] != t[0] {
+				return likeFalse, nil
+			}
+		} else if p[0] == '%' {
+			// Skip the wildcards after the %: N _'s and any %'s match at least N characters
+			p = p[1:]
+			for len(p) > 0 {
+				if p[0] == '%' {
+					p = p[1:]
+				} else if p[0] == '_' {
+					if len(t) == 0 {
+						return likeAbort, nil
+					}
+					t = nextChar(t)
+					p = p[1:]
+				} else {
+					break
+				}
+			}
+			// A trailing % matches any remaining text
+			if len(p) == 0 {
+				return likeTrue, nil
+			}
+			// Scan for a text position where the rest of the pattern, which starts with a
+			// literal, matches
+			var firstpat byte
+			if p[0] == '\\' {
+				if len(p) < 2 {
+					return likeFalse, ErrLikeEscape
+				}
+				firstpat = p[1]
+			} else {
+				firstpat = p[0]
+			}
+			for len(t) > 0 {
+				if t[0] == firstpat {
+					matched, err := matchText(t, p)
+					if err != nil || matched != likeFalse {
+						return matched, err
+					}
+				}
+				t = nextChar(t)
+			}
+			return likeAbort, nil
+		} else if p[0] == '_' {
+			// _ matches any single character, and we know there is one
+			t = nextChar(t)
+			p = p[1:]
+			continue
+		} else if p[0] != t[0] {
+			return likeFalse, nil
 		}
+		t = t[1:]
+		p = p[1:]
 	}
-	b.WriteString(`\z`)
-	re := regexp.MustCompile(b.String())
-	likeCache[pattern] = re
-	return re
+	if len(t) > 0 {
+		return likeFalse, nil // end of pattern, but not of text
+	}
+	// End of text: match iff the rest of the pattern is %'s
+	for len(p) > 0 && p[0] == '%' {
+		p = p[1:]
+	}
+	if len(p) == 0 {
+		return likeTrue, nil
+	}
+	return likeAbort, nil
+}
+
+// nextChar is like_match.c's UTF-8 NextChar: past one byte and its continuation bytes.
+func nextChar(s string) string {
+	s = s[1:]
+	for len(s) > 0 && s[0]&0xC0 == 0x80 {
+		s = s[1:]
+	}
+	return s
 }
