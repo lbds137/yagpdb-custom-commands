@@ -6,12 +6,19 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ### Remaining emulator gaps
 - `.ValueSize` of database entries is an estimate, not YAGPDB's msgpack size.
-- Discord functions are mocks: `editMessage` is a no-op (so it skips Discord's message
-  limits, which sends check), the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
+- Discord functions are mocks: the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
 - Missing standard functions that need Discord data: `snowflakeToTime`, `humanize*`,
   `roleAbove`, `sanitizeText`, `adjective`/`noun`/`verb`.
 - Role lookups accept IDs, mentions and names everywhere; YAGPDB's `FindRole` accepts a
   different set per function.
+- `editMessage` gaps: the channel argument is read as a number (YAGPDB also takes channel
+  names and refuses floats and unknown channels up front); a stored message keeps only its
+  first embed and no file, so edits of multi-embed or file messages can differ; edits don't
+  set `EditedTimestamp`; message builders read keys as a map, so a repeated key (two
+  `"embed"`s) counts once. A test message is the bot's to edit only with `author_id:
+  1234567890`.
+- Message assertions match the first message per channel, and `content_equals: ""` checks
+  nothing, so an emptied content can't be asserted.
 - A trailing backslash in a LIKE pattern is ignored; Postgres errors.
 - `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
   declares no guild roles accepts any role), and accepts any channel ID, since the
@@ -71,6 +78,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       30 days ago); `.Member` and `getMember` build the same member, and `JoinedAt` is
       discordgo's `Timestamp` string, formatted as Discord sends it. guest's grace-period
       path is tested. A suite that doesn't parse reports its own error (2026-09-25)
+- [x] `editMessage` edits the message: someone else's or a missing one is refused as
+      Discord refuses it, the edited message gets the send checks, and `complexMessageEdit`
+      is ported (with YAGPDB's "both content and embed cannot be null"). Tests assert with
+      `edited_messages`; channel_link is tested (2026-09-25)
 - [x] Hand-written files are parsed strictly (test YAML, `-schema` YAML, `-context` and
       `-db` JSON): an unknown key, a second YAML document or trailing JSON is an error, and a
       suite's defaults can't set args, exec_data, message_content or reaction. A misspelled

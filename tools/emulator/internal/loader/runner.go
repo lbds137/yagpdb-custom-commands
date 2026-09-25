@@ -124,7 +124,8 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	result.Failures = append(result.Failures, failures...)
 
 	// Check sent messages
-	failures = r.checkMessages(ctx.SentMessages, tc.Assertions.SentMessages)
+	failures = r.checkMessages(ctx.SentMessages, tc.Assertions.SentMessages, "sent")
+	failures = append(failures, r.checkMessages(ctx.EditedMessages, tc.Assertions.EditedMessages, "edited")...)
 	result.Failures = append(result.Failures, failures...)
 
 	// Check role changes
@@ -355,8 +356,9 @@ func (r *Runner) checkDatabase(db *state.MockDB, checks []DBCheck) []string {
 	return failures
 }
 
-// checkMessages verifies sent message assertions.
-func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageCheck) []string {
+// checkMessages checks sent or edited messages (how says which); each check matches the
+// first message in its channel.
+func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageCheck, how string) []string {
 	var failures []string
 
 	for i, check := range checks {
@@ -372,10 +374,10 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 		if found == nil {
 			if check.ChannelID != 0 {
 				failures = append(failures,
-					fmt.Sprintf("message check %d: no message sent to channel %d", i, check.ChannelID))
+					fmt.Sprintf("%s message check %d: no message %s in channel %d", how, i, how, check.ChannelID))
 			} else {
 				failures = append(failures,
-					fmt.Sprintf("message check %d: no messages sent", i))
+					fmt.Sprintf("%s message check %d: no messages %s", how, i, how))
 			}
 			continue
 		}

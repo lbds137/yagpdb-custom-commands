@@ -19,6 +19,7 @@ import (
 type Snapshot struct {
 	Output      string            `yaml:"output"`
 	Messages    []SnapshotMessage `yaml:"messages,omitempty"`
+	Edits       []SnapshotMessage `yaml:"edits,omitempty"`
 	RoleChanges []string          `yaml:"role_changes,omitempty"`
 	DB          []SnapshotEntry   `yaml:"db,omitempty"`
 }
@@ -46,13 +47,8 @@ func SnapshotPath(sourceFile string) string {
 
 func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB) Snapshot {
 	snap := Snapshot{Output: strings.TrimSpace(output)}
-	for _, msg := range ctx.SentMessages {
-		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: msg.Content}
-		if msg.Embed != nil {
-			sm.Embed = readableJSON(msg.Embed)
-		}
-		snap.Messages = append(snap.Messages, sm)
-	}
+	snap.Messages = snapshotMessages(ctx.SentMessages)
+	snap.Edits = snapshotMessages(ctx.EditedMessages)
 	for _, rc := range ctx.RoleChanges {
 		snap.RoleChanges = append(snap.RoleChanges, fmt.Sprintf("%s role %d for user %d", rc.Action, rc.RoleID, rc.UserID))
 	}
@@ -67,6 +63,18 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 		snap.DB = append(snap.DB, SnapshotEntry{UserID: e.UserID, Key: e.Key, Value: compactJSON(e.Value)})
 	}
 	return snap
+}
+
+func snapshotMessages(messages []runtime.SentMessage) []SnapshotMessage {
+	var out []SnapshotMessage
+	for _, msg := range messages {
+		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: msg.Content}
+		if msg.Embed != nil {
+			sm.Embed = readableJSON(msg.Embed)
+		}
+		out = append(out, sm)
+	}
+	return out
 }
 
 func compactJSON(v interface{}) string {

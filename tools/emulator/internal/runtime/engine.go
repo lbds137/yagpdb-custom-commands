@@ -71,6 +71,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"sendMessageRetID":          e.sendMessageRetID,
 		"sendDM":                    e.sendDM,
 		"editMessage":               e.editMessage,
+		"editMessageNoEscape":       e.editMessage,
 		"getMessage":                e.getMessage,
 		"deleteMessage":             e.deleteMessage,
 		"deleteTrigger":             e.deleteTrigger,
@@ -247,8 +248,66 @@ func (e *Engine) sendDM(msg interface{}) (string, error) {
 	return "", nil
 }
 
-func (e *Engine) editMessage(channel, msgID, content interface{}) string {
-	return ""
+// editMessage is YAGPDB's editMessage: it edits a message the bot sent, and Discord's
+// limits apply to the edited message as they do to a sent one. Editing a message that
+// doesn't exist, or someone else's, fails as Discord fails it.
+func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
+	channelID := e.ctx.ChannelID
+	if channel != nil {
+		channelID = funcs.ToInt64(channel)
+	}
+	if channelID == 0 {
+		return "", errors.New("unknown channel")
+	}
+
+	var change types.MessageEdit
+	switch m := msg.(type) {
+	case *types.MessageEdit:
+		change = *m
+		// YAGPDB's own check, before Discord sees the edit
+		if !m.ComponentsV2 && m.Content != nil && strings.TrimSpace(*m.Content) == "" && len(m.Embeds) == 0 {
+			return "", errors.New("both content and embed cannot be null")
+		}
+	case types.Embed:
+		change.Embeds = []interface{}{m}
+	default:
+		content := fmt.Sprint(msg)
+		change.Content = &content
+	}
+
+	id := funcs.ToInt64(msgID)
+	var target *types.CtxMessage
+	for i := range e.ctx.Messages {
+		if m := &e.ctx.Messages[i]; m.ID == id && m.ChannelID == channelID {
+			target = m
+		}
+	}
+	switch {
+	case target == nil:
+		return "", e.ctx.discordRefuses("editMessage", "HTTP 404, 10008 Unknown Message",
+			fmt.Sprintf("no message %d in channel %d", id, channelID))
+	case target.Author.ID != botUser.ID:
+		return "", e.ctx.discordRefuses("editMessage", "HTTP 403, 50005 Cannot edit a message authored by another user",
+			fmt.Sprintf("message %d is by user %d", id, target.Author.ID))
+	}
+
+	content, embeds := target.Content, target.Embeds
+	if change.Content != nil {
+		content = *change.Content
+	}
+	if change.Embeds != nil {
+		embeds = change.Embeds
+	}
+	if ok, err := e.ctx.checkSend("editMessage", content, embeds, change.HasOther, false); !ok {
+		return "", err
+	}
+	target.Content, target.Embeds = content, embeds
+	edited := SentMessage{ID: id, ChannelID: channelID, Content: content}
+	if len(embeds) > 0 {
+		edited.Embed = embeds[0]
+	}
+	e.ctx.EditedMessages = append(e.ctx.EditedMessages, edited)
+	return "", nil
 }
 
 // getMessage returns a message the test declared (context.messages) or the run sent, or a
@@ -564,13 +623,62 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 	return msg, nil
 }
 
-// complexMessageEdit builds the dict editMessage (a no-op mock) receives, under sdict's
-// rules for keys and values.
-func (e *Engine) complexMessageEdit(args ...interface{}) (types.SDict, error) {
-	if len(args) == 0 {
-		return types.SDict{}, nil
+// complexMessageEdit is YAGPDB's CreateMessageEdit: content and embeds, with the keys it
+// accepts but the emulator doesn't model.
+func (e *Engine) complexMessageEdit(args ...interface{}) (*types.MessageEdit, error) {
+	if len(args) < 1 {
+		return &types.MessageEdit{}, nil
 	}
-	return yagstd.StringKeyDictionary(args...)
+	if m, ok := args[0].(*types.MessageEdit); len(args) == 1 && ok {
+		return m, nil
+	}
+	dict, err := yagstd.StringKeyDictionary(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &types.MessageEdit{}
+	for key, val := range dict {
+		switch strings.ToLower(key) {
+		case "content":
+			temp := fmt.Sprint(val)
+			msg.Content = &temp
+		case "embed":
+			if val == nil {
+				continue
+			}
+			rv := reflect.ValueOf(val)
+			for rv.Kind() == reflect.Pointer {
+				rv = rv.Elem()
+			}
+			if rv.Kind() == reflect.Slice {
+				for j := 0; j < rv.Len() && j < 10; j++ {
+					embed, err := toEmbed(rv.Index(j).Interface())
+					if err != nil {
+						return nil, err
+					}
+					msg.Embeds = append(msg.Embeds, embed)
+				}
+			} else {
+				embed, err := toEmbed(val)
+				if err != nil {
+					return nil, err
+				}
+				msg.Embeds = append(msg.Embeds, embed)
+			}
+		case "components", "buttons", "menus":
+			if val != nil {
+				msg.HasOther = true
+			}
+		case "is_components_v2":
+			msg.ComponentsV2 = val != nil && val != false
+		case "silent", "allowed_mentions", "suppress_embeds":
+			// Accepted; the emulator doesn't model these
+		default:
+			return nil, errors.New(`invalid key "` + key + `" passed to message edit builder`)
+		}
+	}
+	return msg, nil
 }
 
 func (e *Engine) sendTemplate(args ...interface{}) string {
@@ -622,12 +730,18 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 		return ""
 	}
 
+	// YAGPDB's ChannelArg: nil is the current channel
+	channelID := e.ctx.ChannelID
+	if channel != nil {
+		channelID = funcs.ToInt64(channel)
+	}
+
 	// Create child context (shares DB and other state)
 	childCtx := &ExecutionContext{
 		GuildID:         e.ctx.GuildID,
 		GuildName:       e.ctx.GuildName,
 		Prefix:          e.ctx.Prefix,
-		ChannelID:       funcs.ToInt64(channel),
+		ChannelID:       channelID,
 		ChannelName:     e.ctx.ChannelName,
 		UserID:          e.ctx.UserID,
 		Username:        e.ctx.Username,
@@ -663,6 +777,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 
 	// Propagate side effects back to parent
 	e.ctx.SentMessages = append(e.ctx.SentMessages, childCtx.SentMessages...)
+	e.ctx.EditedMessages = append(e.ctx.EditedMessages, childCtx.EditedMessages...)
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
 	if err != nil {

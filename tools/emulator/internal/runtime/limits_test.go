@@ -7,6 +7,7 @@ import (
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
 // q is a quoted template string of n characters.
@@ -530,5 +531,67 @@ func TestEmptyMessageNamesDiscordsCode(t *testing.T) {
 	_, err := run(t, newCtx(true, true), `{{sendMessage nil " "}}`)
 	if err == nil || !strings.Contains(err.Error(), "50006 Cannot send an empty message") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestEditMessage(t *testing.T) {
+	send := `{{$id := sendMessageRetID nil (complexMessage "content" "a" "embed" (cembed "title" "T"))}}`
+	cases := []struct {
+		name, src string
+		strict    bool
+		errWant   string // error with -strict ("" = none)
+		out       string
+	}{
+		{"content only keeps the embed", send + `{{editMessage nil $id "b"}}{{$m := getMessage nil $id}}{{$m.Content}} {{len $m.Embeds}}`, true, "", "b 1"},
+		{"an edit can clear the content", send + `{{editMessage nil $id (complexMessageEdit "content" "" "embed" (cembed "title" "U"))}}{{(getMessage nil $id).Content}}|`, true, "", "|"},
+		// YAGPDB checks the edit alone, so this fails even though the message has an embed
+		{"YAGPDB refuses blank content and no embed", send + `{{editMessage nil $id (complexMessageEdit "content" " ")}}`, false, "both content and embed cannot be null", ""},
+		{"a number is printed as YAGPDB prints it", send + `{{editMessage nil $id 1.5}}{{(getMessage nil $id).Content}}`, true, "", "1.5"},
+		{"an embed alone keeps the content", send + `{{editMessage nil $id (cembed "title" "U")}}{{(getMessage nil $id).Content}}`, true, "", "a"},
+		{"components v2 skips YAGPDB's check", send + `{{editMessage nil $id (complexMessageEdit "content" "" "is_components_v2" true)}}`, false, "", ""},
+		{"unknown message", `{{editMessage nil 42 "x"}}`, true, "10008 Unknown Message", ""},
+		{"a message in another channel", send + `{{editMessage 99 $id "x"}}`, true, "10008 Unknown Message", ""},
+		{"someone else's message", `{{editMessage nil 7 "x"}}`, true, "50005", ""},
+		{"too long", send + `{{editMessage nil $id (printf "%2001s" "x")}}`, true, "HTTP 400", ""},
+		{"unknown key", `{{complexMessageEdit "file" "x"}}`, false, `invalid key "file" passed to message edit builder`, ""},
+	}
+	for _, c := range cases {
+		ctx := newCtx(c.strict, true)
+		ctx.Messages = []types.CtxMessage{{ID: 7, ChannelID: ctx.ChannelID, Author: types.DiscordUser{ID: 5}}}
+		out, err := run(t, ctx, c.src)
+		if c.errWant != "" {
+			if err == nil || !strings.Contains(err.Error(), c.errWant) {
+				t.Errorf("%s: want an error containing %q, got %v", c.name, c.errWant, err)
+			}
+			continue
+		}
+		if err != nil || strings.TrimSpace(out) != c.out {
+			t.Errorf("%s: got %q, %v; want %q", c.name, out, err, c.out)
+		}
+		if len(ctx.EditedMessages) != 1 {
+			t.Errorf("%s: want one recorded edit, got %d", c.name, len(ctx.EditedMessages))
+		} else if m := ctx.EditedMessages[0]; m.ID == 0 || !strings.HasPrefix(c.out, m.Content) {
+			t.Errorf("%s: recorded %+v", c.name, m)
+		}
+	}
+
+	// Without -strict a refused edit warns and changes nothing
+	ctx := newCtx(false, true)
+	if _, err := run(t, ctx, `{{editMessage nil 42 "x"}}`); err != nil || len(ctx.EditedMessages) != 0 || len(ctx.Diagnostics) == 0 {
+		t.Errorf("want a warning and no edit: %v %d %q", err, len(ctx.EditedMessages), ctx.Diagnostics)
+	}
+}
+
+func TestExecCCEditsAreRecorded(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{editMessage nil .ExecData.ID "edited"}}`)
+	ctx := newCtx(true, true)
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	if _, err := run(t, ctx, `{{$id := sendMessageRetID nil "a"}}{{execCC 7 nil 0 (sdict "ID" $id)}}`); err != nil {
+		t.Fatal(err)
+	}
+	if len(ctx.EditedMessages) != 1 || ctx.EditedMessages[0].Content != "edited" {
+		t.Errorf("edits %+v; diagnostics %q", ctx.EditedMessages, ctx.Diagnostics)
 	}
 }
