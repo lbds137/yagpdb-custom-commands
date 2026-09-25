@@ -89,6 +89,8 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"deleteResponse":            e.deleteResponse,
 		"addReactions":              e.addReactions,
 		"addMessageReactions":       e.addMessageReactions,
+		"addResponseReactions":      e.addResponseReactions,
+		"deleteMessageReaction":     e.deleteMessageReaction,
 		"deleteAllMessageReactions": e.deleteAllMessageReactions,
 
 		// Role functions
@@ -147,12 +149,12 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 func (e *Engine) Execute(source string) (string, error) {
 	out, err := e.execute(source)
 	settings := ReadErrorSettings(source)
-	if e.ctx.ExecCCDepth == 0 && e.ctx.delResponse && e.ctx.delResponseDelay >= 1 &&
-		strings.TrimSpace(out) != "" && (err == nil || !settings.ShowErrors) {
-		// The response is sent, and deleted later; a delay under 1 sends none (a failed
-		// run's output still holds it here). An execCC child's is recorded by execCC,
-		// which knows its message.
-		e.ctx.recordDeletion("response", e.ctx.ChannelID, 0, e.ctx.delResponseDelay)
+	if e.ctx.ExecCCDepth == 0 && strings.TrimSpace(out) != "" && (err == nil || !settings.ShowErrors) &&
+		!(e.ctx.delResponse && e.ctx.delResponseDelay < 1) {
+		// The response is sent (a deleteResponse delay under 1 sends none; a failed run's
+		// output still holds it here). An execCC child's is recorded by execCC, which
+		// knows its message.
+		e.ctx.recordResponseSent(e.ctx.ChannelID, 0)
 	}
 	if err == nil {
 		return out, nil
@@ -407,11 +409,12 @@ func (e *Engine) deleteMessage(channel, msgID interface{}, args ...interface{}) 
 }
 
 // deleteTrigger is YAGPDB's tmplDelTrigger: deleteMessage of the run's message, which is
-// the reacted-to message in a reaction run and the caller's in an execCC child. An interval
-// run has none.
+// the reacted-to message in a reaction run and the caller's in an execCC child. A run
+// without a message (an interval run) has Context.Execute's stand-in with ID 0: Discord
+// refuses to delete it and YAGPDB ignores the error, so nothing is recorded.
 func (e *Engine) deleteTrigger(args ...interface{}) string {
 	m := e.ctx.triggerMsg()
-	if m.ID == 0 { // YAGPDB's ctx.Msg is nil
+	if m.ID == 0 {
 		return ""
 	}
 	return e.delMessage("trigger", m.ChannelID, m.ID, args...)
@@ -446,18 +449,6 @@ func (e *Engine) deleteResponse(args ...interface{}) string {
 	}
 	e.ctx.delResponseDelay = dur
 	e.ctx.delResponse = true
-	return ""
-}
-
-func (e *Engine) addReactions(args ...interface{}) string {
-	return ""
-}
-
-func (e *Engine) addMessageReactions(args ...interface{}) string {
-	return ""
-}
-
-func (e *Engine) deleteAllMessageReactions(args ...interface{}) string {
 	return ""
 }
 
@@ -832,9 +823,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 	out, err := childEngine.Execute(string(templateContent))
 	if out != "" && (err == nil || !ReadErrorSettings(string(templateContent)).ShowErrors) {
 		id := childCtx.RecordSentMessage(channelID, out, nil, childCtx.ResponsePings)
-		if childCtx.delResponse { // a delay under 1 sends no response (the output is "")
-			childCtx.recordDeletion("response", channelID, id, childCtx.delResponseDelay)
-		}
+		childCtx.recordResponseSent(channelID, id) // a deleteResponse delay under 1 left out ""
 	}
 
 	// Propagate side effects back to parent
@@ -842,6 +831,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 	e.ctx.EditedMessages = append(e.ctx.EditedMessages, childCtx.EditedMessages...)
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.Deletions = append(e.ctx.Deletions, childCtx.Deletions...)
+	e.ctx.Reactions = append(e.ctx.Reactions, childCtx.Reactions...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
 	if err != nil { // the caller carries on
 		e.ctx.Warn(KindExecCC, "execCC %d (%s) failed: %v", commandID, filepath.Base(templatePath), err)

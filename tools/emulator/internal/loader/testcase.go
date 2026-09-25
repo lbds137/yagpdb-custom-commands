@@ -145,6 +145,20 @@ type Assertions struct {
 	// Deletions are exactly the message deletions the run asked for (deleteTrigger,
 	// deleteMessage, a deleteResponse whose response was sent), in order (`[]` for none)
 	Deletions *[]DeletionCheck `yaml:"deletions"`
+	// Reactions are exactly the reactions the run added and removed, in order (`[]` for
+	// none)
+	Reactions *[]ReactionCheck `yaml:"reactions"`
+}
+
+// ReactionCheck matches a reaction change; unset fields match anything.
+type ReactionCheck struct {
+	Action    string `yaml:"action"` // "add", "remove", "remove_emoji" or "remove_all"
+	Emoji     string `yaml:"emoji"`
+	ChannelID int64  `yaml:"channel_id"`
+	MessageID int64  `yaml:"message_id"`
+	UserID    int64  `yaml:"user_id"` // whose reaction "remove" removed
+	// Response requires the reaction to be on the command's response (addResponseReactions)
+	Response bool `yaml:"response"`
 }
 
 // DeletionCheck matches a deletion; unset fields match anything.

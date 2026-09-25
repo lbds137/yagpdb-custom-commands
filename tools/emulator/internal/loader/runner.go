@@ -140,6 +140,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 
 	result.Failures = append(result.Failures, checkScheduledRuns(ctx.ScheduledRuns(), tc.Assertions.ScheduledRuns)...)
 	result.Failures = append(result.Failures, checkDeletions(ctx.Deletions, tc.Assertions.Deletions)...)
+	result.Failures = append(result.Failures, checkReactions(ctx.Reactions, tc.Assertions.Reactions)...)
 
 	// Check role changes
 	failures = r.checkRoleChanges(ctx.RoleChanges, tc.Assertions.RoleChanges)
@@ -570,6 +571,44 @@ func checkDeletions(deletions []runtime.Deletion, checks *[]DeletionCheck) []str
 				want += fmt.Sprintf(", after %s", time.Duration(*c.Delay))
 			}
 			failures = append(failures, fmt.Sprintf("deletion %d doesn't match (%s; unset = any): %s", i, want, d))
+		}
+	}
+	return failures
+}
+
+// checkReactions compares the reaction changes with the expected list, one by one.
+func checkReactions(changes []runtime.ReactionChange, checks *[]ReactionCheck) []string {
+	if checks == nil {
+		return nil
+	}
+	var failures []string
+	for i, c := range *checks {
+		switch c.Action {
+		case "", "add", "remove", "remove_emoji", "remove_all":
+		default:
+			failures = append(failures, fmt.Sprintf("reaction check %d: action is %q; it takes add, remove, remove_emoji or remove_all", i, c.Action))
+		}
+	}
+	if len(failures) > 0 {
+		return failures
+	}
+	if len(changes) != len(*checks) {
+		parts := make([]string, len(changes))
+		for i, r := range changes {
+			parts[i] = r.String()
+		}
+		return []string{fmt.Sprintf("expected %d reaction changes, got %d: [%s]", len(*checks), len(changes), strings.Join(parts, "; "))}
+	}
+	for i, c := range *checks {
+		r := changes[i]
+		if (c.Action != "" && r.Action != c.Action) || (c.Emoji != "" && r.Emoji != c.Emoji) ||
+			(c.ChannelID != 0 && r.ChannelID != c.ChannelID) || (c.MessageID != 0 && r.MessageID != c.MessageID) ||
+			(c.UserID != 0 && r.UserID != c.UserID) || (c.Response && r.MessageID != 0) {
+			want := fmt.Sprintf("action %q, emoji %q, channel %d, message %d, user %d", c.Action, c.Emoji, c.ChannelID, c.MessageID, c.UserID)
+			if c.Response {
+				want += ", on the response"
+			}
+			failures = append(failures, fmt.Sprintf("reaction change %d doesn't match (%s; unset = any): %s", i, want, r))
 		}
 	}
 	return failures

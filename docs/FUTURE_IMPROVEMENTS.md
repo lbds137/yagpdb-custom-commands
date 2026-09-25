@@ -25,11 +25,16 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   aren't told apart (YAGPDB's name lookup skips some types, and getMessage/editMessage
   refuse DMs), and getChannel has no other fields. A test that declares no channels
   treats any channel ID as existing, with a `[channel]` warning per ID. Names are looked
-  up in declared order, standing in for Discord's positions.
-  addMessageReactions, deleteAllMessageReactions, getTargetPermissionsIn and sendTemplate
-  ignore their channel (YAGPDB's deleteAllMessageReactions prints "non-existing channel"
-  for an unknown one, and sendTemplate errors "unknown channel").
-- Discord functions are mocks: reaction calls only record, role changes don't update the
+  up in declared order, standing in for Discord's positions. getTargetPermissionsIn and
+  sendTemplate ignore their channel (YAGPDB's sendTemplate errors "unknown channel").
+- Reactions: an emoji is refused only when it isn't a string ("<int Value>"); an unknown
+  or misspelled emoji, which Discord refuses (10014), is recorded. Reacting to a message
+  the emulator doesn't know is Discord's 10008 refusal, though the message may exist in
+  production. addReactions in an interval run reacts to the stand-in message (ID 0), which
+  Discord refuses; that the error is 10008 is inferred, not probed.
+- Without -strict, a function over its call limit warns "YAGPDB stops the command here"
+  and runs on, even inside `{{try}}`, where YAGPDB's error would go to `{{catch}}` instead.
+- Discord functions are mocks: role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
   is a no-op, and there are no components or threads yet.
 - Pings: the bot's "Mention @everyone, @here, and All Roles" permission is one setting for
@@ -178,9 +183,15 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
       used to return the previous message's ID after a refused send). Edits set
       EditedTimestamp (2026-09-25)
+- [x] Reactions are recorded (YAGPDB's tmplAddReactions, tmplAddResponseReactions,
+      tmplAddMessageReactions, tmplDelMessageReaction, tmplDelAllMessageReactions copied,
+      with their argument checks, early returns and printed "non-existing channel/user",
+      and their call counting per emoji as they go instead of all up front).
+      addResponseReactions' reactions go on the response once it's sent. Tests assert
+      them with `reactions:`, and snapshots record them (2026-09-25)
 - [x] Deletions are recorded (YAGPDB's tmplDelTrigger/tmplDelMessage/tmplDelResponse):
       deleteTrigger deletes the run's message (the reacted-to one in a reaction run, the
-      caller's in an execCC child, none in an interval run), deleteMessage skips an
+      caller's in an execCC child; an interval run's stand-in, ID 0, deletes nothing), deleteMessage skips an
       unknown channel, delays default to 10s, cap at a day and run at once under 1, and
       deleteResponse deletes the response only when one is sent (an execCC child's by its
       message ID). Tests assert them with `deletions:`, and snapshots record them

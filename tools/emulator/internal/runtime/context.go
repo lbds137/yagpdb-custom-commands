@@ -139,7 +139,9 @@ type ExecutionContext struct {
 	RoleChanges    []RoleChange
 	// Deletions are the message deletions the run asked for, in order (none happen within
 	// the run: YAGPDB deletes later, from a goroutine or a scheduled event)
-	Deletions   []Deletion
+	Deletions []Deletion
+	// Reactions are the reactions the run added and removed, in order
+	Reactions   []ReactionChange
 	FileUploads []FileUpload
 	// ResponsePings are who the response (the template's output) notifies
 	ResponsePings Pings
@@ -152,6 +154,8 @@ type ExecutionContext struct {
 	// deleteResponse's setting: YAGPDB sends no response it would delete at once (delay < 1)
 	delResponse      bool
 	delResponseDelay int
+	// addResponseReactions' emoji, added once the response is sent
+	responseReactions []string
 
 	// Warnings found during execution (limits, db calls in loops, schema mismatches)
 	Diagnostics []Diagnostic
@@ -426,6 +430,15 @@ func (ctx *ExecutionContext) sentMessageIDs() *int64 {
 func (ctx *ExecutionContext) recordDeletion(of string, channelID, messageID int64, delay int) {
 	ctx.Deletions = append(ctx.Deletions, Deletion{Of: of, ChannelID: channelID, MessageID: messageID,
 		Delay: time.Duration(max(delay, 0)) * time.Second})
+}
+
+// recordResponseSent records what SendResponse does after sending the response: its
+// deletion (deleteResponse) and its reactions (addResponseReactions).
+func (ctx *ExecutionContext) recordResponseSent(channelID, messageID int64) {
+	if ctx.delResponse {
+		ctx.recordDeletion("response", channelID, messageID, ctx.delResponseDelay)
+	}
+	ctx.recordResponseReactions(channelID, messageID)
 }
 
 // BotUserID is the emulated bot's user ID.

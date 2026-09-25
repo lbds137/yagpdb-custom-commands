@@ -22,6 +22,7 @@ type Snapshot struct {
 	Edits       []SnapshotMessage `yaml:"edits,omitempty"`
 	RoleChanges []string          `yaml:"role_changes,omitempty"`
 	Deletions   []string          `yaml:"deletions,omitempty"`
+	Reactions   []string          `yaml:"reactions,omitempty"`
 	DB          []SnapshotEntry   `yaml:"db,omitempty"`
 }
 
@@ -59,6 +60,9 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 	}
 	for _, d := range ctx.Deletions {
 		snap.Deletions = append(snap.Deletions, d.String())
+	}
+	for _, r := range ctx.Reactions {
+		snap.Reactions = append(snap.Reactions, r.String())
 	}
 	entries := db.GetAll()
 	sort.Slice(entries, func(i, j int) bool {

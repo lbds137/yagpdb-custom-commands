@@ -45,6 +45,7 @@ var (
 	limitReactTrig   = callLimit{"add_reaction_trigger", 20, 20}
 	limitReactMsg    = callLimit{"add_reaction_message", 20, 20}
 	limitDelReactMsg = callLimit{"del_reaction_message", 10, 10}
+	limitReactResp   = callLimit{"add_reaction_response", 20, 20}
 )
 
 // overLimitErr is the error of a function that fails differently from its counter's usual
@@ -92,11 +93,6 @@ var limitedFuncs = map[string]limitedFunc{
 	"sort":                    {limits: []callLimit{limitSort}},
 	"createTicket":            {limits: []callLimit{limitTicket}},
 
-	// One count per emoji (context_funcs.go tmplAddReactions / tmplAddMessageReactions)
-	"addReactions":        {check: perEmoji(0, limitReactTrig)},
-	"addMessageReactions": {check: perEmoji(2, limitReactMsg)},
-	// Per emoji when emoji are given, otherwise one API call (tmplDelAllMessageReactions)
-	"deleteAllMessageReactions": {check: checkDeleteReactions},
 	// One API call, and one call per target user (tmplSetRoles)
 	"setRoles": {check: checkSetRoles},
 
@@ -168,31 +164,6 @@ func (ctx *ExecutionContext) count(fn, key string, limit int, base error) error 
 	return fmt.Errorf("%w (%s: over the limit of %d %s calls per run)", base, fn, limit, key)
 }
 
-// perEmoji counts one call per emoji argument from index first on; slices of emoji are
-// flattened, as YAGPDB's callVariadic does.
-func perEmoji(first int, l callLimit) func(*ExecutionContext, string, []reflect.Value) error {
-	return func(ctx *ExecutionContext, name string, args []reflect.Value) error {
-		for i := 0; i < countFlattened(args, first); i++ {
-			if err := ctx.countCall(name, l); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-func checkDeleteReactions(ctx *ExecutionContext, name string, args []reflect.Value) error {
-	if n := countFlattened(args, 2); n > 0 {
-		for i := 0; i < n; i++ {
-			if err := ctx.countCall(name, limitDelReactMsg); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	return ctx.countCall(name, limitAPI)
-}
-
 func checkSetRoles(ctx *ExecutionContext, name string, args []reflect.Value) error {
 	if err := ctx.countCall(name, limitAPI); err != nil {
 		return err
@@ -221,27 +192,6 @@ func flatArgs(args []reflect.Value) []interface{} {
 		out = append(out, a.Interface())
 	}
 	return out
-}
-
-// countFlattened counts arguments from index first on, counting each element of a slice
-// and skipping nils, as YAGPDB's callVariadic does.
-func countFlattened(args []reflect.Value, first int) int {
-	n := 0
-	for i, a := range flatArgs(args) {
-		if i < first || a == nil {
-			continue
-		}
-		if v := reflect.ValueOf(a); (v.Kind() == reflect.Slice || v.Kind() == reflect.Array) && v.Type().Elem().Kind() != reflect.Uint8 {
-			for j := 0; j < v.Len(); j++ {
-				if v.Index(j).Interface() != nil {
-					n++
-				}
-			}
-		} else {
-			n++
-		}
-	}
-	return n
 }
 
 // targetUserID follows YAGPDB's TargetUserID: a user, a mention ("<@id>" or "<@!id>"),

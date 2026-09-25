@@ -77,6 +77,10 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # A complexMessage "reply" pings the replied-to author when replied_user is on (NoEscape
     # turns it on); the trigger's .Message.ID is 234567890; replying to a message that isn't
     # the trigger, a sent one or in messages: warns [message]
+    reactions: [{ action: add, emoji: "👋", message_id: 7 }, { action: remove_all }]
+    # exactly the reaction changes, in order: action = add|remove|remove_emoji|remove_all;
+    # response: true = on the response (addResponseReactions); reacting to a message that isn't
+    # declared, sent or the run's own is Discord's 10008 (an error with -strict, else a warning)
     deletions: [{ of: trigger, delay: 5s }, { of: message, channel_id: 9, message_id: 7 }]
     # exactly the deletions asked for, in order ([] for none): of = trigger|message|response;
     # unset fields match anything, delay: 0s = at once. Snapshots record deletions too
