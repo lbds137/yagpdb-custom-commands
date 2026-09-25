@@ -36,6 +36,16 @@ type ContextDef struct {
 	ExecData map[string]interface{} `yaml:"exec_data"`
 	Premium  *bool                  `yaml:"premium"`  // Default true
 	Reaction *ReactionDef           `yaml:"reaction"` // Makes this a reaction-triggered run
+	Messages []MessageDef           `yaml:"messages"` // Messages getMessage can find
+	Members  []int64                `yaml:"members"`  // If set, the only users getMember finds
+}
+
+// MessageDef is an existing Discord message.
+type MessageDef struct {
+	ID        int64  `yaml:"id"`
+	ChannelID int64  `yaml:"channel_id"`
+	AuthorID  int64  `yaml:"author_id"`
+	Content   string `yaml:"content"`
 }
 
 // ReactionDef describes the reaction that triggered a command.
@@ -262,6 +272,12 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 
 	if tc.Context.Premium == nil {
 		tc.Context.Premium = defaults.Premium
+	}
+	if tc.Context.Messages == nil {
+		tc.Context.Messages = defaults.Messages
+	}
+	if tc.Context.Members == nil {
+		tc.Context.Members = defaults.Members
 	}
 
 	// Merge guild defaults

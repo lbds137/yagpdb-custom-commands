@@ -110,6 +110,17 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 		ctx.CmdArgs = ctx.Args
 	}
 
+	for _, m := range tc.Context.Messages {
+		ctx.Messages = append(ctx.Messages, types.CtxMessage{
+			ID:        m.ID,
+			ChannelID: m.ChannelID,
+			GuildID:   ctx.GuildID,
+			Author:    types.DiscordUser{ID: m.AuthorID, Username: "MockUser"},
+			Content:   m.Content,
+		})
+	}
+	ctx.Members = tc.Context.Members
+
 	if rd := tc.Context.Reaction; rd != nil {
 		ctx.Reaction = &types.CtxReaction{
 			UserID:    ctx.UserID,

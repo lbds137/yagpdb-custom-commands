@@ -306,7 +306,17 @@ func (e *Engine) editMessage(channel, msgID, content interface{}) string {
 	return ""
 }
 
-func (e *Engine) getMessage(channel, msgID interface{}) interface{} {
+// getMessage returns a message the test declared (context.messages), or a nil
+// *CtxMessage like YAGPDB's for a message that doesn't exist: `if $msg` is false and
+// $msg.Author is a nil pointer error, as in production.
+func (e *Engine) getMessage(channel, msgID interface{}) *types.CtxMessage {
+	id := funcs.ToInt64(msgID)
+	for i := range e.ctx.Messages {
+		m := &e.ctx.Messages[i]
+		if m.ID == id && (channel == nil || m.ChannelID == funcs.ToInt64(channel)) {
+			return m
+		}
+	}
 	return nil
 }
 
@@ -402,10 +412,22 @@ func (e *Engine) removeRoleID(roleID interface{}, delay ...interface{}) string {
 
 // Member/user functions
 
-func (e *Engine) getMember(userID interface{}) interface{} {
-	return types.CtxMember{
+// getMember returns a mock member. When the test lists members (context.members), anyone
+// else is not in the server and gets a nil *CtxMember, as in YAGPDB.
+func (e *Engine) getMember(userID interface{}) *types.CtxMember {
+	id := targetUserID(userID)
+	if e.ctx.Members != nil {
+		found := false
+		for _, m := range e.ctx.Members {
+			found = found || m == id
+		}
+		if !found {
+			return nil
+		}
+	}
+	return &types.CtxMember{
 		User: types.DiscordUser{
-			ID:       funcs.ToInt64(userID),
+			ID:       id,
 			Username: "MockUser",
 		},
 	}
