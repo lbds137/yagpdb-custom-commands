@@ -1,0 +1,23 @@
+{{- /*
+  Author: Cookbook recipe
+  Trigger type: `Reaction` (set it to "Added + Removed reactions")
+  Trigger: any reaction; the command filters by message
+  Usage: react on the roles message to get a role, remove the reaction to lose it.
+*/ -}}
+
+{{ $rolesMessageID := 555555555555555555 }}
+{{/* Emoji → role ID. Custom emoji are keyed "name:id" (their APIName) */}}
+{{ $roles := sdict
+	"🎮" 666666666666666666
+	"🎨" 777777777777777777
+}}
+
+{{ if eq .Reaction.MessageID $rolesMessageID }}
+	{{ with $roles.Get .Reaction.Emoji.APIName }}
+		{{ if $.ReactionAdded }}
+			{{ addRoleID . }}
+		{{ else }}
+			{{ removeRoleID . }}
+		{{ end }}
+	{{ end }}
+{{ end }}

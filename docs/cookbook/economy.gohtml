@@ -1,0 +1,31 @@
+{{- /*
+  Author: Cookbook recipe
+  Trigger type: `Command`
+  Trigger: `coins`
+  Usage: `-coins` shows your balance; `-coins daily` claims coins once a day.
+*/ -}}
+
+{{ $dailyAmount := 100 }}
+{{ $cooldownSeconds := 86400 }}
+
+{{ $args := parseArgs 0 "Usage: -coins [daily]" (carg "string" "action") }}
+
+{{/* Not `and (IsSet) (lower ...)`: YAGPDB's `and` evaluates every argument, so lower
+	would run on a missing argument and fail */}}
+{{ $action := "" }}
+{{ if $args.IsSet 0 }}{{ $action = lower ($args.Get 0) }}{{ end }}
+
+{{ if eq $action "daily" }}
+	{{/* An expiring entry is the cooldown: it exists until the user may claim again */}}
+	{{ if dbGet .User.ID "coins_daily_cooldown" }}
+		You already claimed today's coins. Come back tomorrow!
+	{{ else }}
+		{{ $balance := dbIncr .User.ID "coins" $dailyAmount }}
+		{{ dbSetExpire .User.ID "coins_daily_cooldown" true $cooldownSeconds }}
+		You claimed {{ $dailyAmount }} coins! Balance: {{ $balance }}
+	{{ end }}
+{{ else }}
+	{{ $balance := 0 }}
+	{{ with dbGet .User.ID "coins" }}{{ $balance = .Value }}{{ end }}
+	{{ .User.Username }}, you have {{ $balance }} coins.
+{{ end }}

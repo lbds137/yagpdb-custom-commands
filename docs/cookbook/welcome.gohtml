@@ -1,0 +1,12 @@
+{{- /*
+  Author: Cookbook recipe
+  Trigger type: `Join message` (Control Panel → Notifications → Join message, not a custom command)
+  Trigger: none; runs when a member joins
+  Usage: gives new members a starting role and greets them in the join-message channel.
+*/ -}}
+
+{{ $newMemberRoleID := 333333333333333333 }}
+{{ $rulesChannelID := 444444444444444444 }}
+
+{{ giveRoleID .User.ID $newMemberRoleID }}
+Welcome to {{ .Guild.Name }}, {{ .User.Mention }}! Please read <#{{ $rulesChannelID }}> to get started.

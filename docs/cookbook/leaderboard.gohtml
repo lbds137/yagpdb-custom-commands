@@ -1,0 +1,19 @@
+{{- /*
+  Author: Cookbook recipe
+  Trigger type: `Command`
+  Trigger: `leaderboard`
+  Usage: `-leaderboard` shows the ten members with the most XP (see leveling.gohtml).
+*/ -}}
+
+{{/* One call reads every member's "xp" entry, sorted highest first */}}
+{{ $top := dbTopEntries "xp" 10 0 }}
+
+{{ if not $top }}
+	No one has earned XP yet.
+{{ else }}
+	{{ $lines := "" }}
+	{{ range $i, $entry := $top }}
+		{{ $lines = print $lines (add $i 1) ". <@" $entry.UserID "> — " $entry.Value " XP\n" }}
+	{{ end }}
+	{{ sendMessage nil (cembed "title" "XP leaderboard" "description" $lines "color" 0x5865f2) }}
+{{ end }}

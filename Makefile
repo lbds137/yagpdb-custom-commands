@@ -44,7 +44,7 @@ update-snapshots: build-emulator ## Rewrite snapshots after an intended output c
 	@./bin/yagtest test -update-snapshots $(YAGTEST_FLAGS) tools/emulator/testdata/
 
 watch: build-emulator ## Rerun template tests whenever a command or test changes
-	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,utility,staff_utility tools/emulator/testdata/
+	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,utility,staff_utility,docs/cookbook tools/emulator/testdata/
 
 ci: test-go test lint ## Everything CI runs
 	@echo "🔍 Checking Go formatting..."
