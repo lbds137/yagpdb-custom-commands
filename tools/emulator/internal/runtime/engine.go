@@ -168,22 +168,35 @@ func (e *Engine) Execute(source string) (string, error) {
 		e.ctx.Warn(KindLoopDB, "%s", f.Message(e.ctx.SourceName))
 	}
 
-	// Like YAGPDB's LimitWriter, stop at the output cap. Outside strict mode the cap is
-	// higher, so an oversized response is reported as a warning, but a runaway loop still
-	// can't fill memory.
+	// The output goes through YAGPDB's LimitWriter: leading whitespace is dropped, and
+	// output past 25k fails unless the rest is whitespace. Outside strict mode a shadow
+	// writer records that verdict while the run goes on (to 1 MiB, so a runaway loop
+	// can't fill memory), and the breach becomes a warning.
 	var buf bytes.Buffer
-	outCap := maxOutputBytes
+	var w io.Writer = yagstd.LimitWriter(&buf, maxOutputBytes)
+	var yagpdbCap *shadowWriter
 	if !e.ctx.Strict {
-		outCap = maxOutputBytesLenient
+		yagpdbCap = &shadowWriter{
+			shadow: yagstd.LimitWriter(io.Discard, maxOutputBytes),
+			w:      yagstd.LimitWriter(&buf, maxOutputBytesLenient),
+		}
+		w = yagpdbCap
 	}
-	if err := tmpl.Execute(&limitWriter{w: &buf, n: outCap}, e.ctx.BuildTemplateData()); err != nil {
+	if err := tmpl.Execute(w, e.ctx.BuildTemplateData()); err != nil {
+		if yagpdbCap != nil && yagpdbCap.err != nil {
+			// YAGPDB would have stopped at the 25k limit, before this error
+			e.ctx.Warn(KindLimit, "response grew too big (>25k); YAGPDB stops there, before the error below")
+		}
 		if err == io.ErrShortWrite { // the output writer's own error, as in YAGPDB; not a function's
-			err = fmt.Errorf("response grew too big (>%d bytes)", outCap)
+			err = errors.New("response grew too big (>25k)")
+			if !e.ctx.Strict {
+				err = fmt.Errorf("response grew too big (>%d bytes)", maxOutputBytesLenient)
+			}
 		}
 		return "", fmt.Errorf("template execution error: %w", err)
 	}
 
-	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.StartTime))
+	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.StartTime), yagpdbCap != nil && yagpdbCap.err != nil)
 }
 
 // Mock Discord functions

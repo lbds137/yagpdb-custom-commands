@@ -649,3 +649,48 @@ func TestDBQueries(t *testing.T) {
 		}
 	}
 }
+
+func TestOutputLimitFollowsYAGPDBsWriter(t *testing.T) {
+	cases := []struct {
+		name, src string
+		out       string // "" = don't check
+		breach    bool
+	}{
+		{"leading whitespace doesn't count", `{{printf "%30000s" "x"}}`, "x", false},
+		{"a whitespace-only overflow is dropped", `{{printf "%-25010s" (printf "%025000d" 0)}}`, "", false},
+		{"real overflow", `{{printf "%025001d" 0}}`, "", true},
+	}
+	for _, c := range cases {
+		for _, strict := range []bool{true, false} {
+			ctx := newCtx(strict, true)
+			out, err := run(t, ctx, c.src)
+			breached := err != nil
+			for _, w := range kinds(ctx, KindLimit) {
+				breached = breached || strings.Contains(w, "grew too big")
+			}
+			if breached != c.breach {
+				t.Errorf("%s (strict %v): breach %v, want %v (err %v, %q)", c.name, strict, breached, c.breach, err, ctx.Diagnostics)
+			}
+			if strict && c.breach && (err == nil || !strings.Contains(err.Error(), "response grew too big (>25k)")) {
+				t.Errorf("%s: want YAGPDB's error, got %v", c.name, err)
+			}
+			if !strict && err != nil {
+				t.Errorf("%s: without -strict a breach is a warning, got %v", c.name, err)
+			}
+			if c.out != "" && strings.TrimSpace(out) != c.out {
+				t.Errorf("%s (strict %v): output %q", c.name, strict, out)
+			}
+		}
+	}
+}
+
+func TestOutputBreachBeforeAnErrorIsReported(t *testing.T) {
+	ctx := newCtx(false, true)
+	_, err := run(t, ctx, `{{printf "%025001d" 0}}{{index (cslice) 5}}`)
+	if err == nil || !strings.Contains(err.Error(), "index out of range") {
+		t.Fatalf("want the later error, got %v", err)
+	}
+	if w := kinds(ctx, KindLimit); len(w) != 1 || !strings.Contains(w[0], "grew too big (>25k)") {
+		t.Errorf("want the 25k warning too, got %q", ctx.Diagnostics)
+	}
+}
