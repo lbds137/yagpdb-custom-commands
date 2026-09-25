@@ -112,10 +112,8 @@ gets a failing test first.
   rest of the run (YAGPDB deletes from a goroutine or a scheduled event, so usually after
   the run ends, but a short delay can land mid-run). `editMessageNoEscape` is
   `editMessage` (edits notify no one either way).
-- getMessage of a test's or a sent message returns the stored message itself, so a later
-  editMessage shows through it (`{{$m := getMessage nil $id}}{{editMessage nil $id "b"}}
-  {{$m.Content}}` is "b"; YAGPDB's earlier fetch keeps the old content). An execCC child
-  works on a copy of the messages, so its edits aren't seen by the caller's later getMessage.
+- An execCC child works on a copy of the messages, so its edits aren't seen by the
+  caller's later getMessage (YAGPDB's getMessage asks Discord, which has the edit).
 - `editMessage` gaps: a stored message keeps its embeds but no file, so edits of file
   messages can differ, and the sent/edited record (`sent_messages`, snapshots) shows only
   the first embed; message builders read keys as a map, so a
@@ -150,6 +148,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] getMessage returns a copy, as YAGPDB's fetches the message from Discord on each
+      call: an editMessage after the fetch no longer shows through the fetched message's
+      content or embeds (2026-09-25)
 
 - [x] avatar_viewer: it never recognized real `whois` output (its field list lacked
       "Roles", which whois always adds, and the tracking-off "Usernames"/"Nicknames");

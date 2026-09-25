@@ -138,6 +138,17 @@ func TestRetIDOverTheLimitAndGetMessageByName(t *testing.T) {
 	}
 }
 
+// getMessage fetches a copy, as YAGPDB's asks Discord each time: an edit after the fetch
+// doesn't show through it, and a fetch after the edit sees it
+func TestGetMessageIsAFetch(t *testing.T) {
+	out, err := run(t, channelCtx(), `{{$id := sendMessageRetID nil (cembed "title" "a")}}`+
+		`{{$m := getMessage nil $id}}{{editMessage nil $id (complexMessageEdit "content" "b" "embed" (cembed "title" "c"))}}`+
+		`{{$m.Content}}|{{(index $m.Embeds 0).Title}}|{{(getMessage nil $id).Content}}|{{(index (getMessage nil $id).Embeds 0).Title}}`)
+	if err != nil || out != "|a|b|c" {
+		t.Errorf("got %q, %v", out, err)
+	}
+}
+
 // No channel has an empty name, even an unnamed test channel; of two channels with the
 // same name the first in declared (position) order wins
 func TestChannelNameEdgeCases(t *testing.T) {
