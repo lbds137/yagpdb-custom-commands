@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
 func TestSentMessagePings(t *testing.T) {
@@ -190,5 +192,62 @@ func TestDeleteResponseAtOnceSendsNothing(t *testing.T) {
 	}
 	if len(ctx.SentMessages) != 1 || !strings.HasPrefix(ctx.SentMessages[0].Content, "partial\nAn error caused") {
 		t.Errorf("sent %+v", ctx.SentMessages)
+	}
+}
+
+// .Message by what started the run, and what an execCC child inherits (YAGPDB's ctx.Msg)
+func TestMessageByTrigger(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{sendMessage nil (print "child " .Message.Author.ID " [" .Message.Content "] " .Message.ChannelID)}}{{execCC 8 nil 0 nil}}`)
+	writeFile(t, dir+"/grandchild.gohtml", `{{sendMessage nil (print "grandchild " .Message.Author.ID " [" .Message.Content "]")}}`)
+	withChildren := func(ctx *ExecutionContext) *ExecutionContext {
+		ctx.TemplateBaseDir = dir
+		ctx.CommandIDMap = map[int64]string{7: "child.gohtml", 8: "grandchild.gohtml"}
+		return ctx
+	}
+	sent := func(ctx *ExecutionContext) string {
+		var s []string
+		for _, m := range ctx.SentMessages {
+			s = append(s, m.Content)
+		}
+		return strings.Join(s, " | ")
+	}
+	src := `{{.Message.Author.ID}} [{{.Message.Content}}]{{execCC 7 99 0 nil}}`
+
+	// A message run: the child gets the same message
+	ctx := withChildren(roleCtx())
+	ctx.MessageContent = "-cmd a"
+	out, err := run(t, ctx, src)
+	u := ctx.UserID
+	want := fmt.Sprintf("child %d [-cmd a] %d | grandchild %d [-cmd a]", u, ctx.ChannelID, u)
+	if err != nil || out != fmt.Sprintf("%d [-cmd a]", u) || sent(ctx) != want {
+		t.Errorf("message run: %q, %v; sent %q", out, err, sent(ctx))
+	}
+
+	// An interval run has no .Message and no member; its child gets a blank message from
+	// the bot (ID 0, this guild, the caller's channel), and no member either
+	ctx = withChildren(roleCtx())
+	ctx.NoMessage, ctx.NoMember = true, true
+	writeFile(t, dir+"/blank.gohtml", `{{sendMessage nil (print "blank " .Message.ID " " .Message.GuildID " " .User " " .Member)}}`)
+	ctx.CommandIDMap[9] = "blank.gohtml"
+	out, err = run(t, ctx, `{{.Message}} {{.Message.Content}} {{.User}} {{.user}} {{.Member}} {{.BotUser}}{{execCC 7 99 0 nil}}{{execCC 9 99 0 nil}}`)
+	want = fmt.Sprintf("child %d [] %d | grandchild %d [] | blank 0 %d <nil> <nil>", // print gets nil
+		botUser.ID, ctx.ChannelID, botUser.ID, ctx.GuildID)
+	if err != nil || out != strings.Repeat("<no value> ", 5)+"<no value>" || sent(ctx) != want {
+		t.Errorf("interval run: %q, %v; sent %q", out, err, sent(ctx))
+	}
+
+	// A reaction run's .Message is the reacted-to message; its child gets it with the
+	// reactor as author
+	ctx = withChildren(roleCtx())
+	ctx.Reaction = &types.CtxReaction{MessageID: 55, ChannelID: ctx.ChannelID}
+	ctx.Messages = []types.CtxMessage{
+		{ID: 55, ChannelID: ctx.ChannelID + 1, Author: types.DiscordUser{ID: 6}, Content: "elsewhere"},
+		{ID: 55, ChannelID: ctx.ChannelID, Author: types.DiscordUser{ID: 5}, Content: "hi"},
+	}
+	out, err = run(t, ctx, src+`{{.ReactionMessage.ID}}`)
+	want = fmt.Sprintf("child %d [hi] %d | grandchild %d [hi]", u, ctx.ChannelID, u)
+	if err != nil || out != "5 [hi]55" || sent(ctx) != want {
+		t.Errorf("reaction run: %q, %v; sent %q", out, err, sent(ctx))
 	}
 }

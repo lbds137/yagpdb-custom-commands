@@ -39,9 +39,12 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     member_nicks: { 1: "Nick" }       # nicknames (.Member and getMember), the triggering user's too
     member_joined_ago: { 2: 12h }     # join time before the run (default 30 days; JoinedAt.Parse)
     messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # what getMessage finds
+                                      # (give channel_id: without it the message is in channel 0)
     message_content: "text"           # or the whole message, trigger included (Regex triggers need it);
                                       # with exec_data/reaction it is only .Message (no arguments)
-    reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run
+    reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run; its .Message is
+                                      # the messages entry with that id in the run's channel
+    # an interval/cron header: no .Message, .User or .Member; a None command keeps a message
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
   setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]  # run first, same DB

@@ -69,6 +69,15 @@ type ExecutionContext struct {
 
 	// ExecData for execCC calls
 	ExecData interface{}
+	// NoMessage and NoMember are set for a scheduled (interval or cron) run, which YAGPDB
+	// starts with neither: no .Message, and no .User, .Member or .BotUser. An execCC child
+	// of such a run keeps NoMember and gets a blank .Message (see triggerMsg). A None
+	// command only runs by execCC, so it always has its caller's message.
+	NoMessage bool
+	NoMember  bool
+	// InheritedMessage is an execCC child's .Message: its caller's triggering message as
+	// YAGPDB keeps it (see triggerMsg)
+	InheritedMessage *types.CtxMessage
 
 	// Messages that exist, for getMessage; Members, if set, are the only users in the server
 	Messages []types.CtxMessage
@@ -204,15 +213,7 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		Roles:   guildRoles,
 	}
 
-	// Build message object
-	message := types.CtxMessage{
-		ID:        ctx.MessageID,
-		ChannelID: ctx.ChannelID,
-		GuildID:   ctx.GuildID,
-		Author:    user,
-		Content:   ctx.MessageContent,
-		Timestamp: time.Now(),
-	}
+	message := ctx.message()
 
 	// Build permissions map
 	permissions := map[string]int64{
@@ -304,15 +305,23 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		data["StackDepth"] = ctx.ExecCCDepth
 	}
 
+	switch {
+	case ctx.InheritedMessage != nil:
+		data["Message"] = *ctx.InheritedMessage
+	case ctx.NoMessage:
+		delete(data, "Message")
+	}
+	if ctx.NoMember { // setupBaseData sets these only when there is a member
+		for _, k := range []string{"User", "user", "Member", "BotUser"} {
+			delete(data, k)
+		}
+	}
 	if ctx.Reaction != nil {
 		data["Reaction"] = ctx.Reaction
 		data["ReactionAdded"] = ctx.ReactionAdded
-		// YAGPDB sets both to the message that was reacted to. The emulator only knows
-		// its ID; author and content stay the defaults.
-		reactionMessage := message
-		reactionMessage.ID = ctx.Reaction.MessageID
-		data["ReactionMessage"] = reactionMessage
-		data["Message"] = reactionMessage
+		// YAGPDB sets both to the message that was reacted to
+		data["ReactionMessage"] = ctx.reactedMessage(message)
+		data["Message"] = data["ReactionMessage"]
 	}
 	// Only a message trigger sets the arguments; YAGPDB leaves them unset otherwise
 	if ctx.triggered {
@@ -450,4 +459,48 @@ func (ctx *ExecutionContext) sortedRoles() []types.CtxRole {
 		return cmp.Or(cmp.Compare(b.Position, a.Position), cmp.Compare(a.ID, b.ID))
 	})
 	return roles
+}
+
+// message is the triggering message as the test gives it: the user's, with the test's
+// content.
+func (ctx *ExecutionContext) message() types.CtxMessage {
+	return types.CtxMessage{
+		ID:        ctx.MessageID,
+		ChannelID: ctx.ChannelID,
+		GuildID:   ctx.GuildID,
+		Author:    types.DiscordUser{ID: ctx.UserID, Username: ctx.Username, Discriminator: ctx.Discriminator},
+		Content:   ctx.MessageContent,
+		Timestamp: ctx.StartTime,
+	}
+}
+
+// reactedMessage is the message a reaction run reacted to: the test's message with that ID
+// in this channel, else the triggering message's defaults with the ID.
+func (ctx *ExecutionContext) reactedMessage(defaults types.CtxMessage) types.CtxMessage {
+	for _, m := range ctx.Messages {
+		if m.ID == ctx.Reaction.MessageID && m.ChannelID == ctx.ChannelID {
+			return m
+		}
+	}
+	defaults.ID = ctx.Reaction.MessageID
+	return defaults
+}
+
+// triggerMsg is YAGPDB's ctx.Msg for this run, which an execCC child gets as .Message: a
+// reaction run's is the reacted-to message with the reactor as author (bot.go
+// ExecuteCustomCommandFromReaction), and a run with no message gets a blank one from the
+// bot, which Context.Execute makes before the template runs.
+func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
+	message := ctx.message()
+	switch {
+	case ctx.InheritedMessage != nil:
+		return *ctx.InheritedMessage
+	case ctx.Reaction != nil:
+		reacted := ctx.reactedMessage(message)
+		reacted.Author = message.Author
+		return reacted
+	case ctx.NoMessage:
+		return types.CtxMessage{ChannelID: ctx.ChannelID, GuildID: ctx.GuildID, Author: botUser}
+	}
+	return message
 }
