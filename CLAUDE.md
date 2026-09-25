@@ -229,6 +229,9 @@ the YAGPDB control panel by hand. `make changed-since-deploy` lists the command 
 changed since the `deployed` git tag; after pasting them, move the tag with
 `make mark-deployed`.
 
+The owner pastes in one batch when a round of work is finished, not after each fix. Don't
+ask for pastes mid-work; when the work is done, report the `make changed-since-deploy` list.
+
 ### Tools Requiring Approval
 The following operations should be discussed before executing:
 
