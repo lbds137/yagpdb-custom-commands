@@ -13,9 +13,6 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   from a 7.4 KB source. Promote when a command stores a Discord object or a value nears
   100000 bytes; the fix is storing the msgpack bytes and decoding them with a copy of
   YAGPDB's newDecoder, with the emulator's Discord types shaped like discordgo's.
-- getMessage finds only a test's `messages` and sent messages, not the triggering message
-  (which has an ID, 234567890 by default); YAGPDB would find it. knownMessage (mentions.go)
-  already knows the trigger and could serve getMessage too.
 - An immediate `execCC` runs inline, before the caller goes on; YAGPDB starts it in a
   goroutine, so it races with the rest of the caller (a `dbGet` right after an `execCC`
   that writes the key may read the old value in production). Scheduled runs are recorded,
@@ -49,6 +46,10 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   `deleteResponse`, `deleteMessage` and `deleteTrigger` record no deletions.
   `editMessageNoEscape` is `editMessage` (edits notify
   no one either way).
+- getMessage of a test's or a sent message returns the stored message itself, so a later
+  editMessage shows through it (`{{$m := getMessage nil $id}}{{editMessage nil $id "b"}}
+  {{$m.Content}}` is "b"; YAGPDB's earlier fetch keeps the old content). An execCC child
+  works on a copy of the messages, so its edits aren't seen by the caller's later getMessage.
 - `editMessage` gaps: a stored message keeps only its first embed and no file, so edits
   of multi-embed or file messages can differ; message builders read keys as a map, so a
   repeated key (two `"embed"`s) counts once. A test message is the bot's to edit only
@@ -176,6 +177,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
       used to return the previous message's ID after a refused send). Edits set
       EditedTimestamp (2026-09-25)
+- [x] getMessage and editMessage find the triggering message (an execCC child its caller's)
+      as well as a test's and sent messages, as YAGPDB, which asks Discord, does; editing
+      it is Discord's "authored by another user" refusal. A reaction run's reacted message
+      and an interval run have only what the test declares (2026-09-25)
 - [x] Pings follow what Discord lets the bot ping: a guild's `bot_mention_everyone: false`
       (the bot lacks "Mention @everyone, @here, and All Roles") stops @everyone/@here and
       every role that isn't `mentionable`, in sends, responses and execCC children. A

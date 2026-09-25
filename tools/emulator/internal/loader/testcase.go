@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
@@ -245,6 +246,11 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 			ts.Tests[i].SetupTemplates = append(append([]string{}, ts.SetupTemplates...), ts.Tests[i].SetupTemplates...)
 		}
 		ts.Tests[i].SourceFile = filename
+		// YAGPDB runs no custom command for a bot's message (customcommands/bot.go)
+		if ts.Tests[i].Context.User.ID == runtime.BotUserID {
+			return nil, fmt.Errorf("%s: test %q: user.id %d is the bot's; YAGPDB runs no custom command for a bot's message",
+				filename, ts.Tests[i].Name, runtime.BotUserID)
+		}
 	}
 
 	return &ts, nil

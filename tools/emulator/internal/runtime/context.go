@@ -400,7 +400,10 @@ func (ctx *ExecutionContext) sentMessageIDs() *int64 {
 	return ctx.sentIDs
 }
 
-var botUser = types.DiscordUser{ID: 1234567890, Username: "YAGPDB.xyz", Bot: true}
+// BotUserID is the emulated bot's user ID.
+const BotUserID = 1234567890
+
+var botUser = types.DiscordUser{ID: BotUserID, Username: "YAGPDB.xyz", Bot: true}
 
 // RecordRoleChange records a role change during execution.
 func (ctx *ExecutionContext) RecordRoleChange(userID, roleID int64, action string, delay time.Duration) {
@@ -487,6 +490,32 @@ func (ctx *ExecutionContext) message() types.CtxMessage {
 		Content:   ctx.MessageContent,
 		Timestamp: ctx.StartTime,
 	}
+}
+
+// knownMessage is the message with that ID in the channel, as the emulator knows it: a
+// test's or a sent message (a pointer into Messages, so an edit sticks), the message an
+// execCC caller passed on (not a reaction run's, whose author there is the reactor), or
+// the triggering message. Nil when it's none of those; no message has ID 0.
+func (ctx *ExecutionContext) knownMessage(channelID, id int64) *types.CtxMessage {
+	if id == 0 {
+		return nil
+	}
+	for i := range ctx.Messages {
+		if m := &ctx.Messages[i]; m.ID == id && m.ChannelID == channelID {
+			return m
+		}
+	}
+	var trigger types.CtxMessage
+	switch {
+	case ctx.InheritedMessage != nil && !ctx.inheritedFromReaction:
+		trigger = *ctx.InheritedMessage
+	case ctx.Reaction == nil && !ctx.NoMessage:
+		trigger = ctx.message()
+	}
+	if trigger.ID == id && trigger.ChannelID == channelID {
+		return &trigger
+	}
+	return nil
 }
 
 // reactedMessage is the message a reaction run reacted to: the test's message with that ID

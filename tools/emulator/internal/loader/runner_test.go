@@ -142,6 +142,23 @@ func TestSuiteDefaultsCantTriggerACommand(t *testing.T) {
 	}
 }
 
+// YAGPDB runs no custom command for a bot's message, so a test's user can't be the bot,
+// set per test or by the suite's defaults
+func TestTheUserCantBeTheBot(t *testing.T) {
+	for _, src := range []string{
+		"tests:\n  - name: x\n    context: { user: { id: 1234567890 } }\n    template_source: \"hi\"\n",
+		"defaults: { user: { id: 1234567890 } }\ntests:\n  - name: x\n    template_source: \"hi\"\n",
+	} {
+		path := filepath.Join(t.TempDir(), "bot.yaml")
+		if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadTestFile(path); err == nil || !strings.Contains(err.Error(), "is the bot's") {
+			t.Errorf("%s: got %v", src, err)
+		}
+	}
+}
+
 func TestOversizedSetupValueIsAnError(t *testing.T) {
 	tc := &TestCase{
 		Name:           "big",

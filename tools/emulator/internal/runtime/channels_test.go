@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
 func channelCtx() *ExecutionContext {
@@ -132,5 +134,71 @@ func TestChannelNameEdgeCases(t *testing.T) {
 	out, err := run(t, ctx, `{{getChannel ""}} {{(getChannel "DUP").ID}}`)
 	if err != nil || out != "<nil> 42" {
 		t.Errorf("got %q, %v", out, err)
+	}
+}
+
+// getMessage finds the triggering message, as YAGPDB (which asks Discord) does, and an
+// execCC child finds its caller's; editMessage refuses it, as someone else's
+func TestGetMessageFindsTheTrigger(t *testing.T) {
+	ctx := channelCtx()
+	ctx.MessageID = 55
+	if err := ctx.SetTriggerMessage(Trigger{Type: "Command", Text: "c"}, "-c hi"); err != nil {
+		t.Fatal(err)
+	}
+	out, err := run(t, ctx, `{{$m := getMessage nil .Message.ID}}{{$m.Content}}|{{eq $m.Author.ID .User.ID}}|{{getMessage 42 .Message.ID}}|{{getMessage nil 0}}`)
+	if err != nil || out != "-c hi|true|<nil>|<nil>" {
+		t.Errorf("got %q, %v", out, err)
+	}
+
+	ctx = channelCtx() // strict
+	if _, err := run(t, ctx, `{{editMessage nil .Message.ID "x"}}`); err == nil || !strings.Contains(err.Error(), "50005 Cannot edit a message authored by another user") {
+		t.Errorf("editing the trigger: %v", err)
+	}
+
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{(getMessage nil 55).Content}}`)
+	ctx = channelCtx()
+	ctx.MessageID = 55
+	ctx.MessageContent = "caller"
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil || len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != "caller" {
+		t.Errorf("execCC child: %v, %+v", err, ctx.SentMessages)
+	}
+}
+
+// Without a triggering message (an interval run) or with one only reacted to, getMessage
+// finds only what the test declares
+func TestGetMessageWithoutATrigger(t *testing.T) {
+	ctx := channelCtx()
+	ctx.MessageID = 55
+	ctx.NoMessage = true
+	if out, err := run(t, ctx, `{{getMessage nil 55}}|{{getMessage nil 0}}`); err != nil || out != "<nil>|<nil>" {
+		t.Errorf("interval: %q, %v", out, err)
+	}
+	// an interval run's execCC child has a blank .Message, with no ID
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{getMessage nil 0}}`)
+	ctx = channelCtx()
+	ctx.NoMessage = true
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil || len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != "<nil>" {
+		t.Errorf("interval execCC child: %v, %+v", err, ctx.SentMessages)
+	}
+	ctx = channelCtx()
+	ctx.MessageID = 55
+	ctx.Reaction = &types.CtxReaction{MessageID: 56}
+	if out, err := run(t, ctx, `{{getMessage nil 55}}|{{getMessage nil 56}}`); err != nil || out != "<nil>|<nil>" {
+		t.Errorf("reaction: %q, %v", out, err)
+	}
+	// nor does a reaction run's execCC child, whose .Message has the reactor as author
+	writeFile(t, dir+"/child.gohtml", `{{getMessage nil .Message.ID}}`)
+	ctx = channelCtx()
+	ctx.Reaction = &types.CtxReaction{MessageID: 56}
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil || len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != "<nil>" {
+		t.Errorf("reaction execCC child: %v, %+v", err, ctx.SentMessages)
 	}
 }

@@ -41,7 +41,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     member_roles: { 2: [111] }        # other members' roles (takeRoleID only takes a role they have)
     member_nicks: { 1: "Nick" }       # nicknames (.Member and getMember), the triggering user's too
     member_joined_ago: { 2: 12h }     # join time before the run (default 30 days; JoinedAt.Parse)
-    messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # what getMessage finds
+    messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # getMessage finds these, sent messages and the trigger (not a reaction/interval run's)
                                       # (give channel_id: without it the message is in channel 0)
     message_content: "text"           # or the whole message, trigger included (Regex triggers need it);
                                       # with exec_data/reaction it is only .Message (no arguments)
@@ -75,8 +75,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # (sent/edited message checks take pings: too). Typed <@&id>/@everyone ping only through
     # mentionRole*/mentionEveryone, a complexMessage's allowed_mentions, or the NoEscape functions.
     # A complexMessage "reply" pings the replied-to author when replied_user is on (NoEscape
-    # turns it on); the trigger's .Message.ID is 234567890; replying to a message the test
-    # doesn't declare warns [message]
+    # turns it on); the trigger's .Message.ID is 234567890; replying to a message that isn't
+    # the trigger, a sent one or in messages: warns [message]
     scheduled_runs: [{ cc_id: 5, channel_id: 9, delay: 90s, key: "k", exec_data_contains: '"n":1' }]
     # exactly the runs execCC with a delay / scheduleUniqueCC left, in the order scheduled
     # (a replaced one moves last; [] for none). They aren't run: test that command separately
