@@ -690,7 +690,19 @@ func TestOutputBreachBeforeAnErrorIsReported(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "index out of range") {
 		t.Fatalf("want the later error, got %v", err)
 	}
-	if w := kinds(ctx, KindLimit); len(w) != 1 || !strings.Contains(w[0], "grew too big (>25k)") {
+	// The 25k warning, then the 2k one for the partial response
+	if w := kinds(ctx, KindLimit); len(w) != 2 || !strings.Contains(w[0], "grew too big (>25k)") || !strings.Contains(w[1], "over 2000") {
 		t.Errorf("want the 25k warning too, got %q", ctx.Diagnostics)
+	}
+}
+
+func TestFailedRunKeepsItsOutput(t *testing.T) {
+	out, err := run(t, newCtx(true, true), "  hello \n{{index (cslice) 5}}")
+	if err == nil || out != "hello" {
+		t.Errorf("YAGPDB sends the trimmed output printed before the error: %q, %v", out, err)
+	}
+	out, _ = run(t, newCtx(true, true), `{{printf "%02001d" 0}}{{index (cslice) 5}}`)
+	if !strings.Contains(out, "response was longer than 2k") {
+		t.Errorf("an over-2k partial response becomes the notice: %.40q", out)
 	}
 }

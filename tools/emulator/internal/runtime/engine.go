@@ -193,7 +193,8 @@ func (e *Engine) Execute(source string) (string, error) {
 				err = fmt.Errorf("response grew too big (>%d bytes)", maxOutputBytesLenient)
 			}
 		}
-		return "", fmt.Errorf("template execution error: %w", err)
+		// YAGPDB still sends what the template printed before the error
+		return e.ctx.response(buf.String()), fmt.Errorf("template execution error: %w", err)
 	}
 
 	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.StartTime), yagpdbCap != nil && yagpdbCap.err != nil)

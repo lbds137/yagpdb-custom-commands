@@ -12,9 +12,6 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - A NaN value_num (`dbSet` of "NaN") sorts unpredictably in dbTopEntries, dbRank and
   dbDelMultiple; Postgres puts NaN above every number. setup_db keys aren't cut to 256
   bytes, so a longer fixture key can't be read back.
-- A run that fails returns no output; YAGPDB sends what was printed before the error
-  (trimmed, or its 2k notice). Successful output isn't trimmed as YAGPDB trims it before
-  sending (tests and snapshots trim, so only `yagtest run` shows the difference).
 - `execCC` with a delay passes its data as is; YAGPDB msgpack-encodes it (so types change
   and over 1000000 bytes fails with "ExecData is too big").
 - Discord functions are mocks: the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
@@ -89,6 +86,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       30 days ago); `.Member` and `getMember` build the same member, and `JoinedAt` is
       discordgo's `Timestamp` string, formatted as Discord sends it. guest's grace-period
       path is tested. A suite that doesn't parse reports its own error (2026-09-25)
+- [x] Output is what YAGPDB sends: trimmed, with the 2k notice under -strict, and a
+      failed run keeps what it printed before the error (`yagtest run` prints it). A test
+      that expects an error still checks its other assertions (2026-09-25)
 - [x] Template output goes through YAGPDB's LimitWriter (now shared in `yagstd` with the
       database serializer): leading whitespace doesn't count, and output past 25k fails
       unless the rest is whitespace, with YAGPDB's error; outside -strict a shadow writer

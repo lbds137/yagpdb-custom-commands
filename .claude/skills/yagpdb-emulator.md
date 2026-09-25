@@ -48,6 +48,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   command_map: { 123: "templates/mock_embed_exec.gohtml" }  # execCC targets
   expected:
     output_contains: "..."            # also output_equals, output_matches, error_contains
+                                      # (with error_contains, the other checks still run)
     warning_contains: "..."
   assertions:
     db_checks: [{ user_id: 0, key: "K", value_equals: 1 }]   # or value_contains, not_exists

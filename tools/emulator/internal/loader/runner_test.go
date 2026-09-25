@@ -150,3 +150,21 @@ func TestOversizedSetupValueIsAnError(t *testing.T) {
 		t.Errorf("want a setup_db error naming the short write, got %v", res.Error)
 	}
 }
+
+func TestExpectedErrorStillChecksWhatTheRunDid(t *testing.T) {
+	tc := &TestCase{
+		Name:           "fails late",
+		TemplateSource: `before{{dbSet 0 "k" "v"}}{{index (cslice) 5}}`,
+		Expected:       ExpectedResult{ErrorContains: "index out of range", OutputEquals: "before"},
+		Assertions:     Assertions{DBChecks: []DBCheck{{Key: "k", ValueEquals: "v"}}},
+	}
+	tc.applyDefaults()
+	r := NewRunner(RunnerConfig{})
+	if res := r.RunTest(tc); !res.Passed {
+		t.Errorf("want a pass, got %q %v", res.Failures, res.Error)
+	}
+	tc.Expected.OutputEquals = "after"
+	if res := r.RunTest(tc); res.Passed {
+		t.Error("a wrong output assertion must fail even when the expected error matched")
+	}
+}
