@@ -370,9 +370,9 @@
 
 {{ $resultText = joinStr " " $resultEmoji $resultText }}
 
-{{/* embed_exec keeps 1998 characters of description: leave room for the code fence
-  (8) and the "…" */}}
-{{ $embedDescriptionLimit := sub 1998 9 }}
+{{/* embed_exec keeps up to 4096 characters of description (Discord's limit): leave room
+  for the code fence (8) and the "…" */}}
+{{ $embedDescriptionLimit := sub 4096 9 }}
 {{ if gt (len (toRune $value)) $embedDescriptionLimit }}
     {{ $value = joinStr "" (slice (split $value "") 0 $embedDescriptionLimit) "…" }}
 {{ end }}
