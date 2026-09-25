@@ -200,13 +200,23 @@ tests:
       sent_messages:
         - { channel_id: 123456789012345678, embed_title: "Invalid User Type" }
 
-  # guest (the mock members joined long ago, past the 48-hour grace period)
+  # guest (members joined 30 days ago by default, past the 48-hour grace period)
   - name: "guest: kicks a guest past the grace period"
     template: "../../../staff_utility/guest.gohtml"
     context:
       args: ["500000000000000001"]
       member_roles: { 500000000000000001: [222222222222222222] }
     snapshot: true
+
+  - name: "guest: a guest within the grace period stays"
+    template: "../../../staff_utility/guest.gohtml"
+    context:
+      args: ["500000000000000001"]
+      member_roles: { 500000000000000001: [222222222222222222] }
+      member_joined_ago: { 500000000000000001: 12h }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: "has not yet exceeded the inactivity grace period" }
 
   - name: "guest: leaves a member alone"
     template: "../../../staff_utility/guest.gohtml"

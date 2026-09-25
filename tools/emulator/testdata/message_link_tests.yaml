@@ -44,6 +44,15 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "quoted a message:\nlook" }
     snapshot: true
 
+  - name: "message_link: shows the author's nickname"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      member_nicks: { 500000000000000001: "Tea Guest" }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: "Tea Guest (" }
+
   - name: "message_link: deleted message is ignored"
     template: "../../../utility/message_link.gohtml"
     context:

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -45,6 +46,10 @@ type ContextDef struct {
 	Members        []int64 `yaml:"members"` // If set, the only users getMember finds
 	// MemberRoles gives other members' roles (the triggering user's are user.roles)
 	MemberRoles map[int64][]int64 `yaml:"member_roles"`
+	// MemberNicks gives members' nicknames, the triggering user's included
+	MemberNicks map[int64]string `yaml:"member_nicks"`
+	// MemberJoinedAgo gives how long before the run members joined, like "12h" (default 30 days)
+	MemberJoinedAgo map[int64]Duration `yaml:"member_joined_ago"`
 }
 
 // MessageDef is an existing Discord message.
@@ -197,6 +202,35 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 	return &ts, nil
 }
 
+// LoadTestFile loads a test file: a suite if it has a top-level tests: key, otherwise a
+// single test case. A suite that doesn't parse is an error, not a single test case.
+func LoadTestFile(filename string) ([]*TestCase, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("reading test file: %w", err)
+	}
+	var keys map[string]interface{}
+	if err := yaml.Unmarshal(data, &keys); err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", filename, err)
+	}
+	if _, isSuite := keys["tests"]; !isSuite {
+		tc, err := LoadTestCase(filename)
+		if err != nil {
+			return nil, fmt.Errorf("loading %s: %w", filename, err)
+		}
+		return []*TestCase{tc}, nil
+	}
+	ts, err := LoadTestSuite(filename)
+	if err != nil {
+		return nil, fmt.Errorf("loading %s: %w", filename, err)
+	}
+	tests := make([]*TestCase, len(ts.Tests))
+	for i := range ts.Tests {
+		tests[i] = &ts.Tests[i]
+	}
+	return tests, nil
+}
+
 // LoadTestsFromDir loads all test files from a directory.
 func LoadTestsFromDir(dir string) ([]*TestCase, error) {
 	var tests []*TestCase
@@ -219,23 +253,9 @@ func LoadTestsFromDir(dir string) ([]*TestCase, error) {
 			return nil
 		}
 
-		// Try loading as test suite first
-		ts, err := LoadTestSuite(path)
-		if err == nil && len(ts.Tests) > 0 {
-			for i := range ts.Tests {
-				tests = append(tests, &ts.Tests[i])
-			}
-			return nil
-		}
-
-		// Try loading as single test case
-		tc, err := LoadTestCase(path)
-		if err != nil {
-			return fmt.Errorf("loading %s: %w", path, err)
-		}
-
-		tests = append(tests, tc)
-		return nil
+		loaded, err := LoadTestFile(path)
+		tests = append(tests, loaded...)
+		return err
 	})
 
 	if err != nil {
@@ -306,6 +326,12 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	if tc.Context.MemberRoles == nil {
 		tc.Context.MemberRoles = defaults.MemberRoles
 	}
+	if tc.Context.MemberNicks == nil {
+		tc.Context.MemberNicks = defaults.MemberNicks
+	}
+	if tc.Context.MemberJoinedAgo == nil {
+		tc.Context.MemberJoinedAgo = defaults.MemberJoinedAgo
+	}
 	if tc.Context.Guild.Roles == nil {
 		tc.Context.Guild.Roles = defaults.Guild.Roles
 	}
@@ -367,4 +393,20 @@ func (tc *TestCase) GetTemplateSource(baseDir string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+// Duration is a Go duration in YAML, like "12h" or "90m".
+type Duration time.Duration
+
+// UnmarshalYAML parses a duration string.
+func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
+	parsed, err := time.ParseDuration(node.Value)
+	if err != nil {
+		return fmt.Errorf("line %d: %w (use h, m or s: 72h, not 3d)", node.Line, err)
+	}
+	if parsed < 0 {
+		return fmt.Errorf("line %d: %q is negative, a join time in the future", node.Line, node.Value)
+	}
+	*d = Duration(parsed)
+	return nil
 }

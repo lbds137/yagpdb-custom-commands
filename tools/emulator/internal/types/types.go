@@ -318,15 +318,19 @@ type CtxRole struct {
 	Managed     bool
 }
 
-// TemplateTime wraps time.Time with additional methods for YAGPDB template compatibility.
-type TemplateTime struct {
-	time.Time
+// Timestamp is discordgo's Timestamp: an RFC 3339 string, as Discord sends it.
+type Timestamp string
+
+// Parse parses a timestamp string into a time.Time object.
+// The only time this can fail is if Discord changes their timestamp format.
+func (t Timestamp) Parse() (time.Time, error) {
+	tim, err := time.Parse(time.RFC3339, string(t))
+	return tim.UTC(), err
 }
 
-// Parse returns the time itself (for YAGPDB method chaining compatibility).
-// In YAGPDB, this is used to allow chaining like: $member.JoinedAt.Parse.Sub currentTime
-func (t TemplateTime) Parse() time.Time {
-	return t.Time
+// NewTimestamp is the Timestamp Discord would send for t (2021-01-01T00:00:00.000000+00:00).
+func NewTimestamp(t time.Time) Timestamp {
+	return Timestamp(t.UTC().Format("2006-01-02T15:04:05.000000-07:00"))
 }
 
 // CtxMember represents a Discord guild member.
@@ -334,7 +338,7 @@ type CtxMember struct {
 	User     DiscordUser
 	Nick     string
 	Roles    []int64
-	JoinedAt TemplateTime
+	JoinedAt Timestamp
 }
 
 // CtxMessage represents a Discord message.

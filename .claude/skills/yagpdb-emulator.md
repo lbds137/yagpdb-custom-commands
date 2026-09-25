@@ -36,6 +36,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # guild.owner_id: .Guild.OwnerID (default: the triggering user); guild.prefix (default "-")
     members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
     member_roles: { 2: [111] }        # other members' roles
+    member_nicks: { 1: "Nick" }       # nicknames (.Member and getMember), the triggering user's too
+    member_joined_ago: { 2: 12h }     # join time before the run (default 30 days; JoinedAt.Parse)
     messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # what getMessage finds
     message_content: "text"           # or the whole message, trigger included (Regex triggers need it);
                                       # with exec_data/reaction it is only .Message (no arguments)
