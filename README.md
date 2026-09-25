@@ -282,10 +282,15 @@ make ci            # everything CI runs: Go vet + unit tests, template tests, li
 ./bin/yagtest check utility/*.gohtml                        # parse only, plus static warnings
 ```
 
-The emulator supports:
-- YAGPDB's template functions, a mock database, `execCC` chaining, and reaction triggers
+The emulator runs templates on YAGPDB's own template engine and standard functions (copied
+from its source, not reimplemented), so language features, built-ins and errors match
+production. On top of that:
+- Mocks for Discord and the database: messages, members and roles you declare in a test,
+  `execCC` chaining, reaction triggers, and a database that copies values in and out the way
+  YAGPDB serializes them
 - **Execution limits** taken from YAGPDB's source: database calls (10, or 50 with premium),
-  Discord API calls, DMs, `execCC`, output size, response length and template length.
+  Discord API calls, DMs, `execCC`, template operations (1M, or 2.5M with premium), output
+  size, response length and template length.
   By default a breached limit is a warning; `-strict` fails the run the way production does
 - **Warnings** for database calls inside `range` loops, and for values that don't match
   `db_schema.yaml` (`-schema`)

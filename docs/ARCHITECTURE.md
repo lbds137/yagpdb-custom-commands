@@ -341,9 +341,12 @@ Built-in systems for operational oversight:
 The `tools/emulator/` directory contains a Go-based YAGPDB template emulator for local testing without a live Discord server.
 
 #### Features
-- Execute `.gohtml` templates locally
-- Mock Discord context (users, channels, roles, reactions)
-- Simulated database with full CRUD support, ordered like YAGPDB's queries
+- Execute `.gohtml` templates on YAGPDB's own template engine and standard functions
+  (`internal/yagtemplate`, `internal/yagstd`: copies of its `lib/template` and
+  `common/templates` code)
+- Mock Discord context (users, members, channels, roles, messages, reactions)
+- Simulated database modeled on YAGPDB's table (raw value plus value_num, Postgres LIKE
+  patterns, values copied in and out like its serialization), ordered like its queries
 - YAML-based test case definitions, with snapshot tests
 - Support for `execCC` chaining between templates
 - YAGPDB's execution limits (warnings, or failures with `-strict`), loop and schema
