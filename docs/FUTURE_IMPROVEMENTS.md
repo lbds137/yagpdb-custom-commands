@@ -38,8 +38,6 @@ gets a failing test first.
   (testdata/templates) keeps the title, description, fields, color, image and thumbnail,
   but not embed_exec's author, its author-color fallback, its description cut or its
   DeleteResponse.
-- `yagtest watch` takes one path, and `-stop-on-fail` with several test paths stops only
-  within the current one.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
   entry) serialize as the emulator's types, so their size differs from YAGPDB's. A value
   whose overflow past 100000 bytes is only whitespace is stored whole; YAGPDB stores it
@@ -139,6 +137,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] `yagtest watch` runs every test path given, as `test` does, and `-stop-on-fail`
+      skips the paths after a failing one (2026-09-25)
 
 - [x] Snapshot files always read back: yaml.v3 v3.0.1 wrote text starting with "\n"
       (or "\t\n") as a block scalar that lost the newline or couldn't be parsed, so

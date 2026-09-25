@@ -84,7 +84,7 @@ Run Options:
 
 Test Options:
     -verbose          Show detailed output for each test
-    -stop-on-fail     Stop on first test failure
+    -stop-on-fail     Stop on first test failure, and skip the paths after it
     -base-dir <dir>   Base directory for resolving template paths
     -strict           Fail on YAGPDB execution limits instead of warning
     -schema <file>    Warn when stored values don't match the schema's types
@@ -109,6 +109,8 @@ Examples:
     yagtest test testdata/
     yagtest test -strict -schema db_schema.yaml testdata/
     yagtest watch -watch tools/emulator/testdata,utility testdata/
+    yagtest watch -watch tools/emulator/testdata,utility tools/emulator/testdata/db_tests.yaml \
+        tools/emulator/testdata/pings_tests.yaml
     yagtest check utility/*.gohtml
 
 Note: Flags must come before the file/directory path.`)
@@ -531,7 +533,7 @@ type testOptions struct {
 
 func addTestFlags(fs *flag.FlagSet, opts *testOptions) {
 	fs.BoolVar(&opts.verbose, "verbose", false, "Show detailed output for each test")
-	fs.BoolVar(&opts.stopOnFail, "stop-on-fail", false, "Stop on first test failure")
+	fs.BoolVar(&opts.stopOnFail, "stop-on-fail", false, "Stop on first test failure, and skip the paths after it")
 	fs.StringVar(&opts.baseDir, "base-dir", "", "Base directory for resolving template paths")
 	fs.BoolVar(&opts.strict, "strict", false, "Fail on YAGPDB execution limits")
 	fs.StringVar(&opts.schemaFile, "schema", "", "Schema file with expected database value types")
@@ -553,15 +555,23 @@ func testCommand(args []string) {
 		fmt.Fprintln(os.Stderr, "Error: test file or directory required")
 		os.Exit(1)
 	}
-	// Each path is run in turn; any failure fails the whole run
+	os.Exit(runPaths(opts, fs.Args(), runTests))
+}
+
+// runPaths runs the tests at each path in turn; any failure fails the whole run, and
+// with -stop-on-fail the paths after a failing one aren't run.
+func runPaths(opts testOptions, paths []string, run func(testOptions) int) int {
 	code := 0
-	for _, path := range fs.Args() {
+	for _, path := range paths {
 		opts.path = path
-		if c := runTests(opts); c != 0 {
+		if c := run(opts); c != 0 {
 			code = c
+			if opts.stopOnFail {
+				break
+			}
 		}
 	}
-	os.Exit(code)
+	return code
 }
 
 // runTests loads and runs the tests at opts.path and returns the exit code.
