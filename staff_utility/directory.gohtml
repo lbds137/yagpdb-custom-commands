@@ -143,8 +143,8 @@
         {{- $j = add 1 $j -}}
       {{- end -}}
     {{- end -}}
-    {{- if ge (len (toRune $categoryEntry)) $messageMaxLen -}}
-      {{- $categoryEntry = joinStr "" (slice $categoryEntry 0 $messageMaxLen) "…" -}}
+    {{- if gt (len (toRune $categoryEntry)) $messageMaxLen -}}
+      {{- $categoryEntry = joinStr "" (slice (split $categoryEntry "") 0 $messageMaxLen) "…" -}}
     {{- end -}}
 
     {{- /* grab first message link for Back to Top link */ -}}

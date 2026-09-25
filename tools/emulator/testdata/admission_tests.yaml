@@ -79,6 +79,19 @@ tests:
         - { channel_id: 900000000000000003, content_equals: "message_link copy" }
     snapshot: true
 
+  - name: "admit_user: no welcome message configured"
+    # no welcome is sent (an empty message is Discord's 400); the rest goes on
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
+      member_roles: { 500000000000000001: [222222222222222222] }
+    setup_db:
+      - { user_id: 0, key: "Admin", value: {} }
+    assertions:
+      sent_messages:
+        - { channel_id: 900000000000000005, embed_title: "User Admission Record" }
+    snapshot: true
+
   - name: "admit_user: malformed link"
     template: "../../../staff_utility/admit_user.gohtml"
     context:

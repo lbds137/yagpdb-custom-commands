@@ -72,3 +72,22 @@ tests:
       args: ["keys:0", "Global"]
       user: { roles: [888888888] }
     # Lists keys in the Global dictionary
+
+  - name: "db get - A long value is cut between characters, fence and all"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get:0", "Long"]
+      user: { roles: [888888888] }
+    # "Long" is 1988 "a"s and two 3-byte characters: db keeps 1989 characters and "…",
+    # which with the code fence is embed_exec's 1998, so embed_exec doesn't cut it again
+    setup_templates: ["templates/long_value_setup.gohtml"]
+    assertions:
+      sent_messages: [{ embed_contains: 'a€…\n```' }]
+
+  - name: "embed_exec cuts a long description between characters"
+    template_source: |
+      {{ $s := "" }}{{ range seq 0 1997 }}{{ $s = print $s "a" }}{{ end }}
+      {{ execCC 123 nil 0 (sdict "Title" "t" "Description" (print $s "€€")) }}
+    # 1999 characters: embed_exec keeps 1998 and adds "…"
+    assertions:
+      sent_messages: [{ embed_contains: 'a€…"' }]

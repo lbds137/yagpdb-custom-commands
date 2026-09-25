@@ -47,8 +47,8 @@
 
 {{ $description := .ExecData.Description }}
 {{ if $description }}
-    {{ if ge (len (toRune $description)) $descriptionMaxLen }}
-        {{ $description = joinStr "" (slice $description 0 $descriptionMaxLen) "…" }}
+    {{ if gt (len (toRune $description)) $descriptionMaxLen }}
+        {{ $description = joinStr "" (slice (split $description "") 0 $descriptionMaxLen) "…" }}
     {{ end }}
 {{ end }}
 {{ $embed := cembed

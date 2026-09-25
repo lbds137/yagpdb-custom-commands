@@ -72,7 +72,7 @@
     {{- $curHexArr := split (slice $curHex 1) "" -}}
     {{- $curDict := dict "R" 0 "G" 0 "B" 0 -}}
     {{- /* calculate the int value of the user provided color (to be used in the results embed later) */ -}}
-    {{- if eq $curHex $colorHexArg -}}
+    {{- if eq $i 0 -}}
       {{- range $j, $jRevNeg := seq -5 1 -}}
         {{- $jRev := mult -1 $jRevNeg -}}
         {{- $curValHexStr := index $curHexArr $jRev -}}

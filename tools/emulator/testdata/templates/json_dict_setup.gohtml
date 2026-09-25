@@ -1,0 +1,3 @@
+{{- /* Stores "J" as `db set J <json>` does: jsonToSdict, so the nested dictionary and
+  array are a plain map and a plain slice */ -}}
+{{ dbSet 0 "J" (jsonToSdict "{\"Inner\": {\"a\": 1}, \"arr\": [\"x\"]}") }}

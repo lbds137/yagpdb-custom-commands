@@ -228,6 +228,11 @@ func TestMessageAndOutputEquals(t *testing.T) {
 		{"empty content is checked", nil, []MessageCheck{{ContentEquals: str("")}}, nil,
 			[]string{"message check 0: content mismatch"}},
 		{"an emptied edit", nil, nil, []MessageCheck{{ChannelID: 7, ContentEquals: str("")}}, nil},
+		{"an embed title", nil, []MessageCheck{{ChannelID: 7, EmbedTitle: "t"}}, nil, nil},
+		{"a wrong embed title", nil, []MessageCheck{{ChannelID: 7, EmbedTitle: "u"}}, nil,
+			[]string{"message check 0: embed title mismatch"}},
+		{"an embed title on a message without one", nil, []MessageCheck{{EmbedTitle: "t"}}, nil,
+			[]string{`message check 0: expected an embed titled "t" but the message has none`}},
 		{"empty output passes", str(""), nil, nil, nil},
 		{"output that isn't empty", str(""), nil, nil, nil},
 	}

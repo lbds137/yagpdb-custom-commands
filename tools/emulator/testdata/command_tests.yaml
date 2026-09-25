@@ -145,11 +145,69 @@ tests:
         roles:
           - { id: 876543210987654321, name: "Blurple", color: 5793266, position: 3 }
 
+  - name: "contrast - White is the embed color once"
+    template: "../../../utility/contrast.gohtml"
+    context:
+      args: ["#ffffff"]
+    assertions:
+      sent_messages: [{ embed_contains: '"color": 16777215' }]
+
   - name: "contrasts - Multiple colors"
     snapshot: true
     template: "../../../utility/contrasts.gohtml"
     context:
       args: ["FF0000 00FF00 0000FF"]
+
+  - name: "contrasts - Colors separated by a comma"
+    snapshot: true
+    template: "../../../utility/contrasts.gohtml"
+    context:
+      args: ["#ff0000,", "00ff00"]
+    assertions:
+      sent_messages:
+        - { embed_title: "Contrast Ratios for `#ff0000`" }
+        - { embed_title: "Contrast Ratios for `#00ff00`", nth: 2 }
+
+  - name: "contrasts - Colors in a sentence"
+    template: "../../../utility/contrasts.gohtml"
+    context:
+      args: ["#ff0000;#00ff00 and 0000ff."]
+    assertions:
+      sent_messages:
+        - { embed_title: "Contrast Ratios for `#ff0000`" }
+        - { embed_title: "Contrast Ratios for `#00ff00`", nth: 2 }
+        - { embed_title: "Contrast Ratios for `#0000ff`", nth: 3 }
+
+  - name: "contrasts - A role ID"
+    snapshot: true
+    template: "../../../utility/contrasts.gohtml"
+    context:
+      args: ["876543210987654321"]
+      guild:
+        roles:
+          - { id: 876543210987654321, name: "Blurple", color: 5793266, position: 3 }
+    assertions:
+      sent_messages: [{ embed_title: "Contrast Ratios for `#5865f2`" }]
+
+  - name: "contrasts - A role ID and a color"
+    snapshot: true
+    template: "../../../utility/contrasts.gohtml"
+    context:
+      args: ["876543210987654321", "#ff0000"]
+      guild:
+        roles:
+          - { id: 876543210987654321, name: "Blurple", color: 5793266, position: 3 }
+    assertions:
+      sent_messages:
+        - { embed_title: "Contrast Ratios for `#5865f2`" }
+        - { embed_title: "Contrast Ratios for `#ff0000`", nth: 2 }
+
+  - name: "contrasts - Only invalid words"
+    template: "../../../utility/contrasts.gohtml"
+    context:
+      args: ["red", "12345678901234567"]
+    assertions:
+      sent_messages: [{ embed_title: "Invalid Argument" }]
 
   - name: "hugemoji - Discord custom emoji"
     snapshot: true
@@ -257,6 +315,30 @@ tests:
     context:
       args: ["Member:Important announcement!"]
 
+  - name: "role_ping - A lowercase role name without a message"
+    template: "../../../staff_utility/role_ping.gohtml"
+    context:
+      args: ["member"]
+    assertions:
+      response_pings: { roles: [333333333] }
+
+  - name: "role_ping - An unknown role sends only the error"
+    snapshot: true
+    template: "../../../staff_utility/role_ping.gohtml"
+    context:
+      args: ["Nope:hello everyone"]
+    assertions:
+      sent_messages: [{ embed_title: "Invalid Argument" }]
+
+  - name: "role_ping - (nil) sends the message without a ping"
+    snapshot: true
+    template: "../../../staff_utility/role_ping.gohtml"
+    context:
+      args: ["(nil):hello everyone"]
+    assertions:
+      sent_messages: [{ content_equals: "hello everyone" }]
+      response_pings: {}
+
   - name: "rule_edit - Edit a rule"
     snapshot: true
     template: "../../../staff_utility/rule_edit.gohtml"
@@ -296,16 +378,64 @@ tests:
 
   # ===== Database Add (Array Append) =====
 
-  # KNOWN BUG (docs/FUTURE_IMPROVEMENTS.md): a stored array is a *templates.Slice, whose
-  # kindOf is "ptr", so db.gohtml takes the dict branch and fails. When it's fixed, drop
-  # expected and turn the snapshot on.
+  # a stored array reads back as a *templates.Slice, so db.gohtml asks kindOf to look
+  # through the pointer
   - name: "db add - Append to array via nested key"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
       args: ["add:0", "Directory:Exclude Categories", "New Category"]
       user: { roles: [111111111] }
-    expected:
-      error_contains: "range can't iterate over New Category"
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully added!" }]
+      db_checks: [{ user_id: 0, key: "Directory", value_contains: '"Archive","New Category"]' }]
+
+  - name: "db add - JSON array appends to a stored array"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add:0", "Directory", "{\"Exclude Categories\": [\"Memes\"]}"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully added!" }]
+      db_checks: [{ user_id: 0, key: "Directory", value_contains: '"Archive","Memes"]' }]
+
+  - name: "db add - JSON merges into a nested dictionary"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add:0", "Nested:Inner", "{\"b\": 2}"]
+      user: { roles: [111111111] }
+    setup_db:
+      - { user_id: 0, key: "Nested", value: { Inner: { a: 1 }, Other: 3 } }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully added!" }]
+      db_checks: [{ user_id: 0, key: "Nested", value_equals: { Inner: { a: 1, b: 2 }, Other: 3 } }]
+
+  - name: "db add - A missing key is not a success"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add:0", "Nothing", "x"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "No array or dictionary found for the given key!" }]
+      db_checks: [{ user_id: 0, key: "Nothing", not_exists: true }]
+
+  - name: "db add - A missing nested key is not a success"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add:0", "Global:Nothing", "x"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "No array or dictionary found for the given key!" }]
+      db_checks: [{ user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 10 } }]
+
+  - name: "db add - Text into a dictionary is refused"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add:0", "Global", "x"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "Invalid value provided!" }]
+      db_checks: [{ user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 10 } }]
 
   - name: "db get - Read a nested array"
     snapshot: true
@@ -316,14 +446,43 @@ tests:
 
   # ===== Database Remove (Array Remove) =====
 
-  # KNOWN BUG: the same kindOf fault as db add above
   - name: "db remove - Remove item from array via nested key"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
       args: ["remove:0", "Directory:Exclude Categories", "Staff Only"]
       user: { roles: [111111111] }
-    expected:
-      error_contains: "range can't iterate over Staff Only"
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully removed!" }]
+      db_checks: [{ user_id: 0, key: "Directory", value_contains: '["Bot Commands","Archive"]' }]
+
+  - name: "db remove - An item not in the array is not a success"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["remove:0", "Directory:Exclude Categories", "Nope"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "No value found!" }]
+      db_checks: [{ user_id: 0, key: "Directory", value_contains: '["Staff Only","Bot Commands","Archive"]' }]
+
+  - name: "db remove - A key not in the dictionary is not a success"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["remove:0", "Global", "{\"Nope\": \"\"}"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "No value found!" }]
+
+  - name: "db remove - JSON removes from a nested dictionary"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["remove:0", "Nested:Inner", "{\"a\": \"\"}"]
+      user: { roles: [111111111] }
+    setup_db:
+      - { user_id: 0, key: "Nested", value: { Inner: { a: 1, b: 2 }, a: 3 } }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully removed!" }]
+      db_checks: [{ user_id: 0, key: "Nested", value_equals: { Inner: { b: 2 }, a: 3 } }]
 
   - name: "db remove - Remove with JSON from dict"
     snapshot: true
@@ -345,6 +504,142 @@ tests:
     snapshot: true
     template: "../../../utility/db.gohtml"
     context:
-      # a truthy value: delete reports a false one (Show Empty) as "No value found"
       args: ["delete:0", "Directory:Exclude Categories"]
       user: { roles: [111111111] }
+
+  - name: "db get - A stored false is a value"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get:0", "Directory:Show Empty"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully retrieved!" }]
+
+  - name: "db get - A stored 0 is a value"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get:0", "Counter"]
+      user: { roles: [111111111] }
+    setup_db:
+      - { user_id: 0, key: "Counter", value: 0 }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully retrieved!" }]
+
+  - name: "db get - A path through a missing key finds nothing"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get:0", "Directory:Nope:Show Empty"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "No value found!" }]
+
+  - name: "db get - A path through a value that isn't a dictionary finds nothing"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get:0", "Admin:Welcome Message:Deeper"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "No value found!" }]
+
+  - name: "db delete - A stored false is deleted"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["delete:0", "Directory:Show Empty"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully deleted!" }]
+      db_checks:
+        - user_id: 0
+          key: "Directory"
+          value_equals: { Exclude Categories: ["Staff Only", "Bot Commands", "Archive"], Show NSFW: false }
+
+  - name: "db delete - A stored 0 is deleted"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["delete:0", "Counter"]
+      user: { roles: [111111111] }
+    setup_db:
+      - { user_id: 0, key: "Counter", value: 0 }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully deleted!" }]
+      db_checks: [{ user_id: 0, key: "Counter", not_exists: true }]
+
+  - name: "db set - A path through a missing key is refused"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["set:0", "Global:Nope:Deeper", "{\"a\": 1}"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "No dictionary found for the given key!" }]
+      db_checks: [{ user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 10 } }]
+
+  - name: "db set - A nested key"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["set:0", "Global:New", "{\"a\": 1}"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully set!" }]
+      db_checks: [{ user_id: 0, key: "Global", value_contains: '"New":{"a":1}' }]
+
+  - name: "message_pointer - Not a link"
+    template: "../../../utility/message_pointer.gohtml"
+    context:
+      args: ["hello"]
+    assertions:
+      sent_messages: [{ embed_title: "Invalid Message Link" }]
+
+  - name: "message_pointer - A long comment is cut between characters"
+    template: "../../../utility/message_pointer.gohtml"
+    context:
+      # 1023 characters, the last two 3 bytes long; the field holds 1022
+      args: ["https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa€€"]
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    assertions:
+      sent_messages: [{ embed_contains: "a€…" }]
+
+  # "J" is stored as `db set` stores JSON: its nested dictionary and array are a plain map
+  # and a plain slice (setup_db would make them an sdict and a cslice)
+  - name: "db add - JSON merges into a nested dictionary made by db set"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add:0", "J:Inner", "{\"b\": 2}"]
+      user: { roles: [111111111] }
+    setup_templates: ["templates/json_dict_setup.gohtml"]
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully added!" }]
+      db_checks: [{ user_id: 0, key: "J", value_equals: { Inner: { a: 1, b: 2 }, arr: ["x"] } }]
+
+  - name: "db get - A key in a nested dictionary made by db set"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get:0", "J:Inner:a"]
+      user: { roles: [111111111] }
+    setup_templates: ["templates/json_dict_setup.gohtml"]
+    assertions:
+      sent_messages:
+        - { embed_contains: '"description": "```\n1\n```"' }
+        - { embed_contains: "Value successfully retrieved!" }
+
+  - name: "db add - JSON array appends to an array made by db set"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["add:0", "J", "{\"arr\": [\"y\"]}"]
+      user: { roles: [111111111] }
+    setup_templates: ["templates/json_dict_setup.gohtml"]
+    assertions:
+      sent_messages: [{ embed_contains: "Value successfully added!" }]
+      db_checks: [{ user_id: 0, key: "J", value_equals: { Inner: { a: 1 }, arr: ["x", "y"] } }]
+
+  - name: "db get - A stored empty text is a value"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["get:0", "Empty"]
+      user: { roles: [111111111] }
+    setup_db:
+      - { user_id: 0, key: "Empty", value: "" }
+    assertions:
+      sent_messages:
+        - { embed_contains: '"description": "```\n\"\"\n```"' }
+        - { embed_contains: "Value successfully retrieved!" }

@@ -6,7 +6,7 @@
         - channel_id: 900000000000000004
           content: Welcome to Test Server, <@500000000000000001>!
         - channel_id: 900000000000000005
-          embed: "{\n  \"description\": \"\U0001F44B User **MockUser** (ID: 500000000000000001) has been admitted to **Test Server** by **StaffMember#0001** (ID: 987654321098765432) as an **Adult**!\",\n  \"title\": \"User Admission Record\"\n}"
+          embed: "{\n  \"description\": \"\U0001F44B User **MockUser** (ID: 500000000000000001) has been admitted to **Test Server** by **StaffMember#0001** (ID: 987654321098765432) as an **Adult**!\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/0.png?size=128\"\n  },\n  \"title\": \"User Admission Record\"\n}"
     role_changes:
         - add role 555555555555555555 for user 500000000000000001
         - add role 333333333333333333 for user 500000000000000001
@@ -32,11 +32,43 @@
         - user_id: 0
           key: Roles
           value: '{"Adult":555555555555555555,"Guest":222222222222222222,"Member":333333333333333333,"Minor":444444444444444444,"Staff":111111111111111111}'
+'admit_user: no welcome message configured':
+    output: ""
+    messages:
+        - channel_id: 900000000000000003
+          content: message_link copy
+        - channel_id: 900000000000000005
+          embed: "{\n  \"description\": \"\U0001F44B User **MockUser** (ID: 500000000000000001) has been admitted to **Test Server** by **StaffMember#0001** (ID: 987654321098765432) as an **Adult**!\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/0.png?size=128\"\n  },\n  \"title\": \"User Admission Record\"\n}"
+    role_changes:
+        - add role 555555555555555555 for user 500000000000000001
+        - add role 333333333333333333 for user 500000000000000001
+        - remove role 222222222222222222 for user 500000000000000001
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
+    reactions:
+        - remove_all on message 700000000000000001 in channel 900000000000000002
+        - "add \U0001F44B on message 700000000000000001 in channel 900000000000000002"
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{}'
+        - user_id: 0
+          key: Channels
+          value: '{"Admission Log":900000000000000005,"Introduction":900000000000000002,"Introduction Archive":900000000000000003,"Rejection Log":900000000000000006,"Welcome":900000000000000004,"YAGPDB":900000000000000001}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1","message_link":"2","ticket_adduser_exec":"3"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Guest Grace Period Hours":48}'
+        - user_id: 0
+          key: Roles
+          value: '{"Adult":555555555555555555,"Guest":222222222222222222,"Member":333333333333333333,"Minor":444444444444444444,"Staff":111111111111111111}'
 'guest: kicks a guest past the grace period':
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"description\": \"\U0001F97E **MockUser** has been kicked!\",\n  \"fields\": [\n    {\n      \"name\": \"Reason\",\n      \"value\": \"The user has exceeded the inactivity grace period.\"\n    }\n  ],\n  \"title\": \"Guest User Check\"\n}"
+          embed: "{\n  \"description\": \"\U0001F97E **MockUser** has been kicked!\",\n  \"fields\": [\n    {\n      \"name\": \"Reason\",\n      \"value\": \"The user has exceeded the inactivity grace period.\"\n    }\n  ],\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/0.png?size=128\"\n  },\n  \"title\": \"Guest User Check\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -68,6 +100,9 @@
                   "value": "The user is not a guest."
                 }
               ],
+              "thumbnail": {
+                "url": "https://cdn.discordapp.com/embed/avatars/0.png?size=128"
+              },
               "title": "Guest User Check"
             }
     deletions:
@@ -94,7 +129,7 @@
         - channel_id: 900000000000000006
           content: message_link copy
         - channel_id: 900000000000000006
-          embed: "{\n  \"description\": \"\U0001F97E User **MockUser** (ID: 500000000000000001) has been denied admission to **Test Server** by **StaffMember#0001** (ID: 987654321098765432) for the following reason: ```\\nNo introduction```\",\n  \"title\": \"User Rejection Record\"\n}"
+          embed: "{\n  \"description\": \"\U0001F97E User **MockUser** (ID: 500000000000000001) has been denied admission to **Test Server** by **StaffMember#0001** (ID: 987654321098765432) for the following reason: ```\\nNo introduction```\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/0.png?size=128\"\n  },\n  \"title\": \"User Rejection Record\"\n}"
     deletions:
         - message 700000000000000001 in channel 900000000000000002 after 10s
         - trigger 234567890 in channel 123456789012345678 after 5s

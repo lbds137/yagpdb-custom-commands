@@ -141,8 +141,8 @@
         {{ $eProvider = $embed.Provider.Name }}
       {{ end }}
       {{ if $embed.Description }}
-        {{ if ge (len (toRune $embed.Description)) $eFieldLimit }}
-          {{ $eDesc = joinStr "" (slice $embed.Description 0 $eFieldLimit) "…" }}
+        {{ if gt (len (toRune $embed.Description)) $eFieldLimit }}
+          {{ $eDesc = joinStr "" (slice (split $embed.Description "") 0 $eFieldLimit) "…" }}
         {{ else }}
           {{ $eDesc = $embed.Description }}
         {{ end }}

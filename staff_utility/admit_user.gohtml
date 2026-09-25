@@ -108,7 +108,7 @@
                 ) }}
             {{ end }}
 
-            {{ if $welcomeChannelID }}
+            {{ if and $welcomeChannelID $welcomeMessage }}
                 {{ $welcomeMessage = reReplace "\\#\\{guild_name\\}" $welcomeMessage .Guild.Name }}
                 {{ $welcomeMessage = reReplace "\\#\\{user_mention\\}" $welcomeMessage $user.Mention }}
                 {{ sendMessage $welcomeChannelID $welcomeMessage }}
