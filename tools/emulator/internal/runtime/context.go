@@ -21,7 +21,8 @@ type SentMessage struct {
 type RoleChange struct {
 	UserID int64
 	RoleID int64
-	Action string // "add" or "remove"
+	Action string        // "add" or "remove"
+	Delay  time.Duration // scheduled this far ahead (0 = now)
 }
 
 // FileUpload represents a file that was "uploaded" during template execution.
@@ -361,11 +362,12 @@ func (ctx *ExecutionContext) sentMessageIDs() *int64 {
 var botUser = types.DiscordUser{ID: 1234567890, Username: "YAGPDB.xyz", Bot: true}
 
 // RecordRoleChange records a role change during execution.
-func (ctx *ExecutionContext) RecordRoleChange(userID, roleID int64, action string) {
+func (ctx *ExecutionContext) RecordRoleChange(userID, roleID int64, action string, delay time.Duration) {
 	ctx.RoleChanges = append(ctx.RoleChanges, RoleChange{
 		UserID: userID,
 		RoleID: roleID,
 		Action: action,
+		Delay:  delay,
 	})
 }
 

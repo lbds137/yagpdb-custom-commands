@@ -82,19 +82,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"deleteAllMessageReactions": e.deleteAllMessageReactions,
 
 		// Role functions
-		"hasRole":         e.hasRole,
-		"hasRoleID":       e.hasRoleID,
-		"targetHasRole":   e.targetHasRole,
-		"targetHasRoleID": e.targetHasRoleID,
-		"addRole":         e.addRole,
-		"giveRole":        e.giveRole,
-		"removeRole":      e.removeRole,
-		"takeRole":        e.takeRole,
-		"setRoles":        e.setRoles,
-		"giveRoleID":      e.giveRoleID,
-		"takeRoleID":      e.takeRoleID,
-		"addRoleID":       e.addRoleID,
-		"removeRoleID":    e.removeRoleID,
+		"setRoles": e.setRoles,
 
 		// Member/user functions
 		"getMember":              e.getMember,
@@ -107,7 +95,6 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 
 		// Discord - Roles (lookup)
 		"roleAbove": e.roleAbove,
-		"getRole":   e.getRole,
 
 		// Discord - Tickets
 		"createTicket": e.createTicket,
@@ -127,8 +114,6 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"sleep":                   e.sleep,
 
 		// Mention functions
-		"mentionRoleID":   e.mentionRoleID,
-		"mentionRole":     e.mentionRole,
 		"mentionEveryone": e.mentionEveryone,
 		"mentionHere":     e.mentionHere,
 
@@ -137,6 +122,9 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"carg":      funcs.Carg,
 	}
 	for name, fn := range mocks {
+		m[name] = fn
+	}
+	for name, fn := range e.roleFuncs() {
 		m[name] = fn
 	}
 	for name, fn := range m {
@@ -370,114 +358,8 @@ func (e *Engine) deleteAllMessageReactions(args ...interface{}) string {
 
 // Role functions
 
-func (e *Engine) hasRole(roleInput interface{}) bool {
-	roleID := funcs.ToInt64(roleInput)
-	return e.ctx.HasRole(roleID)
-}
-
-func (e *Engine) hasRoleID(roleID interface{}) bool {
-	return e.ctx.HasRole(funcs.ToInt64(roleID))
-}
-
-// targetHasRole follows YAGPDB's targetHasRole: an unknown target, a user who isn't a
-// member, or a role the guild doesn't have is an error.
-func (e *Engine) targetHasRole(target, roleInput interface{}) (bool, error) {
-	id := targetUserID(target)
-	if id == 0 {
-		return false, fmt.Errorf("target %v not found", target)
-	}
-	if !e.ctx.isMember(id) {
-		return false, fmt.Errorf("member not found in state")
-	}
-	role := e.findRole(roleInput)
-	if role == nil {
-		return false, fmt.Errorf("role %v not found", roleInput)
-	}
-	for _, r := range e.ctx.rolesOf(id) {
-		if r == role.ID {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (e *Engine) targetHasRoleID(target, roleID interface{}) (bool, error) {
-	return e.targetHasRole(target, roleID)
-}
-
-// findRole resolves a role ID, mention or name. When the test declares the guild's roles,
-// unknown roles are nil, as in YAGPDB; otherwise any ID is taken to exist.
-func (e *Engine) findRole(roleInput interface{}) *types.CtxRole {
-	var id int64
-	if s, ok := roleInput.(string); ok {
-		t := strings.TrimSpace(s)
-		if strings.HasPrefix(t, "<@&") && strings.HasSuffix(t, ">") {
-			id = funcs.ToInt64(t[3 : len(t)-1])
-		} else if id = funcs.ToInt64(t); id == 0 {
-			for _, r := range e.ctx.AvailableRoles {
-				if strings.EqualFold(r.Name, t) {
-					role := r
-					return &role
-				}
-			}
-			return nil
-		}
-	} else {
-		id = funcs.ToInt64(roleInput)
-	}
-	if role, ok := e.ctx.AvailableRoles[id]; ok {
-		return &role
-	}
-	if len(e.ctx.AvailableRoles) > 0 || id == 0 {
-		return nil
-	}
-	return &types.CtxRole{ID: id, Name: "MockRole", Color: 0x7289DA}
-}
-
-func (e *Engine) addRole(roleInput interface{}, delay ...interface{}) string {
-	roleID := funcs.ToInt64(roleInput)
-	e.ctx.RecordRoleChange(e.ctx.UserID, roleID, "add")
-	return ""
-}
-
-func (e *Engine) giveRole(target, roleInput interface{}, delay ...interface{}) string {
-	userID := funcs.ToInt64(target)
-	roleID := funcs.ToInt64(roleInput)
-	e.ctx.RecordRoleChange(userID, roleID, "add")
-	return ""
-}
-
-func (e *Engine) removeRole(roleInput interface{}, delay ...interface{}) string {
-	roleID := funcs.ToInt64(roleInput)
-	e.ctx.RecordRoleChange(e.ctx.UserID, roleID, "remove")
-	return ""
-}
-
-func (e *Engine) takeRole(target, roleInput interface{}, delay ...interface{}) string {
-	userID := funcs.ToInt64(target)
-	roleID := funcs.ToInt64(roleInput)
-	e.ctx.RecordRoleChange(userID, roleID, "remove")
-	return ""
-}
-
 func (e *Engine) setRoles(target interface{}, roles interface{}) string {
 	return ""
-}
-
-func (e *Engine) giveRoleID(target, roleID interface{}) string {
-	return e.giveRole(target, roleID)
-}
-
-func (e *Engine) takeRoleID(target, roleID interface{}) string {
-	return e.takeRole(target, roleID)
-}
-
-func (e *Engine) addRoleID(roleID interface{}, delay ...interface{}) string {
-	return e.addRole(roleID, delay...)
-}
-
-func (e *Engine) removeRoleID(roleID interface{}, delay ...interface{}) string {
-	return e.removeRole(roleID, delay...)
 }
 
 // Member/user functions
@@ -723,12 +605,6 @@ func (e *Engine) roleAbove(a, b *types.CtxRole) bool {
 	return a.ID < b.ID
 }
 
-// getRole returns the role, or a nil *CtxRole for a role the guild doesn't have (YAGPDB
-// returns nil without an error, so (getRole $id).Color then fails).
-func (e *Engine) getRole(roleID interface{}) *types.CtxRole {
-	return e.findRole(roleID)
-}
-
 // createTicket creates a mock ticket and returns result with ChannelID
 func (e *Engine) createTicket(user, reason interface{}) types.SDict {
 	// Return mock ticket result
@@ -860,15 +736,6 @@ func (e *Engine) execAdmin(name string, data ...interface{}) string {
 
 // Mention functions
 
-func (e *Engine) mentionRoleID(roleID interface{}) string {
-	return fmt.Sprintf("<@&%d>", funcs.ToInt64(roleID))
-}
-
-func (e *Engine) mentionRole(roleName interface{}) string {
-	// In real YAGPDB this would look up the role by name
-	return fmt.Sprintf("@%s", funcs.ToString(roleName))
-}
-
 func (e *Engine) mentionEveryone() string {
 	return "@everyone"
 }
@@ -899,7 +766,7 @@ func (e *Engine) parseArgs(numRequired int, failedMessage string, argDefs ...*fu
 		},
 		Channel: func(id int64) interface{} { return e.getChannel(id) },
 		Role: func(arg string) interface{} {
-			if r := e.findRole(arg); r != nil {
+			if r := e.findRole(arg, acceptAllRoleInput); r != nil {
 				return r
 			}
 			return nil

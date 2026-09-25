@@ -50,7 +50,11 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 	snap.Messages = snapshotMessages(ctx.SentMessages)
 	snap.Edits = snapshotMessages(ctx.EditedMessages)
 	for _, rc := range ctx.RoleChanges {
-		snap.RoleChanges = append(snap.RoleChanges, fmt.Sprintf("%s role %d for user %d", rc.Action, rc.RoleID, rc.UserID))
+		change := fmt.Sprintf("%s role %d for user %d", rc.Action, rc.RoleID, rc.UserID)
+		if rc.Delay > 0 {
+			change += fmt.Sprintf(" in %s", rc.Delay)
+		}
+		snap.RoleChanges = append(snap.RoleChanges, change)
 	}
 	entries := db.GetAll()
 	sort.Slice(entries, func(i, j int) bool {
