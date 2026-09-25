@@ -183,8 +183,11 @@ func (e *Engine) Execute(source string) (string, error) {
 
 // execute runs the template and returns its response, or what it printed before an error.
 func (e *Engine) execute(source string) (string, error) {
-	e.ctx.started = time.Now()
-	e.ctx.StartTime = e.ctx.Now()
+	// An execCC child keeps its caller's start: the trigger's timestamp and join times
+	// don't move with the caller's sleeps
+	if e.ctx.ExecCCDepth == 0 {
+		e.ctx.StartTime = e.ctx.Now()
+	}
 
 	if err := e.ctx.checkSourceLength(source); err != nil {
 		return "", err
@@ -240,7 +243,7 @@ func (e *Engine) execute(source string) (string, error) {
 		return e.ctx.response(buf.String()), fmt.Errorf("Failed executing template: %w", err)
 	}
 
-	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.started), yagpdbCap != nil && yagpdbCap.err != nil)
+	return e.ctx.checkOutput(buf.String(), yagpdbCap != nil && yagpdbCap.err != nil)
 }
 
 // Mock Discord functions
@@ -806,6 +809,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		StartTime:                e.ctx.StartTime,
 		Clock:                    e.ctx.Clock,
 		Random:                   e.ctx.Random,
+		timeSlept:                e.ctx.timeSlept, // the caller's sleeps have passed
 		AvailableRoles:           e.ctx.AvailableRoles,
 		Channels:                 e.ctx.Channels,
 		ChannelOrder:             e.ctx.ChannelOrder,
@@ -904,10 +908,17 @@ func (e *Engine) channelArg(channel interface{}) int64 {
 	return id
 }
 
-// sleep is a no-op in emulator (YAGPDB uses this to delay execution)
-func (e *Engine) sleep(args ...interface{}) string {
-	// In real YAGPDB this pauses execution; we skip for testing speed
-	return ""
+// sleep is YAGPDB's tmplSleep (common/templates/context_funcs.go) without the wait: the
+// run's clock moves on by the seconds slept instead.
+func (e *Engine) sleep(duration interface{}) (string, error) {
+	seconds := yagstd.ToIntTmpl(duration)
+	if e.ctx.secondsSlept+seconds > 60 || seconds < 1 {
+		return "", errors.New("can sleep for max 60 seconds combined")
+	}
+
+	e.ctx.secondsSlept += seconds
+	e.ctx.timeSlept += time.Duration(seconds) * time.Second
+	return "", nil
 }
 
 // Mention functions

@@ -6,7 +6,6 @@ import (
 	"io"
 	"reflect"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
@@ -15,14 +14,13 @@ import (
 
 // YAGPDB's per-execution limits. Sources are in vendor/yagpdb (see the comments).
 const (
-	maxOutputBytes        = 25000            // common/templates/context.go: LimitWriter in executeParsed
-	maxOutputBytesLenient = 1 << 20          // outside -strict: warn past 25k, stop at 1 MiB
-	maxResponseRunes      = 2000             // customcommands/bot.go replaces longer responses
-	maxSourceRunes        = 10000            // customcommands.MaxCCResponsesLength
-	maxSourceRunesPremium = 20000            // customcommands.MaxCCResponsesLengthPremium
-	maxDuration           = 10 * time.Second // custom command execution timeout
-	maxOpsNormal          = 1000000          // common/templates/context.go: MaxOpsNormal
-	maxOpsPremium         = 2500000          // MaxOpsPremium
+	maxOutputBytes        = 25000   // common/templates/context.go: LimitWriter in executeParsed
+	maxOutputBytesLenient = 1 << 20 // outside -strict: warn past 25k, stop at 1 MiB
+	maxResponseRunes      = 2000    // customcommands/bot.go replaces longer responses
+	maxSourceRunes        = 10000   // customcommands.MaxCCResponsesLength
+	maxSourceRunesPremium = 20000   // customcommands.MaxCCResponsesLengthPremium
+	maxOpsNormal          = 1000000 // common/templates/context.go: MaxOpsNormal
+	maxOpsPremium         = 2500000 // MaxOpsPremium
 )
 
 // callLimit is one of YAGPDB's Context.Counters with its normal and premium limits.
@@ -317,12 +315,7 @@ func (ctx *ExecutionContext) checkSourceLength(source string) error {
 // checkOutput applies YAGPDB's output limits to a finished run and returns the output
 // YAGPDB would send. overCap is set when YAGPDB's output writer would have failed
 // (outside strict mode, where the run went on).
-func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration, overCap bool) (string, error) {
-	if elapsed > maxDuration {
-		if err := ctx.limitBreach(fmt.Errorf("execution took %s; YAGPDB stops custom commands after %s", elapsed.Round(time.Millisecond), maxDuration)); err != nil {
-			return ctx.response(output), err
-		}
-	}
+func (ctx *ExecutionContext) checkOutput(output string, overCap bool) (string, error) {
 	if overCap {
 		if err := ctx.limitBreach(fmt.Errorf("response grew too big (>25k): the template printed %d bytes", len(output))); err != nil {
 			return output, err

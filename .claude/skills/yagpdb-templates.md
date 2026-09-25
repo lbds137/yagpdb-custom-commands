@@ -71,7 +71,8 @@ utility/         - General-purpose commands
 | Resource | Free | Premium |
 |----------|------|---------|
 | Command size | 10k chars | 20k chars |
-| Execution timeout | 10 sec | 10 sec |
+| Operations per run (no time limit) | 1,000,000 | 2,500,000 |
+| `sleep` per run | 60 sec | 60 sec |
 | Embed description | 2,048 chars | 2,048 chars |
 
 ### Research First

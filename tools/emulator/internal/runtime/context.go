@@ -181,8 +181,11 @@ type ExecutionContext struct {
 	// Random is where randInt, shuffle, adjective, noun and verb draw from; nil is
 	// math/rand's global source. A test's seed: sets a seeded one
 	Random yagstd.Random
-	// started is when the run started, by the system clock, for the time limit
-	started time.Time
+	// secondsSlept counts sleep's seconds against YAGPDB's 60 per run (an execCC child
+	// starts at 0); timeSlept is how far the clock has moved on for the sleeps, this run's
+	// and, for a child, its callers' before the call
+	secondsSlept int
+	timeSlept    time.Duration
 
 	// Available roles (for hasRole checks)
 	AvailableRoles map[int64]types.CtxRole
@@ -204,7 +207,7 @@ type ExecutionContext struct {
 
 // NewExecutionContext creates a new execution context with default values.
 func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
-	return &ExecutionContext{
+	ctx := &ExecutionContext{
 		GuildID:        guildID,
 		GuildName:      "Test Server",
 		Prefix:         DefaultPrefix,
@@ -226,6 +229,11 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 		CommandIDMap:   make(map[int64]string),
 		MaxExecCCDepth: 2, // YAGPDB default
 	}
+	// The database reads the run's clock, so entry times and expiry move on with its sleeps
+	if db != nil {
+		db.SetClock(ctx.Now)
+	}
+	return ctx
 }
 
 // SetNonPremium configures the context for non-premium limits.
@@ -233,12 +241,13 @@ func (ctx *ExecutionContext) SetNonPremium() {
 	ctx.IsPremium = false
 }
 
-// Now is the time by the run's clock.
+// Now is the time by the run's clock, moved on by the run's sleeps.
 func (ctx *ExecutionContext) Now() time.Time {
+	now := time.Now()
 	if ctx.Clock != nil {
-		return ctx.Clock()
+		now = ctx.Clock()
 	}
-	return time.Now()
+	return now.Add(ctx.timeSlept)
 }
 
 // random is the run's random source.
@@ -249,11 +258,10 @@ func (ctx *ExecutionContext) random() yagstd.Random {
 	return yagstd.GlobalRandom{}
 }
 
-// FixClock stops the run's clock at t, the database's too.
+// FixClock stops the run's clock at t (the database reads it through Now).
 func (ctx *ExecutionContext) FixClock(t time.Time) {
 	ctx.Clock = func() time.Time { return t }
 	ctx.StartTime = t
-	ctx.DB.SetClock(ctx.Clock)
 }
 
 // Seed makes the random functions draw from a source seeded with seed.

@@ -427,7 +427,6 @@ func TestFixedClockAndSeed(t *testing.T) {
 		tc.Context.Seed = &seed
 		tc.applyDefaults()
 		res := NewRunner(RunnerConfig{}).RunTest(tc)
-		// strict: a clock 25 years back must not count as a run over the time limit
 		if res.Error != nil || !res.Passed {
 			t.Fatalf("run failed: %v %q", res.Error, res.Failures)
 		}
