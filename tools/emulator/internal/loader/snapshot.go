@@ -29,11 +29,11 @@ type Snapshot struct {
 	DB          []SnapshotEntry   `yaml:"db,omitempty"`
 }
 
-// SnapshotMessage is a sent message. Embeds are stored as indented JSON.
+// SnapshotMessage is a sent message. Embeds are stored as indented JSON, one entry per embed.
 type SnapshotMessage struct {
-	ChannelID int64    `yaml:"channel_id"`
-	Content   snapText `yaml:"content,omitempty"`
-	Embed     snapText `yaml:"embed,omitempty"`
+	ChannelID int64      `yaml:"channel_id"`
+	Content   snapText   `yaml:"content,omitempty"`
+	Embeds    []snapText `yaml:"embeds,omitempty"`
 }
 
 // SnapshotFile is a file attached to a sent message (complexMessage's "file").
@@ -97,8 +97,8 @@ func snapshotMessages(messages []runtime.SentMessage) []SnapshotMessage {
 	var out []SnapshotMessage
 	for _, msg := range messages {
 		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: snapText(msg.Content)}
-		if msg.Embed != nil {
-			sm.Embed = snapText(readableJSON(msg.Embed))
+		for _, e := range msg.Embeds {
+			sm.Embeds = append(sm.Embeds, snapText(readableJSON(e)))
 		}
 		out = append(out, sm)
 	}

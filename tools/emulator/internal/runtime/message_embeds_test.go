@@ -33,8 +33,11 @@ func TestReadEmbedsCanBeSentAgain(t *testing.T) {
 			continue
 		}
 		last := ctx.SentMessages[len(ctx.SentMessages)-1]
-		if e, ok := last.Embed.(types.Embed); !ok || e["title"] != "Quoted" {
-			t.Errorf("%s: sent %#v", name, last.Embed)
+		if len(last.Embeds) != 1 {
+			t.Fatalf("%s: embeds = %#v", name, last.Embeds)
+		}
+		if e, ok := last.Embeds[0].(types.Embed); !ok || e["title"] != "Quoted" {
+			t.Errorf("%s: sent %#v", name, last.Embeds[0])
 		}
 	}
 }

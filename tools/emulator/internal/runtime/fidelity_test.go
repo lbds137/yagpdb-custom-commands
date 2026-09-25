@@ -115,11 +115,54 @@ func TestComplexMessageSplitsContentAndEmbed(t *testing.T) {
 	if m.Content != "hi" {
 		t.Errorf("content = %q", m.Content)
 	}
-	if e, ok := m.Embed.(types.Embed); !ok || e["title"] != "T" {
-		t.Errorf("embed = %#v", m.Embed)
+	if len(m.Embeds) != 1 {
+		t.Fatalf("embeds = %#v", m.Embeds)
+	}
+	if e, ok := m.Embeds[0].(types.Embed); !ok || e["title"] != "T" {
+		t.Errorf("embed = %#v", m.Embeds[0])
 	}
 	if len(ctx.FileUploads) != 1 || ctx.FileUploads[0].Filename != "log.txt" || ctx.FileUploads[0].Content != "data" {
 		t.Errorf("file = %+v", ctx.FileUploads)
+	}
+}
+
+func TestSendingTwoEmbedsRecordsBoth(t *testing.T) {
+	ctx := newCtx(false, true)
+	src := `{{sendMessage nil (complexMessage "embed" (cslice (cembed "title" "T1") (cembed "title" "T2")))}}`
+	if _, err := run(t, ctx, src); err != nil {
+		t.Fatal(err)
+	}
+	embeds := ctx.SentMessages[0].Embeds
+	if len(embeds) != 2 {
+		t.Fatalf("embeds = %#v", embeds)
+	}
+	if e, ok := embeds[0].(types.Embed); !ok || e["title"] != "T1" {
+		t.Errorf("embeds[0] = %#v", embeds[0])
+	}
+	if e, ok := embeds[1].(types.Embed); !ok || e["title"] != "T2" {
+		t.Errorf("embeds[1] = %#v", embeds[1])
+	}
+}
+
+func TestEditingToTwoEmbedsRecordsBoth(t *testing.T) {
+	ctx := newCtx(false, true)
+	ctx.Messages = []types.CtxMessage{{ID: 7, ChannelID: ctx.ChannelID, Author: botUser}}
+	src := `{{editMessage nil 7 (complexMessageEdit "embed" (cslice (cembed "title" "T1") (cembed "title" "T2")))}}`
+	if _, err := run(t, ctx, src); err != nil {
+		t.Fatal(err)
+	}
+	if len(ctx.EditedMessages) != 1 {
+		t.Fatalf("edited messages = %#v", ctx.EditedMessages)
+	}
+	embeds := ctx.EditedMessages[0].Embeds
+	if len(embeds) != 2 {
+		t.Fatalf("embeds = %#v", embeds)
+	}
+	if e, ok := embeds[0].(types.Embed); !ok || e["title"] != "T1" {
+		t.Errorf("embeds[0] = %#v", embeds[0])
+	}
+	if e, ok := embeds[1].(types.Embed); !ok || e["title"] != "T2" {
+		t.Errorf("embeds[1] = %#v", embeds[1])
 	}
 }
 
@@ -193,7 +236,7 @@ func TestEmbedIsACopyOfTheDict(t *testing.T) {
 	if _, err := run(t, ctx, `{{$e := sdict "title" "first"}}{{sendMessage nil (cembed $e)}}{{$e.Set "title" "second"}}{{sendMessage nil (cembed $e)}}`); err != nil {
 		t.Fatal(err)
 	}
-	if got := ctx.SentMessages[0].Embed.(types.Embed)["title"]; got != "first" {
+	if got := ctx.SentMessages[0].Embeds[0].(types.Embed)["title"]; got != "first" {
 		t.Errorf("the first message changed with the dict: %v", got)
 	}
 }
@@ -204,7 +247,7 @@ func TestMessageContentUsesYAGPDBToString(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := []string{ctx.SentMessages[0].Content, ctx.SentMessages[1].Content, ctx.SentMessages[2].Content}
-	if got[0] != "1.5E+00" || got[1] != "" || got[2] != "" || ctx.SentMessages[2].Embed != nil {
+	if got[0] != "1.5E+00" || got[1] != "" || got[2] != "" || len(ctx.SentMessages[2].Embeds) != 0 {
 		t.Errorf("contents = %q (a plain sdict is not an embed)", got)
 	}
 }

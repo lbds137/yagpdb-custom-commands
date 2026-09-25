@@ -2,7 +2,8 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"ID\",\n      \"value\": \"666666666666666666\"\n    },\n    {\n      \"name\": \"Timestamp\",\n      \"value\": \"2020-01-14 15:35:19.401 +0000 UTC\"\n    },\n    {\n      \"name\": \"Name\",\n      \"value\": \"bad_user\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/900000000000000002/700000000000000002)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/avatars/666666666666666666/def.png?size=1024\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Avatar Viewer\"\n}"
+          embeds:
+            - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"ID\",\n      \"value\": \"666666666666666666\"\n    },\n    {\n      \"name\": \"Timestamp\",\n      \"value\": \"2020-01-14 15:35:19.401 +0000 UTC\"\n    },\n    {\n      \"name\": \"Name\",\n      \"value\": \"bad_user\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/900000000000000002/700000000000000002)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/avatars/666666666666666666/def.png?size=1024\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Avatar Viewer\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -19,33 +20,34 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: |-
-            {
-              "author": {
-                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
-                "name": "Viewer#0001",
-                "url": "https://discordapp.com/users/987654321098765432"
-              },
-              "fields": [
-                {
-                  "name": "ID",
-                  "value": "500000000000000001"
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Viewer#0001",
+                  "url": "https://discordapp.com/users/987654321098765432"
                 },
-                {
-                  "name": "Timestamp",
-                  "value": "2018-10-11 17:41:29.55 +0000 UTC"
+                "fields": [
+                  {
+                    "name": "ID",
+                    "value": "500000000000000001"
+                  },
+                  {
+                    "name": "Timestamp",
+                    "value": "2018-10-11 17:41:29.55 +0000 UTC"
+                  },
+                  {
+                    "name": "Name",
+                    "value": "MockUser"
+                  }
+                ],
+                "image": {
+                  "url": "https://cdn.discordapp.com/embed/avatars/0.png?size=1024"
                 },
-                {
-                  "name": "Name",
-                  "value": "MockUser"
-                }
-              ],
-              "image": {
-                "url": "https://cdn.discordapp.com/embed/avatars/0.png?size=1024"
-              },
-              "thumbnail": {},
-              "title": "Avatar Viewer"
-            }
+                "thumbnail": {},
+                "title": "Avatar Viewer"
+              }
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -62,7 +64,8 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"ID\",\n      \"value\": \"555555555555555555\"\n    },\n    {\n      \"name\": \"Timestamp\",\n      \"value\": \"2019-03-14 00:59:26.167 +0000 UTC\"\n    },\n    {\n      \"name\": \"Name\",\n      \"value\": \"target Tea\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/avatars/555555555555555555/abc.png?size=256\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Avatar Viewer\"\n}"
+          embeds:
+            - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"ID\",\n      \"value\": \"555555555555555555\"\n    },\n    {\n      \"name\": \"Timestamp\",\n      \"value\": \"2019-03-14 00:59:26.167 +0000 UTC\"\n    },\n    {\n      \"name\": \"Name\",\n      \"value\": \"target Tea\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/avatars/555555555555555555/abc.png?size=256\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Avatar Viewer\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -79,18 +82,19 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: |-
-            {
-              "author": {
-                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
-                "name": "Viewer#0001",
-                "url": "https://discordapp.com/users/987654321098765432"
-              },
-              "description": "⚠️ No avatar found in that message! Link someone's message, or YAGPDB's `whois` output or mod log entry.",
-              "image": {},
-              "thumbnail": {},
-              "title": "Avatar Viewer"
-            }
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Viewer#0001",
+                  "url": "https://discordapp.com/users/987654321098765432"
+                },
+                "description": "⚠️ No avatar found in that message! Link someone's message, or YAGPDB's `whois` output or mod log entry.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Avatar Viewer"
+              }
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -107,7 +111,8 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"ID\",\n      \"value\": \"500000000000000001\"\n    },\n    {\n      \"name\": \"Timestamp\",\n      \"value\": \"2018-10-11 17:41:29.55 +0000 UTC\"\n    },\n    {\n      \"name\": \"Name\",\n      \"value\": \"MockUser\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/900000000000000002/700000000000000003)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/0.png?size=1024\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Avatar Viewer\"\n}"
+          embeds:
+            - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"ID\",\n      \"value\": \"500000000000000001\"\n    },\n    {\n      \"name\": \"Timestamp\",\n      \"value\": \"2018-10-11 17:41:29.55 +0000 UTC\"\n    },\n    {\n      \"name\": \"Name\",\n      \"value\": \"MockUser\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/900000000000000002/700000000000000003)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/0.png?size=1024\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Avatar Viewer\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -124,33 +129,34 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: |-
-            {
-              "author": {
-                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
-                "name": "Viewer#0001",
-                "url": "https://discordapp.com/users/987654321098765432"
-              },
-              "fields": [
-                {
-                  "name": "ID",
-                  "value": "987654321098765432"
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Viewer#0001",
+                  "url": "https://discordapp.com/users/987654321098765432"
                 },
-                {
-                  "name": "Timestamp",
-                  "value": "2022-06-18 09:45:39.879 +0000 UTC"
+                "fields": [
+                  {
+                    "name": "ID",
+                    "value": "987654321098765432"
+                  },
+                  {
+                    "name": "Timestamp",
+                    "value": "2022-06-18 09:45:39.879 +0000 UTC"
+                  },
+                  {
+                    "name": "Name",
+                    "value": "Viewer#0001"
+                  }
+                ],
+                "image": {
+                  "url": "https://cdn.discordapp.com/embed/avatars/1.png?size=1024"
                 },
-                {
-                  "name": "Name",
-                  "value": "Viewer#0001"
-                }
-              ],
-              "image": {
-                "url": "https://cdn.discordapp.com/embed/avatars/1.png?size=1024"
-              },
-              "thumbnail": {},
-              "title": "Avatar Viewer"
-            }
+                "thumbnail": {},
+                "title": "Avatar Viewer"
+              }
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:

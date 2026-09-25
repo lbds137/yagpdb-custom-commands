@@ -81,6 +81,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   assertions:
     db_checks: [{ user_id: 0, key: "K", value_equals: 1 }]   # or value_contains, not_exists
     sent_messages: [{ channel_id: 9, embed_title: "Title" }]  # or embed_contains: "`441`";
+                                      # both match any of the message's embeds, not just the first
                                       # nth: 2 = the second message there (default: the first)
     edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits (as edited); "" = empty
     role_changes: [{ user_id: 1, role_id: 111, action: "add" }]  # delay: 90s for a scheduled one
