@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -48,8 +49,7 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 	for _, msg := range ctx.SentMessages {
 		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: msg.Content}
 		if msg.Embed != nil {
-			embedJSON, _ := json.MarshalIndent(msg.Embed, "", "  ")
-			sm.Embed = string(embedJSON)
+			sm.Embed = readableJSON(msg.Embed)
 		}
 		snap.Messages = append(snap.Messages, sm)
 	}
@@ -64,10 +64,29 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 		return entries[i].Key < entries[j].Key
 	})
 	for _, e := range entries {
-		valueJSON, _ := json.Marshal(e.Value)
-		snap.DB = append(snap.DB, SnapshotEntry{UserID: e.UserID, Key: e.Key, Value: string(valueJSON)})
+		snap.DB = append(snap.DB, SnapshotEntry{UserID: e.UserID, Key: e.Key, Value: compactJSON(e.Value)})
 	}
 	return snap
+}
+
+func compactJSON(v interface{}) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprintf("<cannot encode as JSON: %v>", err)
+	}
+	return string(data)
+}
+
+// readableJSON is indented JSON without HTML escaping, so mentions stay "<@id>".
+func readableJSON(v interface{}) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		return fmt.Sprintf("<cannot encode as JSON: %v>", err)
+	}
+	return strings.TrimRight(buf.String(), "\n")
 }
 
 func readSnapshots(path string) (map[string]Snapshot, error) {
@@ -91,6 +110,10 @@ func writeSnapshot(path, name string, snap Snapshot) error {
 		return err
 	}
 	snaps[name] = snap
+	return saveSnapshots(path, snaps)
+}
+
+func saveSnapshots(path string, snaps map[string]Snapshot) error {
 	data, err := yaml.Marshal(snaps)
 	if err != nil {
 		return err
@@ -107,6 +130,10 @@ func (r *Runner) checkSnapshot(tc *TestCase, output string, ctx *runtime.Executi
 	if tc.SourceFile == "" {
 		return []string{"snapshot: the test has no source file to store its snapshot next to"}, false
 	}
+	if r.duplicateNames[snapshotKey(tc)] {
+		return []string{fmt.Sprintf("snapshot: another test in %s is also named %q; snapshots are stored by name, so rename one",
+			tc.SourceFile, tc.Name)}, false
+	}
 	path := SnapshotPath(tc.SourceFile)
 	got := takeSnapshot(output, ctx, db)
 
@@ -117,7 +144,7 @@ func (r *Runner) checkSnapshot(tc *TestCase, output string, ctx *runtime.Executi
 	want, exists := snaps[tc.Name]
 
 	if r.config.UpdateSnapshots || !exists {
-		if !exists && r.config.CI {
+		if !exists && r.config.CI && !r.config.UpdateSnapshots {
 			return []string{fmt.Sprintf("snapshot: none saved for %q in %s (run yagtest test -update-snapshots and commit it)", tc.Name, path)}, false
 		}
 		if err := writeSnapshot(path, tc.Name, got); err != nil {
@@ -177,4 +204,67 @@ func lineDiff(a, b string) string {
 		out = append(out, "    ...")
 	}
 	return strings.Join(out, "\n")
+}
+
+func snapshotKey(tc *TestCase) string {
+	return tc.SourceFile + "\x00" + tc.Name
+}
+
+// findDuplicateNames marks snapshot tests that share a name with another test in the
+// same file.
+func findDuplicateNames(tests []*TestCase) map[string]bool {
+	seen := map[string]int{}
+	for _, tc := range tests {
+		seen[snapshotKey(tc)]++
+	}
+	dups := map[string]bool{}
+	for key, n := range seen {
+		if n > 1 {
+			dups[key] = true
+		}
+	}
+	return dups
+}
+
+// PruneSnapshots removes saved snapshots whose test no longer exists or no longer has
+// snapshot: true, for every test file among tests. Returns how many were removed.
+func PruneSnapshots(tests []*TestCase) (int, error) {
+	keep := map[string]map[string]bool{}
+	for _, tc := range tests {
+		if tc.SourceFile == "" {
+			continue
+		}
+		if keep[tc.SourceFile] == nil {
+			keep[tc.SourceFile] = map[string]bool{}
+		}
+		if tc.Snapshot {
+			keep[tc.SourceFile][tc.Name] = true
+		}
+	}
+
+	removed := 0
+	for source, names := range keep {
+		path := SnapshotPath(source)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			continue
+		}
+		snaps, err := readSnapshots(path)
+		if err != nil {
+			return removed, err
+		}
+		before := len(snaps)
+		for name := range snaps {
+			if !names[name] {
+				delete(snaps, name)
+			}
+		}
+		if len(snaps) == before {
+			continue
+		}
+		removed += before - len(snaps)
+		if err := saveSnapshots(path, snaps); err != nil {
+			return removed, err
+		}
+	}
+	return removed, nil
 }

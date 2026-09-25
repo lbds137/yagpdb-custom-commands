@@ -34,7 +34,16 @@ type ContextDef struct {
 	Args     []string               `yaml:"args"`
 	CmdArgs  []string               `yaml:"cmd_args"`
 	ExecData map[string]interface{} `yaml:"exec_data"`
-	Premium  *bool                  `yaml:"premium"` // Default true
+	Premium  *bool                  `yaml:"premium"`  // Default true
+	Reaction *ReactionDef           `yaml:"reaction"` // Makes this a reaction-triggered run
+}
+
+// ReactionDef describes the reaction that triggered a command.
+type ReactionDef struct {
+	Emoji     string `yaml:"emoji"`      // Unicode emoji, or a custom emoji's name
+	EmojiID   int64  `yaml:"emoji_id"`   // Custom emoji ID (0 for Unicode emoji)
+	MessageID int64  `yaml:"message_id"` // Message that was reacted to
+	Added     *bool  `yaml:"added"`      // false for a removed reaction (default true)
 }
 
 // UserDef defines user context.

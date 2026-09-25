@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
@@ -124,7 +125,7 @@ func TestResponseOver2000Replaced(t *testing.T) {
 	ctx := newCtx(true, true)
 	ctx.Cmd = "big"
 	out, err := run(t, ctx, src)
-	if err != nil || !strings.HasPrefix(out, "Template output for big was longer than 2k") {
+	if err != nil || !strings.HasPrefix(out, "Custom command (#0) response was longer than 2k") {
 		t.Errorf("strict: out=%q err=%v", out, err)
 	}
 
@@ -196,5 +197,103 @@ func TestExecCCChildFailureIsReported(t *testing.T) {
 	w := kinds(ctx, KindExecCC)
 	if len(w) != 1 || !strings.Contains(w[0], "execCC 7 (child.gohtml) failed") {
 		t.Errorf("got %q", ctx.Diagnostics)
+	}
+}
+
+func TestReactionsCountPerEmoji(t *testing.T) {
+	emoji := `"a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t"`
+	ctx := newCtx(true, true)
+	if _, err := run(t, ctx, `{{addReactions `+emoji+`}}`); err != nil {
+		t.Fatalf("20 emoji are allowed: %v", err)
+	}
+	ctx = newCtx(true, true)
+	if _, err := run(t, ctx, `{{addReactions `+emoji+` "u"}}`); !errors.Is(err, ErrTooManyCalls) {
+		t.Errorf("21 emoji in one call should fail, got %v", err)
+	}
+	ctx = newCtx(true, true)
+	if _, err := run(t, ctx, `{{addMessageReactions nil 1 (cslice `+emoji+` "u")}}`); !errors.Is(err, ErrTooManyCalls) {
+		t.Errorf("a slice of 21 emoji should fail, got %v", err)
+	}
+}
+
+func TestDeleteReactionsCounters(t *testing.T) {
+	ctx := newCtx(true, true)
+	if _, err := run(t, ctx, `{{range seq 0 11}}{{deleteAllMessageReactions nil 1}}{{end}}`); err != nil {
+		t.Errorf("without emoji each call is one API call (limit 100): %v", err)
+	}
+	ctx = newCtx(true, true)
+	_, err := run(t, ctx, `{{deleteAllMessageReactions nil 1 "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k"}}`)
+	if err == nil || !strings.Contains(err.Error(), "del_reaction_message") {
+		t.Errorf("11 emoji should pass the del_reaction_message limit of 10, got %v", err)
+	}
+}
+
+func TestSetRolesOncePerUser(t *testing.T) {
+	ctx := newCtx(true, true)
+	if _, err := run(t, ctx, `{{setRoles 1 (cslice)}}{{setRoles 2 (cslice)}}`); err != nil {
+		t.Fatalf("different users are fine: %v", err)
+	}
+	if _, err := run(t, newCtx(true, true), `{{setRoles 1 (cslice)}}{{setRoles 1 (cslice)}}`); err == nil ||
+		!strings.Contains(err.Error(), "max 1 / user") {
+		t.Errorf("same user twice should fail, got %v", err)
+	}
+}
+
+func TestExecLimitSharedByExecAndExecAdmin(t *testing.T) {
+	_, err := run(t, newCtx(true, true), `{{exec "a"}}{{execAdmin "a"}}{{exec "a"}}{{exec "a"}}{{exec "a"}}{{execAdmin "a"}}`)
+	if err == nil || !strings.Contains(err.Error(), "Max number of commands executed") {
+		t.Errorf("the sixth exec should fail, got %v", err)
+	}
+}
+
+func TestEachBreachWarnsOnce(t *testing.T) {
+	ctx := newCtx(false, true)
+	if _, err := run(t, ctx, `{{range seq 0 105}}{{sendMessage nil "x"}}{{end}}{{getMember 1}}{{getMember 1}}after`); err != nil {
+		t.Fatal(err)
+	}
+	w := kinds(ctx, KindLimit)
+	if len(w) != 2 || !strings.Contains(w[0], "sendMessage") || !strings.Contains(w[1], "getMember") ||
+		!strings.Contains(w[1], "stops the command") {
+		t.Errorf("want one sendMessage and one getMember warning, got %q", w)
+	}
+}
+
+func TestLoopDBWarningForms(t *testing.T) {
+	src := `{{define "lookup"}}{{$e := dbGet 0 .}}{{end}}` +
+		`{{define "loop"}}{{template "loop" .}}{{end}}` + "\n" + // recursive: must not hang
+		"{{range $i := seq 0 3}}\n" + // line 2
+		"{{$x := (dbGet 0 \"k\").Value}}\n" + // line 3: chain
+		"{{template \"lookup\" \"k\"}}\n" + // line 4: template that calls dbGet
+		"{{template \"loop\" 1}}\n" + // line 5: template without db calls
+		"{{end}}"
+	ctx := newCtx(false, true)
+	engine := NewEngine(ctx)
+	// Execute would recurse forever on "loop"; the check runs at parse time
+	tmpl := template.Must(template.New("t").Funcs(engine.BuildFuncMap()).Parse(src))
+	var got []string
+	for _, f := range findLoopDBCalls(tmpl) {
+		got = append(got, f.Message(""))
+	}
+	if len(got) != 2 || !strings.HasPrefix(got[0], "line 3: dbGet") ||
+		!strings.HasPrefix(got[1], `line 4: template "lookup" (which calls dbGet)`) {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestEqComparesIntegerKinds(t *testing.T) {
+	out, err := run(t, newCtx(false, true), `{{eq (toInt64 5) 5}} {{ne (toInt64 5) 5}} {{eq 3 1 2 3}} {{eq "a" "b"}}`)
+	if err != nil || out != "true false true false" {
+		t.Errorf("out=%q err=%v", out, err)
+	}
+}
+
+func TestMultiLineTryTagKeepsLines(t *testing.T) {
+	src := "{{ try\n}}\n{{$x := 1}}\n{{ catch }}{{ end }}\n{{range seq 0 2}}{{dbGet 0 \"k\"}}{{end}}" // loop on line 5
+	ctx := newCtx(false, true)
+	if _, err := run(t, ctx, src); err != nil {
+		t.Fatal(err)
+	}
+	if w := kinds(ctx, KindLoopDB); len(w) != 1 || !strings.HasPrefix(w[0], "line 5:") {
+		t.Errorf("got %q", w)
 	}
 }

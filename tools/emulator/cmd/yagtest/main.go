@@ -576,6 +576,15 @@ func runTests(opts testOptions) int {
 
 	results := runner.RunTests(tests)
 
+	pruned := 0
+	if opts.updateSnapshots {
+		var err error
+		if pruned, err = loader.PruneSnapshots(tests); err != nil {
+			fmt.Fprintf(os.Stderr, "Error pruning snapshots: %v\n", err)
+			return 1
+		}
+	}
+
 	// Print results
 	passed := 0
 	failed := 0
@@ -662,6 +671,9 @@ func runTests(opts testOptions) int {
 	}
 	if snapshotsWritten > 0 {
 		fmt.Printf(" | Snapshots written: %d", snapshotsWritten)
+	}
+	if pruned > 0 {
+		fmt.Printf(" | Stale snapshots removed: %d", pruned)
 	}
 	fmt.Println()
 

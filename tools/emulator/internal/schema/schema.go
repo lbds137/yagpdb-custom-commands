@@ -113,9 +113,10 @@ func TypeOf(value interface{}) string {
 }
 
 func preview(value interface{}) string {
-	s := fmt.Sprintf("%v", types.UnwrapValue(value))
-	if len(s) > 40 {
-		s = s[:37] + "..."
+	r := []rune(fmt.Sprintf("%v", types.UnwrapValue(value)))
+	s := string(r)
+	if len(r) > 40 {
+		s = string(r[:37]) + "..."
 	}
 	return fmt.Sprintf("%q", s)
 }

@@ -87,11 +87,12 @@ func processSingleTryCatch(source string) (string, bool) {
 		// We found a valid innermost try-catch-end block
 		tryContent := source[tryEnd:catchStart]
 
-		// Replace the entire block with just the try content. The removed catch block
-		// becomes a comment of the same height, so error and warning line numbers still
-		// match the source file and nothing is printed.
+		// Replace the entire block with just the try content. The removed tags and catch
+		// block become a comment of the same height, so error and warning line numbers
+		// still match the source file and nothing is printed.
 		filler := ""
-		if removedLines := strings.Count(source[catchStart:endEnd], "\n"); removedLines > 0 {
+		removedLines := strings.Count(source[tryStart:tryEnd], "\n") + strings.Count(source[catchStart:endEnd], "\n")
+		if removedLines > 0 {
 			filler = "{{/*" + strings.Repeat("\n", removedLines) + "*/}}"
 		}
 		result := source[:tryStart] + tryContent + filler + source[endEnd:]

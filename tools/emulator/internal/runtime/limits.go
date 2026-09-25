@@ -1,17 +1,22 @@
 package runtime
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 )
 
 // YAGPDB's per-execution limits. Sources are in vendor/yagpdb (see the comments).
+// YAGPDB also caps template operations (1M, or 2.5M with premium); Go's text/template
+// can't count those, so the emulator doesn't enforce that limit.
 const (
 	maxOutputBytes        = 25000            // common/templates/context.go: LimitWriter in executeParsed
-	maxResponseRunes      = 2000             // ExecuteAndSendWithErrors replaces longer output
+	maxResponseRunes      = 2000             // customcommands/bot.go replaces longer responses
 	maxSourceRunes        = 10000            // customcommands.MaxCCResponsesLength
 	maxSourceRunesPremium = 20000            // customcommands.MaxCCResponsesLengthPremium
 	maxDuration           = 10 * time.Second // custom command execution timeout
@@ -32,17 +37,23 @@ var (
 	limitSendDM      = callLimit{"send_dm", 1, 1}
 	limitSort        = callLimit{"sort", 1, 3}
 	limitTicket      = callLimit{"ticket", 1, 1}
+	limitExecChild   = callLimit{"exec_child", 3, 3}
+	limitExec        = callLimit{"exec", 5, 5} // commands/tmplexec.go: maxExec, shared by exec and execAdmin
 	limitReactTrig   = callLimit{"add_reaction_trigger", 20, 20}
 	limitReactMsg    = callLimit{"add_reaction_message", 20, 20}
 	limitDelReactMsg = callLimit{"del_reaction_message", 10, 10}
 )
 
+var errMaxExec = errors.New("Max number of commands executed in custom command")
+
 // limitedFunc lists the counters a template function increments, in YAGPDB's order.
 // Silent functions return a zero value without error once over the limit (YAGPDB's
-// sendMessage, for example, just stops sending), so the emulator always warns for them.
+// sendMessage, for example, just stops sending). check replaces limits for functions
+// whose counting depends on their arguments.
 type limitedFunc struct {
 	limits []callLimit
 	silent bool
+	check  func(ctx *ExecutionContext, name string, args []reflect.Value) error
 }
 
 var limitedFuncs = map[string]limitedFunc{
@@ -63,12 +74,19 @@ var limitedFuncs = map[string]limitedFunc{
 	"execCC":                  {limits: []callLimit{limitRunCC}},
 	"scheduleUniqueCC":        {limits: []callLimit{limitRunCC}},
 	"cancelScheduledUniqueCC": {limits: []callLimit{limitCancelCC}},
+	"exec":                    {limits: []callLimit{limitExec}},
+	"execAdmin":               {limits: []callLimit{limitExec}},
+	"sendTemplate":            {limits: []callLimit{limitExecChild}},
 	"sort":                    {limits: []callLimit{limitSort}},
 	"createTicket":            {limits: []callLimit{limitTicket}},
 
-	"addReactions":              {limits: []callLimit{limitReactTrig}},
-	"addMessageReactions":       {limits: []callLimit{limitReactMsg}},
-	"deleteAllMessageReactions": {limits: []callLimit{limitAPI, limitDelReactMsg}},
+	// One count per emoji (context_funcs.go tmplAddReactions / tmplAddMessageReactions)
+	"addReactions":        {check: perEmoji(0, limitReactTrig)},
+	"addMessageReactions": {check: perEmoji(2, limitReactMsg)},
+	// Per emoji when emoji are given, otherwise one API call (tmplDelAllMessageReactions)
+	"deleteAllMessageReactions": {check: checkDeleteReactions},
+	// One API call, and one call per target user (tmplSetRoles)
+	"setRoles": {check: checkSetRoles},
 
 	"sendMessage":      {limits: []callLimit{limitAPI}, silent: true},
 	"sendMessageRetID": {limits: []callLimit{limitAPI}, silent: true},
@@ -96,25 +114,99 @@ var limitedFuncs = map[string]limitedFunc{
 	"removeRoleID":           {limits: []callLimit{limitAPI}},
 	"targetHasRole":          {limits: []callLimit{limitAPI}},
 	"targetHasRoleID":        {limits: []callLimit{limitAPI}},
-	"setRoles":               {limits: []callLimit{limitAPI}},
 }
 
 // countCall increments a counter the way YAGPDB's IncreaseCheckCallCounterPremium does
 // and returns the error YAGPDB would once the count passes the limit.
 func (ctx *ExecutionContext) countCall(fn string, l callLimit) error {
-	ctx.Counters[l.key]++
 	limit := l.normal
 	if ctx.IsPremium {
 		limit = l.premium
 	}
-	if ctx.Counters[l.key] <= limit {
+	base := ErrTooManyCalls
+	switch l.key {
+	case limitAPI.key:
+		base = ErrTooManyAPICalls
+	case limitExec.key:
+		base = errMaxExec
+	}
+	return ctx.count(fn, l.key, limit, base)
+}
+
+func (ctx *ExecutionContext) count(fn, key string, limit int, base error) error {
+	ctx.Counters[key]++
+	if ctx.Counters[key] <= limit {
 		return nil
 	}
-	err := ErrTooManyCalls
-	if l.key == limitAPI.key {
-		err = ErrTooManyAPICalls
+	return fmt.Errorf("%w (%s: over the limit of %d %s calls per run)", base, fn, limit, key)
+}
+
+// perEmoji counts one call per emoji argument from index first on; slices of emoji are
+// flattened, as YAGPDB's callVariadic does.
+func perEmoji(first int, l callLimit) func(*ExecutionContext, string, []reflect.Value) error {
+	return func(ctx *ExecutionContext, name string, args []reflect.Value) error {
+		for i := 0; i < countFlattened(args, first); i++ {
+			if err := ctx.countCall(name, l); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
-	return fmt.Errorf("%w (%s: over the limit of %d %s calls per run)", err, fn, limit, l.key)
+}
+
+func checkDeleteReactions(ctx *ExecutionContext, name string, args []reflect.Value) error {
+	if n := len(flatArgs(args)) - 2; n > 0 {
+		for i := 0; i < n; i++ {
+			if err := ctx.countCall(name, limitDelReactMsg); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return ctx.countCall(name, limitAPI)
+}
+
+func checkSetRoles(ctx *ExecutionContext, name string, args []reflect.Value) error {
+	if err := ctx.countCall(name, limitAPI); err != nil {
+		return err
+	}
+	target := ctx.UserID
+	if all := flatArgs(args); len(all) > 0 && all[0] != nil {
+		target = funcs.ToInt64(all[0])
+	}
+	return ctx.count(name, fmt.Sprintf("set_roles%d", target), 1,
+		errors.New("too many calls for specific user ID (max 1 / user)"))
+}
+
+// flatArgs unpacks a wrapped function's arguments, including a variadic slice.
+func flatArgs(args []reflect.Value) []interface{} {
+	var out []interface{}
+	for i, a := range args {
+		if i == len(args)-1 && a.Kind() == reflect.Slice && a.Type().Elem().Kind() == reflect.Interface {
+			for j := 0; j < a.Len(); j++ {
+				out = append(out, a.Index(j).Interface())
+			}
+			continue
+		}
+		out = append(out, a.Interface())
+	}
+	return out
+}
+
+// countFlattened counts arguments from index first on, counting each element of a slice.
+func countFlattened(args []reflect.Value, first int) int {
+	n := 0
+	for i, a := range flatArgs(args) {
+		if i < first {
+			continue
+		}
+		if v := reflect.ValueOf(a); v.IsValid() && (v.Kind() == reflect.Slice || v.Kind() == reflect.Array) && v.Type().Elem().Kind() != reflect.Uint8 {
+			n += v.Len()
+		} else {
+			n++
+		}
+	}
+	return n
 }
 
 // limitBreach handles a breached limit: strict mode returns the error, otherwise it is
@@ -125,6 +217,17 @@ func (ctx *ExecutionContext) limitBreach(err error) error {
 	}
 	ctx.Warn(KindLimit, "%v", err)
 	return nil
+}
+
+// warnOnce records a limit warning unless the same one was already recorded this run.
+func (ctx *ExecutionContext) warnOnce(msg string) {
+	if ctx.warned == nil {
+		ctx.warned = map[string]bool{}
+	}
+	if !ctx.warned[msg] {
+		ctx.warned[msg] = true
+		ctx.Warn(KindLimit, "%s", msg)
+	}
 }
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
@@ -148,29 +251,29 @@ func (e *Engine) withLimits(name string, fn interface{}) interface{} {
 
 	wrapped := reflect.MakeFunc(reflect.FuncOf(ins, outs, t.IsVariadic()), func(args []reflect.Value) []reflect.Value {
 		// The first counter over its limit stops the call, like YAGPDB's early returns.
-		// Warnings are recorded once per counter, when it first passes the limit.
-		for _, l := range spec.limits {
-			err := e.ctx.countCall(name, l)
-			if err == nil {
-				continue
-			}
-			firstBreach := e.ctx.Counters[l.key] == limitFor(l, e.ctx.IsPremium)+1
-			if spec.silent {
-				if firstBreach {
-					e.ctx.Warn(KindLimit, "%v; YAGPDB skips this call silently", err)
+		var err error
+		if spec.check != nil {
+			err = spec.check(e.ctx, name, args)
+		} else {
+			for _, l := range spec.limits {
+				if err = e.ctx.countCall(name, l); err != nil {
+					break
 				}
+			}
+		}
+
+		if err != nil {
+			if spec.silent {
+				e.ctx.warnOnce(err.Error() + "; YAGPDB skips this call silently")
 				if e.ctx.Strict {
 					return []reflect.Value{reflect.Zero(outs[0]), reflect.Zero(errorType)}
 				}
-				break
+			} else {
+				if e.ctx.Strict {
+					return []reflect.Value{reflect.Zero(outs[0]), reflect.ValueOf(&err).Elem()}
+				}
+				e.ctx.warnOnce(err.Error() + "; YAGPDB stops the command here")
 			}
-			if e.ctx.Strict {
-				return []reflect.Value{reflect.Zero(outs[0]), reflect.ValueOf(&err).Elem()}
-			}
-			if firstBreach {
-				e.ctx.Warn(KindLimit, "%v", err)
-			}
-			break
 		}
 
 		var res []reflect.Value
@@ -185,13 +288,6 @@ func (e *Engine) withLimits(name string, fn interface{}) interface{} {
 		return res
 	})
 	return wrapped.Interface()
-}
-
-func limitFor(l callLimit, premium bool) int {
-	if premium {
-		return l.premium
-	}
-	return l.normal
 }
 
 // checkSourceLength applies YAGPDB's limit on a custom command's length.
@@ -221,7 +317,7 @@ func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration) (
 	}
 	if n := utf8.RuneCountInString(strings.TrimSpace(output)); n > maxResponseRunes {
 		if ctx.Strict {
-			return "Template output for " + ctx.Cmd + " was longer than 2k (contact an admin on the server...)", nil
+			return fmt.Sprintf("Custom command (#%d) response was longer than 2k (contact an admin on the server...)", ctx.CCID), nil
 		}
 		ctx.Warn(KindLimit, "the response is %d characters; YAGPDB replaces responses over %d with a notice", n, maxResponseRunes)
 	}

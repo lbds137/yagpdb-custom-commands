@@ -90,3 +90,43 @@ func TestLoadTestsFromDirSkipsSnapshots(t *testing.T) {
 		t.Errorf("got %d tests: %+v", len(tests), tests)
 	}
 }
+
+func TestSnapshotDuplicateNamesFail(t *testing.T) {
+	dir := t.TempDir()
+	r := NewRunner(RunnerConfig{BaseDir: dir})
+	results := r.RunTests([]*TestCase{snapshotTest(dir, "one"), snapshotTest(dir, "two")})
+	for _, res := range results {
+		if res.Passed || !strings.Contains(strings.Join(res.Failures, ""), "also named") {
+			t.Errorf("duplicate names should fail: %+v", res)
+		}
+	}
+}
+
+func TestUpdateSnapshotsWritesInCI(t *testing.T) {
+	dir := t.TempDir()
+	r := NewRunner(RunnerConfig{BaseDir: dir, CI: true, UpdateSnapshots: true})
+	if res := r.RunTest(snapshotTest(dir, "hi")); !res.Passed || !res.SnapshotWritten {
+		t.Errorf("an explicit update should write even in CI: %+v", res)
+	}
+}
+
+func TestPruneSnapshots(t *testing.T) {
+	dir := t.TempDir()
+	r := NewRunner(RunnerConfig{BaseDir: dir})
+	kept := snapshotTest(dir, "hi")
+	old := snapshotTest(dir, "bye")
+	old.Name = "renamed away"
+	r.RunTests([]*TestCase{kept, old})
+
+	optedOut := snapshotTest(dir, "x")
+	optedOut.Name = "no longer a snapshot test"
+	optedOut.Snapshot = false
+	removed, err := PruneSnapshots([]*TestCase{kept, optedOut})
+	if err != nil || removed != 1 {
+		t.Fatalf("removed=%d err=%v", removed, err)
+	}
+	snaps, _ := readSnapshots(SnapshotPath(kept.SourceFile))
+	if _, ok := snaps["greets"]; !ok || len(snaps) != 1 {
+		t.Errorf("want only the kept snapshot, got %v", snaps)
+	}
+}

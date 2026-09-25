@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
 	"time"
@@ -615,12 +616,55 @@ func (e *Engine) notFunc(arg interface{}) bool {
 	return arg == nil || arg == false || arg == "" || arg == 0
 }
 
-func (e *Engine) eqFunc(a, b interface{}) bool {
-	return a == b
+// eqFunc follows text/template's eq: true if a equals any of bs, with integers of
+// different kinds (int, int64, ...) compared by value.
+func (e *Engine) eqFunc(a interface{}, bs ...interface{}) bool {
+	for _, b := range bs {
+		if valuesEqual(a, b) {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *Engine) neFunc(a, b interface{}) bool {
-	return a != b
+	return !valuesEqual(a, b)
+}
+
+func valuesEqual(a, b interface{}) bool {
+	av, bv := reflect.ValueOf(a), reflect.ValueOf(b)
+	if av.IsValid() && bv.IsValid() {
+		switch {
+		case isInt(av) && isInt(bv):
+			return av.Int() == bv.Int()
+		case isUint(av) && isUint(bv):
+			return av.Uint() == bv.Uint()
+		case isInt(av) && isUint(bv):
+			return av.Int() >= 0 && uint64(av.Int()) == bv.Uint()
+		case isUint(av) && isInt(bv):
+			return bv.Int() >= 0 && av.Uint() == uint64(bv.Int())
+		}
+		if !av.Type().Comparable() || !bv.Type().Comparable() {
+			return false
+		}
+	}
+	return a == b
+}
+
+func isInt(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	}
+	return false
+}
+
+func isUint(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return true
+	}
+	return false
 }
 
 func (e *Engine) ltFunc(a, b interface{}) bool {

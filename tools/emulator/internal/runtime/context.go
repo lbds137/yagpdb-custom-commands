@@ -62,6 +62,10 @@ type ExecutionContext struct {
 	// ExecData for execCC calls
 	ExecData interface{}
 
+	// Reaction trigger: set for commands triggered by a reaction
+	Reaction      *types.CtxReaction
+	ReactionAdded bool
+
 	// Premium mode
 	IsPremium bool
 
@@ -85,6 +89,10 @@ type ExecutionContext struct {
 
 	// Per-run call counters, keyed like YAGPDB's Context.Counters
 	Counters map[string]int
+	warned   map[string]bool // limit warnings already recorded
+
+	// CCID is the custom command's number, shown in YAGPDB's over-2k notice
+	CCID int64
 
 	StartTime time.Time
 
@@ -215,7 +223,7 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		"ModerateMembers":       0x10000000000,
 	}
 
-	return map[string]interface{}{
+	data := map[string]interface{}{
 		// User/Member
 		"User":   user,
 		"user":   user, // YAGPDB supports both cases
@@ -269,6 +277,15 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		// Nil constant
 		"nil": nil,
 	}
+
+	if ctx.Reaction != nil {
+		data["Reaction"] = ctx.Reaction
+		data["ReactionAdded"] = ctx.ReactionAdded
+		reactionMessage := message
+		reactionMessage.ID = ctx.Reaction.MessageID
+		data["ReactionMessage"] = reactionMessage
+	}
+	return data
 }
 
 // HasRole checks if the current user has a specific role.
