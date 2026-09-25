@@ -1,5 +1,9 @@
 #!/bin/bash
-# Test all YAGPDB templates against the emulator
+# Smoke test: run every command once, with no arguments, on the database a fresh
+# bootstrap leaves (tools/emulator/testdata/initial_db.json). A command that answers with
+# its parseArgs usage message passes; regex-trigger commands are skipped, since an empty
+# message can't match their trigger. What's left failing is a real error. The YAML suites
+# (make test) test commands with arguments.
 # Usage: ./scripts/test-all-templates.sh [--verbose] [--stop-on-fail]
 
 set -euo pipefail
@@ -7,6 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 YAGTEST="$PROJECT_ROOT/bin/yagtest"
+DB="$PROJECT_ROOT/tools/emulator/testdata/initial_db.json"
 
 # Colors
 RED='\033[0;31m'
@@ -17,6 +22,7 @@ NC='\033[0m' # No Color
 
 # Counters
 PASS=0
+USAGE=0
 FAIL=0
 SKIP=0
 
@@ -67,35 +73,38 @@ echo ""
 
 test_template() {
     local template="$1"
-    local basename
-    basename=$(basename "$template")
+    local name="${template#"$PROJECT_ROOT"/}"
 
-    # Run the template
+    if grep -q 'Trigger type: `Regex`' "$template"; then
+        echo -e "${YELLOW}SKIP${NC}: $name (regex trigger)"
+        ((SKIP++)) || true
+        return
+    fi
+
     local output
     local exit_code=0
-    output=$(timeout 5 "$YAGTEST" run "$template" 2>&1) || exit_code=$?
+    output=$(timeout 5 "$YAGTEST" run -db "$DB" "$template" 2>&1) || exit_code=$?
 
-    # Check for errors
-    if [[ $exit_code -ne 0 ]] || echo "$output" | grep -qi "error"; then
-        echo -e "${RED}FAIL${NC}: $template"
+    if [[ $exit_code -eq 0 ]]; then
+        echo -e "${GREEN}PASS${NC}: $name"
+        ((PASS++)) || true
+        if [[ "$VERBOSE" == "true" ]]; then
+            echo "$output" | head -5 | sed 's/^/  /'
+            echo ""
+        fi
+    elif echo "$output" | grep -q 'executing "yagtest" at <parseArgs'; then
+        echo -e "${GREEN}PASS${NC}: $name (asks for arguments)"
+        ((USAGE++)) || true
+    else
+        echo -e "${RED}FAIL${NC}: $name"
         ((FAIL++)) || true
-
         if [[ "$VERBOSE" == "true" ]]; then
             echo "$output" | head -10 | sed 's/^/  /'
             echo ""
         fi
-
         if [[ "$STOP_ON_FAIL" == "true" ]]; then
             echo -e "\n${RED}Stopping on first failure${NC}"
             exit 1
-        fi
-    else
-        echo -e "${GREEN}PASS${NC}: $template"
-        ((PASS++)) || true
-
-        if [[ "$VERBOSE" == "true" ]]; then
-            echo "$output" | head -5 | sed 's/^/  /'
-            echo ""
         fi
     fi
 }
@@ -121,9 +130,9 @@ done
 echo ""
 
 # Summary
-TOTAL=$((PASS + FAIL + SKIP))
+TOTAL=$((PASS + USAGE + FAIL + SKIP))
 echo -e "${BLUE}=== Summary ===${NC}"
-echo -e "Total: $TOTAL | ${GREEN}Passed: $PASS${NC} | ${RED}Failed: $FAIL${NC} | Skipped: $SKIP"
+echo -e "Total: $TOTAL | ${GREEN}Passed: $PASS${NC} | ${GREEN}Asked for arguments: $USAGE${NC} | ${RED}Failed: $FAIL${NC} | Skipped: $SKIP"
 
 if [[ $FAIL -gt 0 ]]; then
     exit 1

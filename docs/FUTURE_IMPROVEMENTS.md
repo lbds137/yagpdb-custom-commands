@@ -4,34 +4,20 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ## Emulator Enhancements
 
-### Seed gematria tests from the real bootstrap
-The gematria tests seed 4 of the 9 tables `gematria_bootstrap.gohtml` builds, so numerals and
-Thoth names come out empty. Running the bootstrap first (a test option that executes a setup
-template before the test) would test gematria against the real data.
-
 ### Remaining emulator gaps
 - `.ValueSize` of database entries is an estimate, not YAGPDB's msgpack size.
-- Discord functions are mocks: `cembed` keeps the dict instead of building a Discord embed
-  (so Discord's field limits aren't checked), `editMessage` and the role/reaction calls only
-  record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
+- Discord functions are mocks: `cembed` checks field types but not Discord's length limits
+  (256-character titles, 25 fields, 6000 characters in all), `editMessage` and the
+  role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
 - Missing standard functions that need Discord data: `snowflakeToTime`, `humanize*`,
   `roleAbove`, `sanitizeText`, `adjective`/`noun`/`verb`.
 - Role lookups accept IDs, mentions and names everywhere; YAGPDB's `FindRole` accepts a
   different set per function.
 - `getMember` of the triggering user is a generic mock (no nick, zero JoinedAt), and tests
-  can't set members' JoinedAt or the guild owner. That leaves guest's "within the grace
-  period" path and bump_remind's owner mention untestable.
-- Messages have no `.Link` (directory.gohtml uses it). A trailing backslash in a LIKE pattern
-  is ignored; Postgres errors.
-
-### Smoke test noise
-`scripts/test-all-templates.sh` runs every command with no arguments and an empty database,
-so every command that needs input or config "fails" (26 of 45 on 2026-09-24), which hides
-real failures.
-
-**Implementation approach:**
-- Treat a `parseArgs` usage error as a pass, or give each command a default argument set
-  and seed the database from `tools/emulator/testdata/initial_db.json`
+  can't set members' JoinedAt. That leaves guest's "within the grace period" path untestable.
+- A trailing backslash in a LIKE pattern is ignored; Postgres errors.
+- `parseArgs` only errors on missing arguments; YAGPDB's also rejects arguments that don't
+  fit their `carg` type or bounds (e.g. `carg "int" "n" 1 10` given 50).
 
 ## IDE Integration
 
@@ -66,6 +52,13 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       guest (malformed links, deleted messages, departed users) (2026-09-24)
 - [x] Cookbook of tested recipes (`docs/COOKBOOK.md`) (2026-09-24)
 - [x] GoLand live templates (`tools/ide/`) (2026-09-24)
+- [x] Smoke test (`make test-templates`, part of `make ci`) runs on the database a fresh
+      bootstrap leaves; asking for arguments passes and regex-trigger commands are skipped,
+      so a failure is a real error (2026-09-25)
+- [x] Messages have `.Link`; sent messages get unique IDs and `getMessage` finds them (a nil
+      channel is the current one, as in YAGPDB); tests can set `guild.owner_id` (bump_remind's owner ping is tested) (2026-09-25)
+- [x] Gematria tests run on the real bootstrap (`setup_templates`) and check the computed
+      values (`embed_contains`) (2026-09-25)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")
 - [x] `db dump` operation for exporting database entries
 - [x] Direct array append syntax for `db add`

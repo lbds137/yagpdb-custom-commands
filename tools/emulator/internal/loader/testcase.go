@@ -12,11 +12,13 @@ import (
 
 // TestCase represents a single test definition.
 type TestCase struct {
-	Name           string           `yaml:"name"`
-	Template       string           `yaml:"template"`        // Path to template file
-	TemplateSource string           `yaml:"template_source"` // Inline template source
-	Context        ContextDef       `yaml:"context"`
-	SetupDB        []DBEntry        `yaml:"setup_db"`
+	Name           string     `yaml:"name"`
+	Template       string     `yaml:"template"`        // Path to template file
+	TemplateSource string     `yaml:"template_source"` // Inline template source
+	Context        ContextDef `yaml:"context"`
+	SetupDB        []DBEntry  `yaml:"setup_db"`
+	// SetupTemplates run in order before the test, on the same database (e.g. a bootstrap)
+	SetupTemplates []string         `yaml:"setup_templates"`
 	CommandMap     map[int64]string `yaml:"command_map"` // Maps command IDs to template paths
 	Expected       ExpectedResult   `yaml:"expected"`
 	Assertions     Assertions       `yaml:"assertions"`
@@ -79,6 +81,8 @@ type GuildDef struct {
 	ID    int64     `yaml:"id"`
 	Name  string    `yaml:"name"`
 	Roles []RoleDef `yaml:"roles"` // If set, getRole and targetHasRole know only these
+	// OwnerID is .Guild.OwnerID (default: the triggering user)
+	OwnerID int64 `yaml:"owner_id"`
 }
 
 // RoleDef is a role in the guild.
@@ -127,6 +131,7 @@ type MessageCheck struct {
 	ContentContains string `yaml:"content_contains"`
 	HasEmbed        bool   `yaml:"has_embed"`
 	EmbedTitle      string `yaml:"embed_title"`
+	EmbedContains   string `yaml:"embed_contains"` // Substring of the embed as JSON (title, fields, ...)
 }
 
 // RoleCheck defines a role change assertion.
@@ -138,11 +143,13 @@ type RoleCheck struct {
 
 // TestSuite represents a collection of test cases.
 type TestSuite struct {
-	Name       string           `yaml:"name"`
-	Tests      []TestCase       `yaml:"tests"`
-	Defaults   ContextDef       `yaml:"defaults"`    // Default context values
-	SetupDB    []DBEntry        `yaml:"setup_db"`    // Shared database setup
-	CommandMap map[int64]string `yaml:"command_map"` // Shared command ID mapping
+	Name     string     `yaml:"name"`
+	Tests    []TestCase `yaml:"tests"`
+	Defaults ContextDef `yaml:"defaults"` // Default context values
+	SetupDB  []DBEntry  `yaml:"setup_db"` // Shared database setup
+	// SetupTemplates run before every test in the suite, ahead of the test's own
+	SetupTemplates []string         `yaml:"setup_templates"`
+	CommandMap     map[int64]string `yaml:"command_map"` // Shared command ID mapping
 }
 
 // LoadTestCase loads a single test case from a YAML file.
@@ -179,6 +186,9 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 	// Apply defaults to all tests
 	for i := range ts.Tests {
 		ts.Tests[i].mergeDefaults(ts.Defaults, ts.SetupDB, ts.CommandMap)
+		if len(ts.SetupTemplates) > 0 {
+			ts.Tests[i].SetupTemplates = append(append([]string{}, ts.SetupTemplates...), ts.Tests[i].SetupTemplates...)
+		}
 		ts.Tests[i].SourceFile = filename
 	}
 
@@ -305,10 +315,13 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	if tc.Context.Guild.Name == "" {
 		tc.Context.Guild.Name = defaults.Guild.Name
 	}
+	if tc.Context.Guild.OwnerID == 0 {
+		tc.Context.Guild.OwnerID = defaults.Guild.OwnerID
+	}
 
 	// Prepend shared DB entries
 	if len(sharedDB) > 0 {
-		tc.SetupDB = append(sharedDB, tc.SetupDB...)
+		tc.SetupDB = append(append([]DBEntry{}, sharedDB...), tc.SetupDB...)
 	}
 
 	// Merge command map (suite-level + test-level, test overrides suite)

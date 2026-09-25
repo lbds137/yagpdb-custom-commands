@@ -13,6 +13,10 @@ defaults:
     id: 111222333444555666
     name: "Test Server"
 
+# The Gematria tables come from the real bootstrap (alefbet, atbash, pyramid and rand_hebrew
+# read them; gematria has its own suite)
+setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]
+
 # Common database setup for all tests
 setup_db:
   - user_id: 0
@@ -49,134 +53,6 @@ setup_db:
     key: "Admin"
     value:
       Welcome Message: "Welcome to the server!"
-  - user_id: 0
-    key: "Gematria"
-    value:
-      Values:
-        # Hebrew letters
-        א: 1
-        ב: 2
-        ג: 3
-        ד: 4
-        ה: 5
-        ו: 6
-        ז: 7
-        ח: 8
-        ט: 9
-        י: 10
-        כ: 20
-        ך: 20
-        ל: 30
-        מ: 40
-        ם: 40
-        נ: 50
-        ן: 50
-        ס: 60
-        ע: 70
-        פ: 80
-        ף: 80
-        צ: 90
-        ץ: 90
-        ק: 100
-        ר: 200
-        ש: 300
-        ת: 400
-        # Latin letters (English Qabalah style)
-        a: 1
-        b: 2
-        c: 3
-        d: 4
-        e: 5
-        f: 6
-        g: 7
-        h: 8
-        i: 9
-        j: 600
-        k: 10
-        l: 20
-        m: 30
-        n: 40
-        o: 50
-        p: 60
-        q: 70
-        r: 80
-        s: 90
-        t: 100
-        u: 200
-        v: 700
-        w: 900
-        x: 300
-        y: 400
-        z: 500
-      Final Letters:
-        א: א
-        ב: ב
-        ג: ג
-        ד: ד
-        ה: ה
-        ו: ו
-        ז: ז
-        ח: ח
-        ט: ט
-        י: י
-        כ: ך
-        ל: ל
-        מ: ם
-        נ: ן
-        ס: ס
-        ע: ע
-        פ: ף
-        צ: ץ
-        ק: ק
-        ר: ר
-        ש: ש
-        ת: ת
-      Tarot Indices:
-        1: 0
-        2: 1
-        3: 2
-        4: 3
-        5: 4
-        6: 5
-        7: 6
-        8: 7
-        9: 8
-        10: 9
-        20: 10
-        30: 11
-        40: 12
-        50: 13
-        60: 14
-        70: 15
-        80: 16
-        90: 17
-        100: 18
-        200: 19
-        300: 20
-        400: 21
-      RWS Names:
-        0: "The Fool"
-        1: "The Magician"
-        2: "The High Priestess"
-        3: "The Empress"
-        4: "The Emperor"
-        5: "The Hierophant"
-        6: "The Lovers"
-        7: "The Chariot"
-        8: "Strength"
-        9: "The Hermit"
-        10: "The Wheel of Fortune"
-        11: "Justice"
-        12: "The Hanged Man"
-        13: "Death"
-        14: "Temperance"
-        15: "The Devil"
-        16: "The Tower"
-        17: "The Star"
-        18: "The Moon"
-        19: "The Sun"
-        20: "Judgement"
-        21: "The World"
   - user_id: 0
     key: "Rules"
     value:
@@ -249,18 +125,6 @@ tests:
     context:
       args: ["FF0000 00FF00 0000FF"]
       cmd_args: ["FF0000 00FF00 0000FF"]
-
-  - name: "gematria - Hebrew word"
-    template: "../../../utility/gematria.gohtml"
-    context:
-      args: ["אמת"]
-      cmd_args: ["אמת"]
-
-  - name: "gematria - English text"
-    template: "../../../utility/gematria.gohtml"
-    context:
-      args: ["hello"]
-      cmd_args: ["hello"]
 
   - name: "hugemoji - Discord custom emoji"
     template: "../../../utility/hugemoji.gohtml"

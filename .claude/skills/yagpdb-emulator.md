@@ -14,7 +14,7 @@ make update-snapshots  # accept an intended change in snapshot output
 ./bin/yagtest run -args "get,Global" -verbose utility/db.gohtml
 ./bin/yagtest run -no-premium -strict utility/db.gohtml   # free-server limits, fail on breach
 ./bin/yagtest check utility/*.gohtml                      # parse + static warnings
-./scripts/test-all-templates.sh   # smoke-run every command with no args (parseArgs failures are expected)
+make test-templates                # smoke-run every command with no args on a bootstrapped DB (in make ci)
 ./scripts/find-missing-functions.sh
 ```
 
@@ -32,6 +32,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     premium: false                    # optional, default true
     user: { id: 1, roles: [111] }
     guild: { roles: [{ id: 111, name: "Staff", color: 3447003 }] }  # if set, unknown roles are nil/errors
+    # guild.owner_id: .Guild.OwnerID (default: the triggering user)
     members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
     member_roles: { 2: [111] }        # other members' roles
     messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # what getMessage finds
@@ -39,13 +40,14 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
+  setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]  # run first, same DB
   command_map: { 123: "templates/mock_embed_exec.gohtml" }  # execCC targets
   expected:
     output_contains: "..."            # also output_equals, output_matches, error_contains
     warning_contains: "..."
   assertions:
     db_checks: [{ user_id: 0, key: "K", value_equals: 1 }]   # or value_contains, not_exists
-    sent_messages: [{ channel_id: 9, embed_title: "Title" }]
+    sent_messages: [{ channel_id: 9, embed_title: "Title" }]  # or embed_contains: "`441`"
     role_changes: [{ user_id: 1, role_id: 111, action: "add" }]
 ```
 

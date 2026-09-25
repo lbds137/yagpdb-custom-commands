@@ -35,6 +35,10 @@ func TestFidelityOutputs(t *testing.T) {
 			`{{title "hELLO wORLD"}}`, "Hello World"},
 		{"mod returns a float, as in YAGPDB",
 			`{{kindOf (mod 7 2)}}`, "float64"},
+		{"messages have discordgo's Link",
+			`{{.Message.Link}}`, "https://discord.com/channels/1/123456789/0"},
+		{"the guild has an owner who is a member (the triggering user by default)",
+			`{{(userArg .Guild.OwnerID).Mention}}`, "<@987654321>"},
 		{"and evaluates every argument",
 			`{{$x := sdict}}{{if and false ($x.Set "k" 1)}}{{end}}{{$x.HasKey "k"}}`, "true"},
 	}
@@ -196,5 +200,45 @@ func TestMessageContentUsesYAGPDBToString(t *testing.T) {
 	got := []string{ctx.SentMessages[0].Content, ctx.SentMessages[1].Content, ctx.SentMessages[2].Content}
 	if got[0] != "1.5E+00" || got[1] != "" || got[2] != "" || ctx.SentMessages[2].Embed != nil {
 		t.Errorf("contents = %q (a plain sdict is not an embed)", got)
+	}
+}
+
+func TestSentMessagesCanBeFetched(t *testing.T) {
+	ctx := newCtx(false, true)
+	src := `{{$a := sendMessageRetID nil "first"}}{{$b := sendMessageRetID 42 (cembed "title" "T")}}` +
+		`{{ne $a $b}} {{(getMessage nil $a).Content}} {{(getMessage 42 $b).Author.Bot}} ` +
+		`{{len (getMessage 42 $b).Embeds}} {{(getMessage 42 $b).Link}}` +
+		`{{if getMessage nil $b}} (nil is the current channel, not 42){{end}}`
+	out, err := run(t, ctx, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "true first true 1 https://discord.com/channels/1/42/1100000000000000002"
+	if strings.TrimSpace(out) != want {
+		t.Errorf("out = %q, want %q", out, want)
+	}
+	if out, _ := run(t, newCtx(false, true), `{{sendDM "hi"}}{{if getMessage nil 1100000000000000001}}found{{end}}`); out != "" {
+		t.Errorf("a DM isn't a server message: %q", out)
+	}
+}
+
+func TestSentMessageIDsAreUniqueAcrossExecCC(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{sendMessage nil (print "from child, owner " .Guild.OwnerID)}}`)
+	ctx := newCtx(false, true)
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	ctx.OwnerID = 55
+	out, err := run(t, ctx, `{{$a := sendMessageRetID nil "a"}}{{execCC 7 nil 0 (sdict)}}`+
+		`{{$b := sendMessageRetID nil "b"}}{{sub $b $a}} {{(getMessage nil $b).Content}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// the child's message took the ID between them
+	if strings.TrimSpace(out) != "2 b" {
+		t.Errorf("out = %q", out)
+	}
+	if got := ctx.SentMessages[1].Content; got != "from child, owner 55" {
+		t.Errorf("the child sees the same guild owner: %q", got)
 	}
 }

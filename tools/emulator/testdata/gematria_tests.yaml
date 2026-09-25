@@ -1,0 +1,58 @@
+name: "Gematria, on the tables gematria_bootstrap builds"
+
+# The bootstrap runs before each test and stores the Gematria tables the way YAGPDB would
+# (nested ints come back as int64, which the tarot lookups depend on). embed_exec is a
+# recording mock, so the tests can check the fields gematria computes.
+setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Delete Trigger Delay: 5 }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: 1 }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 900000000000000001 }
+
+command_map:
+  1: "templates/recording_embed_exec.gohtml"
+
+tests:
+  - name: "gematria: a Hebrew word and its reduction"
+    template: "../../../utility/gematria.gohtml"
+    context:
+      args: ["אמת"]
+    assertions:
+      sent_messages:
+        # א 1 + מ 40 + ת 400 = 441, reduced 4+4+1 = 9
+        - { embed_contains: "`441` > `9`" }
+        # the Thoth deck names the 21st trump differently, so both decks are listed
+        - { embed_contains: "`XXI` - The World" }
+        - { embed_contains: "`XXI` - The Universe" }
+
+  - name: "gematria: a single letter gets its tarot number"
+    template: "../../../utility/gematria.gohtml"
+    context:
+      args: ["ת"]
+    assertions:
+      sent_messages:
+        # ת is 400, reduced to 4, and the 22nd letter
+        - { embed_contains: "Letter Gematria" }
+        - { embed_contains: "`400` > `4`" }
+        - { embed_contains: "Letter Number" }
+        - { embed_contains: "`22`" }
+
+  - name: "gematria: several words, with per-word and total values"
+    template: "../../../utility/gematria.gohtml"
+    context:
+      args: ["hello world"]
+    assertions:
+      sent_messages:
+        # hello = 103, world = 1054; total 1157 > 14 > 5
+        - { embed_contains: "`[ 103 1054 ]` > `[ 4 10 ]` > `[ 4 1 ]`" }
+        - { embed_contains: "`1157` > `14` > `5`" }
+        # l appears three times
+        - { embed_contains: "`X` - The Wheel of Fortune (3)" }
+    snapshot: true
