@@ -1,0 +1,130 @@
+name: "Cookbook recipes (docs/COOKBOOK.md)"
+
+defaults:
+  user:
+    id: 900000000000000001
+    username: "Ari"
+
+tests:
+  # Economy
+  - name: "Cookbook economy: new member has no coins"
+    template: "../../../docs/cookbook/economy.gohtml"
+    expected:
+      output_contains: "Ari, you have 0 coins."
+
+  - name: "Cookbook economy: daily claim"
+    template: "../../../docs/cookbook/economy.gohtml"
+    context:
+      args: ["daily"]
+    setup_db:
+      - { user_id: 900000000000000001, key: "coins", value: 50 }
+    expected:
+      output_contains: "You claimed 100 coins! Balance: 150"
+    assertions:
+      db_checks:
+        - { user_id: 900000000000000001, key: "coins", value_equals: 150 }
+        - { user_id: 900000000000000001, key: "coins_daily_cooldown", value_equals: true }
+
+  - name: "Cookbook economy: second claim is on cooldown"
+    template: "../../../docs/cookbook/economy.gohtml"
+    context:
+      args: ["daily"]
+    setup_db:
+      - { user_id: 900000000000000001, key: "coins", value: 150 }
+      - { user_id: 900000000000000001, key: "coins_daily_cooldown", value: true }
+    expected:
+      output_contains: "You already claimed today's coins."
+    assertions:
+      db_checks:
+        - { user_id: 900000000000000001, key: "coins", value_equals: 150 }
+
+  # Moderation log
+  - name: "Cookbook warn: staff warns a member"
+    template: "../../../docs/cookbook/moderation_log.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      args: ["900000000000000002", "spamming links"]
+    setup_db:
+      - { user_id: 900000000000000002, key: "warn_count", value: 1 }
+    expected:
+      output_contains: "<@900000000000000002> has been warned (warning #2)."
+    assertions:
+      db_checks:
+        - { user_id: 900000000000000002, key: "warn_count", value_equals: 2 }
+        - { user_id: 900000000000000002, key: "warn_last", value_equals: "spamming links" }
+      sent_messages:
+        - { channel_id: 222222222222222222, embed_title: "Member warned" }
+
+  - name: "Cookbook warn: members without the staff role are refused"
+    template: "../../../docs/cookbook/moderation_log.gohtml"
+    context:
+      args: ["900000000000000002", "spamming links"]
+    expected:
+      output_contains: "You need the staff role"
+    assertions:
+      db_checks:
+        - { user_id: 900000000000000002, key: "warn_count", not_exists: true }
+
+  # Welcome (join message)
+  - name: "Cookbook welcome: role and greeting"
+    template: "../../../docs/cookbook/welcome.gohtml"
+    context:
+      guild: { name: "Night House" }
+    expected:
+      output_contains: "Welcome to Night House, <@900000000000000001>! Please read <#444444444444444444>"
+    assertions:
+      role_changes:
+        - { user_id: 900000000000000001, role_id: 333333333333333333, action: "add" }
+
+  # Reaction roles
+  - name: "Cookbook reaction roles: reacting gives the role"
+    template: "../../../docs/cookbook/reaction_roles.gohtml"
+    context:
+      reaction: { emoji: "🎮", message_id: 555555555555555555 }
+    assertions:
+      role_changes:
+        - { user_id: 900000000000000001, role_id: 666666666666666666, action: "add" }
+
+  - name: "Cookbook reaction roles: removing the reaction takes it"
+    template: "../../../docs/cookbook/reaction_roles.gohtml"
+    context:
+      reaction: { emoji: "🎨", message_id: 555555555555555555, added: false }
+    assertions:
+      role_changes:
+        - { user_id: 900000000000000001, role_id: 777777777777777777, action: "remove" }
+
+  - name: "Cookbook reaction roles: other messages are ignored"
+    template: "../../../docs/cookbook/reaction_roles.gohtml"
+    context:
+      reaction: { emoji: "🎮", message_id: 1 }
+    snapshot: true
+
+  # Leveling
+  - name: "Cookbook leveling: crossing 100 XP is level 1"
+    template: "../../../docs/cookbook/leveling.gohtml"
+    setup_db:
+      - { user_id: 900000000000000001, key: "xp", value: 95 }
+    expected:
+      output_contains: "🎉 <@900000000000000001> reached level 1!"
+    assertions:
+      db_checks:
+        - { user_id: 900000000000000001, key: "xp", value_equals: 105 }
+        - { user_id: 900000000000000001, key: "xp_cooldown", value_equals: true }
+
+  - name: "Cookbook leveling: no XP during the cooldown"
+    template: "../../../docs/cookbook/leveling.gohtml"
+    setup_db:
+      - { user_id: 900000000000000001, key: "xp", value: 95 }
+      - { user_id: 900000000000000001, key: "xp_cooldown", value: true }
+    assertions:
+      db_checks:
+        - { user_id: 900000000000000001, key: "xp", value_equals: 95 }
+
+  - name: "Cookbook leaderboard: highest XP first"
+    template: "../../../docs/cookbook/leaderboard.gohtml"
+    setup_db:
+      - { user_id: 900000000000000001, key: "xp", value: 120 }
+      - { user_id: 900000000000000002, key: "xp", value: 480 }
+      - { user_id: 900000000000000003, key: "xp", value: 45 }
+      - { user_id: 900000000000000002, key: "coins", value: 9999 }
+    snapshot: true

@@ -1,0 +1,36 @@
+{{- /*
+  Author: Cookbook recipe
+  Trigger type: `Command`
+  Trigger: `warn`
+  Usage: `-warn @user reason` counts a warning and logs it to the mod-log channel.
+*/ -}}
+
+{{ $staffRoleID := 111111111111111111 }}
+{{ $modLogChannelID := 222222222222222222 }}
+
+{{ if not (hasRoleID $staffRoleID) }}
+	You need the staff role to warn members.
+{{ else }}
+	{{ $args := parseArgs 2 "Usage: -warn <@user> <reason>"
+		(carg "userid" "member to warn")
+		(carg "string" "reason")
+	}}
+	{{ $target := $args.Get 0 }}
+	{{ $reason := $args.Get 1 }}
+
+	{{/* Per-user entries: the count for escalation, the latest reason for context */}}
+	{{ $count := dbIncr $target "warn_count" 1 }}
+	{{ dbSet $target "warn_last" $reason }}
+
+	{{ sendMessage $modLogChannelID (cembed
+		"title" "Member warned"
+		"color" 0xf1c40f
+		"fields" (cslice
+			(sdict "name" "Member" "value" (print "<@" $target ">") "inline" true)
+			(sdict "name" "Warning" "value" (print "#" $count) "inline" true)
+			(sdict "name" "Reason" "value" $reason)
+			(sdict "name" "Moderator" "value" .User.Mention)
+		)
+	) }}
+	<@{{ $target }}> has been warned (warning #{{ $count }}).
+{{ end }}

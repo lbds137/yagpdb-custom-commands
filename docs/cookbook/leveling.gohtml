@@ -1,0 +1,21 @@
+{{- /*
+  Author: Cookbook recipe
+  Trigger type: `Regex`
+  Trigger: `\A` (every message)
+  Usage: members earn XP for chatting, at most once a minute, and level up as it grows.
+*/ -}}
+
+{{ $xpPerMessage := 10 }}
+{{ $cooldownSeconds := 60 }}
+
+{{ if not (dbGet .User.ID "xp_cooldown") }}
+	{{ dbSetExpire .User.ID "xp_cooldown" true $cooldownSeconds }}
+	{{ $xp := dbIncr .User.ID "xp" $xpPerMessage }}
+
+	{{/* Level n needs 100·n² XP, so the level is floor(√(xp / 100)) */}}
+	{{ $level := toInt (roundFloor (sqrt (fdiv $xp 100))) }}
+	{{ $previousLevel := toInt (roundFloor (sqrt (fdiv (sub $xp $xpPerMessage) 100))) }}
+	{{ if gt $level $previousLevel }}
+		🎉 {{ .User.Mention }} reached level {{ $level }}!
+	{{ end }}
+{{ end }}
