@@ -377,3 +377,114 @@ func (l *limitWriter) Write(p []byte) (int, error) {
 	l.n -= len(p)
 	return l.w.Write(p)
 }
+
+// Discord's limits on a sent message (discord.com/developers/docs/resources/message#embed-object-embed-limits).
+// YAGPDB doesn't check them: Discord rejects the send with HTTP 400 "Invalid Form Body",
+// and sendMessage returns that as the command's error. cembed itself never fails on them.
+const (
+	maxContentRunes     = 2000
+	maxEmbedTitle       = 256
+	maxEmbedDescription = 4096
+	maxEmbedFields      = 25
+	maxEmbedFieldName   = 256
+	maxEmbedFieldValue  = 1024
+	maxEmbedFooter      = 2048
+	maxEmbedAuthor      = 256
+	maxEmbedTotal       = 6000 // title, description, field names and values, footer and author, over all embeds
+)
+
+// checkSend applies Discord's message limits to a send and reports whether to record it.
+// sendMessage gets Discord's error back, so strict mode returns it; sendDM discards the
+// error (context_funcs.go), so a rejected DM is silently not delivered. Outside strict
+// mode a breach is a warning and the message is recorded anyway.
+func (ctx *ExecutionContext) checkSend(fn, content string, embeds []interface{}, notEmpty, silent bool) (bool, error) {
+	problems := sendProblems(content, embeds, notEmpty)
+	if len(problems) == 0 {
+		return true, nil
+	}
+	reason := "HTTP 400 Invalid Form Body"
+	if problems[0] == msgEmpty {
+		reason = "HTTP 400, 50006 Cannot send an empty message"
+	}
+	err := fmt.Errorf("%s: Discord rejects this message (%s): %s", fn, reason, strings.Join(problems, "; "))
+	if !ctx.Strict {
+		ctx.warnOnce(err.Error())
+		return true, nil
+	}
+	if silent {
+		ctx.warnOnce(err.Error() + "; YAGPDB skips this call silently")
+		return false, nil
+	}
+	return false, err
+}
+
+const msgEmpty = "the message is empty"
+
+// sendProblems lists what Discord would reject in a message. notEmpty is set when the
+// message has a file, components or anything else that counts as content.
+func sendProblems(content string, embeds []interface{}, notEmpty bool) []string {
+	var problems []string
+	// discordgo drops empty embeds (ValidateComplexMessageEmbeds), and Discord refuses a
+	// message with nothing left (50006 "Cannot send an empty message").
+	empty := strings.TrimSpace(content) == "" && !notEmpty
+	for _, e := range embeds {
+		if embed, ok := e.(types.Embed); ok && len(embed) > 0 {
+			empty = false
+		}
+	}
+	if empty {
+		return []string{msgEmpty}
+	}
+	over := func(what string, s string, limit int) int {
+		n := utf8.RuneCountInString(s)
+		if n > limit {
+			problems = append(problems, fmt.Sprintf("%s is %d characters (max %d)", what, n, limit))
+		}
+		return n
+	}
+	over("content", content, maxContentRunes)
+
+	total := 0
+	for i, raw := range embeds {
+		embed, ok := raw.(types.Embed)
+		if !ok {
+			continue
+		}
+		prefix := fmt.Sprintf("embed %d ", i+1)
+		str := func(m map[string]interface{}, key string) string {
+			s, _ := m[key].(string)
+			return s
+		}
+		total += over(prefix+"title", str(embed, "title"), maxEmbedTitle)
+		total += over(prefix+"description", str(embed, "description"), maxEmbedDescription)
+		if footer, ok := embed["footer"].(map[string]interface{}); ok {
+			total += over(prefix+"footer text", str(footer, "text"), maxEmbedFooter)
+		}
+		if author, ok := embed["author"].(map[string]interface{}); ok {
+			total += over(prefix+"author name", str(author, "name"), maxEmbedAuthor)
+		}
+		fields, _ := embed["fields"].([]interface{})
+		if len(fields) > maxEmbedFields {
+			problems = append(problems, fmt.Sprintf("%shas %d fields (max %d)", prefix, len(fields), maxEmbedFields))
+		}
+		for j, raw := range fields {
+			field, _ := raw.(map[string]interface{})
+			fp := fmt.Sprintf("%sfield %d ", prefix, j+1)
+			name, value := str(field, "name"), str(field, "value")
+			// Discord requires both and trims them first, so whitespace alone is empty
+			// (a zero-width space is the usual blank).
+			if strings.TrimSpace(name) == "" {
+				problems = append(problems, fp+"name is empty")
+			}
+			if strings.TrimSpace(value) == "" {
+				problems = append(problems, fp+"value is empty")
+			}
+			total += over(fp+"name", name, maxEmbedFieldName)
+			total += over(fp+"value", value, maxEmbedFieldValue)
+		}
+	}
+	if total > maxEmbedTotal {
+		problems = append(problems, fmt.Sprintf("the embeds total %d characters (max %d)", total, maxEmbedTotal))
+	}
+	return problems
+}

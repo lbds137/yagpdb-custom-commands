@@ -6,9 +6,8 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ### Remaining emulator gaps
 - `.ValueSize` of database entries is an estimate, not YAGPDB's msgpack size.
-- Discord functions are mocks: `cembed` checks field types but not Discord's length limits
-  (256-character titles, 25 fields, 6000 characters in all), `editMessage` and the
-  role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
+- Discord functions are mocks: `editMessage` is a no-op (so it skips Discord's message
+  limits, which sends check), the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
 - Missing standard functions that need Discord data: `snowflakeToTime`, `humanize*`,
   `roleAbove`, `sanitizeText`, `adjective`/`noun`/`verb`.
 - Role lookups accept IDs, mentions and names everywhere; YAGPDB's `FindRole` accepts a
@@ -62,6 +61,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 - [x] `parseArgs` is ported from YAGPDB and dcmd: the last argument takes the rest of the
       message, quotes group words, types and bounds are checked with dcmd's errors, and a
       command run by execCC or a reaction parses nothing (2026-09-25)
+- [x] `sendMessage`/`sendDM` check Discord's message limits (embed title, description,
+      fields, footer, author, 6000 in total, blank field names/values, 2000-character
+      content, empty messages): a warning, or with `-strict` Discord's 400 error from
+      `sendMessage` and a silently dropped DM from `sendDM`; `cembed` itself doesn't check,
+      as in production (2026-09-25)
 - [x] Gematria tests run on the real bootstrap (`setup_templates`) and check the computed
       values (`embed_contains`) (2026-09-25)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")
