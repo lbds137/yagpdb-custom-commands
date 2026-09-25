@@ -1,0 +1,84 @@
+name: Claude Code Review
+
+# Template from ~/Documents/dev-docs/templates/claude-review (adapted from Tzurot's).
+# Needs the CLAUDE_CODE_OAUTH_TOKEN repo secret and the Claude GitHub App on the repo.
+# The action skips itself on the PR that adds or changes this file (it validates
+# against the default branch's copy), so the setup PR itself gets no review.
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    # The action rejects bot actors ("Workflow initiated by non-human actor"), so a
+    # dependabot PR would only show a red check; skip it instead.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      # The no-post check below only counts comments created after this instant;
+      # the 2-minute back-shift absorbs runner-vs-API clock skew.
+      - name: Record review start time
+        id: review-start
+        run: echo "ts=$(date -u -d '-2 minutes' +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1.0.231
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+
+            Use the repository's CLAUDE.md, if it has one, for guidance on style and conventions. Be constructive and helpful in your feedback.
+
+            Report every issue you find; do not pre-filter by severity. Label severity instead and let the reader triage. Keep the review proportional to its findings (no padding), and if you write a summary or actionable-items section, it must list EVERY actionable item from the body.
+
+            Do NOT run the project's test, lint or build commands: they are outside your tool allowlist, and CI verifies them. Assess test coverage by reading the tests.
+
+            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR. Post a comment even if everything looks fine; silence is indistinguishable from a failed review.
+
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+
+      # The action can finish green having posted nothing. A silent green reads as
+      # "reviewed", which is worse than a red check, so fail when no claude[bot]
+      # comment landed after this run started.
+      - name: Verify a review was posted
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          base="${{ github.event.repository.default_branch }}"
+          git fetch --quiet --depth=1 origin "$base"
+          if ! git diff --quiet FETCH_HEAD -- .github/workflows/claude-code-review.yml; then
+            echo "Workflow file differs from $base: the review action skips itself on this PR; skipping the no-post check."
+            exit 0
+          fi
+          since="${{ steps.review-start.outputs.ts }}"
+          count=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments?per_page=100" \
+            --paginate \
+            --jq "[.[] | select(.user.login == \"claude[bot]\" and .created_at >= \"$since\")] | length")
+          if [ "$count" -eq 0 ]; then
+            echo "::error::claude-review completed without posting a comment (no claude[bot] comment since $since). Re-run this job."
+            exit 1
+          fi
+          echo "Review verified: $count claude[bot] comment(s) posted since $since."
