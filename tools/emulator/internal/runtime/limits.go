@@ -336,14 +336,16 @@ func (ctx *ExecutionContext) checkSourceLength(source string) error {
 	return ctx.limitBreach(fmt.Errorf("the template is %d characters; YAGPDB refuses to save a custom command over %d", n, limit))
 }
 
-// checkOutput applies YAGPDB's output limits and returns the output YAGPDB would send.
-func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration) (string, error) {
+// checkOutput applies YAGPDB's output limits to a finished run and returns the output
+// YAGPDB would send. overCap is set when YAGPDB's output writer would have failed
+// (outside strict mode, where the run went on).
+func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration, overCap bool) (string, error) {
 	if elapsed > maxDuration {
 		if err := ctx.limitBreach(fmt.Errorf("execution took %s; YAGPDB stops custom commands after %s", elapsed.Round(time.Millisecond), maxDuration)); err != nil {
 			return output, err
 		}
 	}
-	if len(output) > maxOutputBytes {
+	if overCap {
 		if err := ctx.limitBreach(fmt.Errorf("response grew too big (>25k): the template printed %d bytes", len(output))); err != nil {
 			return output, err
 		}
@@ -365,19 +367,21 @@ func (ctx *ExecutionContext) maxOps() int {
 	return maxOpsNormal
 }
 
-// limitWriter writes at most n bytes, then fails with io.ErrShortWrite, like YAGPDB's
-// LimitWriter (common/templates/context.go).
-type limitWriter struct {
-	w io.Writer
-	n int
+// shadowWriter writes to shadow, remembering its first error instead of returning it,
+// then to w. Like text/template, it ignores byte counts: YAGPDB's LimitWriter reports 0
+// bytes for whitespace it drops, which io.MultiWriter would take as a short write.
+type shadowWriter struct {
+	shadow io.Writer
+	err    error
+	w      io.Writer
 }
 
-func (l *limitWriter) Write(p []byte) (int, error) {
-	if len(p) > l.n {
-		return 0, io.ErrShortWrite
+func (s *shadowWriter) Write(p []byte) (int, error) {
+	if s.err == nil {
+		_, s.err = s.shadow.Write(p)
 	}
-	l.n -= len(p)
-	return l.w.Write(p)
+	_, err := s.w.Write(p)
+	return len(p), err
 }
 
 // Discord's limits on a sent message (discord.com/developers/docs/resources/message#embed-object-embed-limits).
