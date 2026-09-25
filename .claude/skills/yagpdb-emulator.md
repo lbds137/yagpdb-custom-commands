@@ -31,6 +31,11 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     args: ["arg1", "arg2"]
     premium: false                    # optional, default true
     user: { id: 1, roles: [111] }
+    guild: { roles: [{ id: 111, name: "Staff", color: 3447003 }] }  # if set, unknown roles are nil/errors
+    members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
+    member_roles: { 2: [111] }        # other members' roles
+    messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # what getMessage finds
+    message_content: "text"           # the triggering message (.Message.Content), for regex triggers
     reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
@@ -50,38 +55,48 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
 tools/emulator/
 ├── cmd/yagtest/          # CLI: main.go (run/test/check), watch.go
 ├── internal/
-│   ├── runtime/          # engine.go (FuncMap, Execute), context.go, limits.go (YAGPDB call
-│   │                     # counters), loopcheck.go, hints.go, preprocess.go (try/catch)
-│   ├── funcs/            # function implementations (standard, database, args, discord)
+│   ├── yagtemplate/      # YAGPDB's text/template fork, copied (try/catch, while, return,
+│   │                     # execTemplate, built-ins, op limit); one EMULATOR PATCH (OnMaxOps)
+│   ├── yagstd/           # YAGPDB's standard functions, sdict/dict/cslice, regex, sort, copied
+│   ├── runtime/          # engine.go (Discord/database mocks, Execute), context.go, limits.go
+│   │                     # (YAGPDB call counters), loopcheck.go, hints.go
+│   ├── funcs/            # database functions, parseArgs, conversion helpers for the mocks
 │   ├── loader/           # YAML tests, runner, snapshots
 │   ├── schema/           # db_schema.yaml checks
-│   ├── state/            # mock database
-│   └── types/            # SDict, Slice, TemplateValue, context structs
-└── testdata/             # *.yaml suites, templates/ for execCC, __snapshots__/
+│   ├── state/            # mock database (raw value + value_num, Postgres LIKE)
+│   └── types/            # context structs; SDict/Dict/Slice aliases of yagstd's
+└── testdata/             # *.yaml suites, templates/ for execCC mocks, __snapshots__/
 ```
 
 ## Adding Missing Functions
 
-1. Check YAGPDB's implementation in `vendor/yagpdb/common/templates/` (fetch with
-   `vendor/update-yagpdb.sh`)
-2. Implement it in `internal/funcs/` or on the Engine in `internal/runtime/engine.go`
-3. Register it in `BuildFuncMap` in `engine.go`
-4. If YAGPDB limits it (`IncreaseCheckCallCounter` in its source), add it to
-   `limitedFuncs` in `limits.go`
-5. Update the IMPLEMENTED array in `scripts/find-missing-functions.sh`
-6. After updating vendor/yagpdb, rerun `scripts/gen-yagpdb-funcs.sh` (function list for hints)
+Copy YAGPDB's code rather than rewriting it (fetch its source with `vendor/update-yagpdb.sh`):
+
+1. A pure function (no Discord or bot state) from `common/templates/general.go` or
+   `context_funcs.go`: copy it into `internal/yagstd/` and list it in `StandardFuncs()`
+   (`funcmap.go`) or `Context.Funcs()` (`contextfuncs.go`).
+2. A function that needs Discord: add a mock on the Engine in `internal/runtime/engine.go`,
+   registered in `BuildFuncMap`, that follows YAGPDB's argument handling and return types
+   (nil pointers for missing things, errors where YAGPDB errors).
+3. If YAGPDB limits it (`IncreaseCheckCallCounter` in its source), add it to
+   `limitedFuncs` in `limits.go`.
+4. Update the IMPLEMENTED array in `scripts/find-missing-functions.sh`.
+5. After updating vendor/yagpdb, rerun `scripts/gen-yagpdb-funcs.sh` (function list for
+   hints), and see `internal/yagtemplate/README.md` to update the engine copy.
 
 ## Fidelity Notes
 
-- YAGPDB's `and`/`or` evaluate every argument (no short-circuit); the emulator matches.
-- `eq`/`ne`/`index`/`len` are ports of YAGPDB's: `eq 1 1.0`, `eq nil 1` and an out-of-range
-  `index` are errors, as in production.
-- Stored numbers come back as float64 (YAGPDB returns value_num), so `eq (dbGet 0 "n").Value 5`
-  is an error; compare with `5.0` or convert with `toInt`. Strings come back as-is; dicts come
-  back wrapped for `.Get`/`.Set`.
-- `execTemplate` returns the value a `{{define}}`d template passes to `return`.
-- The template operation limit (1M / 2.5M ops) is not enforced: stdlib text/template can't count ops.
-- Output is not whitespace-trimmed like YAGPDB's response; assertions trim it.
+- Templates run on YAGPDB's own engine and standard functions (copied, not reimplemented),
+  so try/catch, while, return, eq/index/len, and/or (which evaluate every argument), the
+  1M/2.5M operation limit and the 10-regex cache limit behave as in production.
+- Database values are copied in and out like YAGPDB's serialization: dbGet returns sdicts,
+  dicts and cslices as pointers (*SDict ...); changing one doesn't persist without dbSet.
+  A stored number reads back as a float64 (value_num), so `eq (dbGet 0 "n").Value 5` is an
+  error; compare with `5.0` or use `toInt`.
+- getMessage/getMember/getRole return nil pointers for missing things (field access then
+  errors); dbGet and userArg return untyped nil (field access reads as no value).
+- Discord functions are mocks. Output is not whitespace-trimmed like YAGPDB's response;
+  assertions trim it.
 
 ## When to Use This Skill
 
