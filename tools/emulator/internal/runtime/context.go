@@ -152,8 +152,12 @@ type ExecutionContext struct {
 	// Reactions are the reactions the run added and removed, in order
 	Reactions []ReactionChange
 	// Execs are the bot commands the run executed with exec and execAdmin, in order
-	Execs       []Exec
-	FileUploads []FileUpload
+	Execs []Exec
+	// ExecResponses declares what exec/execAdmin return for a given command line (the
+	// same line an Exec records); a call whose line isn't a key returns "" and warns,
+	// since the emulator can't run the bot command YAGPDB would.
+	ExecResponses map[string]string
+	FileUploads   []FileUpload
 	// ResponsePings are who the response (the template's output) notifies
 	ResponsePings Pings
 

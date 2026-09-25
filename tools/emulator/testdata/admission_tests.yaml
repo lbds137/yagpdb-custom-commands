@@ -275,6 +275,11 @@ tests:
     template: "../../../staff_utility/ticket_adduser_exec.gohtml"
     context:
       exec_data: { UserID: 500000000000000001 }
+      # YAGPDB's ticket AddUser response (tickets/tickets_commands.go ~99), with the
+      # target's String() as the emulator gives it for this member (MockUser, discriminator "0")
+      exec_responses: { 'ticket adduser "500000000000000001"': "Added MockUser to the ticket" }
+    expected:
+      output_equals: "Added MockUser to the ticket"
     assertions:
       execs: [{ line: 'ticket adduser "500000000000000001"', admin: false }]
 

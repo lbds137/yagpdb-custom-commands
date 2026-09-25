@@ -98,7 +98,9 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     execs: [{ line: 'kick 5 "spam"', admin: true }]
     # exactly the exec/execAdmin calls, in order ([] for none), with the command line as
     # YAGPDB builds it (strings quoted, switches and numbers not); recorded, not run: the
-    # call returns ""
+    # call returns the context's exec_responses entry for the line, or "" with a warning
+    # if it isn't declared there. context: { exec_responses: { 'kick 5 "spam"': "Kicked" } }
+    # declares what a line returns ("" is allowed, and silences the warning)
     deletions: [{ of: trigger, delay: 5s }, { of: message, channel_id: 9, message_id: 7 }]
     # exactly the deletions asked for, in order ([] for none): of = trigger|message|response;
     # unset fields match anything, delay: 0s = at once. Snapshots record deletions too

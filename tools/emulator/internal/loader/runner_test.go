@@ -466,6 +466,29 @@ func TestClockAndSeedFromYAML(t *testing.T) {
 	}
 }
 
+// exec_responses in YAML reaches the run, and a suite's defaults apply when a test sets
+// none.
+func TestExecResponsesFromYAML(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "t.yaml")
+	os.WriteFile(path, []byte("defaults:\n  exec_responses: { 'ban 6': Banned }\n"+
+		"tests:\n"+
+		"  - name: per-test\n    template_source: '{{exec \"kick\" 5}}'\n"+
+		"    context: { exec_responses: { 'kick 5': Kicked } }\n"+
+		"  - name: from-defaults\n    template_source: '{{execAdmin \"ban\" 6}}'\n"), 0o644)
+	suite, err := LoadTestSuite(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := NewRunner(RunnerConfig{BaseDir: dir})
+	for i, want := range []string{"Kicked", "Banned"} {
+		tc := &suite.Tests[i]
+		if res := r.RunTest(tc); res.Error != nil || res.Output != want {
+			t.Errorf("%s: got %q, %v (want %q)", tc.Name, res.Output, res.Error, want)
+		}
+	}
+}
+
 // A declared channel that is the test's channel has its declared name everywhere
 func TestTestChannelTakesItsDeclaredName(t *testing.T) {
 	tc := &TestCase{Name: "n", TemplateSource: `{{.Channel.Name}} {{(getChannel nil).Name}}`}
