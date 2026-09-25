@@ -22,8 +22,7 @@
       "mcp__council__*",
       "WebFetch(domain:*)"
     ],
-    "deny": [],
-    "defaultMode": "acceptEdits"
+    "deny": []
   },
   "enableAllProjectMcpServers": false
 }
