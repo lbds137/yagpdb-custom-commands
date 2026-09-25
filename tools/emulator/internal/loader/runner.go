@@ -207,7 +207,14 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		ctx.BotCannotMentionEveryone = !*b
 	}
 	for _, m := range tc.Context.Messages {
+		var embeds []*types.MessageEmbed
+		for _, e := range m.Embeds {
+			if len(types.EmbedMap(e.MessageEmbed)) > 0 { // discordgo drops empty embeds
+				embeds = append(embeds, e.MessageEmbed)
+			}
+		}
 		ctx.Messages = append(ctx.Messages, types.CtxMessage{
+			Embeds:    embeds,
 			ID:        m.ID,
 			ChannelID: m.ChannelID,
 			GuildID:   ctx.GuildID,

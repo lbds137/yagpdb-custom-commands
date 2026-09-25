@@ -98,6 +98,74 @@ type MessageDef struct {
 	ChannelID int64  `yaml:"channel_id"`
 	AuthorID  int64  `yaml:"author_id"`
 	Content   string `yaml:"content"`
+	// Embeds are written as cembed's keys (title, description, fields: [{name, value}],
+	// author: {name}, image: {url}...); templates read them as discordgo's
+	// (.Title, .Author.Name)
+	Embeds []TestEmbed `yaml:"embeds"`
+}
+
+// TestEmbed is an embed of a test message, converted as cembed converts its dict.
+type TestEmbed struct{ *types.MessageEmbed }
+
+func (e *TestEmbed) UnmarshalYAML(node *yaml.Node) error {
+	var dict map[string]interface{}
+	if err := node.Decode(&dict); err != nil {
+		return fmt.Errorf("line %d: embeds: write each embed as a mapping of cembed's keys: %v", node.Line, err)
+	}
+	// cembed drops a key it doesn't know; in a test that is a typo quietly weakening it
+	if err := checkEmbedKeys(dict, embedKeys, ""); err != nil {
+		return fmt.Errorf("line %d: embeds: %v", node.Line, err)
+	}
+	embed, err := types.BuildEmbed(dict)
+	if err != nil {
+		return fmt.Errorf("line %d: embeds: %v", node.Line, err)
+	}
+	e.MessageEmbed = types.EmbedStruct(embed)
+	return nil
+}
+
+// embedKeys are discordgo.MessageEmbed's JSON keys, and embedPartKeys its parts'.
+var (
+	embedKeys = map[string]bool{
+		"url": true, "type": true, "title": true, "description": true, "timestamp": true,
+		"color": true, "footer": true, "image": true, "thumbnail": true, "video": true,
+		"provider": true, "author": true, "fields": true,
+	}
+	mediaKeys     = map[string]bool{"url": true, "proxy_url": true, "width": true, "height": true}
+	embedPartKeys = map[string]map[string]bool{
+		"footer":    {"text": true, "icon_url": true, "proxy_icon_url": true},
+		"image":     mediaKeys,
+		"thumbnail": mediaKeys,
+		"video":     mediaKeys,
+		"provider":  {"url": true, "name": true},
+		"author":    {"url": true, "name": true, "icon_url": true, "proxy_icon_url": true},
+		"fields":    {"name": true, "value": true, "inline": true},
+	}
+)
+
+// checkEmbedKeys refuses a key of dict that isn't in known, and checks each part's keys.
+func checkEmbedKeys(dict map[string]interface{}, known map[string]bool, where string) error {
+	for key, val := range dict {
+		if !known[key] {
+			return fmt.Errorf("%q isn't one of cembed's keys%s", key, where)
+		}
+		part := embedPartKeys[key]
+		if part == nil || where != "" {
+			continue
+		}
+		items := []interface{}{val}
+		if list, ok := val.([]interface{}); ok {
+			items = list
+		}
+		for _, item := range items {
+			if m, ok := item.(map[string]interface{}); ok {
+				if err := checkEmbedKeys(m, part, " (in "+key+")"); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // ReactionDef describes the reaction that triggered a command.

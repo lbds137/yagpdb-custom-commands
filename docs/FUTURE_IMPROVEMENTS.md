@@ -33,8 +33,16 @@ gets a failing test first.
 - Left as is (2026-09-25): a test whose name starts with a newline can't be
   snapshotted. The name is a YAML map key, which yaml.v3 can't write for such text; the
   write is refused with an error, so nothing is corrupted. Promote if a test needs it.
-- Test messages can't carry embeds, so message_link's quoted-embed branch (description
-  cut to 1024, fields, images) has no test.
+- `cembed` returns the emulator's map (JSON keys: "title", "author"), where YAGPDB's
+  returns a *discordgo.MessageEmbed, so `(cembed "title" "x").Title` reads nothing here.
+  A message read back holds discordgo-shaped embeds already (types.MessageEmbed). No
+  command reads `(cembed ...).Field` directly (git grep; a cembed kept in a variable and
+  read later wasn't traced); promote when a command reads one.
+- `sendDM` turns any argument into text, where YAGPDB's takes an embed, a list of embeds
+  or a complexMessage (context_funcs.go tmplSendDM). No command calls sendDM (git grep,
+  2026-09-25); promote when one does.
+- avatar_viewer's branch for a YAGPDB `whois` message (it reads the message's embed
+  fields) has no test; test messages can carry embeds now (`embeds:`).
 - Ruled out (2026-09-25): YAGPDB's `LimitWriter` drops leading whitespace bytes, and
   `serializeValue` passes msgpack through it, but no value's encoding starts with one.
   msgpack v4.0.4 (YAGPDB's and the emulator's) writes one-byte fixints only with compact
@@ -110,8 +118,9 @@ gets a failing test first.
   editMessage shows through it (`{{$m := getMessage nil $id}}{{editMessage nil $id "b"}}
   {{$m.Content}}` is "b"; YAGPDB's earlier fetch keeps the old content). An execCC child
   works on a copy of the messages, so its edits aren't seen by the caller's later getMessage.
-- `editMessage` gaps: a stored message keeps only its first embed and no file, so edits
-  of multi-embed or file messages can differ; message builders read keys as a map, so a
+- `editMessage` gaps: a stored message keeps its embeds but no file, so edits of file
+  messages can differ, and the sent/edited record (`sent_messages`, snapshots) shows only
+  the first embed; message builders read keys as a map, so a
   repeated key (two `"embed"`s) counts once. A test message is the bot's to edit only
   with `author_id: 1234567890`.
 - A LIKE pattern is matched against the rows the query's other conditions select, so the
@@ -143,6 +152,13 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] A message's embeds read back as discordgo's (`.Title`, `.Author.Name`, `.Fields`
+      with `.Name`/`.Value`, `.Image.URL`), not the emulator's maps; test messages take
+      `embeds:` (cembed's keys, a typo refused), and message_link's quoted-embed branch
+      has tests, including its 1024 cut and re-linking a Message Link. A read embed can
+      be sent again (sendMessage, editMessage, complexMessage, cembed take it, as
+      YAGPDB's do); a sent message keeps all its embeds, empty ones dropped (2026-09-25)
 
 - [x] Function errors carry YAGPDB's text, which is what a `{{catch}}`'s `.Error` and a
       failed run's message show: "too many calls to this function" alone, and Discord's
