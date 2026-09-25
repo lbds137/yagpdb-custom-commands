@@ -107,7 +107,7 @@ Centralized message formatting and delivery:
 {{ define "embed_structure" }}
   - Author Information (User/Guild)
   - Color Management (Role-based/Custom)
-  - Content Truncation (description cut to 1,998 characters plus "…")
+  - Content Truncation (description cut to fit Discord's 4,096 and 6,000-character limits, ending in "…")
   - Auto-deletion Support
   - Thumbnail/Image Support
 {{ end }}

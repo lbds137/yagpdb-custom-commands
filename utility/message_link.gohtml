@@ -8,7 +8,7 @@
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 {{ $title := "Message Link" }}
-{{ $eFieldLimit := sub 1024 2 }}
+{{ $eFieldLimit := 1024 }}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $prefix := $globalDict.Get "Command Prefix" }}
@@ -142,7 +142,8 @@
       {{ end }}
       {{ if $embed.Description }}
         {{ if gt (len (toRune $embed.Description)) $eFieldLimit }}
-          {{ $eDesc = joinStr "" (slice (split $embed.Description "") 0 $eFieldLimit) "…" }}
+          {{ $eDesc = joinStr ""
+            (slice (split $embed.Description "") 0 (sub $eFieldLimit 1)) "…" }}
         {{ else }}
           {{ $eDesc = $embed.Description }}
         {{ end }}

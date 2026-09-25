@@ -12,15 +12,6 @@ gets a failing test first.
   fail at the 11th call instead of skipping.
   Harmless at the default; clamp it to 10 in those commands if the setting is ever
   raised (read, not run).
-- `embed_exec` cuts a description to 1,998 characters plus "…" (`sub 2000 2`), but
-  Discord allows 4,096 in an embed description, so text between 1,999 and 4,096
-  characters is cut when it needn't be. `db` sizes its own cut to fit (`sub 1998 9`).
-  Lila chose 4,096 (2026-09-25): cut at Discord's limit and keep the whole embed under
-  its 6,000-character total; db's cut follows. In progress.
-- To check in the emulator: YAGPDB's `LimitWriter` drops leading whitespace bytes at the
-  start of a write, and `serializeValue` passes binary msgpack through it, so a `dbSet`
-  of a value whose msgpack form begins with a whitespace byte (a small integer 9-13 or
-  32) may store an empty value (code-reading by a reviewer, not run).
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
@@ -29,6 +20,19 @@ gets a failing test first.
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
+- Snapshots can't hold a string that starts with a newline inside a list: yaml.v3
+  v3.0.1 writes it as a `|4-` block it can't read back ("did not find expected key";
+  reproduced 2026-09-25). A failed run with no output of its own posts
+  "\nAn error caused...", so snapshotting a failing command corrupts the snapshot file
+  (CI then fails on the corrupt file). Next unit.
+- Test messages can't carry embeds, so message_link's quoted-embed branch (description
+  cut to 1024, fields, images) has no test.
+- Ruled out (2026-09-25): YAGPDB's `LimitWriter` drops leading whitespace bytes, and
+  `serializeValue` passes msgpack through it, but no value's encoding starts with one.
+  msgpack v4.0.4 (YAGPDB's and the emulator's) writes one-byte fixints only with compact
+  encoding, which `serializeValue` doesn't turn on; ints start with 0xd3, and maps,
+  arrays and strings with header bytes outside 0x09-0x0d and 0x20. In the emulator,
+  `dbSet` of 32 and 10 read back as 32 and 10.
 - `exec`/`execAdmin` record the command line (`execs:`, snapshots) but don't run the bot
   command: the call returns "", where YAGPDB returns the command's response ("Unknown
   command" for a name it doesn't have, "Error: ..." when it fails), and execAdmin's
@@ -137,6 +141,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] `embed_exec` cut every description to 1,998 characters; it now cuts only past
+      Discord's 4,096, or less when the title, fields and author would push the whole
+      embed over 6,000 (Lila's call). `db`'s own cut follows (2026-09-25)
 
 - [x] The limit tables in docs/API_REFERENCE.md and the templates skill are rewritten
       from vendor/yagpdb and Discord's documented limits: embed description 4,096 (not

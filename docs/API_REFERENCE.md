@@ -87,9 +87,10 @@ each line); the message and embed limits are Discord's
 **Parameters**:
 - `ChannelID` (int): Target channel for message
 - `Title` (string): Embed title
-- `Description` (string): Main embed content; past 1,998 characters, `embed_exec` keeps the
-  first 1,998 and adds "…"
-- `Fields` (slice): Array of field objects
+- `Description` (string): Main embed content. `embed_exec` cuts it to fit Discord (4,096
+  characters, and 6,000 for the whole embed), ending it with "…"
+- `Fields` (slice): Array of field objects: `sdict`s with lowercase `"name"`, `"value"` and
+  `"inline"` keys (embed_exec counts `.name` and `.value` towards the 6,000 total)
 - `AuthorID` (int): User ID for author attribution
 - `Color` (int): Embed color (defaults to role color or server default)
 - `ThumbnailURL` (string): URL for thumbnail image

@@ -18,7 +18,7 @@
 {{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
 {{ $fullRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 {{ $title := "Message Pointer" }}
-{{ $embedFieldLimit := sub 1024 2 }}
+{{ $embedFieldLimit := 1024 }}
 
 {{ $args := parseArgs 1 "Usage: [message link] [comment (optional)]"
   (carg "string" "message link")
@@ -45,7 +45,8 @@
   {{ if $commentArg }}
     {{ $trimmedComment := $commentArg }}
     {{ if gt (len (toRune $commentArg)) $embedFieldLimit }}
-      {{ $trimmedComment = joinStr "" (slice (split $commentArg "") 0 $embedFieldLimit) "…" }}
+      {{ $trimmedComment = joinStr ""
+        (slice (split $commentArg "") 0 (sub $embedFieldLimit 1)) "…" }}
     {{ end }}
     {{ $fields = $fields.Append (sdict
       "name" "Comment"

@@ -9,7 +9,6 @@
 {{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
 {{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
-{{ $descriptionMaxLen := sub 2000 2 }}
 {{ $author := "" }}
 {{ $authorColor := 0 }}
 {{ $execAuthorValid := reFind "\\A\\d{16,}\\z" (toString .ExecData.AuthorID) }}
@@ -45,10 +44,26 @@
     {{ $authorColor = $dbEmbedColor }}
 {{ end }}
 
+{{/* Discord allows 4096 characters of description, and 6000 for the title, description,
+  field names and values and author name together: cut the description to fit both */}}
+{{ $otherLen := add
+    (len (toRune (print (or .ExecData.Title ""))))
+    (len (toRune (print (or $author.name ""))))
+}}
+{{- range .ExecData.Fields -}}
+    {{- $otherLen = add $otherLen
+        (len (toRune (print (or .name ""))))
+        (len (toRune (print (or .value "")))) -}}
+{{- end -}}
+{{ $descriptionMaxLen := toInt (min 4096 (sub 6000 $otherLen)) }}
 {{ $description := .ExecData.Description }}
 {{ if $description }}
     {{ if gt (len (toRune $description)) $descriptionMaxLen }}
-        {{ $description = joinStr "" (slice (split $description "") 0 $descriptionMaxLen) "…" }}
+        {{ $description = "" }}
+        {{ if ge $descriptionMaxLen 1 }}
+            {{ $kept := slice (split .ExecData.Description "") 0 (sub $descriptionMaxLen 1) }}
+            {{ $description = joinStr "" $kept "…" }}
+        {{ end }}
     {{ end }}
 {{ end }}
 {{ $embed := cembed

@@ -78,16 +78,53 @@ tests:
     context:
       args: ["get:0", "Long"]
       user: { roles: [888888888] }
-    # "Long" is 1988 "a"s and two 3-byte characters: db keeps 1989 characters and "…",
-    # which with the code fence is embed_exec's 1998, so embed_exec doesn't cut it again
+    # "Long" is 4086 "a"s and two 3-byte characters: db keeps 4087 characters and "…",
+    # which with the code fence is Discord's 4096, so embed_exec doesn't cut it again
     setup_templates: ["templates/long_value_setup.gohtml"]
+    strict: true
     assertions:
       sent_messages: [{ embed_contains: 'a€…\n```' }]
 
   - name: "embed_exec cuts a long description between characters"
     template_source: |
-      {{ $s := "" }}{{ range seq 0 1997 }}{{ $s = print $s "a" }}{{ end }}
-      {{ execCC 123 nil 0 (sdict "Title" "t" "Description" (print $s "€€")) }}
-    # 1999 characters: embed_exec keeps 1998 and adds "…"
+      {{ $s := "" }}{{ range seq 0 4094 }}{{ $s = print $s "a" }}{{ end }}
+      {{ execCC 123 nil 0 (sdict "Title" "t" "Description" (print $s "€€€")) }}
+    # 4097 characters: embed_exec keeps 4095 and adds "…", Discord's 4096
+    strict: true
     assertions:
       sent_messages: [{ embed_contains: 'a€…"' }]
+
+  - name: "embed_exec keeps a description of exactly 4096 characters"
+    template_source: |
+      {{ $s := "" }}{{ range seq 0 4094 }}{{ $s = print $s "a" }}{{ end }}
+      {{ execCC 123 nil 0 (sdict "Title" "t" "Description" (print $s "€€")) }}
+    strict: true
+    assertions:
+      sent_messages: [{ embed_contains: 'a€€"' }]
+
+  - name: "embed_exec cuts the description to keep the whole embed within 6000 characters"
+    template_source: |
+      {{ $b := "" }}{{ range seq 0 1000 }}{{ $b = print $b "b" }}{{ end }}
+      {{ $f := sdict "name" "n" "value" $b }}
+      {{ $s := "" }}{{ range seq 0 1982 }}{{ $s = print $s "a" }}{{ end }}
+      {{ execCC 123 nil 0 (sdict "Title" "t" "Fields" (cslice $f $f $f $f)
+        "Description" (print $s "€€€")) }}
+    # The title (1), author name ("Test Server", 11) and four fields (1 + 1000 each) leave
+    # 1984 characters: embed_exec keeps 1983 of the 1985 and adds "…"
+    strict: true
+    assertions:
+      sent_messages: [{ embed_contains: 'a€…"' }]
+
+  - name: "embed_exec drops the description when the rest of the embed leaves no room"
+    snapshot: true
+    template_source: |
+      {{ $b := "" }}{{ range seq 0 1000 }}{{ $b = print $b "b" }}{{ end }}
+      {{ $f := sdict "name" "n" "value" $b }}
+      {{ execCC 123 nil 0 (sdict "Title" "t" "Fields" (cslice $f $f $f $f $f $f)
+        "Description" "a") }}
+    # Six fields (1 + 1000 each) are over 6000 already: the description goes (the snapshot
+    # has none) and Discord refuses the embed anyway, a warning outside strict mode
+    expected:
+      warning_contains: "6000"
+    assertions:
+      sent_messages: [{ embed_title: "t" }]
