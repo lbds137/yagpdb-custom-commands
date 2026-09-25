@@ -52,10 +52,7 @@ gets a failing test first.
   undeclared line returns "" and warns `[exec]`). The command's own checks aren't
   modelled: errors that fail the run ("exec/execadmin, run: ...", a parse error,
   execAdmin's "Failed fetching member", a guild cooldown), nor the text YAGPDB returns
-  ("Unknown command", "Error: ...") unless a test declares it. The recording mock of embed_exec
-  (testdata/templates) keeps the title, description, fields, color, image and thumbnail,
-  but not embed_exec's author, its author-color fallback, its description cut or its
-  DeleteResponse.
+  ("Unknown command", "Error: ...") unless a test declares it.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
   entry) serialize as the emulator's types, so their size differs from YAGPDB's. A value
   whose overflow past 100000 bytes is only whitespace is stored whole; YAGPDB stores it
@@ -155,6 +152,13 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] The six suites that execCC embed_exec (admission, avatar_viewer, command,
+      dice_roll, gematria, message_link) now map it to the real
+      `utility/embed_exec.gohtml` instead of the recording mock, so their snapshots show
+      the real embeds (the author line, the guild's "Embed Color", empty image and
+      thumbnail) and DeleteResponse's deletions; none sends a description long enough to
+      be cut (2026-09-25)
 
 - [x] A test can declare what `exec`/`execAdmin` return per command line
       (`context: { exec_responses: { '<line>': '<response>' } }`, inherited by execCC

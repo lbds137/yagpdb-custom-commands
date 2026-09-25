@@ -4,6 +4,11 @@ alefbet - Arabic to Hebrew:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                "name": "TestUser#0001",
+                "url": "https://discordapp.com/users/987654321098765432"
+              },
               "description": "סלאם",
               "fields": [
                 {
@@ -31,6 +36,8 @@ alefbet - Arabic to Hebrew:
                   "value": "سلام"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Hebrew Converter"
             }
     deletions:
@@ -68,7 +75,7 @@ alefbet - Paleo-Hebrew to Hebrew:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"description\": \"שלם\",\n  \"fields\": [\n    {\n      \"name\": \"Word Length\",\n      \"value\": \"`3`\"\n    },\n    {\n      \"name\": \"Word Gematria\",\n      \"value\": \"`370` > `10` > `1`\"\n    },\n    {\n      \"name\": \"Unique Arcana\",\n      \"value\": \"`3`\"\n    },\n    {\n      \"name\": \"Major Arcana (RWS)\",\n      \"value\": \"`XX` - Judgement\\n`XI` - Justice\\n`XII` - The Hanged Man\"\n    },\n    {\n      \"name\": \"Major Arcana (Thoth)\",\n      \"value\": \"`XX` - The Æon\\n`VIII` - Adjustment\\n`XII` - The Hanged Man\"\n    },\n    {\n      \"name\": \"Original Text\",\n      \"value\": \"\U00010914\U0001090B\U0001090C\"\n    }\n  ],\n  \"title\": \"Hebrew Converter\"\n}"
+          embed: "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"TestUser#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"description\": \"שלם\",\n  \"fields\": [\n    {\n      \"name\": \"Word Length\",\n      \"value\": \"`3`\"\n    },\n    {\n      \"name\": \"Word Gematria\",\n      \"value\": \"`370` > `10` > `1`\"\n    },\n    {\n      \"name\": \"Unique Arcana\",\n      \"value\": \"`3`\"\n    },\n    {\n      \"name\": \"Major Arcana (RWS)\",\n      \"value\": \"`XX` - Judgement\\n`XI` - Justice\\n`XII` - The Hanged Man\"\n    },\n    {\n      \"name\": \"Major Arcana (Thoth)\",\n      \"value\": \"`XX` - The Æon\\n`VIII` - Adjustment\\n`XII` - The Hanged Man\"\n    },\n    {\n      \"name\": \"Original Text\",\n      \"value\": \"\U00010914\U0001090B\U0001090C\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Hebrew Converter\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
         - trigger 234567890 in channel 123456789012345678 after 5s
@@ -106,10 +113,16 @@ alefbet - Rejects text that is already Hebrew:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "⚠️ The argument provided does not contain any valid text for conversion to Hebrew. Please try again.",
+              "image": {},
+              "thumbnail": {},
               "title": "Invalid Argument"
             }
     deletions:
+        - message 1100000000000000001 in channel 123456789012345678 after 10s
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
         - user_id: 0
@@ -145,6 +158,11 @@ atbash - Basic cipher:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                "name": "TestUser#0001",
+                "url": "https://discordapp.com/users/987654321098765432"
+              },
               "description": "תשרק",
               "fields": [
                 {
@@ -172,6 +190,8 @@ atbash - Basic cipher:
                   "value": "אבגד"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Atbash Ciphertext"
             }
     deletions:
@@ -211,7 +231,14 @@ bootstrap - Initialize with command IDs:
         - channel_id: 999999999
           embed: |-
             {
+              "author": {
+                "icon_url": "https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png",
+                "name": "Test Server"
+              },
+              "color": 16777214,
               "description": "The bootstrapping process completed successfully!",
+              "image": {},
+              "thumbnail": {},
               "title": "Bootstrap Execution Complete"
             }
     deletions:
@@ -254,7 +281,7 @@ contrast - Hex without hash:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -289,7 +316,7 @@ contrast - Role ID:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 5793266,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.56`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.51`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.61`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `3.89`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#5865f2`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 5793266,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.56`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.51`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.61`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `3.89`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#5865f2`\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -324,7 +351,7 @@ contrast - Valid hex color:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 16733440,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `6.55`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E0 Ratio: `3.61`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `3.21`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.46`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#ff5500`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 16733440,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `6.55`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E0 Ratio: `3.61`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `3.21`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.46`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#ff5500`\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -359,7 +386,7 @@ contrasts - A role ID:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 5793266,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.56`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.51`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.61`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `3.89`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#5865f2`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 5793266,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.56`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.51`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.61`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `3.89`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#5865f2`\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
         - trigger 234567890 in channel 123456789012345678 after 5s
@@ -395,9 +422,9 @@ contrasts - A role ID and a color:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 5793266,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.56`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.51`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.61`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `3.89`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#5865f2`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 5793266,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.56`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.51`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E1 Ratio: `4.61`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `3.89`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#5865f2`\"\n}"
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 16711680,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `5.25`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.9`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `4`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.05`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#ff0000`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 16711680,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `5.25`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.9`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `4`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.05`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#ff0000`\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
         - trigger 234567890 in channel 123456789012345678 after 5s
@@ -434,9 +461,9 @@ contrasts - Colors separated by a comma:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 16711680,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `5.25`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.9`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `4`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.05`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#ff0000`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 16711680,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `5.25`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.9`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `4`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.05`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#ff0000`\"\n}"
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
         - trigger 234567890 in channel 123456789012345678 after 5s
@@ -473,11 +500,11 @@ contrasts - Multiple colors:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 16711680,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `5.25`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.9`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `4`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.05`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#ff0000`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 16711680,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E1 Ratio: `5.25`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F534 Ratio: `2.9`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E0 Ratio: `4`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.05`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#ff0000`\"\n}"
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
         - channel_id: 123456789012345678
-          embed: "{\n  \"color\": 255,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `2.44`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.35`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.59`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.13`\"\n    }\n  ],\n  \"title\": \"Contrast Ratios for `#0000ff`\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 255,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `2.44`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.35`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.59`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E0 Ratio: `4.13`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#0000ff`\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
         - trigger 234567890 in channel 123456789012345678 after 5s
@@ -517,6 +544,9 @@ db add - Append to array via nested key:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\nNew Category\n```",
               "fields": [
                 {
@@ -534,6 +564,8 @@ db add - Append to array via nested key:
                   "value": "```\n✅ Value successfully added!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `add`"
             }
     deletions:
@@ -572,6 +604,9 @@ db delete - Delete a nested key:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\n[\n\t\"Staff Only\",\n\t\"Bot Commands\",\n\t\"Archive\"\n]\n```",
               "fields": [
                 {
@@ -589,6 +624,8 @@ db delete - Delete a nested key:
                   "value": "```\n✅ Value successfully deleted!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `delete`"
             }
     deletions:
@@ -628,6 +665,9 @@ db dump - Dump all keys:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\nExported 9 entries to file\n```",
               "fields": [
                 {
@@ -645,6 +685,8 @@ db dump - Dump all keys:
                   "value": "```\n✅ Value successfully dumped!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `dump`"
             }
     files:
@@ -688,6 +730,9 @@ db dump - Dump specific key:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\nExported 1 entries to file\n```",
               "fields": [
                 {
@@ -705,6 +750,8 @@ db dump - Dump specific key:
                   "value": "```\n✅ Value successfully dumped!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `dump`"
             }
     files:
@@ -754,6 +801,9 @@ db get - Read a nested array:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\n[\n\t\"Staff Only\",\n\t\"Bot Commands\",\n\t\"Archive\"\n]\n```",
               "fields": [
                 {
@@ -771,6 +821,8 @@ db get - Read a nested array:
                   "value": "```\n✅ Value successfully retrieved!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `get`"
             }
     deletions:
@@ -809,6 +861,9 @@ db keys - List dictionary keys:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\n[\n\t\"Delete Response Delay\",\n\t\"Delete Trigger Delay\",\n\t\"ExecCC Limit\"\n]\n```",
               "fields": [
                 {
@@ -826,6 +881,8 @@ db keys - List dictionary keys:
                   "value": "```\n✅ Value successfully inspected!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `keys`"
             }
     deletions:
@@ -864,6 +921,9 @@ db remove - Remove item from array via nested key:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\nStaff Only\n```",
               "fields": [
                 {
@@ -881,6 +941,8 @@ db remove - Remove item from array via nested key:
                   "value": "```\n✅ Value successfully removed!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `remove`"
             }
     deletions:
@@ -919,6 +981,9 @@ db remove - Remove with JSON from dict:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\n{\n\t\"Delete Trigger Delay\": 5\n}\n```",
               "fields": [
                 {
@@ -936,6 +1001,8 @@ db remove - Remove with JSON from dict:
                   "value": "```\n✅ Value successfully removed!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Database Operation: `remove`"
             }
     deletions:
@@ -974,6 +1041,11 @@ hugemoji - Animated emoji:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                "name": "TestUser#0001",
+                "url": "https://discordapp.com/users/987654321098765432"
+              },
               "fields": [
                 {
                   "name": "Name",
@@ -983,6 +1055,7 @@ hugemoji - Animated emoji:
               "image": {
                 "url": "https://cdn.discordapp.com/emojis/987654321098765432.gif?v=1"
               },
+              "thumbnail": {},
               "title": "Emoji Expander"
             }
     deletions:
@@ -1021,6 +1094,11 @@ hugemoji - Discord custom emoji:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                "name": "TestUser#0001",
+                "url": "https://discordapp.com/users/987654321098765432"
+              },
               "fields": [
                 {
                   "name": "Name",
@@ -1030,6 +1108,7 @@ hugemoji - Discord custom emoji:
               "image": {
                 "url": "https://cdn.discordapp.com/emojis/123456789012345678.png?v=1"
               },
+              "thumbnail": {},
               "title": "Emoji Expander"
             }
     deletions:
@@ -1066,7 +1145,7 @@ inactivity - Prune an inactive member:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"description\": \"\U0001F97E **MockUser** has been kicked!\",\n  \"fields\": [\n    {\n      \"name\": \"Reason\",\n      \"value\": \"The user was pruned due to inactivity.\"\n    }\n  ],\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/5.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
+          embed: "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"description\": \"\U0001F97E **MockUser** has been kicked!\",\n  \"fields\": [\n    {\n      \"name\": \"Reason\",\n      \"value\": \"The user was pruned due to inactivity.\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/5.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     execs:
@@ -1108,7 +1187,12 @@ kb - Knowledge base lookup:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "This is the FAQ content.",
+              "image": {},
+              "thumbnail": {},
               "title": "Faq"
             }
     deletions:
@@ -1146,7 +1230,7 @@ message_pointer - Valid message link:
     output: ""
     messages:
         - channel_id: 123456789012345678
-          embed: "{\n  \"fields\": [\n    {\n      \"name\": \"Original Channel\",\n      \"value\": \"#️⃣ [introduction](https://discord.com/channels/111222333444555666/888888888888888888/)\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444)\"\n    }\n  ],\n  \"title\": \"Message Pointer\"\n}"
+          embed: "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"TestUser#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Original Channel\",\n      \"value\": \"#️⃣ [introduction](https://discord.com/channels/111222333444555666/888888888888888888/)\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444)\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Message Pointer\"\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -1183,6 +1267,11 @@ pyramid - Simple text:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                "name": "TestUser#0001",
+                "url": "https://discordapp.com/users/987654321098765432"
+              },
               "description": "h\nhe\nhel\nhell\nhello",
               "fields": [
                 {
@@ -1222,6 +1311,8 @@ pyramid - Simple text:
                   "value": "hello"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Pyramid Gematria"
             }
     deletions:
@@ -1261,6 +1352,11 @@ rand_hebrew - Generate random letters:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                "name": "TestUser#0001",
+                "url": "https://discordapp.com/users/987654321098765432"
+              },
               "description": "גדדבץ",
               "fields": [
                 {
@@ -1284,6 +1380,8 @@ rand_hebrew - Generate random letters:
                   "value": "`II` - The Priestess\n`III` - The Empress (2)\n`I` - The Magus\n`IV` - The Emperor"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Hebrew Generator"
             }
     deletions:
@@ -1358,10 +1456,16 @@ role_ping - An unknown role sends only the error:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "⚠️ You must enter a valid role to ping!",
+              "image": {},
+              "thumbnail": {},
               "title": "Invalid Argument"
             }
     deletions:
+        - message 1100000000000000001 in channel 123456789012345678 after 10s
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
         - user_id: 0
@@ -1432,7 +1536,12 @@ rule - View rule 1:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "Be respectful to all members.",
+              "image": {},
+              "thumbnail": {},
               "title": "Rule #1"
             }
     deletions:
@@ -1471,7 +1580,12 @@ rule - View rule 2:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "No spamming or flooding the chat.",
+              "image": {},
+              "thumbnail": {},
               "title": "Rule #2"
             }
     deletions:
@@ -1510,6 +1624,9 @@ rule_edit - Edit a rule:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\n{\n\t\"Rule #1\": \"Updated rule text here.\"\n}\n```",
               "fields": [
                 {
@@ -1527,6 +1644,8 @@ rule_edit - Edit a rule:
                   "value": "```\n✅ Value successfully added!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Rule Editing"
             }
     deletions:
@@ -1566,6 +1685,9 @@ simple_db_edit - Edit knowledge entry:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "```\n{\n\t\"Faq\": \"Updated FAQ content\"\n}\n```",
               "fields": [
                 {
@@ -1583,6 +1705,8 @@ simple_db_edit - Edit knowledge entry:
                   "value": "```\n✅ Value successfully added!```"
                 }
               ],
+              "image": {},
+              "thumbnail": {},
               "title": "Knowledge Entry Editing"
             }
     deletions:
@@ -1622,7 +1746,12 @@ simple_db_lookup - Lookup knowledge entry:
         - channel_id: 123456789012345678
           embed: |-
             {
+              "author": {
+                "name": "Test Server"
+              },
               "description": "This is the FAQ content.",
+              "image": {},
+              "thumbnail": {},
               "title": "Faq"
             }
     deletions:

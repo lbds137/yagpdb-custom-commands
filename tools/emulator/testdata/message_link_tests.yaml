@@ -37,7 +37,7 @@ setup_db:
     value: { YAGPDB: 900000000000000001 }
 
 command_map:
-  1: "templates/recording_embed_exec.gohtml"
+  1: "../../../utility/embed_exec.gohtml"
 
 tests:
   - name: "message_link: expands a quoted link"
