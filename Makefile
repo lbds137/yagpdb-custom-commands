@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots test-go watch ci test-templates
+.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -8,7 +8,7 @@ YAGTEST_FLAGS := -schema db_schema.yaml
 # Default target
 help: ## Show this help message
 	@echo "Available targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-22s %s\n", $$1, $$2}'
 
 build-emulator: ## Build the template emulator/test runner
 	@echo "🔨 Building emulator..."
@@ -84,3 +84,14 @@ lint-latest: ## Show latest lint report
 ci-report: ## Generate lint report for CI
 	@echo "📊 Generating CI lint report..."
 	@./scripts/lint-report.py --latest --markdown
+# Deployment: commands are pasted into the YAGPDB control panel by hand
+COMMAND_DIRS := guests utility staff_utility
+
+changed-since-deploy: ## List command files changed since the `deployed` tag (paste these)
+	@git rev-parse -q --verify deployed >/dev/null || (echo "No 'deployed' tag yet: run make mark-deployed after a paste" && exit 1)
+	@git diff --name-only --diff-filter=AM deployed -- $(COMMAND_DIRS) | grep '\.gohtml$$' || echo "Nothing to paste: no command changed since $$(git log -1 --format='%h %as' deployed)"
+	@git diff --name-only --diff-filter=D deployed -- $(COMMAND_DIRS) | grep '\.gohtml$$' | sed 's/^/deleted (remove from YAGPDB): /' || true
+
+mark-deployed: ## Record that the current commit's commands are live in YAGPDB
+	@git tag -f deployed HEAD >/dev/null && echo "deployed → $$(git log -1 --format='%h %s' HEAD)"
+	@git push -q -f origin deployed 2>/dev/null && echo "Tag pushed" || echo "Tag not pushed (offline?); run: git push -f origin deployed"

@@ -222,11 +222,18 @@ The following tools are generally safe to use without explicit permission:
     - `WebSearch` - Search the web for information (always approved)
     - `WebFetch` - Fetch content from specific URLs (always approved)
 
+### Deployment
+
+YAGPDB has no API for custom commands: the owner copies each changed `.gohtml` file into
+the YAGPDB control panel by hand. `make changed-since-deploy` lists the command files that
+changed since the `deployed` git tag; after pasting them, move the tag with
+`make mark-deployed`.
+
 ### Tools Requiring Approval
 The following operations should be discussed before executing:
 
 1. **Git Operations**
-    - Do not push to remote repositories (will trigger deployment)
+    - Pushing is fine: it runs CI (`.github/workflows/test.yml`) and deploys nothing
     - Commits are allowed but discuss significant changes first
     - Branch operations should be explicitly requested
 
@@ -240,7 +247,7 @@ The following operations should be discussed before executing:
 ### YAGPDB Development Workflow
 
 1. **Testing Commands**:
-   - Use the linter (`python lint.py`) to check for syntax errors
+   - Run `make ci` (emulator tests, Go tests, linter); `make lint` alone runs the linter
    - Test in a development server before production
    - Check character count stays within limits
    - Verify database operations don't conflict
