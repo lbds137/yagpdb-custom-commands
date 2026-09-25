@@ -344,7 +344,10 @@ func checkCommand(args []string) {
 		}
 		// Static findings only: runtime warnings depend on arguments check doesn't have
 		for _, d := range ctx.Diagnostics {
-			if d.Kind == runtime.KindLoopDB || strings.Contains(d.Message, "refuses to save") {
+			switch {
+			case d.Kind == runtime.KindLoopDB: // the message starts with file:line
+				fmt.Fprintf(os.Stderr, "%sWARN %s%s\n", colorYellow, d.Message, colorReset)
+			case strings.Contains(d.Message, "refuses to save"):
 				fmt.Fprintf(os.Stderr, "%sWARN %s: %s%s\n", colorYellow, file, d.Message, colorReset)
 			}
 		}
