@@ -247,6 +247,16 @@ func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*
 		}
 	}
 
+	m.sortByValueNum(results, ascending)
+	results = page(results, limit, skip)
+	for i, e := range results {
+		results[i] = m.view(e)
+	}
+	return results
+}
+
+// sortByValueNum orders entries as "value_num DESC, id DESC", or ascending.
+func (m *MockDB) sortByValueNum(results []*types.LightDBEntry, ascending bool) {
 	sort.Slice(results, func(i, j int) bool {
 		a, b := m.valueNum(results[i]), m.valueNum(results[j])
 		if a != b {
@@ -254,11 +264,55 @@ func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*
 		}
 		return (results[i].ID < results[j].ID) == ascending
 	})
-	results = page(results, limit, skip)
-	for i, e := range results {
-		results[i] = m.view(e)
+}
+
+// Rank is YAGPDB's dbRank query: the 1-based position of the user's key among the
+// unexpired entries matching userID and pattern (nil matches all), ordered by value_num
+// then id, descending unless ascending. 0 if the entry isn't among them.
+func (m *MockDB) Rank(userID *int64, pattern *string, ascending bool, targetUser int64, key string) int64 {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var results []*types.LightDBEntry
+	now := time.Now()
+	for _, entry := range m.entries {
+		if expired(entry, now) || (userID != nil && entry.UserID != *userID) ||
+			(pattern != nil && !matchPattern(entry.Key, *pattern)) {
+			continue
+		}
+		results = append(results, entry)
 	}
-	return results
+	m.sortByValueNum(results, ascending)
+	for i, e := range results {
+		if e.UserID == targetUser && e.Key == key {
+			return int64(i + 1)
+		}
+	}
+	return 0
+}
+
+// DelMultiple is YAGPDB's dbDelMultiple query: it deletes up to limit entries matching
+// userID and pattern (nil matches all), expired ones included, in value_num order after
+// skipping skip, and returns how many it deleted.
+func (m *MockDB) DelMultiple(userID *int64, pattern *string, ascending bool, limit, skip int) int64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var results []*types.LightDBEntry
+	for _, entry := range m.entries {
+		if (userID != nil && entry.UserID != *userID) || (pattern != nil && !matchPattern(entry.Key, *pattern)) {
+			continue
+		}
+		results = append(results, entry)
+	}
+	m.sortByValueNum(results, ascending)
+	results = page(results, limit, skip)
+	for _, e := range results {
+		compositeKey := makeKey(e.UserID, e.Key)
+		delete(m.entries, compositeKey)
+		delete(m.valueNums, compositeKey)
+	}
+	return int64(len(results))
 }
 
 func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry {

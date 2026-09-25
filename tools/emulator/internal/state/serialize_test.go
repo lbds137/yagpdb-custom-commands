@@ -3,6 +3,7 @@ package state
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
@@ -39,5 +40,24 @@ func TestValuesOverTheLimitFail(t *testing.T) {
 	}
 	if db.Get(0, "big") != nil {
 		t.Error("a failed set stores nothing")
+	}
+}
+
+func TestExpiredEntriesAreRankedOutButDeleted(t *testing.T) {
+	db := NewMockDB(1)
+	for _, key := range []string{"a", "b"} {
+		if _, err := db.Set(1, key, int64(1)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	db.entries[makeKey(1, "b")].ExpiresAt = time.Now().Add(-time.Minute)
+	if rank := db.Rank(nil, nil, false, 1, "b"); rank != 0 {
+		t.Errorf("an expired entry has no rank, got %d", rank)
+	}
+	if rank := db.Rank(nil, nil, false, 1, "a"); rank != 1 {
+		t.Errorf("the expired entry doesn't count, got rank %d", rank)
+	}
+	if n := db.DelMultiple(nil, nil, false, 100, 0); n != 2 {
+		t.Errorf("dbDelMultiple deletes expired entries too, deleted %d", n)
 	}
 }
