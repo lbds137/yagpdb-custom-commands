@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -35,5 +36,23 @@ func TestOnMaxOpsReportsOnceAndContinues(t *testing.T) {
 	}
 	if out.Len() != 200 {
 		t.Errorf("execution should finish, printed %d bytes", out.Len())
+	}
+}
+
+// EMULATOR PATCH tests: OnCall.
+
+func TestOnCallReportsWhetherTheCallIsInsideTry(t *testing.T) {
+	var got []bool
+	f := func(s string) string { return s }
+	src := `{{f "out"}}{{define "d"}}{{f "tmpl"}}{{end}}` +
+		`{{try}}{{f "in"}}{{template "d"}}{{index 1 1}}{{catch}}{{f "catch"}}{{end}}{{f "after"}}`
+	tmpl := Must(New("t").Funcs(FuncMap{"f": f}).OnCall(func(inTry bool) { got = append(got, inTry) }).Parse(src))
+	if err := tmpl.Execute(&bytes.Buffer{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	// out, in, the template's call, index (in try), catch, after
+	want := []bool{false, true, true, true, false, false}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }

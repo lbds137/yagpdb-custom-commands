@@ -291,7 +291,10 @@ production. On top of that:
 - **Execution limits** taken from YAGPDB's source: database calls (10, or 50 with premium),
   Discord API calls, DMs, `execCC`, template operations (1M, or 2.5M with premium), output
   size, response length and template length.
-  By default a breached limit is a warning; `-strict` fails the run the way production does
+  By default a breached limit is a warning; `-strict` fails the run the way production does.
+  Inside `{{try}}`, a function over its call limit or refused by Discord goes to
+  `{{catch}}` either way, as in production (not the calls YAGPDB skips silently, like
+  `sendDM`)
 - **Warnings** for database calls inside `range` loops, and for values that don't match
   `db_schema.yaml` (`-schema`)
 - **Error hints**: typo suggestions from YAGPDB's function list, links to its docs
