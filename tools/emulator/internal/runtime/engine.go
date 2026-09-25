@@ -65,6 +65,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"dbTopEntries":        dbFuncs.DbTopEntries,
 		"dbBottomEntries":     dbFuncs.DbBottomEntries,
 		"dbRank":              dbFuncs.DbRank,
+		"dbDelMultiple":       dbFuncs.DbDelMultiple,
 
 		// Discord mocks (output capture)
 		"sendMessage":               e.sendMessage,

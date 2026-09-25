@@ -606,3 +606,46 @@ func TestDBSetOverTheLimitFails(t *testing.T) {
 		t.Errorf("got %q, %v", out, err)
 	}
 }
+
+func TestDBQueries(t *testing.T) {
+	// user 1: a=5, b=7, c=5 (c after a, so c has the higher id); user 2: a=9
+	setup := `{{dbSet 1 "a" 5}}{{dbSet 1 "b" 7}}{{dbSet 1 "c" 5}}{{dbSet 2 "a" 9}}`
+	cases := []struct{ name, src, out, err string }{
+		{"count all", `{{dbCount}}`, "4", ""},
+		{"count a user", `{{dbCount 1}}`, "3", ""},
+		{"count a pattern", `{{dbCount "a"}}`, "2", ""},
+		{"count a query", `{{dbCount (sdict "userID" 1 "pattern" "a")}}`, "1", ""},
+		{"count a bad query", `{{dbCount (sdict "user" 1)}}`, "", "Invalid Key: user passed to query constructor"},
+		{"a float isn't a user", `{{dbCount (sdict "userID" 1.0)}}`, "", "Invalid UserID datatype"},
+		{"rank", `{{dbRank (sdict) 2 "a"}} {{dbRank (sdict) 1 "b"}} {{dbRank (sdict) 1 "c"}} {{dbRank (sdict) 1 "a"}}`, "1 2 3 4", ""},
+		{"rank ascending", `{{dbRank (sdict "reverse" true) 1 "a"}}`, "1", ""},
+		{"rank within a user", `{{dbRank (sdict "userID" 1) 1 "a"}} {{dbRank (sdict "userID" 2) 1 "a"}}`, "3 0", ""},
+		{"rank of a missing key", `{{dbRank (sdict) 1 "zzz"}}`, "0", ""},
+		{"delete the lowest two", `{{dbDelMultiple (sdict "reverse" true) 2 0}} {{dbCount}} {{(dbGet 1 "b").Value}}`, "2 2 7", ""},
+		{"negative skip", `{{dbDelMultiple (sdict) 1 -1}}`, "", "OFFSET must not be negative"},
+		{"negative skip in a pattern", `{{dbGetPattern 1 "%" 1 -1}}`, "", "OFFSET must not be negative"},
+		{"negative skip in top entries", `{{dbTopEntries "%" 1 -1}}`, "", "OFFSET must not be negative"},
+		{"a float user ID fails as in YAGPDB", `{{dbRank (sdict) (toFloat 1) "a"}}`, "", "wrong type for value; expected int64; got float64"},
+		{"a missing rank is an int 0", `{{printf "%T %T" (dbRank (sdict) 1 "zzz") (dbRank (sdict) 1 "a")}}`, "int int64", ""},
+		{"count by .User.ID", `{{dbSet .User.ID "x" 1}}{{dbCount .User.ID}}`, "1", ""},
+		{"rank within a pattern", `{{dbRank (sdict "pattern" "a") 1 "a"}}`, "2", ""},
+		{"amount 0 means 100", `{{dbDelMultiple (sdict) 0 0}}`, "4", ""},
+		{"negative amount", `{{dbDelMultiple (sdict) -1 0}}`, "", "LIMIT must not be negative"},
+		{"OFFSET is checked first", `{{dbDelMultiple (sdict) -1 -1}}`, "", "OFFSET must not be negative"},
+		{"delete by pattern", `{{dbDelMultiple (sdict "pattern" "a") 5 0}} {{dbCount}}`, "2 2", ""},
+		{"a cut keeps whole characters", `{{dbSet 0 (print (printf "%255s" "k") "é") 1}}{{len (index (dbGetPattern 0 "%" 1 0) 0).Key}}`, "255", ""},
+		{"long keys are cut to 256 bytes", `{{dbSet 0 (printf "%300s" "k") 1}}{{len (index (dbGetPattern 0 "%" 1 0) 0).Key}}`, "256", ""},
+	}
+	for _, c := range cases {
+		out, err := run(t, newCtx(false, true), setup+c.src)
+		if c.err != "" {
+			if err == nil || !strings.Contains(err.Error(), c.err) {
+				t.Errorf("%s: want an error containing %q, got %v", c.name, c.err, err)
+			}
+			continue
+		}
+		if err != nil || out != c.out {
+			t.Errorf("%s: got %q, %v; want %q", c.name, out, err, c.out)
+		}
+	}
+}

@@ -73,6 +73,7 @@ var limitedFuncs = map[string]limitedFunc{
 	"dbTopEntries":        {limits: []callLimit{limitDB, limitDBMultiple}},
 	"dbBottomEntries":     {limits: []callLimit{limitDB, limitDBMultiple}},
 	"dbRank":              {limits: []callLimit{limitDB, limitDBMultiple}},
+	"dbDelMultiple":       {limits: []callLimit{limitDB, limitDBMultiple}},
 
 	"execCC":                  {limits: []callLimit{limitRunCC}},
 	"scheduleUniqueCC":        {limits: []callLimit{limitRunCC}},

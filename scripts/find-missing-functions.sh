@@ -38,8 +38,9 @@ IMPLEMENTED=(
     # Database
     "dbGet" "dbSet" "dbSetExpire" "dbDel" "dbDelById" "dbDelByID" "dbIncr"
     "dbGetPattern" "dbGetPatternReverse" "dbCount" "dbTopEntries" "dbBottomEntries" "dbRank"
+    "dbDelMultiple"
     # Discord - Messages
-    "sendMessage" "sendMessageRetID" "sendDM" "editMessage" "getMessage" "deleteMessage"
+    "sendMessage" "sendMessageRetID" "sendDM" "editMessage" "editMessageNoEscape" "getMessage" "deleteMessage"
     "deleteTrigger" "deleteResponse" "addReactions" "addMessageReactions"
     "deleteAllMessageReactions"
     # Mentions
