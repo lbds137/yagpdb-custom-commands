@@ -17,13 +17,18 @@ YAGPDB stops a template after 1M operations (2.5M with premium). Go's standard
 so every command that needs input or config "fails" (26 of 45 on 2026-09-24), which hides
 real failures.
 
+**Implementation approach:**
+- Treat a `parseArgs` usage error as a pass, or give each command a default argument set
+  and seed the database from `tools/emulator/testdata/initial_db.json`
+
 ### Malformed message links crash staff commands
 `admit_user`, `reject_user`, `screen_user`, `archive` (and `message_link`) take a message link
 but don't check that the regex matched, so a malformed link fails with "index out of range"
 instead of a usage message.
 
 **Implementation approach:**
-- Treat a `parseArgs` usage error as a pass, or give each command a default argument set
+- After `reFind`, reply with the usage message when `$messageLink` is empty, and add a test
+  with a malformed link for each command
 
 ## IDE Integration
 
