@@ -20,6 +20,7 @@ type Snapshot struct {
 	Output      string            `yaml:"output"`
 	Messages    []SnapshotMessage `yaml:"messages,omitempty"`
 	Edits       []SnapshotMessage `yaml:"edits,omitempty"`
+	Files       []SnapshotFile    `yaml:"files,omitempty"`
 	RoleChanges []string          `yaml:"role_changes,omitempty"`
 	Deletions   []string          `yaml:"deletions,omitempty"`
 	Reactions   []string          `yaml:"reactions,omitempty"`
@@ -31,6 +32,13 @@ type SnapshotMessage struct {
 	ChannelID int64  `yaml:"channel_id"`
 	Content   string `yaml:"content,omitempty"`
 	Embed     string `yaml:"embed,omitempty"`
+}
+
+// SnapshotFile is a file attached to a sent message (complexMessage's "file").
+type SnapshotFile struct {
+	ChannelID int64  `yaml:"channel_id"`
+	Filename  string `yaml:"filename"`
+	Content   string `yaml:"content"`
 }
 
 // SnapshotEntry is a database entry after the run. Values are stored as JSON.
@@ -51,6 +59,9 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 	snap := Snapshot{Output: strings.TrimSpace(output)}
 	snap.Messages = snapshotMessages(ctx.SentMessages)
 	snap.Edits = snapshotMessages(ctx.EditedMessages)
+	for _, f := range ctx.FileUploads {
+		snap.Files = append(snap.Files, SnapshotFile{ChannelID: f.ChannelID, Filename: f.Filename, Content: f.Content})
+	}
 	for _, rc := range ctx.RoleChanges {
 		change := fmt.Sprintf("%s role %d for user %d", rc.Action, rc.RoleID, rc.UserID)
 		if rc.Delay > 0 {

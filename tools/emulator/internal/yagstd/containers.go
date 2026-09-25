@@ -1,8 +1,9 @@
 // Copied from YAGPDB (github.com/botlabs-gg/yagpdb, commit 0cf2ec5), common/templates/context.go:
 // the container types (sdict, dict, cslice) and the output limit wrappers. MIT license, see
-// LICENSE-YAGPDB. Changes: package name, and template.UncatchableError from yagtemplate.
+// LICENSE-YAGPDB. Changes: template.UncatchableError from yagtemplate. The package keeps
+// YAGPDB's name, templates, so %T prints these as YAGPDB does ("*templates.SDict").
 
-package yagstd
+package templates
 
 import (
 	"encoding/json"

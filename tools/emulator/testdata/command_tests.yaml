@@ -75,8 +75,8 @@ setup_db:
       "Rule #3": "Keep discussions on topic."
   - user_id: 0
     key: "Knowledge"
-    value:
-      FAQ: "This is the FAQ content."
+    value: # keys title-cased, as kb/simple_db_edit store and look them up ("FAQ" -> "Faq")
+      Faq: "This is the FAQ content."
       Guidelines: "These are the guidelines."
   - user_id: 0
     key: "Directory"
@@ -100,77 +100,106 @@ command_map:
 tests:
   # ===== Utility Commands =====
 
-  - name: "alefbet - Hebrew text conversion"
+  - name: "alefbet - Paleo-Hebrew to Hebrew"
+    snapshot: true
+    template: "../../../utility/alefbet.gohtml"
+    context:
+      args: ["𐤔𐤋𐤌"]
+
+  - name: "alefbet - Rejects text that is already Hebrew"
+    snapshot: true
     template: "../../../utility/alefbet.gohtml"
     context:
       args: ["שלום"]
 
   - name: "alefbet - Arabic to Hebrew"
+    snapshot: true
     template: "../../../utility/alefbet.gohtml"
     context:
       args: ["سلام"]
 
   - name: "atbash - Basic cipher"
+    snapshot: true
     template: "../../../utility/atbash.gohtml"
     context:
       args: ["אבגד"]
 
   - name: "contrast - Valid hex color"
+    snapshot: true
     template: "../../../utility/contrast.gohtml"
     context:
       args: ["#FF5500"]
 
   - name: "contrast - Hex without hash"
+    snapshot: true
     template: "../../../utility/contrast.gohtml"
     context:
       args: ["00FF00"]
 
   - name: "contrast - Role ID"
+    snapshot: true
     template: "../../../utility/contrast.gohtml"
     context:
-      args: ["111111111111111111"]
+      args: ["876543210987654321"]
+      guild:
+        roles:
+          - { id: 876543210987654321, name: "Blurple", color: 5793266, position: 3 }
 
   - name: "contrasts - Multiple colors"
+    snapshot: true
     template: "../../../utility/contrasts.gohtml"
     context:
       args: ["FF0000 00FF00 0000FF"]
 
   - name: "hugemoji - Discord custom emoji"
+    snapshot: true
     template: "../../../utility/hugemoji.gohtml"
     context:
       args: ["<:test:123456789012345678>"]
 
   - name: "hugemoji - Animated emoji"
+    snapshot: true
     template: "../../../utility/hugemoji.gohtml"
     context:
       args: ["<a:dance:987654321098765432>"]
 
   - name: "kb - Knowledge base lookup"
+    snapshot: true
     template: "../../../utility/kb.gohtml"
     context:
       args: ["FAQ"]
 
   - name: "message_pointer - Valid message link"
+    snapshot: true
     template: "../../../utility/message_pointer.gohtml"
     context:
-      args: ["https://discord.com/channels/111222333444555666/123456789012345678/999888777666555444"]
+      args: ["https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444"]
+      messages:
+        - id: 999888777666555444
+          channel_id: 888888888888888888
+          author_id: 222333444555666777
+          content: "Hi everyone! I'm new here and glad to join."
 
   - name: "pyramid - Simple text"
+    snapshot: true
     template: "../../../utility/pyramid.gohtml"
     context:
       args: ["hello"]
 
   - name: "rand_hebrew - Generate random letters"
+    # no snapshot: the letters are random
     template: "../../../utility/rand_hebrew.gohtml"
     context:
       args: ["5"]
 
   - name: "rule - View rule 1"
+    snapshot: true
     template: "../../../utility/rule.gohtml"
     context:
       args: ["1"]
 
   - name: "rule - View rule 2"
+    snapshot: true
     template: "../../../utility/rule.gohtml"
     context:
       args: ["2"]
@@ -178,79 +207,144 @@ tests:
   # ===== Staff Utility Commands =====
 
   - name: "bootstrap - Initialize with command IDs"
+    snapshot: true
     template: "../../../staff_utility/bootstrap.gohtml"
     context:
-      args: ["123", "127", "111111111"]
+      # embed_exec 123, db 130 (setup_db has 129, so bootstrap's write shows), the Staff
+      # role; run in #yagpdb, which bootstrap records as the YAGPDB channel
+      args: ["123", "130", "111111111"]
+      channel: { id: 999999999, name: "yagpdb" }
 
-  - name: "inactivity - Check user inactivity"
+  - name: "inactivity - Prune an inactive member"
+    snapshot: true
     template: "../../../staff_utility/inactivity.gohtml"
     context:
-      args: ["30"]
+      # prune checks the member's Active/Inactive roles; this one is Inactive only
+      args: ["prune", "<@222333444555666777>"]
+      user: { roles: [111111111] }
+      member_roles: { 222333444555666777: [333333333, 121212121] }
+      guild:
+        roles:
+          - { id: 111111111, name: "Staff" }
+          - { id: 222222222, name: "Guest" }
+          - { id: 333333333, name: "Member" }
+          - { id: 444444444, name: "Minor" }
+          - { id: 555555555, name: "Adult" }
+          - { id: 121212121, name: "Inactive" }
+          - { id: 131313131, name: "Active" }
+    setup_db:
+      - user_id: 0
+        key: "Roles"
+        value:
+          Staff: 111111111
+          Guest: 222222222
+          Member: 333333333
+          Minor: 444444444
+          Adult: 555555555
+          Inactive: 121212121
+          Active: 131313131
+      - user_id: 0
+        key: "Inactivity Prune"
+        value:
+          Previous Date: "June 1"
+          Next Date: "September 1"
+          Message Threshold: "10"
+          Minute Threshold: "30"
 
   - name: "role_ping - Ping a role"
+    snapshot: true
     template: "../../../staff_utility/role_ping.gohtml"
     context:
-      args: ["111111111", "Important announcement!"]
+      args: ["Member:Important announcement!"]
 
   - name: "rule_edit - Edit a rule"
+    snapshot: true
     template: "../../../staff_utility/rule_edit.gohtml"
     context:
       args: ["1", "Updated rule text here."]
 
   - name: "simple_db_lookup - Lookup knowledge entry"
+    snapshot: true
     template: "../../../staff_utility/simple_db_lookup.gohtml"
     context:
       args: ["Knowledge", "FAQ"]
 
   - name: "simple_db_edit - Edit knowledge entry"
+    snapshot: true
     template: "../../../staff_utility/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "FAQ", "Updated FAQ content"]
 
+  # `<op>:0` works on the global data (user 0), and only for a member with the Staff
+  # role (Roles "Staff" = 111111111)
+
   # ===== Database Dump =====
 
   - name: "db dump - Dump all keys"
+    # no snapshot: the file name holds the current time
     template: "../../../utility/db.gohtml"
     context:
-      args: ["dump"]
+      args: ["dump:0"]
+      user: { roles: [111111111] }
 
   - name: "db dump - Dump specific key"
+    # no snapshot: the file name holds the current time
     template: "../../../utility/db.gohtml"
     context:
-      args: ["dump", "Global"]
+      args: ["dump:0", "Global"]
+      user: { roles: [111111111] }
 
   # ===== Database Add (Array Append) =====
 
+  # KNOWN BUG (docs/FUTURE_IMPROVEMENTS.md): a stored array is a *templates.Slice, whose
+  # kindOf is "ptr", so db.gohtml takes the dict branch and fails. When it's fixed, drop
+  # expected and turn the snapshot on.
   - name: "db add - Append to array via nested key"
     template: "../../../utility/db.gohtml"
     context:
-      args: ["add", "Directory:Exclude Categories", "New Category"]
+      args: ["add:0", "Directory:Exclude Categories", "New Category"]
+      user: { roles: [111111111] }
+    expected:
+      error_contains: "range can't iterate over New Category"
 
-  - name: "db get - Verify array contents"
+  - name: "db get - Read a nested array"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
-      args: ["get", "Directory:Exclude Categories"]
+      args: ["get:0", "Directory:Exclude Categories"]
+      user: { roles: [111111111] }
 
   # ===== Database Remove (Array Remove) =====
 
+  # KNOWN BUG: the same kindOf fault as db add above
   - name: "db remove - Remove item from array via nested key"
     template: "../../../utility/db.gohtml"
     context:
-      args: ["remove", "Directory:Exclude Categories", "Staff Only"]
+      args: ["remove:0", "Directory:Exclude Categories", "Staff Only"]
+      user: { roles: [111111111] }
+    expected:
+      error_contains: "range can't iterate over Staff Only"
 
   - name: "db remove - Remove with JSON from dict"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
-      args: ["remove", "Global", "{\"Delete Trigger Delay\": \"\"}"]
+      args: ["remove:0", "Global", "{\"Delete Trigger Delay\": \"\"}"]
+      user: { roles: [111111111] }
 
   # ===== Database Edge Cases =====
 
   - name: "db keys - List dictionary keys"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
-      args: ["keys", "Global"]
+      args: ["keys:0", "Global"]
+      user: { roles: [111111111] }
 
   - name: "db delete - Delete a nested key"
+    snapshot: true
     template: "../../../utility/db.gohtml"
     context:
-      args: ["delete", "Directory:Show Empty"]
+      # a truthy value: delete reports a false one (Show Empty) as "No value found"
+      args: ["delete:0", "Directory:Exclude Categories"]
+      user: { roles: [111111111] }

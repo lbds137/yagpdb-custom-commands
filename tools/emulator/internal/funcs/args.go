@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // ArgDef is an argument definition made by carg.

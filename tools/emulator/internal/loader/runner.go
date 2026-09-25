@@ -200,7 +200,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 			ID:        m.ID,
 			ChannelID: m.ChannelID,
 			GuildID:   ctx.GuildID,
-			Author:    types.DiscordUser{ID: m.AuthorID, Username: "MockUser"},
+			Author:    types.DiscordUser{ID: m.AuthorID, Username: "MockUser", Discriminator: "0"},
 			Content:   m.Content,
 		})
 	}

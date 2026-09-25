@@ -24,7 +24,7 @@ func TestDelayedExecCCIsScheduledNotRun(t *testing.T) {
 		t.Fatalf("runs: %+v", runs)
 	}
 	// Types as msgpack gives them back: the registered sdict/dict/cslice as pointers
-	if got := fmt.Sprintf("%T", runs[0].ExecData); got != "*yagstd.SDict" {
+	if got := fmt.Sprintf("%T", runs[0].ExecData); got != "*templates.SDict" { // YAGPDB's own type name, which %T prints
 		t.Errorf("ExecData type %s", got)
 	}
 	if len(ctx.SentMessages) != 0 {

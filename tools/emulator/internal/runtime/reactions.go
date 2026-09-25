@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // Reaction functions, copied from YAGPDB (common/templates/context_funcs.go): the call

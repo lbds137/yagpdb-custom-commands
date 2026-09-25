@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // MockDB provides an in-memory implementation of YAGPDB's database. Like YAGPDB's

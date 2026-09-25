@@ -2,9 +2,36 @@
 
 This document tracks potential enhancements for the YAGPDB custom commands project.
 
+## Known command bugs
+
+Found by the snapshot audit (2026-09-25); each gets a failing test before its fix.
+- `db add`/`remove` report "✅ Value successfully added/removed!" when nothing was written:
+  a target that is neither an array nor a dict (a missing key, say) runs no branch and
+  leaves the input as the value (utility/db.gohtml:204-275).
+- `db add`/`remove` on a stored array fail with "range can't iterate" (uncatchable):
+  `kindOf $existingValue` without the indirect flag says "ptr" for the *templates.Slice
+  a stored array decodes to, so the dict branch runs (db.gohtml:210, :255). Pinned by the
+  "db add/remove ... nested key" tests.
+- `db get`/`delete` treat a stored `false`, `0` or `""` as missing (db.gohtml:181, and the
+  nested walk at :119).
+- `contrast #ffffff` gives embed color 33554430: the User and Light entries share the hex,
+  so the value is added twice (utility/contrast.gohtml:75-82).
+- `contrasts <role ID>` never uses the role: the unanchored color regex finds 6-digit runs
+  inside the ID, and `toInt` gets the whole match list (utility/contrasts.gohtml:20-43).
+- `message_pointer` with a non-link argument fails with "index out of range" instead of
+  its "Invalid Message Link" embed (utility/message_pointer.gohtml:30-35); a long comment
+  is cut by bytes, which can split a character (:43).
+- Minor: role_ping title-cases the role name only when the argument has a `:`;
+  gematria_bootstrap lists `Â`/`â` twice (probably meant `Á`/`á`).
+
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
+- `exec` (a bot command, as `exec "kick"`) is a silent no-op: a snapshot can say "kicked"
+  with no kick recorded. The command_tests mock of embed_exec records only the title,
+  description and fields, so image URLs (hugemoji's .gif/.png) and thumbnails aren't pinned.
+- `yagtest watch` takes one path, and `-stop-on-fail` with several test paths stops only
+  within the current one.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
   entry) serialize as the emulator's types, so their size differs from YAGPDB's. A value
   whose overflow past 100000 bytes is only whitespace is stored whole; YAGPDB stores it
@@ -35,6 +62,9 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   Discord refuses; that the error is 10008 is inferred, not probed.
 - Without -strict, a function over its call limit warns "YAGPDB stops the command here"
   and runs on, even inside `{{try}}`, where YAGPDB's error would go to `{{catch}}` instead.
+- The clock is real (currentTime, the run's start), and random functions aren't seeded, so a
+  command whose output holds the time (db dump's file name) or random values (rand_hebrew)
+  can't be snapshot-tested. A test-level fixed clock and seed would fix that.
 - Discord functions are mocks: role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
   is a no-op, and there are no components or threads yet.
@@ -184,6 +214,14 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
       used to return the previous message's ID after a refused send). Edits set
       EditedTimestamp (2026-09-25)
+- [x] `printf "%T"` gives YAGPDB's type names: the copied standard library keeps YAGPDB's
+      package name, `templates`, so a stored dict is `*templates.SDict` (it was
+      `*yagstd.SDict`, which made the db, db_get_embed and db_get_text dict paths dead in
+      tests). A user prints as username#discriminator and its default avatar follows
+      discordgo (discriminator % 5, or (id >> 22) % 6 on the new system); AvatarURL takes
+      its size argument as there. Mock users have the new system's discriminator "0".
+      Snapshots record attached files. command_tests and db_tests are snapshot tests,
+      except rand_hebrew and db dump (see the clock gap) (2026-09-25)
 - [x] execCC, scheduleUniqueCC and cancelScheduledUniqueCC take the command as an `int`,
       as in YAGPDB (a string or float variable is "wrong type for value"), and follow
       tmplRunCC's order: the command is looked up (an Interval or Crontab command refused)
@@ -269,6 +307,8 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       values (`embed_contains`) (2026-09-25)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")
 - [x] `db dump` operation for exporting database entries
-- [x] Direct array append syntax for `db add`
-- [x] Array remove operation for `db remove`
-- [x] Comprehensive test coverage for db operations
+- [x] Direct array append syntax for `db add` (broken for a stored array: see Known
+      command bugs)
+- [x] Array remove operation for `db remove` (same)
+- [x] Test coverage for db operations (it passed only because the tests never reached the
+      global data; rewritten 2026-09-25)

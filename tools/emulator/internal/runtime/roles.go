@@ -9,7 +9,7 @@ import (
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
+	yagstd "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
 
 // The role functions follow YAGPDB's (common/templates/context_funcs.go). Each comes in

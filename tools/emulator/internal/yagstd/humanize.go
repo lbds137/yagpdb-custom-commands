@@ -3,7 +3,7 @@
 // MIT license, see LICENSE-YAGPDB. Changes: package name; common. prefixes dropped; SnowflakeToTime computes Discord's snowflake
 // time directly instead of through the snowflake package (same epoch, 1420070400000).
 
-package yagstd
+package templates
 
 import (
 	"fmt"
