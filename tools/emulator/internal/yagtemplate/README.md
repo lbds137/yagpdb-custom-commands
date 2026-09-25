@@ -10,7 +10,8 @@ executes templates exactly as YAGPDB does: `try`/`catch`, `while`, `return`,
   license (`LICENSE-YAGPDB`, its changes).
 - Local changes, all marked `EMULATOR PATCH`:
   - `Template.OnMaxOps`: report exceeding the operation limit through a callback
-    instead of stopping, so yagtest can warn outside `-strict`.
+    instead of stopping, so yagtest can warn outside `-strict` (it still stops at 10x
+    the limit, so runaway loops end).
   - Import paths rewritten; doc comments reformatted by current gofmt.
 
 To update: copy `vendor/yagpdb/lib/template` over this directory (after

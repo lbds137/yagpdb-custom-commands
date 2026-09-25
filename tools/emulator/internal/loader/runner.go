@@ -66,12 +66,8 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	// Set up database
 	db := state.NewMockDB(tc.Context.Guild.ID)
 	for _, entry := range tc.SetupDB {
-		value := entry.Value
-		// Convert map[string]interface{} to SDict
-		if m, ok := value.(map[string]interface{}); ok {
-			value = types.SDict(m)
-		}
-		db.Set(entry.UserID, entry.Key, value)
+		// Fixture maps stand in for sdicts a command stored
+		db.Set(entry.UserID, entry.Key, types.FixtureForStorage(entry.Value))
 	}
 
 	// Create execution context
@@ -333,7 +329,7 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 
 		if check.EmbedTitle != "" && found.Embed != nil {
 			// Check embed title
-			if embedMap, ok := found.Embed.(types.SDict); ok {
+			if embedMap, ok := found.Embed.(types.Embed); ok {
 				if title, ok := embedMap["title"].(string); ok {
 					if title != check.EmbedTitle {
 						failures = append(failures,

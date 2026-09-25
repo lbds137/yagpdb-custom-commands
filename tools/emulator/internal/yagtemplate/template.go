@@ -168,7 +168,7 @@ func (t *Template) MaxOps(ops int) *Template {
 }
 
 // OnMaxOps makes exceeding MaxOps call f once, with the operation count and the limit,
-// instead of stopping execution.
+// instead of stopping execution. Execution still stops at 10x the limit.
 //
 // EMULATOR PATCH: not in YAGPDB. yagtest uses it to report the limit as a warning when
 // it isn't running in strict mode.

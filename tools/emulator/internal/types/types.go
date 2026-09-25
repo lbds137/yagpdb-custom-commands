@@ -2,6 +2,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -17,12 +18,20 @@ type (
 	Slice = yagstd.Slice
 )
 
-// ForStorage returns a value as the mock database keeps it: a deep copy, with maps and
-// slices as SDict, Dict and Slice. YAGPDB serializes what dbSet stores, so changing the
-// original afterwards doesn't change the database; the copy gives the emulator the same
-// behavior. Maps from YAML or JSON become SDicts, or Dicts when they have non-string keys.
+// ForStorage returns a value as the mock database keeps it: a deep copy with the types
+// YAGPDB's msgpack round trip (v4, sdict/dict/cslice registered as extensions) gives back.
+// Changing the original afterwards doesn't change the database.
+//   - SDict, Dict and Slice (and pointers to them) stay those types
+//   - other maps stay plain maps (map[string]interface{} when every key is a string)
+//   - other slices and arrays become []interface{}
+//   - signed integers of every kind (time.Duration too) become int64, unsigned uint64
+//   - times come back in the local time zone
+//
+// Map keys are converted the same way, so a dict keyed by int is keyed by int64.
 func ForStorage(v interface{}) interface{} {
 	switch t := v.(type) {
+	case nil:
+		return nil
 	case SDict:
 		return copySDict(t, ForStorage)
 	case *SDict:
@@ -30,8 +39,6 @@ func ForStorage(v interface{}) interface{} {
 			return nil
 		}
 		return copySDict(*t, ForStorage)
-	case map[string]interface{}:
-		return copySDict(t, ForStorage)
 	case Dict:
 		return copyDict(t, ForStorage)
 	case *Dict:
@@ -39,23 +46,6 @@ func ForStorage(v interface{}) interface{} {
 			return nil
 		}
 		return copyDict(*t, ForStorage)
-	case map[interface{}]interface{}:
-		// YAML gives this type for maps with non-string keys (a dict with int keys)
-		allStrings := true
-		for k := range t {
-			if _, ok := k.(string); !ok {
-				allStrings = false
-				break
-			}
-		}
-		if !allStrings {
-			return copyDict(Dict(t), ForStorage)
-		}
-		out := make(SDict, len(t))
-		for k, e := range t {
-			out[k.(string)] = ForStorage(e)
-		}
-		return out
 	case Slice:
 		return copySlice(t, ForStorage)
 	case *Slice:
@@ -63,11 +53,44 @@ func ForStorage(v interface{}) interface{} {
 			return nil
 		}
 		return copySlice(*t, ForStorage)
+	case time.Time:
+		return t.Local()
+	case *time.Time:
+		if t == nil {
+			return nil
+		}
+		return t.Local()
 	}
-	// Other slices ([]string from split, ...) are stored as plain arrays, which is how
-	// YAGPDB's msgpack decoding returns them: []interface{}
 	rv := reflect.ValueOf(v)
-	if rv.IsValid() && (rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array) && rv.Type().Elem().Kind() != reflect.Uint8 {
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return rv.Uint()
+	case reflect.Map:
+		allStrings := true
+		for _, k := range rv.MapKeys() {
+			if k.Kind() != reflect.String && !(k.Kind() == reflect.Interface && k.Elem().Kind() == reflect.String) {
+				allStrings = false
+				break
+			}
+		}
+		if allStrings {
+			out := make(map[string]interface{}, rv.Len())
+			for it := rv.MapRange(); it.Next(); {
+				out[fmt.Sprint(it.Key().Interface())] = ForStorage(it.Value().Interface())
+			}
+			return out
+		}
+		out := make(map[interface{}]interface{}, rv.Len())
+		for it := rv.MapRange(); it.Next(); {
+			out[ForStorage(it.Key().Interface())] = ForStorage(it.Value().Interface())
+		}
+		return out
+	case reflect.Slice, reflect.Array:
+		if rv.Type().Elem().Kind() == reflect.Uint8 {
+			return v // []byte is stored as bytes
+		}
 		out := make([]interface{}, rv.Len())
 		for i := range out {
 			out[i] = ForStorage(rv.Index(i).Interface())
@@ -77,10 +100,51 @@ func ForStorage(v interface{}) interface{} {
 	return v
 }
 
+// FixtureForStorage stores a value from a YAML or JSON test fixture. Fixtures stand in
+// for data a command saved with sdict/dict, so their maps become SDicts, or Dicts when
+// a key isn't a string; the rest is ForStorage.
+func FixtureForStorage(v interface{}) interface{} {
+	switch t := v.(type) {
+	case map[string]interface{}:
+		out := make(SDict, len(t))
+		for k, e := range t {
+			out[k] = FixtureForStorage(e)
+		}
+		return ForStorage(out)
+	case map[interface{}]interface{}:
+		allStrings := true
+		for k := range t {
+			if _, ok := k.(string); !ok {
+				allStrings = false
+				break
+			}
+		}
+		if allStrings {
+			out := make(SDict, len(t))
+			for k, e := range t {
+				out[k.(string)] = FixtureForStorage(e)
+			}
+			return ForStorage(out)
+		}
+		out := make(Dict, len(t))
+		for k, e := range t {
+			out[k] = FixtureForStorage(e)
+		}
+		return ForStorage(out)
+	case []interface{}:
+		out := make(Slice, len(t))
+		for i, e := range t {
+			out[i] = FixtureForStorage(e)
+		}
+		return ForStorage(out)
+	}
+	return ForStorage(v)
+}
+
 // ForTemplate returns a stored value the way YAGPDB's dbGet hands it to a template: a
-// fresh copy in which every sdict, dict and cslice is a pointer (*SDict, *Dict, *Slice),
-// as YAGPDB's msgpack decoding produces them. Changing it doesn't change the database
-// until the template calls dbSet.
+// fresh copy in which every sdict, dict and cslice is a pointer (*SDict, *Dict, *Slice)
+// and times are *time.Time, as msgpack's extension decoding produces them. Changing it
+// doesn't change the database until the template calls dbSet.
 func ForTemplate(v interface{}) interface{} {
 	switch t := v.(type) {
 	case SDict:
@@ -92,6 +156,20 @@ func ForTemplate(v interface{}) interface{} {
 	case Slice:
 		c := copySlice(t, ForTemplate)
 		return &c
+	case time.Time:
+		return &t
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(t))
+		for k, e := range t {
+			out[k] = ForTemplate(e)
+		}
+		return out
+	case map[interface{}]interface{}:
+		out := make(map[interface{}]interface{}, len(t))
+		for k, e := range t {
+			out[k] = ForTemplate(e)
+		}
+		return out
 	case []interface{}:
 		out := make([]interface{}, len(t))
 		for i, e := range t {
@@ -113,7 +191,7 @@ func copySDict(in map[string]interface{}, conv func(interface{}) interface{}) SD
 func copyDict(in Dict, conv func(interface{}) interface{}) Dict {
 	out := make(Dict, len(in))
 	for k, e := range in {
-		out[k] = conv(e)
+		out[ForStorage(k)] = conv(e)
 	}
 	return out
 }
@@ -307,4 +385,70 @@ type MessageSend struct {
 	File     string        // attached file contents, if any
 	Filename string        // with YAGPDB's forced .txt extension
 	HasFile  bool
+}
+
+// Embed is what cembed builds: the dict after YAGPDB's conversion to a Discord embed
+// (CreateEmbed marshals it to JSON and decodes it into discordgo.MessageEmbed). Unknown
+// keys are dropped and wrong value types are errors, as in production.
+type Embed map[string]interface{}
+
+// BuildEmbed converts a dict to an Embed the way YAGPDB's CreateEmbed does.
+func BuildEmbed(m map[string]interface{}) (Embed, error) {
+	encoded, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	var embed messageEmbed
+	if err := json.Unmarshal(encoded, &embed); err != nil {
+		return nil, err
+	}
+	normalized, _ := json.Marshal(embed)
+	var out Embed
+	if err := json.Unmarshal(normalized, &out); err != nil {
+		return nil, err
+	}
+	if out == nil {
+		out = Embed{}
+	}
+	return out, nil
+}
+
+// messageEmbed mirrors discordgo.MessageEmbed's JSON shape (lib/discordgo/message.go).
+type messageEmbed struct {
+	URL         string `json:"url,omitempty"`
+	Type        string `json:"type,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Timestamp   string `json:"timestamp,omitempty"`
+	Color       int    `json:"color,omitempty"`
+	Footer      *struct {
+		Text         string `json:"text,omitempty"`
+		IconURL      string `json:"icon_url,omitempty"`
+		ProxyIconURL string `json:"proxy_icon_url,omitempty"`
+	} `json:"footer,omitempty"`
+	Image     *embedMedia `json:"image,omitempty"`
+	Thumbnail *embedMedia `json:"thumbnail,omitempty"`
+	Video     *embedMedia `json:"video,omitempty"`
+	Provider  *struct {
+		URL  string `json:"url,omitempty"`
+		Name string `json:"name,omitempty"`
+	} `json:"provider,omitempty"`
+	Author *struct {
+		URL          string `json:"url,omitempty"`
+		Name         string `json:"name,omitempty"`
+		IconURL      string `json:"icon_url,omitempty"`
+		ProxyIconURL string `json:"proxy_icon_url,omitempty"`
+	} `json:"author,omitempty"`
+	Fields []*struct {
+		Name   string `json:"name,omitempty"`
+		Value  string `json:"value,omitempty"`
+		Inline bool   `json:"inline,omitempty"`
+	} `json:"fields,omitempty"`
+}
+
+type embedMedia struct {
+	URL      string `json:"url,omitempty"`
+	ProxyURL string `json:"proxy_url,omitempty"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
 }

@@ -16,6 +16,13 @@ template before the test) would test gematria against the real data.
   record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
 - Missing standard functions that need Discord data: `snowflakeToTime`, `humanize*`,
   `roleAbove`, `sanitizeText`, `adjective`/`noun`/`verb`.
+- Role lookups accept IDs, mentions and names everywhere; YAGPDB's `FindRole` accepts a
+  different set per function.
+- `getMember` of the triggering user is a generic mock (no nick, zero JoinedAt), and tests
+  can't set members' JoinedAt or the guild owner. That leaves guest's "within the grace
+  period" path and bump_remind's owner mention untestable.
+- Messages have no `.Link` (directory.gohtml uses it). A trailing backslash in a LIKE pattern
+  is ignored; Postgres errors.
 
 ### Smoke test noise
 `scripts/test-all-templates.sh` runs every command with no arguments and an empty database,

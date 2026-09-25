@@ -1294,7 +1294,9 @@ func (s *state) incrOPs(num int) {
 
 	s.operations += num
 	if s.operations > s.tmpl.maxOps {
-		if s.tmpl.onMaxOps != nil { // EMULATOR PATCH: see OnMaxOps
+		// EMULATOR PATCH: see OnMaxOps. Past 10x the limit, stop anyway, so a runaway loop
+		// can't run forever or exhaust memory.
+		if s.tmpl.onMaxOps != nil && s.operations <= 10*s.tmpl.maxOps {
 			if !s.opsReported {
 				s.opsReported = true
 				s.tmpl.onMaxOps(s.operations, s.tmpl.maxOps)
