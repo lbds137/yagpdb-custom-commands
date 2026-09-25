@@ -222,6 +222,10 @@ func runCommand(args []string) {
 	}
 
 	if err != nil {
+		if output != "" {
+			// YAGPDB sends what the template printed before the error
+			fmt.Println(output)
+		}
 		fmt.Fprintf(os.Stderr, "Execution Error: %v\n", err)
 		printHint(err)
 		printDiagnostics(ctx.Diagnostics)

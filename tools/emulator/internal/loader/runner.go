@@ -108,11 +108,8 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 			result.Failures = append(result.Failures,
 				fmt.Sprintf("expected error containing %q but got: %v", tc.Expected.ErrorContains, execErr))
 		}
-		// If we expected an error and got one, don't check other assertions
-		if execErr != nil && strings.Contains(execErr.Error(), tc.Expected.ErrorContains) {
-			result.Passed = true
-			return result
-		}
+		// An expected error goes on to the other assertions: YAGPDB keeps what the run did
+		// and sends what it printed before the error
 	} else if execErr != nil {
 		result.Error = execErr
 		return result

@@ -342,7 +342,7 @@ func (ctx *ExecutionContext) checkSourceLength(source string) error {
 func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration, overCap bool) (string, error) {
 	if elapsed > maxDuration {
 		if err := ctx.limitBreach(fmt.Errorf("execution took %s; YAGPDB stops custom commands after %s", elapsed.Round(time.Millisecond), maxDuration)); err != nil {
-			return output, err
+			return ctx.response(output), err
 		}
 	}
 	if overCap {
@@ -350,13 +350,21 @@ func (ctx *ExecutionContext) checkOutput(output string, elapsed time.Duration, o
 			return output, err
 		}
 	}
-	if n := utf8.RuneCountInString(strings.TrimSpace(output)); n > maxResponseRunes {
+	return ctx.response(output), nil
+}
+
+// response is the output as YAGPDB sends it (customcommands/bot.go): trimmed, and over
+// 2000 characters replaced by a notice; outside strict mode the full output is kept and
+// the notice is a warning.
+func (ctx *ExecutionContext) response(output string) string {
+	output = strings.TrimSpace(output)
+	if n := utf8.RuneCountInString(output); n > maxResponseRunes {
 		if ctx.Strict {
-			return fmt.Sprintf("Custom command (#%d) response was longer than 2k (contact an admin on the server...)", ctx.CCID), nil
+			return fmt.Sprintf("Custom command (#%d) response was longer than 2k (contact an admin on the server...)", ctx.CCID)
 		}
 		ctx.Warn(KindLimit, "the response is %d characters; YAGPDB replaces responses over %d with a notice", n, maxResponseRunes)
 	}
-	return output, nil
+	return output
 }
 
 // maxOps is YAGPDB's operation limit for this run.
