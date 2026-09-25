@@ -32,9 +32,10 @@ read it at `/home/deck/Projects/yagpdb-custom-commands/vendor/yagpdb/`.
 
 - Fidelity comes from YAGPDB's code: copy the vendor function, and build test fixtures
   (embeds, messages, errors) from what YAGPDB's code produces, never invented shapes.
-- A changed command file (`utility/`, `staff_utility/`, `guests/`) needs Lila to paste it
-  into YAGPDB by hand; the driver reports the batch at the end of a round. A command fix
-  gets a test that fails on the old command (red on HEAD).
+- A changed command file (`utility/`, `staff_utility/`) needs Lila to paste it into YAGPDB
+  by hand; the driver reports the batch at the end of a round. A command fix gets a test
+  that fails on the old command (red on HEAD). `retired/` isn't deployed, so its files
+  never need a paste.
 - A `-}}` alone on its own line doesn't parse in YAGPDB; put it on the previous line.
 - `make ci` fails on stale snapshot entries: after removing or renaming a snapshotted test,
   run `make prune-snapshots`; after an intended output change, `make update-snapshots`,

@@ -116,9 +116,9 @@ Centralized message formatting and delivery:
 ### 2. Business Logic Layer
 
 #### User Management
-- **Guest Processing**: `agree.gohtml`, `admit_user.gohtml`
+- **Guest Processing**: retired (`retired/`); Discord's server join applications replaced it
 - **Role Management**: Automatic role assignment and removal
-- **Status Tracking**: Hiatus, inactivity, screening states
+- **Status Tracking**: Hiatus, inactivity states
 
 #### Content Management
 - **Rule System**: Dynamic rule storage and retrieval

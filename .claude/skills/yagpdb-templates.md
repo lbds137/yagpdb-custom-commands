@@ -4,9 +4,9 @@
 
 ### File Structure
 ```
-guests/          - User onboarding commands
 staff_utility/   - Admin/moderation tools
 utility/         - General-purpose commands
+retired/         - Commands no longer deployed (see retired/README.md)
 ```
 
 ### Common Patterns

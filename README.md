@@ -6,7 +6,7 @@ A comprehensive suite of custom commands for the [YAGPDB Discord bot](https://gi
 
 ## Overview
 
-This repository contains `.gohtml` template files that implement custom commands using YAGPDB's templating system. The commands are organized into three main categories, each serving different operational needs for Discord server administration.
+This repository contains `.gohtml` template files that implement custom commands using YAGPDB's templating system. The commands are organized into two main categories, each serving different operational needs for Discord server administration, plus a `retired/` folder for commands no longer deployed.
 
 ## Architecture
 
@@ -30,41 +30,23 @@ Most commands depend on two foundational utilities:
 
 ## Command Categories
 
-### 🎭 Guests (`guests/`)
-
-Commands for managing guest users and onboarding processes:
-
-- **`agree.gohtml`** - User agreement to server rules, assigns roles automatically
-- **`agree_clean.gohtml`** - Cleaned version of the agreement command
-
-**Key Features:**
-- Automatic role assignment (Agreement, Announcement Notify, Discussion Notify, Event Notify)
-- Logging to designated channels
-- Prevention of duplicate agreements
-
 ### 🛠️ Staff Utility (`staff_utility/`)
 
 Administrative and moderation tools for server staff:
 
-- **`admit_user.gohtml`** - Admit guests to full membership with role management
-- **`archive.gohtml`** - Archive system functionality
 - **`batch_delrep.gohtml`** - Batch delete and reputation management
 - **`bootstrap.gohtml`** - Initial system setup and configuration
 - **`bump_reset.gohtml`** - Server bump reset functionality
 - **`directory.gohtml`** - User directory management
 - **`gematria_bootstrap.gohtml`** - Initialize gematria calculation system
-- **`guest.gohtml`** - Guest user management
 - **`hiatus.gohtml`** - User hiatus management
 - **`inactivity.gohtml`** - Inactivity tracking and management
-- **`reject_user.gohtml`** - Reject guest applications
 - **`role_ping.gohtml`** - Role-based ping management
 - **`rule_edit.gohtml`** - Server rule editing interface
 - **`rules.gohtml`** - Display server rules
-- **`screen_user.gohtml`** - Screen potential users
 - **`simple_db_edit.gohtml`** - Simplified database editing interface
 - **`simple_db_lookup.gohtml`** - Database lookup utility
 - **`staff_roles.gohtml`** - Staff role management
-- **`ticket_adduser_exec.gohtml`** - Add users to support tickets
 
 **Key Features:**
 - Advanced permission checking
@@ -114,6 +96,11 @@ General-purpose utility commands for all users:
 
 #### Conversion and Calculation
 - **`hex_to_int.gohtml`** - Hexadecimal to integer conversion
+
+### 📦 Retired (`retired/`)
+
+Commands no longer deployed to the live server, kept for reference. See
+[`retired/README.md`](retired/README.md) for the full list and why they were retired.
 
 ## Technical Implementation
 
@@ -239,9 +226,7 @@ The system expects these database categories to be available:
 
 ### Staff Commands
 ```
-/admit_user [message_link] adult    # Admit user as adult member
 /simple_db_edit Admin "Welcome Message" "Welcome to our server!"
-/screen_user [message_link]         # Screen a potential user
 ```
 
 ### Database Operations
@@ -309,9 +294,9 @@ production. On top of that:
 ### Project Structure
 
 ```
-├── guests/           # Guest onboarding commands
 ├── staff_utility/    # Staff/admin commands
 ├── utility/          # General utility commands
+├── retired/          # Commands no longer deployed
 ├── tools/emulator/   # Local testing emulator
 ├── docs/             # Documentation
 └── scripts/          # Development scripts

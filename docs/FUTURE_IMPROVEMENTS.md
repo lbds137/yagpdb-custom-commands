@@ -153,6 +153,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 
 ## Completed Improvements
 
+- [x] admit_user, archive, guest, reject_user, screen_user and ticket_adduser_exec moved
+      from staff_utility/ to retired/: Discord's server join applications replaced guest
+      screening, so the owner deleted them from YAGPDB. Kept, unmaintained, for anyone who
+      wants the flow; still covered by admission_tests.yaml (2026-09-25)
+
 - [x] A failed run's show_errors message is now checked against Discord's 2000-character
       limit too (YAGPDB's ChannelMessageSend error is discarded, so an over-limit message
       silently never posts); non-strict warns and still records it, strict warns and drops
