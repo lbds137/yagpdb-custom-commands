@@ -1,8 +1,0 @@
-{{- /* Mock embed_exec that sends its embed, so tests can assert the channel, title, fields,
-  color and images */ -}}
-{{ $embed := sdict "title" .ExecData.Title "description" (or .ExecData.Description "") }}
-{{ with .ExecData.Fields }}{{ $embed.Set "fields" . }}{{ end }}
-{{ with .ExecData.Color }}{{ $embed.Set "color" . }}{{ end }}
-{{ with .ExecData.ImageURL }}{{ $embed.Set "image" (sdict "url" .) }}{{ end }}
-{{ with .ExecData.ThumbnailURL }}{{ $embed.Set "thumbnail" (sdict "url" .) }}{{ end }}
-{{ sendMessage (or .ExecData.ChannelID nil) (cembed $embed) }}
