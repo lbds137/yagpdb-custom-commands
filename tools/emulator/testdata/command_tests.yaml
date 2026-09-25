@@ -646,3 +646,82 @@ tests:
       sent_messages:
         - { embed_contains: '"description": "```\n\"\"\n```"' }
         - { embed_contains: "Value successfully retrieved!" }
+
+  # ===== db_get_text / db_get_embed =====
+  # (a numeric first argument reads that user's data; 0 is the server's)
+
+  - name: "db_get_text - A stored false is a value"
+    template: "../../../utility/db_get_text.gohtml"
+    context:
+      args: ["0", "Directory:Show Empty"]
+    assertions:
+      sent_messages: [{ content_contains: "### Directory > Show Empty\n\n```\nfalse\n```" }]
+
+  - name: "db_get_text - A key in a nested dictionary made by db set"
+    template: "../../../utility/db_get_text.gohtml"
+    context:
+      args: ["0", "J:Inner:a"]
+    setup_templates: ["templates/json_dict_setup.gohtml"]
+    assertions:
+      sent_messages: [{ content_contains: "### J > Inner > a\n\n```\n1\n```" }]
+
+  - name: "db_get_text - A key past a text value finds nothing"
+    template: "../../../utility/db_get_text.gohtml"
+    context:
+      args: ["0", "Admin:Welcome Message:Deeper"]
+    assertions:
+      sent_messages: [{ content_equals: "### Admin > Welcome Message > Deeper\n\n(no result found)" }]
+
+  - name: "db_get_text - A missing nested key keeps its title"
+    template: "../../../utility/db_get_text.gohtml"
+    context:
+      args: ["0", "Nope:x"]
+    assertions:
+      sent_messages: [{ content_equals: "### Nope > x\n\n(no result found)" }]
+
+  - name: "db_get_embed - A stored 0 is a value"
+    template: "../../../utility/db_get_embed.gohtml"
+    context:
+      args: ["0", "Nested:n"]
+    setup_db:
+      - { user_id: 0, key: "Nested", value: { n: 0 } }
+    assertions:
+      sent_messages: [{ embed_contains: '"description": "```\n0\n```"' }]
+
+  - name: "db_get_text - A key without a colon"
+    template: "../../../utility/db_get_text.gohtml"
+    context:
+      args: ["0", "Admin"]
+    assertions:
+      sent_messages: [{ content_equals: "### Admin\n\n```\n{\n\t\"Welcome Message\": \"Welcome to the server!\"\n}\n```" }]
+
+  - name: "db_get_text - A missing key without a colon"
+    template: "../../../utility/db_get_text.gohtml"
+    context:
+      args: ["0", "Nope"]
+    assertions:
+      sent_messages: [{ content_equals: "### Nope\n\n(no result found)" }]
+
+  - name: "db_get_text - A stored empty text is a value"
+    template: "../../../utility/db_get_text.gohtml"
+    context:
+      args: ["0", "Empty"]
+    setup_db:
+      - { user_id: 0, key: "Empty", value: "" }
+    assertions:
+      sent_messages: [{ content_equals: "### Empty\n\n\"\"" }]
+
+  - name: "db_get_embed - A key without a colon"
+    template: "../../../utility/db_get_embed.gohtml"
+    context:
+      args: ["0", "Admin"]
+    assertions:
+      sent_messages: [{ embed_title: "Admin", embed_contains: "Welcome to the server!" }]
+
+  - name: "db_get_embed - A key in a nested dictionary made by db set"
+    template: "../../../utility/db_get_embed.gohtml"
+    context:
+      args: ["0", "J:Inner:a"]
+    setup_templates: ["templates/json_dict_setup.gohtml"]
+    assertions:
+      sent_messages: [{ embed_title: "J > Inner > a", embed_contains: '"description": "```\n1\n```"' }]

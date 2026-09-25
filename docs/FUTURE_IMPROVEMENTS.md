@@ -4,13 +4,8 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 ## Known command bugs
 
-The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
-gets a failing test first.
-- db_get_text and db_get_embed walk nested keys with the old db.gohtml walk (read, not
-  yet run): a stored `false`, `0` or `""` reads as missing, a dictionary inside JSON
-  stored by `db set` (a plain map) is unreachable, and a key past a value that isn't a
-  dictionary returns that value (db_get_text.gohtml:49-70, db_get_embed.gohtml:56-77).
-  Next unit: port db.gohtml's walk.
+None open: the snapshot audit's list (2026-09-25) is fixed (see Completed Improvements).
+Each fix gets a failing test first.
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
@@ -335,6 +330,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
         only the error (the message went out unpinged).
       - `admit_user` with no Welcome Message skips the welcome; it stopped there with
         "invalid value; expected string", before the admission record.
+- [x] db_get_text and db_get_embed walk nested keys as db does: a stored `false`, `0` or
+      `""` is a value, a dictionary inside JSON stored by `db set` is reached, a key past
+      a value that isn't a dictionary finds nothing, and a missing nested key keeps its
+      title (it was blank) (2026-09-25)
 - [x] A test's `clock:` fixes the run's clock (currentTime, humanizeTimeSinceDays,
       message timestamps, members' join times, database entry times and expiry) and
       `seed:` seeds randInt, shuffle, adjective, noun and verb, so db dump and rand_hebrew
