@@ -47,6 +47,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]  # run first, same DB
   command_map: { 1: "templates/recording_embed_exec.gohtml" }  # execCC targets; a target's
                                       # output is a sent message in its channel, as in YAGPDB
+                                      # (a failed one: YAGPDB's error message)
   expected:
     output_contains: "..."            # also output_equals, output_matches, error_contains
                                       # (with error_contains, the other checks still run)

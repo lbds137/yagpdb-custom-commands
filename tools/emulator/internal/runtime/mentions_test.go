@@ -91,18 +91,18 @@ func TestAllowedMentionsErrorsAsYAGPDB(t *testing.T) {
 	}
 }
 
-// An execCC child's response is sent to its channel with its own pings; an empty or failed
-// one sends nothing (the failure is a warning)
+// An execCC child's response is sent to its channel with its own pings, an empty one isn't,
+// and a failed one sends its output and YAGPDB's error message, pinging no one (and warns)
 func TestExecCCResponseIsSent(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir+"/child.gohtml", "  {{.ExecData.Text}} <@5> <@&20> {{mentionRoleID 10}}\n")
 	writeFile(t, dir+"/sends.gohtml", `{{sendMessage nil "sent"}} reply`)
 	writeFile(t, dir+"/quiet.gohtml", `{{sendMessage nil "quiet"}}  `)
-	writeFile(t, dir+"/fails.gohtml", `partial{{.ExecData.Missing.Field}}`)
+	writeFile(t, dir+"/fails.gohtml", `partial <@5>{{.ExecData.Missing.Field}}`)
 	ctx := roleCtx()
 	ctx.TemplateBaseDir = dir
 	ctx.CommandIDMap = map[int64]string{7: "child.gohtml", 8: "sends.gohtml", 9: "fails.gohtml", 10: "quiet.gohtml"}
-	src := `{{execCC 7 42 0 (sdict "Text" "hi")}}{{execCC 8 nil 0 nil}}{{execCC 9 nil 0 nil}}{{execCC 10 nil 0 nil}}`
+	src := `{{execCC 7 42 0 (sdict "Text" "hi")}}{{execCC 8 nil 0 nil}}{{execCC 9 43 0 nil}}{{execCC 10 nil 0 nil}}`
 	if _, err := run(t, ctx, src); err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,11 @@ func TestExecCCResponseIsSent(t *testing.T) {
 	// A child's own sends come before its response
 	here := ctx.ChannelID
 	want := []string{"42|hi <@5> <@&20> <@&10>|<@5> <@&10>", fmt.Sprintf("%d|sent|nobody", here),
-		fmt.Sprintf("%d|reply|nobody", here), fmt.Sprintf("%d|quiet|nobody", here)}
+		fmt.Sprintf("%d|reply|nobody", here),
+		"43|partial <@5>\nAn error caused the execution of the custom command template to stop:\n" +
+			"`Failed executing CC #9, line 1, row 23: executing \"CC #9\" at <.ExecData.Missing.Field>: " +
+			"nil pointer evaluating interface {}.Missing`\n```1    partial <@5>{{.ExecData.Missin...\n```|nobody",
+		fmt.Sprintf("%d|quiet|nobody", here)}
 	if !slices.Equal(got, want) {
 		t.Errorf("sent %q, want %q", got, want)
 	}
