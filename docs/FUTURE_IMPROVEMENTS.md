@@ -37,8 +37,6 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   set `EditedTimestamp`; message builders read keys as a map, so a repeated key (two
   `"embed"`s) counts once. A test message is the bot's to edit only with `author_id:
   1234567890`.
-- Message assertions match the first message per channel, and `content_equals: ""` checks
-  nothing, so an emptied content can't be asserted.
 - A LIKE pattern is matched against the rows the query's other conditions select, so the
   trailing-escape error comes only from a row whose match reaches the escape. Postgres
   also runs LIKE while planning, on the key column's statistics (every server's keys),
@@ -158,6 +156,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] Message checks take `nth` (the nth message in the channel, or of all; 1 = first, the
+      default), and an explicit `""` in content_equals or output_equals asserts emptiness
+      (2026-09-25)
 - [x] A command's header can set its error settings: "Show errors: `false`" (a failed run
       then sends its partial output as a normal response) and "Redirect errors: `<channel
       ID>`" (where its error message goes). A failed run, top-level or execCC, posts the

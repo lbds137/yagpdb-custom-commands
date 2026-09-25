@@ -58,13 +58,14 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # (a failed one: YAGPDB's error message, unless its
                                       # header turns Show errors off)
   expected:
-    output_contains: "..."            # also output_equals, output_matches, error_contains
+    output_contains: "..."            # also output_equals ("" = no output), output_matches, error_contains
                                       # (with error_contains, the other checks still run)
     warning_contains: "..."
   assertions:
     db_checks: [{ user_id: 0, key: "K", value_equals: 1 }]   # or value_contains, not_exists
-    sent_messages: [{ channel_id: 9, embed_title: "Title" }]  # or embed_contains: "`441`"
-    edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits, first per channel (as edited)
+    sent_messages: [{ channel_id: 9, embed_title: "Title" }]  # or embed_contains: "`441`";
+                                      # nth: 2 = the second message there (default: the first)
+    edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits (as edited); "" = empty
     role_changes: [{ user_id: 1, role_id: 111, action: "add" }]  # delay: 90s for a scheduled one
     no_role_changes: true             # give/take of a role they have/lack, or a non-member, change nothing
     response_pings: { everyone: true, users: [1], roles: [111] }  # exactly who the output notifies

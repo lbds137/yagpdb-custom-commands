@@ -111,11 +111,11 @@ type DBEntry struct {
 
 // ExpectedResult defines expected output.
 type ExpectedResult struct {
-	OutputEquals    string `yaml:"output_equals"`    // Exact match
-	OutputContains  string `yaml:"output_contains"`  // Substring match
-	OutputMatches   string `yaml:"output_matches"`   // Regex match
-	ErrorContains   string `yaml:"error_contains"`   // Expected error
-	WarningContains string `yaml:"warning_contains"` // Expected diagnostic
+	OutputEquals    *string `yaml:"output_equals"`    // Exact match ("" asserts no output)
+	OutputContains  string  `yaml:"output_contains"`  // Substring match
+	OutputMatches   string  `yaml:"output_matches"`   // Regex match
+	ErrorContains   string  `yaml:"error_contains"`   // Expected error
+	WarningContains string  `yaml:"warning_contains"` // Expected diagnostic
 }
 
 // Assertions defines post-execution checks.
@@ -161,12 +161,13 @@ type DBCheck struct {
 
 // MessageCheck defines a sent message assertion.
 type MessageCheck struct {
-	ChannelID       int64  `yaml:"channel_id"`
-	ContentEquals   string `yaml:"content_equals"`
-	ContentContains string `yaml:"content_contains"`
-	HasEmbed        bool   `yaml:"has_embed"`
-	EmbedTitle      string `yaml:"embed_title"`
-	EmbedContains   string `yaml:"embed_contains"` // Substring of the embed as JSON (title, fields, ...)
+	ChannelID       int64   `yaml:"channel_id"`
+	Nth             int     `yaml:"nth"`            // which message in the channel (or of all): 1 = first, the default
+	ContentEquals   *string `yaml:"content_equals"` // "" asserts empty content
+	ContentContains string  `yaml:"content_contains"`
+	HasEmbed        bool    `yaml:"has_embed"`
+	EmbedTitle      string  `yaml:"embed_title"`
+	EmbedContains   string  `yaml:"embed_contains"` // Substring of the embed as JSON (title, fields, ...)
 	// Pings is exactly who the message notifies (edits notify no one)
 	Pings *PingsCheck `yaml:"pings"`
 }
