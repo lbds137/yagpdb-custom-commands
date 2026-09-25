@@ -19,6 +19,11 @@ setup_db:
 command_map:
   1: "templates/recording_embed_exec.gohtml"
 
+defaults:
+  guild:
+    channels:
+      - { id: 900000000000000001, name: "yagpdb" }
+
 tests:
   - name: "gematria: a Hebrew word and its reduction"
     template: "../../../utility/gematria.gohtml"

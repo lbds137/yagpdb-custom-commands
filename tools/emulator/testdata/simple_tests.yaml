@@ -1,5 +1,10 @@
 name: "Simple Template Tests"
 
+defaults:
+  guild:
+    channels:
+      - { id: 900000000000000002, name: "introduction" }
+
 tests:
   - name: "Basic addition"
     template_source: "{{ add 2 3 }}"

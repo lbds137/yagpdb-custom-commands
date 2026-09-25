@@ -4,6 +4,7 @@ package runtime
 import (
 	"cmp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
@@ -140,6 +141,12 @@ type ExecutionContext struct {
 
 	// Available roles (for hasRole checks)
 	AvailableRoles map[int64]types.CtxRole
+	// Channels are the server's channels by ID (name as value), when the test declares them;
+	// empty, any channel ID is taken to exist (see channelArg)
+	Channels map[int64]string
+	// ChannelOrder is the declared channels' order, which stands in for their position
+	// (YAGPDB looks names up in position order)
+	ChannelOrder []int64
 
 	// Command ID mapping (for execCC)
 	CommandIDMap map[int64]string
@@ -169,6 +176,7 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 		Counters:       make(map[string]int),
 		StartTime:      time.Now(),
 		AvailableRoles: make(map[int64]types.CtxRole),
+		Channels:       make(map[int64]string),
 		CommandIDMap:   make(map[int64]string),
 		MaxExecCCDepth: 2, // YAGPDB default
 	}
@@ -503,4 +511,33 @@ func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
 		return types.CtxMessage{ChannelID: ctx.ChannelID, GuildID: ctx.GuildID, Author: botUser}
 	}
 	return message
+}
+
+// channelNamed is the ID of the first channel, in position order, with that name (any
+// case), or 0; no channel has an empty name. Without declared channels only the current
+// one has a name.
+func (ctx *ExecutionContext) channelNamed(name string) int64 {
+	if name == "" {
+		return 0
+	}
+	if len(ctx.Channels) == 0 {
+		if strings.EqualFold(name, ctx.ChannelName) {
+			return ctx.ChannelID
+		}
+		return 0
+	}
+	for _, id := range ctx.ChannelOrder {
+		if strings.EqualFold(name, ctx.Channels[id]) {
+			return id
+		}
+	}
+	return 0
+}
+
+// channelName is the name of the channel with that ID: the current one's, or a declared one's.
+func (ctx *ExecutionContext) channelName(id int64) string {
+	if id == ctx.ChannelID {
+		return ctx.ChannelName
+	}
+	return ctx.Channels[id]
 }

@@ -10,6 +10,14 @@ defaults:
   channel:
     id: 123456789012345678
   guild:
+    channels:
+      - { id: 900000000000000001, name: "yagpdb" }
+      - { id: 900000000000000002, name: "introduction" }
+      - { id: 900000000000000003, name: "introduction-archive" }
+      - { id: 900000000000000004, name: "welcome" }
+      - { id: 900000000000000005, name: "admission-log" }
+      - { id: 900000000000000006, name: "rejection-log" }
+      - { id: 999999999, name: "ticket" }
     id: 111222333444555666
     name: "Test Server"
     roles:

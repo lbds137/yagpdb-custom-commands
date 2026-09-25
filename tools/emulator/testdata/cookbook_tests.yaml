@@ -5,6 +5,8 @@ defaults:
     id: 900000000000000001
     username: "Ari"
   guild:
+    channels:
+      - { id: 222222222222222222, name: "mod-log" }
     roles:
       - { id: 111111111111111111, name: "Staff" }
       - { id: 333333333333333333, name: "Member" }

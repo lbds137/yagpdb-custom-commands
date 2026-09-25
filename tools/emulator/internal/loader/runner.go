@@ -200,6 +200,14 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 			ctx.MemberJoinedAgo[id] = time.Duration(ago)
 		}
 	}
+	for _, ch := range tc.Context.Guild.Channels {
+		ctx.Channels[ch.ID] = ch.Name
+		ctx.ChannelOrder = append(ctx.ChannelOrder, ch.ID)
+	}
+	if _, ok := ctx.Channels[ctx.ChannelID]; len(ctx.Channels) > 0 && !ok {
+		ctx.Channels[ctx.ChannelID] = ctx.ChannelName // the test's channel, after the declared ones
+		ctx.ChannelOrder = append(ctx.ChannelOrder, ctx.ChannelID)
+	}
 	for _, role := range tc.Context.Guild.Roles {
 		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position}
 	}
