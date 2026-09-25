@@ -516,7 +516,8 @@ func (e *Engine) getChannel(channel interface{}) *types.CtxChannel {
 	if id == 0 {
 		return nil
 	}
-	return &types.CtxChannel{ID: id, GuildID: e.ctx.GuildID, Name: e.ctx.channelName(id)}
+	c := e.ctx.channelState(id)
+	return &c
 }
 
 func (e *Engine) getChannelOrThread(channelID interface{}) *types.CtxChannel {
@@ -813,6 +814,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		AvailableRoles:           e.ctx.AvailableRoles,
 		Channels:                 e.ctx.Channels,
 		ChannelOrder:             e.ctx.ChannelOrder,
+		ChannelDetails:           e.ctx.ChannelDetails,
 		OwnerID:                  e.ctx.OwnerID,
 		BotCannotMentionEveryone: e.ctx.BotCannotMentionEveryone,
 		CommandIDMap:             e.ctx.CommandIDMap,

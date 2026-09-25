@@ -216,3 +216,34 @@ func TestGetMessageWithoutATrigger(t *testing.T) {
 		t.Errorf("reaction execCC child: %v, %+v", err, ctx.SentMessages)
 	}
 }
+
+// Declared details reach .Channel, getChannel and .Guild.Channels, which is in position
+// order; a name finds text, voice, announcement and forum channels, not a category
+func TestChannelDetails(t *testing.T) {
+	ctx := channelCtx()
+	ctx.Channels[50] = "Info"
+	ctx.Channels[51] = "info"
+	ctx.ChannelOrder = append(ctx.ChannelOrder, 50, 51)
+	ctx.ChannelDetails = map[int64]types.CtxChannel{
+		ctx.ChannelID: {ID: ctx.ChannelID, Name: "general", Topic: "t", NSFW: true, Position: 3, ParentID: 50},
+		42:            {ID: 42, Name: "Staff-Log", Type: channelTypeVoice, Position: 1},
+		50:            {ID: 50, Name: "Info", Type: 4, Position: 0},
+		51:            {ID: 51, Name: "info", Type: channelTypeForum, Position: 2},
+	}
+	ctx.SortChannels()
+	out, err := run(t, ctx, `{{.Channel.Topic}} {{.Channel.NSFW}} {{.Channel.ParentID}} {{(getChannel 42).Type}} `+
+		`{{range .Guild.Channels}}{{.ID}},{{end}} {{(getChannel "info").ID}} {{(getChannel "staff-log").ID}}`)
+	want := fmt.Sprintf("t true 50 2 50,42,51,%d, 51 42", ctx.ChannelID)
+	if err != nil || out != want {
+		t.Errorf("got %q, %v; want %q", out, err, want)
+	}
+}
+
+// IsForum follows the type, as YAGPDB's CtxChannelFromCS sets it
+func TestChannelIsForum(t *testing.T) {
+	ctx := channelCtx()
+	ctx.ChannelDetails = map[int64]types.CtxChannel{ctx.ChannelID: {ID: ctx.ChannelID, Name: "general", Type: channelTypeForum}}
+	if out, err := run(t, ctx, `{{.Channel.IsForum}} {{(getChannel 42).IsForum}}`); err != nil || out != "true false" {
+		t.Errorf("got %q, %v", out, err)
+	}
+}

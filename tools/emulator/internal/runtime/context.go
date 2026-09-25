@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -192,8 +193,10 @@ type ExecutionContext struct {
 	// Channels are the server's channels by ID (name as value), when the test declares them;
 	// empty, any channel ID is taken to exist (see channelArg)
 	Channels map[int64]string
-	// ChannelOrder is the declared channels' order, which stands in for their position
-	// (YAGPDB looks names up in position order)
+	// ChannelDetails are the declared channels' type, parent, position, topic and NSFW
+	ChannelDetails map[int64]types.CtxChannel
+	// ChannelOrder is the channels in YAGPDB's order (.Guild.Channels, name lookups):
+	// sorted by position as its state tracker sorts them (SortChannels)
 	ChannelOrder []int64
 
 	// Command ID mapping (for execCC)
@@ -281,10 +284,13 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	member := ctx.member(ctx.UserID)
 
 	// Build channel object
-	channel := types.CtxChannel{
-		ID:      ctx.ChannelID,
-		GuildID: ctx.GuildID,
-		Name:    ctx.ChannelName,
+	channel := ctx.channelState(ctx.ChannelID)
+	if channel.Name == "" {
+		channel.Name = ctx.ChannelName
+	}
+	guildChannels := make([]types.CtxChannel, 0, len(ctx.ChannelOrder))
+	for _, id := range ctx.ChannelOrder {
+		guildChannels = append(guildChannels, ctx.channelState(id))
 	}
 
 	// With no roles declared, @everyone, as getRole has it
@@ -297,10 +303,11 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		ownerID = ctx.UserID
 	}
 	guild := types.CtxGuild{
-		ID:      ctx.GuildID,
-		Name:    ctx.GuildName,
-		OwnerID: ownerID,
-		Roles:   guildRoles,
+		ID:       ctx.GuildID,
+		Name:     ctx.GuildName,
+		OwnerID:  ownerID,
+		Roles:    guildRoles,
+		Channels: guildChannels,
 	}
 
 	message := ctx.message()
@@ -644,7 +651,8 @@ func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
 
 // channelNamed is the ID of the first channel, in position order, with that name (any
 // case), or 0; no channel has an empty name. Without declared channels only the current
-// one has a name.
+// one has a name. As in YAGPDB's baseChannelArg, only text, voice, announcement and forum
+// channels are found by name (not categories).
 func (ctx *ExecutionContext) channelNamed(name string) int64 {
 	if name == "" {
 		return 0
@@ -656,12 +664,56 @@ func (ctx *ExecutionContext) channelNamed(name string) int64 {
 		return 0
 	}
 	for _, id := range ctx.ChannelOrder {
-		if strings.EqualFold(name, ctx.Channels[id]) {
-			return id
+		switch ctx.channelState(id).Type {
+		case channelTypeText, channelTypeVoice, channelTypeNews, channelTypeForum:
+			if strings.EqualFold(name, ctx.Channels[id]) {
+				return id
+			}
 		}
 	}
 	return 0
 }
+
+// Discord's channel types (discordgo.ChannelType) the emulator tells apart
+const (
+	channelTypeText  = 0
+	channelTypeVoice = 2
+	channelTypeNews  = 5
+	channelTypeForum = 15
+)
+
+// channelState is the channel as YAGPDB's state tracker has it: a declared channel's
+// details, or just its ID and name.
+func (ctx *ExecutionContext) channelState(id int64) types.CtxChannel {
+	c, ok := ctx.ChannelDetails[id]
+	if !ok {
+		c = types.CtxChannel{ID: id, Name: ctx.channelName(id)}
+	}
+	c.GuildID = ctx.GuildID
+	c.IsForum = c.Type == channelTypeForum // as CtxChannelFromCS sets it
+	return c
+}
+
+// SortChannels puts ChannelOrder in YAGPDB's order: its state tracker sorts a server's
+// channels by position with sort.Sort (dstate.Channels), which isn't stable, so channels
+// with the same position keep the order that sort leaves them in, from the declared one.
+func (ctx *ExecutionContext) SortChannels() {
+	states := make(channelsByPosition, len(ctx.ChannelOrder))
+	for i, id := range ctx.ChannelOrder {
+		states[i] = ctx.channelState(id)
+	}
+	sort.Sort(states)
+	for i, c := range states {
+		ctx.ChannelOrder[i] = c.ID
+	}
+}
+
+// channelsByPosition is dstate.Channels (lib/dstate/helpers.go).
+type channelsByPosition []types.CtxChannel
+
+func (r channelsByPosition) Len() int           { return len(r) }
+func (r channelsByPosition) Less(i, j int) bool { return r[i].Position < r[j].Position }
+func (r channelsByPosition) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 
 // channelName is the name of the channel with that ID: the current one's, or a declared one's.
 func (ctx *ExecutionContext) channelName(id int64) string {

@@ -464,3 +464,14 @@ func TestClockAndSeedFromYAML(t *testing.T) {
 		}
 	}
 }
+
+// A declared channel that is the test's channel has its declared name everywhere
+func TestTestChannelTakesItsDeclaredName(t *testing.T) {
+	tc := &TestCase{Name: "n", TemplateSource: `{{.Channel.Name}} {{(getChannel nil).Name}}`}
+	tc.Context.Channel = ChannelDef{ID: 99, Name: "here"}
+	tc.Context.Guild.Channels = []ChannelDef{{ID: 99, Name: "other"}}
+	tc.applyDefaults()
+	if res := NewRunner(RunnerConfig{}).RunTest(tc); res.Error != nil || res.Output != "other other" {
+		t.Errorf("got %q, %v", res.Output, res.Error)
+	}
+}

@@ -269,3 +269,18 @@ tests:
       sent_messages:
         - { channel_id: 123456789012345678, embed_title: "Invalid User" }
 
+
+  # ticket_adduser_exec (screen_user's execCC target, a recording mock in its tests)
+  - name: "ticket_adduser_exec: adds the user to the ticket"
+    template: "../../../staff_utility/ticket_adduser_exec.gohtml"
+    context:
+      exec_data: { UserID: 500000000000000001 }
+    assertions:
+      execs: [{ line: 'ticket adduser "500000000000000001"', admin: false }]
+
+  - name: "ticket_adduser_exec: no user ID, no exec"
+    template: "../../../staff_utility/ticket_adduser_exec.gohtml"
+    context:
+      exec_data: { UserID: "not an ID" }
+    assertions:
+      execs: []
