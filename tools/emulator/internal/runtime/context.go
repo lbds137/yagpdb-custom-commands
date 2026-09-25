@@ -269,14 +269,6 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		// Message
 		"Message": message,
 
-		// ExecData (from execCC) - use empty SDict if nil to prevent nil pointer errors
-		"ExecData": func() interface{} {
-			if ctx.ExecData == nil {
-				return types.SDict{}
-			}
-			return ctx.ExecData
-		}(),
-
 		// Bot user (simplified)
 		"BotUser": botUser,
 
@@ -295,6 +287,15 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 
 		// Nil constant
 		"nil": nil,
+	}
+
+	// An immediate execCC sets ExecData even when it is nil, so .ExecData.Key errors there;
+	// other runs only have it when there is data (delayed runs: DelayedRunCCData.UserData)
+	if ctx.ExecCCDepth > 0 || ctx.ExecData != nil {
+		data["ExecData"] = ctx.ExecData
+	}
+	if ctx.ExecCCDepth > 0 {
+		data["StackDepth"] = ctx.ExecCCDepth
 	}
 
 	if ctx.Reaction != nil {

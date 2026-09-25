@@ -596,6 +596,39 @@ func TestExecCCEditsAreRecorded(t *testing.T) {
 	}
 }
 
+func TestExecDataIsSetOnlyByExecCC(t *testing.T) {
+	// Not run by execCC there is no .ExecData key, so a field of it is <no value>, not an error
+	out, err := run(t, newCtx(false, true), `{{.ExecData.Title}} {{or .ExecData.Title "d"}} {{.StackDepth}}`)
+	if err != nil || out != "<no value> d <no value>" {
+		t.Errorf("got %q, %v", out, err)
+	}
+
+	// A run given data at the top level (a test's exec_data, like a delayed run) has it
+	ctx := newCtx(false, true)
+	ctx.ExecData = types.SDict{"Title": "t"}
+	out, err = run(t, ctx, `{{.ExecData.Title}} {{.StackDepth}}`)
+	if err != nil || out != "t <no value>" {
+		t.Errorf("got %q, %v", out, err)
+	}
+
+	// An immediate execCC sets the key even when its data is nil, and a field of nil is an error
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{sendMessage nil (print "depth " .StackDepth)}}{{.ExecData.Title}}`)
+	ctx = newCtx(false, true)
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil {
+		t.Fatal(err)
+	}
+	if len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != "depth 1" {
+		t.Errorf("sent %+v", ctx.SentMessages)
+	}
+	want := "nil pointer evaluating interface {}.Title"
+	if len(ctx.Diagnostics) != 1 || !strings.Contains(ctx.Diagnostics[0].Message, want) {
+		t.Errorf("want the child to fail with %q, got %q", want, ctx.Diagnostics)
+	}
+}
+
 func TestDBSetOverTheLimitFails(t *testing.T) {
 	_, err := run(t, newCtx(false, true), `{{dbSet 0 "big" (printf "%100000s" "x")}}`)
 	if err == nil || !strings.Contains(err.Error(), "short write") {

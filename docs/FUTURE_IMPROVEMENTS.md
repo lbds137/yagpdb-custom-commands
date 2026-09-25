@@ -150,6 +150,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       who they notify, from YAGPDB's allowed mentions (users only by default; roles and
       @everyone via mentionRole*/mentionEveryone/mentionHere, a complexMessage's
       `allowed_mentions`, or NoEscape); `pings` and `response_pings` assertions (2026-09-25)
+- [x] `.ExecData` is set as in YAGPDB: always in an immediate execCC child, even for nil
+      data (so `.ExecData.Key` is a "nil pointer evaluating" error there), and elsewhere
+      only when there is data (a test's `exec_data`, like a delayed run). Without it
+      `.ExecData.Key` and `{{.ExecData}}` are `<no value>` and `index .ExecData "Key"`
+      fails. An immediate child has `.StackDepth` (1 for the first level) (2026-09-25)
 - [x] Gematria tests run on the real bootstrap (`setup_templates`) and check the computed
       values (`embed_contains`) (2026-09-25)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")
