@@ -1,0 +1,48 @@
+name: "Execution limits, warnings and snapshots"
+
+tests:
+  - name: "Strict: 11 database calls fail without premium"
+    strict: true
+    context:
+      premium: false
+    template_source: |
+      {{ range seq 0 11 }}{{ $e := dbGet 0 "Key" }}{{ end }}
+    expected:
+      error_contains: "too many calls to this function"
+
+  - name: "Strict: premium allows 50 database calls"
+    strict: true
+    template_source: |
+      {{ range seq 0 11 }}{{ $e := dbGet 0 "Key" }}{{ end }}Done
+    expected:
+      output_contains: "Done"
+
+  - name: "Permissive: the same loop warns and finishes"
+    context:
+      premium: false
+    template_source: |
+      {{ range seq 0 11 }}{{ $e := dbGet 0 "Key" }}{{ end }}Done
+    expected:
+      output_contains: "Done"
+      warning_contains: "over the limit of 10 db_interactions"
+
+  - name: "Database call inside a loop is flagged"
+    template_source: |
+      {{ range $k := cslice "A" "B" }}{{ $e := dbGet 0 $k }}{{ end }}
+    expected:
+      warning_contains: "dbGet inside a range loop"
+
+  - name: "Strict: a second DM is dropped silently"
+    strict: true
+    template_source: |
+      {{ sendDM "first" }}{{ sendDM "second" }}Sent
+    expected:
+      output_contains: "Sent"
+      warning_contains: "YAGPDB skips this call silently"
+
+  - name: "Snapshot: welcome embed"
+    snapshot: true
+    template_source: |
+      {{ dbSet .User.ID "Visits" 1 }}
+      {{ sendMessage nil (cembed "title" "Welcome" "description" (print "Hello, " .User.Username)) }}
+      Welcomed

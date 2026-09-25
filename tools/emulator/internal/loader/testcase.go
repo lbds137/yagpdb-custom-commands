@@ -12,24 +12,29 @@ import (
 
 // TestCase represents a single test definition.
 type TestCase struct {
-	Name           string            `yaml:"name"`
-	Template       string            `yaml:"template"`        // Path to template file
-	TemplateSource string            `yaml:"template_source"` // Inline template source
-	Context        ContextDef        `yaml:"context"`
-	SetupDB        []DBEntry         `yaml:"setup_db"`
-	CommandMap     map[int64]string  `yaml:"command_map"` // Maps command IDs to template paths
-	Expected       ExpectedResult    `yaml:"expected"`
-	Assertions     Assertions        `yaml:"assertions"`
+	Name           string           `yaml:"name"`
+	Template       string           `yaml:"template"`        // Path to template file
+	TemplateSource string           `yaml:"template_source"` // Inline template source
+	Context        ContextDef       `yaml:"context"`
+	SetupDB        []DBEntry        `yaml:"setup_db"`
+	CommandMap     map[int64]string `yaml:"command_map"` // Maps command IDs to template paths
+	Expected       ExpectedResult   `yaml:"expected"`
+	Assertions     Assertions       `yaml:"assertions"`
+	Strict         bool             `yaml:"strict"`   // Fail on YAGPDB execution limits (like -strict)
+	Snapshot       bool             `yaml:"snapshot"` // Compare results with the saved snapshot
+
+	SourceFile string `yaml:"-"` // YAML file the test came from (for snapshots)
 }
 
 // ContextDef defines the execution context for a test.
 type ContextDef struct {
-	User    UserDef    `yaml:"user"`
-	Channel ChannelDef `yaml:"channel"`
-	Guild   GuildDef   `yaml:"guild"`
-	Args    []string   `yaml:"args"`
-	CmdArgs []string   `yaml:"cmd_args"`
+	User     UserDef                `yaml:"user"`
+	Channel  ChannelDef             `yaml:"channel"`
+	Guild    GuildDef               `yaml:"guild"`
+	Args     []string               `yaml:"args"`
+	CmdArgs  []string               `yaml:"cmd_args"`
 	ExecData map[string]interface{} `yaml:"exec_data"`
+	Premium  *bool                  `yaml:"premium"` // Default true
 }
 
 // UserDef defines user context.
@@ -61,17 +66,18 @@ type DBEntry struct {
 
 // ExpectedResult defines expected output.
 type ExpectedResult struct {
-	OutputEquals   string `yaml:"output_equals"`   // Exact match
-	OutputContains string `yaml:"output_contains"` // Substring match
-	OutputMatches  string `yaml:"output_matches"`  // Regex match
-	ErrorContains  string `yaml:"error_contains"`  // Expected error
+	OutputEquals    string `yaml:"output_equals"`    // Exact match
+	OutputContains  string `yaml:"output_contains"`  // Substring match
+	OutputMatches   string `yaml:"output_matches"`   // Regex match
+	ErrorContains   string `yaml:"error_contains"`   // Expected error
+	WarningContains string `yaml:"warning_contains"` // Expected diagnostic
 }
 
 // Assertions defines post-execution checks.
 type Assertions struct {
-	DBChecks     []DBCheck     `yaml:"db_checks"`
+	DBChecks     []DBCheck      `yaml:"db_checks"`
 	SentMessages []MessageCheck `yaml:"sent_messages"`
-	RoleChanges  []RoleCheck   `yaml:"role_changes"`
+	RoleChanges  []RoleCheck    `yaml:"role_changes"`
 }
 
 // DBCheck defines a database assertion.
@@ -122,6 +128,7 @@ func LoadTestCase(filename string) (*TestCase, error) {
 
 	// Apply defaults
 	tc.applyDefaults()
+	tc.SourceFile = filename
 
 	return &tc, nil
 }
@@ -141,6 +148,7 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 	// Apply defaults to all tests
 	for i := range ts.Tests {
 		ts.Tests[i].mergeDefaults(ts.Defaults, ts.SetupDB, ts.CommandMap)
+		ts.Tests[i].SourceFile = filename
 	}
 
 	return &ts, nil
@@ -156,6 +164,9 @@ func LoadTestsFromDir(dir string) ([]*TestCase, error) {
 		}
 
 		if info.IsDir() {
+			if info.Name() == "__snapshots__" {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
@@ -238,6 +249,10 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.Channel.Name == "" {
 		tc.Context.Channel.Name = defaults.Channel.Name
+	}
+
+	if tc.Context.Premium == nil {
+		tc.Context.Premium = defaults.Premium
 	}
 
 	// Merge guild defaults

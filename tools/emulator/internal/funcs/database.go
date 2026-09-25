@@ -10,6 +10,15 @@ import (
 type DatabaseFuncs struct {
 	DB      *state.MockDB
 	GuildID int64
+
+	// OnStore, if set, sees every value written by dbSet, dbSetExpire and dbIncr.
+	OnStore func(fn string, userID int64, key string, value interface{})
+}
+
+func (d *DatabaseFuncs) stored(fn string, userID int64, key string, value interface{}) {
+	if d.OnStore != nil {
+		d.OnStore(fn, userID, key, value)
+	}
 }
 
 // NewDatabaseFuncs creates a new DatabaseFuncs wrapper.
@@ -37,6 +46,7 @@ func (d *DatabaseFuncs) DbGet(userID interface{}, key interface{}) interface{} {
 func (d *DatabaseFuncs) DbSet(userID interface{}, key interface{}, value interface{}) string {
 	uid := ToInt64(userID)
 	k := ToString(key)
+	d.stored("dbSet", uid, k, value)
 	d.DB.Set(uid, k, value)
 	return ""
 }
@@ -47,6 +57,7 @@ func (d *DatabaseFuncs) DbSetExpire(userID interface{}, key interface{}, value i
 	uid := ToInt64(userID)
 	k := ToString(key)
 	t := ToInt(ttl)
+	d.stored("dbSetExpire", uid, k, value)
 	d.DB.SetWithExpiry(uid, k, value, t)
 	return ""
 }
@@ -72,6 +83,7 @@ func (d *DatabaseFuncs) DbIncr(userID interface{}, key interface{}, amount inter
 	uid := ToInt64(userID)
 	k := ToString(key)
 	amt := ToFloat64(amount)
+	d.stored("dbIncr", uid, k, amt)
 	return d.DB.Incr(uid, k, amt)
 }
 

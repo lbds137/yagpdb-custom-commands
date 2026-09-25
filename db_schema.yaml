@@ -1,0 +1,21 @@
+# Expected types of the database entries these commands keep.
+# yagtest warns when dbSet, dbSetExpire or dbIncr stores a different type:
+#   yagtest test -schema db_schema.yaml tools/emulator/testdata/
+#
+# Each entry: key (exact name or a glob like "score_*"), type, and optionally user_id
+# (omit it to match every user). The first matching entry wins.
+# Types: dict (sdict or dict), slice, string, number, bool, any.
+
+entries:
+  # Server-wide configuration dictionaries (see staff_utility/bootstrap.gohtml)
+  - { user_id: 0, key: Global, type: dict }
+  - { user_id: 0, key: Commands, type: dict }
+  - { user_id: 0, key: Channels, type: dict }
+  - { user_id: 0, key: Roles, type: dict }
+  - { user_id: 0, key: Admin, type: dict }
+  - { user_id: 0, key: Rules, type: dict }
+  - { user_id: 0, key: Knowledge, type: dict }
+  - { user_id: 0, key: Directory, type: dict }
+  - { user_id: 0, key: Staff, type: dict }
+  - { user_id: 0, key: "Inactivity Prune", type: dict }
+  - { user_id: 0, key: Gematria, type: dict }

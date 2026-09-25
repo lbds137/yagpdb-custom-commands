@@ -11,6 +11,7 @@ import (
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/loader"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
@@ -45,6 +46,8 @@ func main() {
 		checkCommand(cmdArgs)
 	case "test":
 		testCommand(cmdArgs)
+	case "watch":
+		watchCommand(cmdArgs)
 	case "help":
 		printUsage()
 	default:
@@ -63,6 +66,7 @@ Usage:
 Commands:
     run     Execute a template file
     test    Run test cases from YAML files
+    watch   Rerun tests whenever a template or test file changes
     check   Validate a template without executing
     help    Show this help message
 
@@ -72,12 +76,23 @@ Run Options:
     -premium          Use premium limits (default: true)
     -no-premium       Use non-premium limits
     -args <args>      Command arguments (comma-separated)
+    -strict           Fail on YAGPDB execution limits instead of warning
+    -schema <file>    Warn when stored values don't match the schema's types
     -verbose          Show detailed output
 
 Test Options:
     -verbose          Show detailed output for each test
     -stop-on-fail     Stop on first test failure
     -base-dir <dir>   Base directory for resolving template paths
+    -strict           Fail on YAGPDB execution limits instead of warning
+    -schema <file>    Warn when stored values don't match the schema's types
+    -update-snapshots Rewrite the snapshots of tests marked snapshot: true
+                      (a missing snapshot is written, or fails when CI is set)
+
+Watch Options:
+    Same as test, plus:
+    -watch <dirs>     Comma-separated directories to watch (default: .)
+    -interval <dur>   How often to check for changes (default: 500ms)
 
 Examples:
     yagtest run utility/db.gohtml
@@ -85,6 +100,8 @@ Examples:
     yagtest run -db initial_db.json -context context.json utility/db.gohtml
     yagtest test testdata/simple_tests.yaml
     yagtest test testdata/
+    yagtest test -strict -schema db_schema.yaml testdata/
+    yagtest watch -watch tools/emulator/testdata,utility testdata/
     yagtest check utility/*.gohtml
 
 Note: Flags must come before the file/directory path.`)
@@ -97,6 +114,8 @@ func runCommand(args []string) {
 	premium := fs.Bool("premium", true, "Use premium limits")
 	noPremium := fs.Bool("no-premium", false, "Use non-premium limits")
 	cmdArgs := fs.String("args", "", "Command arguments (comma-separated)")
+	strict := fs.Bool("strict", false, "Fail on YAGPDB execution limits")
+	schemaFile := fs.String("schema", "", "Schema file with expected database value types")
 	verbose := fs.Bool("verbose", false, "Show detailed output")
 
 	if err := fs.Parse(args); err != nil {
@@ -148,6 +167,10 @@ func runCommand(args []string) {
 		ctx.SetNonPremium()
 	}
 
+	ctx.Strict = *strict
+	ctx.Schema = mustLoadSchema(*schemaFile)
+	ctx.SourceName = templatePath
+
 	// Parse command arguments
 	if *cmdArgs != "" {
 		parts := strings.Split(*cmdArgs, ",")
@@ -177,6 +200,8 @@ func runCommand(args []string) {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Execution Error: %v\n", err)
+		printHint(err)
+		printDiagnostics(ctx.Diagnostics)
 		os.Exit(1)
 	}
 
@@ -227,8 +252,34 @@ func runCommand(args []string) {
 		}
 	}
 
+	printDiagnostics(ctx.Diagnostics)
+
 	if *verbose {
 		fmt.Println("\n=== Execution Complete ===")
+	}
+}
+
+func mustLoadSchema(filename string) *schema.Schema {
+	if filename == "" {
+		return nil
+	}
+	s, err := schema.Load(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	return s
+}
+
+func printHint(err error) {
+	if hint := runtime.Hint(err); hint != "" {
+		fmt.Fprintf(os.Stderr, "%sHint:%s %s\n", colorCyan, colorReset, hint)
+	}
+}
+
+func printDiagnostics(diags []runtime.Diagnostic) {
+	for _, d := range diags {
+		fmt.Fprintf(os.Stderr, "%s⚠ %s%s\n", colorYellow, d, colorReset)
 	}
 }
 
@@ -273,6 +324,7 @@ func checkCommand(args []string) {
 		// Create minimal context for parsing
 		db := state.NewMockDB(1)
 		ctx := runtime.NewExecutionContext(1, db)
+		ctx.SourceName = file
 		engine := runtime.NewEngine(ctx)
 
 		// Try to parse (not execute)
@@ -281,6 +333,7 @@ func checkCommand(args []string) {
 			// Check if it's a parse error vs execution error
 			if strings.Contains(parseErr.Error(), "template parse error") {
 				fmt.Fprintf(os.Stderr, "FAIL %s: %v\n", file, parseErr)
+				printHint(parseErr)
 				hasErrors = true
 			} else {
 				// Execution error is okay for check - template is syntactically valid
@@ -288,6 +341,12 @@ func checkCommand(args []string) {
 			}
 		} else {
 			fmt.Printf("OK   %s\n", file)
+		}
+		// Static findings only: runtime warnings depend on arguments check doesn't have
+		for _, d := range ctx.Diagnostics {
+			if d.Kind == runtime.KindLoopDB || strings.Contains(d.Message, "refuses to save") {
+				fmt.Fprintf(os.Stderr, "%sWARN %s: %s%s\n", colorYellow, file, d.Message, colorReset)
+			}
 		}
 	}
 
@@ -396,11 +455,30 @@ const (
 	colorBold   = "\033[1m"
 )
 
+// testOptions are the flags shared by test and watch.
+type testOptions struct {
+	path            string
+	verbose         bool
+	stopOnFail      bool
+	baseDir         string
+	strict          bool
+	schemaFile      string
+	updateSnapshots bool
+}
+
+func addTestFlags(fs *flag.FlagSet, opts *testOptions) {
+	fs.BoolVar(&opts.verbose, "verbose", false, "Show detailed output for each test")
+	fs.BoolVar(&opts.stopOnFail, "stop-on-fail", false, "Stop on first test failure")
+	fs.StringVar(&opts.baseDir, "base-dir", "", "Base directory for resolving template paths")
+	fs.BoolVar(&opts.strict, "strict", false, "Fail on YAGPDB execution limits")
+	fs.StringVar(&opts.schemaFile, "schema", "", "Schema file with expected database value types")
+	fs.BoolVar(&opts.updateSnapshots, "update-snapshots", false, "Rewrite snapshots")
+}
+
 func testCommand(args []string) {
 	fs := flag.NewFlagSet("test", flag.ExitOnError)
-	verbose := fs.Bool("verbose", false, "Show detailed output for each test")
-	stopOnFail := fs.Bool("stop-on-fail", false, "Stop on first test failure")
-	baseDir := fs.String("base-dir", "", "Base directory for resolving template paths")
+	var opts testOptions
+	addTestFlags(fs, &opts)
 
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
@@ -411,17 +489,23 @@ func testCommand(args []string) {
 		fmt.Fprintln(os.Stderr, "Error: test file or directory required")
 		os.Exit(1)
 	}
+	opts.path = fs.Arg(0)
 
-	path := fs.Arg(0)
+	os.Exit(runTests(opts))
+}
+
+// runTests loads and runs the tests at opts.path and returns the exit code.
+func runTests(opts testOptions) int {
+	path := opts.path
 
 	// Determine base directory
-	resolvedBaseDir := *baseDir
+	resolvedBaseDir := opts.baseDir
 	if resolvedBaseDir == "" {
 		absPath, _ := filepath.Abs(path)
 		info, err := os.Stat(absPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
 		if info.IsDir() {
 			resolvedBaseDir = absPath
@@ -430,19 +514,28 @@ func testCommand(args []string) {
 		}
 	}
 
+	var sch *schema.Schema
+	if opts.schemaFile != "" {
+		var err error
+		if sch, err = schema.Load(opts.schemaFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
+	}
+
 	// Load tests
 	var tests []*loader.TestCase
 	info, err := os.Stat(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	if info.IsDir() {
 		tests, err = loader.LoadTestsFromDir(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading tests from dir: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
 	} else {
 		// Try as test suite first
@@ -456,7 +549,7 @@ func testCommand(args []string) {
 			tc, tcErr := loader.LoadTestCase(path)
 			if tcErr != nil {
 				fmt.Fprintf(os.Stderr, "Error loading tests: %v\n", tcErr)
-				os.Exit(1)
+				return 1
 			}
 			tests = append(tests, tc)
 		}
@@ -464,14 +557,18 @@ func testCommand(args []string) {
 
 	if len(tests) == 0 {
 		fmt.Fprintln(os.Stderr, "No tests found")
-		os.Exit(1)
+		return 1
 	}
 
 	// Create runner
 	runner := loader.NewRunner(loader.RunnerConfig{
-		BaseDir:    resolvedBaseDir,
-		Verbose:    *verbose,
-		StopOnFail: *stopOnFail,
+		BaseDir:         resolvedBaseDir,
+		Verbose:         opts.verbose,
+		StopOnFail:      opts.stopOnFail,
+		Strict:          opts.strict,
+		Schema:          sch,
+		UpdateSnapshots: opts.updateSnapshots,
+		CI:              os.Getenv("CI") != "",
 	})
 
 	// Run tests
@@ -483,27 +580,62 @@ func testCommand(args []string) {
 	passed := 0
 	failed := 0
 	errors := 0
+	warned := 0
+	snapshotsWritten := 0
+	// Loop warnings come from reading the template, so they repeat for every test of
+	// the same template; they are listed once after the results instead.
+	var loopWarnings []string
+	seenLoop := map[string]bool{}
 
 	for _, result := range results {
 		if result.Passed {
 			passed++
 			fmt.Printf("%s✓ PASS%s %s\n", colorGreen, colorReset, result.Name)
-			if *verbose && result.Output != "" {
+			if opts.verbose && result.Output != "" {
 				fmt.Printf("  %sOutput:%s %s\n", colorCyan, colorReset, strings.TrimSpace(result.Output))
 			}
 		} else if result.Error != nil {
 			errors++
 			fmt.Printf("%s✗ ERROR%s %s\n", colorRed, colorReset, result.Name)
 			fmt.Printf("  %s%v%s\n", colorRed, result.Error, colorReset)
+			if hint := runtime.Hint(result.Error); hint != "" {
+				fmt.Printf("  %sHint:%s %s\n", colorCyan, colorReset, hint)
+			}
 		} else {
 			failed++
 			fmt.Printf("%s✗ FAIL%s %s\n", colorRed, colorReset, result.Name)
 			for _, failure := range result.Failures {
 				fmt.Printf("  %s• %s%s\n", colorYellow, failure, colorReset)
 			}
-			if *verbose && result.Output != "" {
+			if opts.verbose && result.Output != "" {
 				fmt.Printf("  %sOutput:%s %s\n", colorCyan, colorReset, strings.TrimSpace(result.Output))
 			}
+		}
+		if result.SnapshotWritten {
+			snapshotsWritten++
+			fmt.Printf("  %s✎ snapshot written%s\n", colorCyan, colorReset)
+		}
+		runtimeWarnings := 0
+		for _, w := range result.Warnings {
+			if strings.HasPrefix(w, "["+runtime.KindLoopDB+"]") {
+				if !seenLoop[w] {
+					seenLoop[w] = true
+					loopWarnings = append(loopWarnings, fmt.Sprintf("%s (first seen in %q)", w, result.Name))
+				}
+				continue
+			}
+			runtimeWarnings++
+			fmt.Printf("  %s⚠ %s%s\n", colorYellow, w, colorReset)
+		}
+		if runtimeWarnings > 0 {
+			warned++
+		}
+	}
+
+	if len(loopWarnings) > 0 {
+		fmt.Printf("\n%s=== Database calls in loops ===%s\n", colorBold, colorReset)
+		for _, w := range loopWarnings {
+			fmt.Printf("%s⚠ %s%s\n", colorYellow, strings.TrimPrefix(w, "["+runtime.KindLoopDB+"] "), colorReset)
 		}
 	}
 
@@ -525,9 +657,16 @@ func testCommand(args []string) {
 	} else {
 		fmt.Printf("Errors: 0")
 	}
+	if warned > 0 {
+		fmt.Printf(" | %sWith warnings: %d%s", colorYellow, warned, colorReset)
+	}
+	if snapshotsWritten > 0 {
+		fmt.Printf(" | Snapshots written: %d", snapshotsWritten)
+	}
 	fmt.Println()
 
 	if failed > 0 || errors > 0 {
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
