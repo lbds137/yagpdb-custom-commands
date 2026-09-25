@@ -293,6 +293,13 @@ func runCommand(args []string) {
 		}
 	}
 
+	if len(ctx.Execs) > 0 && *verbose {
+		fmt.Println("\n=== Execs (recorded, not run) ===")
+		for _, x := range ctx.Execs {
+			fmt.Println(x)
+		}
+	}
+
 	if runs := ctx.ScheduledRuns(); len(runs) > 0 && *verbose {
 		fmt.Println("\n=== Scheduled Runs ===")
 		for _, r := range runs {

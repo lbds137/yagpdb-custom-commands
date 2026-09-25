@@ -231,6 +231,8 @@ tests:
     context:
       args: ["500000000000000001"]
       member_roles: { 500000000000000001: [222222222222222222] }
+    assertions:
+      execs: [{ line: 'kick 500000000000000001 "exceeding the inactivity grace period by **672** hours"', admin: true }]
     snapshot: true
 
   - name: "guest: a guest within the grace period stays"
@@ -242,6 +244,7 @@ tests:
     assertions:
       sent_messages:
         - { channel_id: 123456789012345678, embed_contains: "has not yet exceeded the inactivity grace period" }
+      execs: []
 
   - name: "guest: leaves a member alone"
     template: "../../../staff_utility/guest.gohtml"

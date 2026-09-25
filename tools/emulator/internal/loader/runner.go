@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -143,6 +144,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 
 	result.Failures = append(result.Failures, checkScheduledRuns(ctx.ScheduledRuns(), tc.Assertions.ScheduledRuns)...)
 	result.Failures = append(result.Failures, checkDeletions(ctx.Deletions, tc.Assertions.Deletions)...)
+	result.Failures = append(result.Failures, checkExecs(ctx.Execs, tc.Assertions.Execs)...)
 	result.Failures = append(result.Failures, checkReactions(ctx.Reactions, tc.Assertions.Reactions)...)
 
 	// Check role changes
@@ -593,6 +595,37 @@ func checkDeletions(deletions []runtime.Deletion, checks *[]DeletionCheck) []str
 		}
 	}
 	return failures
+}
+
+// checkExecs compares the exec and execAdmin calls with the expected list, one by one.
+func checkExecs(execs []runtime.Exec, checks *[]ExecCheck) []string {
+	if checks == nil {
+		return nil
+	}
+	if len(execs) != len(*checks) {
+		var got []string
+		for _, x := range execs {
+			got = append(got, x.String())
+		}
+		return []string{fmt.Sprintf("expected %d execs, got %d: [%s]", len(*checks), len(execs), strings.Join(got, "; "))}
+	}
+	var failures []string
+	for i, c := range *checks {
+		x := execs[i]
+		if (c.Line != "" && x.Line != c.Line) || (c.Admin != nil && x.Admin != *c.Admin) ||
+			(c.ChannelID != 0 && x.ChannelID != c.ChannelID) {
+			failures = append(failures, fmt.Sprintf("exec %d doesn't match (line %q, admin %v, channel %d; unset = any): %s",
+				i, c.Line, fmtBoolPtr(c.Admin), c.ChannelID, x))
+		}
+	}
+	return failures
+}
+
+func fmtBoolPtr(b *bool) string {
+	if b == nil {
+		return "any"
+	}
+	return strconv.FormatBool(*b)
 }
 
 // checkReactions compares the reaction changes with the expected list, one by one.

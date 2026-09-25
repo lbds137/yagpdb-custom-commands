@@ -853,6 +853,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.Deletions = append(e.ctx.Deletions, childCtx.Deletions...)
 	e.ctx.Reactions = append(e.ctx.Reactions, childCtx.Reactions...)
+	e.ctx.Execs = append(e.ctx.Execs, childCtx.Execs...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
 	if err != nil { // the caller carries on
 		e.ctx.Warn(KindExecCC, "execCC %d (%s) failed: %v", commandID, filepath.Base(templatePath), err)
@@ -907,19 +908,6 @@ func (e *Engine) channelArg(channel interface{}) int64 {
 func (e *Engine) sleep(args ...interface{}) string {
 	// In real YAGPDB this pauses execution; we skip for testing speed
 	return ""
-}
-
-// exec executes another template inline (simpler than execCC)
-func (e *Engine) exec(name string, data ...interface{}) string {
-	// In YAGPDB this executes a named template
-	// For now, just return empty - templates would need to be registered
-	return ""
-}
-
-func (e *Engine) execAdmin(name string, data ...interface{}) string {
-	// In YAGPDB this executes a template with admin privileges
-	// For testing, same as exec
-	return e.exec(name, data...)
 }
 
 // Mention functions

@@ -24,6 +24,7 @@ type Snapshot struct {
 	RoleChanges []string          `yaml:"role_changes,omitempty"`
 	Deletions   []string          `yaml:"deletions,omitempty"`
 	Reactions   []string          `yaml:"reactions,omitempty"`
+	Execs       []string          `yaml:"execs,omitempty"`
 	DB          []SnapshotEntry   `yaml:"db,omitempty"`
 }
 
@@ -74,6 +75,9 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 	}
 	for _, r := range ctx.Reactions {
 		snap.Reactions = append(snap.Reactions, r.String())
+	}
+	for _, x := range ctx.Execs {
+		snap.Execs = append(snap.Execs, x.String())
 	}
 	entries := db.GetAll()
 	sort.Slice(entries, func(i, j int) bool {
