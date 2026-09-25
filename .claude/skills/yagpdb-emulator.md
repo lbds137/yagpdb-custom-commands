@@ -51,6 +51,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     member_joined_ago: { 2: 12h }     # join time before the run (default 30 days; JoinedAt.Parse)
     messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # getMessage finds these, sent messages and the trigger (not a reaction/interval run's)
                                       # (give channel_id: without it the message is in channel 0)
+                                      # embeds: [{ title: "T", fields: [{ name: n, value: v }] }]
+                                      # (cembed's keys; templates read .Title, .Author.Name)
     message_content: "text"           # or the whole message, trigger included (Regex triggers need it);
                                       # with exec_data/reaction it is only .Message (no arguments)
     reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run; its .Message is

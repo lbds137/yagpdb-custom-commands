@@ -1,3 +1,24 @@
+'message_link: a quoted embed''s parts become fields':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          content: "> \U0001F517 **Linker#0001** linked a message:"
+          embed: "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/0.png?size=128\",\n    \"name\": \"MockUser\",\n    \"url\": \"https://discord.com/users/500000000000000001\"\n  },\n  \"color\": 255,\n  \"description\": \"see below\",\n  \"fields\": [\n    {\n      \"inline\": true,\n      \"name\": \"\U0001F4CE Author\",\n      \"value\": \"Rules Bot\"\n    },\n    {\n      \"name\": \"\U0001F4CE Title\",\n      \"value\": \"House Rules\"\n    },\n    {\n      \"name\": \"\U0001F4CE Description\",\n      \"value\": \"Be kind.\"\n    },\n    {\n      \"name\": \"\U0001F4CE Quiet hours\",\n      \"value\": \"22:00-07:00\"\n    },\n    {\n      \"name\": \"\U0001F4CE Footer\",\n      \"value\": \"Updated weekly\"\n    },\n    {\n      \"name\": \"Original Channel\",\n      \"value\": \"#️⃣ [introduction](https://discord.com/channels/111222333444555666/900000000000000002/)\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005)\"\n    }\n  ],\n  \"footer\": {\n    \"icon_url\": \"https://cdn.discordapp.com/icons/111222333444555666/.png\",\n    \"text\": \"Author ID: 500000000000000001\"\n  },\n  \"image\": {\n    \"url\": \"https://example.com/rules.png\"\n  },\n  \"thumbnail\": {},\n  \"timestamp\": \"2020-04-15T15:10:05.371000+00:00\",\n  \"title\": \"Message Link\"\n}"
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":900000000000000001}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1"}'
+        - user_id: 0
+          key: Global
+          value: '{"Command Prefix":"-","Default Avatar":"https://example.com/a.png","Delete Trigger Delay":5,"Embed Color":5793266}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":111111111111111111}'
 'message_link: deleted message is ignored':
     output: ""
     db:

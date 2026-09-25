@@ -86,3 +86,75 @@ tests:
     context:
       exec_data: { ChannelID: 900000000000000003, DisableQuote: true }
     snapshot: true
+
+  # The linked message has an embed: message_link carries its parts over as fields
+  - name: "message_link: a quoted embed's parts become fields"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+      messages:
+        - id: 700000000000000005
+          channel_id: 900000000000000002
+          author_id: 500000000000000001
+          content: "see below"
+          embeds:
+            - title: "House Rules"
+              description: "Be kind."
+              color: 255
+              author: { name: "Rules Bot" }
+              fields: [{ name: "Quiet hours", value: "22:00-07:00" }]
+              footer: { text: "Updated weekly" }
+              image: { url: "https://example.com/rules.png" }
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          embed_title: "Message Link"
+          embed_contains: '"name": "📎 Quiet hours"'
+    snapshot: true
+
+  - name: "message_link: a quoted embed's long description is cut to Discord's 1024"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+      messages:
+        # 1025 characters, the last three 3 bytes long: the field holds 1023 and "…"
+        - id: 700000000000000005
+          channel_id: 900000000000000002
+          author_id: 500000000000000001
+          embeds: [{ description: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa€€€" }]
+    strict: true
+    assertions:
+      sent_messages: [{ embed_contains: 'a€…"' }]
+
+  - name: "message_link: a quoted embed's description of exactly 1024 is kept"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+      messages:
+        - id: 700000000000000005
+          channel_id: 900000000000000002
+          author_id: 500000000000000001
+          embeds: [{ description: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa€€" }]
+    strict: true
+    assertions:
+      sent_messages: [{ embed_contains: 'a€€"' }]
+
+  # Linking a Message Link re-sends its embed as it is (the embed read from the message)
+  - name: "message_link: linking a Message Link re-sends its embed"
+    template: "../../../utility/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000006"
+      messages:
+        - id: 700000000000000006
+          channel_id: 900000000000000002
+          author_id: 1234567890
+          embeds:
+            - title: "Message Link"
+              description: "the original quote"
+              fields: [{ name: "Original Channel", value: "#introduction" }]
+    strict: true
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          embed_title: "Message Link"
+          embed_contains: '"description": "the original quote"'

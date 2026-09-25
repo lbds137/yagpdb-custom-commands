@@ -294,6 +294,12 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 			replyTo = v.ReplyTo
 		case types.Embed:
 			embeds = []interface{}{v}
+		// an embed read back from a message (tmplSendMessage takes *discordgo.MessageEmbed
+		// and []*discordgo.MessageEmbed)
+		case *types.MessageEmbed:
+			embeds = []interface{}{types.EmbedMap(v)}
+		case []*types.MessageEmbed:
+			embeds = types.EmbedMaps(v)
 		default:
 			content = funcs.ToString(v)
 		}
@@ -309,11 +315,7 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 	if file != nil {
 		e.ctx.RecordFileUpload(channelID, file.Filename, file.File)
 	}
-	var embed interface{}
-	if len(embeds) > 0 {
-		embed = embeds[0]
-	}
-	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embed, e.ctx.pings(content, allowed, channelID, replyTo))
+	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embeds, e.ctx.pings(content, allowed, channelID, replyTo))
 	return "", nil
 }
 
@@ -365,6 +367,10 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 		}
 	case types.Embed:
 		change.Embeds = []interface{}{m}
+	case *types.MessageEmbed: // tmplEditMessage takes these too
+		change.Embeds = []interface{}{types.EmbedMap(m)}
+	case []*types.MessageEmbed:
+		change.Embeds = types.EmbedMaps(m)
 	default:
 		content := fmt.Sprint(msg)
 		change.Content = &content
@@ -381,7 +387,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 			fmt.Sprintf("message %d is by user %d", id, target.Author.ID))
 	}
 
-	content, embeds := target.Content, target.Embeds
+	content, embeds := target.Content, types.EmbedMaps(target.Embeds)
 	if change.Content != nil {
 		content = *change.Content
 	}
@@ -391,7 +397,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	if ok, err := e.ctx.checkSend("editMessage", content, embeds, change.HasOther, false); !ok {
 		return "", err
 	}
-	target.Content, target.Embeds = content, embeds
+	target.Content, target.Embeds = content, types.EmbedStructs(embeds)
 	target.EditedTimestamp = types.NewTimestamp(e.ctx.Now()) // Discord sets it on every edit
 	edited := SentMessage{ID: id, ChannelID: channelID, Content: content}
 	if len(embeds) > 0 {
@@ -543,6 +549,8 @@ func toEmbed(args ...interface{}) (types.Embed, error) {
 	switch t := args[0].(type) {
 	case types.Embed:
 		return t, nil
+	case *types.MessageEmbed: // CreateEmbed returns a *discordgo.MessageEmbed as it is
+		return types.EmbedMap(t), nil
 	case types.SDict:
 		return types.BuildEmbed(t)
 	case *types.SDict:

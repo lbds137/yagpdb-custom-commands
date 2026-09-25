@@ -367,7 +367,7 @@ type CtxMessage struct {
 	Timestamp       Timestamp
 	EditedTimestamp Timestamp // "" until edited
 	Attachments     []interface{}
-	Embeds          []interface{}
+	Embeds          []*MessageEmbed // as discordgo.Message holds them
 }
 
 // Link is discordgo's Message.Link. A value receiver, so it works on the mocks' values and
@@ -451,7 +451,7 @@ func BuildEmbed(m map[string]interface{}) (Embed, error) {
 	if err != nil {
 		return nil, err
 	}
-	var embed messageEmbed
+	var embed MessageEmbed
 	if err := json.Unmarshal(encoded, &embed); err != nil {
 		return nil, err
 	}
@@ -466,42 +466,108 @@ func BuildEmbed(m map[string]interface{}) (Embed, error) {
 	return out, nil
 }
 
-// messageEmbed mirrors discordgo.MessageEmbed's JSON shape (lib/discordgo/message.go).
-type messageEmbed struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
-	Timestamp   string `json:"timestamp,omitempty"`
-	Color       int    `json:"color,omitempty"`
-	Footer      *struct {
-		Text         string `json:"text,omitempty"`
-		IconURL      string `json:"icon_url,omitempty"`
-		ProxyIconURL string `json:"proxy_icon_url,omitempty"`
-	} `json:"footer,omitempty"`
-	Image     *embedMedia `json:"image,omitempty"`
-	Thumbnail *embedMedia `json:"thumbnail,omitempty"`
-	Video     *embedMedia `json:"video,omitempty"`
-	Provider  *struct {
-		URL  string `json:"url,omitempty"`
-		Name string `json:"name,omitempty"`
-	} `json:"provider,omitempty"`
-	Author *struct {
-		URL          string `json:"url,omitempty"`
-		Name         string `json:"name,omitempty"`
-		IconURL      string `json:"icon_url,omitempty"`
-		ProxyIconURL string `json:"proxy_icon_url,omitempty"`
-	} `json:"author,omitempty"`
-	Fields []*struct {
-		Name   string `json:"name,omitempty"`
-		Value  string `json:"value,omitempty"`
-		Inline bool   `json:"inline,omitempty"`
-	} `json:"fields,omitempty"`
+// MessageEmbed is discordgo.MessageEmbed (lib/discordgo/message.go): the embeds of a
+// message read back (getMessage, .Message) are these, so templates use its field names
+// (.Title, .Author.Name, .Fields). BuildEmbed decodes through it too.
+type MessageEmbed struct {
+	URL         string                 `json:"url,omitempty"`
+	Type        string                 `json:"type,omitempty"`
+	Title       string                 `json:"title,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	Timestamp   string                 `json:"timestamp,omitempty"`
+	Color       int                    `json:"color,omitempty"`
+	Footer      *MessageEmbedFooter    `json:"footer,omitempty"`
+	Image       *MessageEmbedImage     `json:"image,omitempty"`
+	Thumbnail   *MessageEmbedThumbnail `json:"thumbnail,omitempty"`
+	Video       *MessageEmbedVideo     `json:"video,omitempty"`
+	Provider    *MessageEmbedProvider  `json:"provider,omitempty"`
+	Author      *MessageEmbedAuthor    `json:"author,omitempty"`
+	Fields      []*MessageEmbedField   `json:"fields,omitempty"`
 }
 
-type embedMedia struct {
+type MessageEmbedFooter struct {
+	Text         string `json:"text,omitempty"`
+	IconURL      string `json:"icon_url,omitempty"`
+	ProxyIconURL string `json:"proxy_icon_url,omitempty"`
+}
+
+type MessageEmbedImage struct {
 	URL      string `json:"url,omitempty"`
 	ProxyURL string `json:"proxy_url,omitempty"`
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
+}
+
+type MessageEmbedThumbnail struct {
+	URL      string `json:"url,omitempty"`
+	ProxyURL string `json:"proxy_url,omitempty"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
+}
+
+type MessageEmbedVideo struct {
+	URL      string `json:"url,omitempty"`
+	ProxyURL string `json:"proxy_url,omitempty"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
+}
+
+type MessageEmbedProvider struct {
+	URL  string `json:"url,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
+type MessageEmbedAuthor struct {
+	URL          string `json:"url,omitempty"`
+	Name         string `json:"name,omitempty"`
+	IconURL      string `json:"icon_url,omitempty"`
+	ProxyIconURL string `json:"proxy_icon_url,omitempty"`
+}
+
+type MessageEmbedField struct {
+	Name   string `json:"name,omitempty"`
+	Value  string `json:"value,omitempty"`
+	Inline bool   `json:"inline,omitempty"`
+}
+
+// These conversions are functions, not methods: a template sees an embed's methods, and
+// discordgo.MessageEmbed has none.
+
+// EmbedStruct is the embed as a message holds it (see MessageEmbed).
+func EmbedStruct(e Embed) *MessageEmbed {
+	var out MessageEmbed
+	if data, err := json.Marshal(e); err == nil {
+		json.Unmarshal(data, &out) // e came from BuildEmbed, so it has MessageEmbed's shape
+	}
+	return &out
+}
+
+// EmbedMap is the embed as cembed builds it (see Embed).
+func EmbedMap(m *MessageEmbed) Embed {
+	out := Embed{}
+	if data, err := json.Marshal(m); err == nil {
+		json.Unmarshal(data, &out)
+	}
+	return out
+}
+
+// EmbedStructs is a message's embeds from what cembed built (Embed values). Empty ones
+// are dropped, as discordgo drops them before sending (ValidateComplexMessageEmbeds).
+func EmbedStructs(embeds []interface{}) []*MessageEmbed {
+	var out []*MessageEmbed
+	for _, x := range embeds {
+		if e, ok := x.(Embed); ok && len(e) > 0 {
+			out = append(out, EmbedStruct(e))
+		}
+	}
+	return out
+}
+
+// EmbedMaps is the reverse of EmbedStructs.
+func EmbedMaps(embeds []*MessageEmbed) []interface{} {
+	var out []interface{}
+	for _, m := range embeds {
+		out = append(out, EmbedMap(m))
+	}
+	return out
 }

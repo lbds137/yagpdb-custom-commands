@@ -448,8 +448,13 @@ func (ctx *ExecutionContext) HasRole(roleID int64) bool {
 }
 
 // RecordSentMessage records a message sent during execution. Messages the bot sends to a
-// channel can be fetched with getMessage, as on Discord; it returns their ID.
-func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embed interface{}, pings Pings) int64 {
+// channel can be fetched with getMessage, as on Discord, with all their embeds; it returns
+// their ID. The record (and snapshot) keeps the first embed.
+func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embeds []interface{}, pings Pings) int64 {
+	var embed interface{}
+	if len(embeds) > 0 {
+		embed = embeds[0]
+	}
 	*ctx.sentMessageIDs()++
 	id := firstSentMessageID + *ctx.sentIDs
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{
@@ -467,9 +472,7 @@ func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, 
 		Content:   content,
 		Timestamp: types.NewTimestamp(ctx.Now()),
 	}
-	if embed != nil {
-		msg.Embeds = []interface{}{embed}
-	}
+	msg.Embeds = types.EmbedStructs(embeds)
 	if channelID != 0 { // a DM isn't in the server's channels
 		ctx.Messages = append(ctx.Messages, msg)
 	}
