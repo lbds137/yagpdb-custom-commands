@@ -132,6 +132,8 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	failures = append(failures, r.checkMessages(ctx.EditedMessages, tc.Assertions.EditedMessages, "edited")...)
 	result.Failures = append(result.Failures, failures...)
 
+	result.Failures = append(result.Failures, checkScheduledRuns(ctx.ScheduledRuns(), tc.Assertions.ScheduledRuns)...)
+
 	// Check role changes
 	failures = r.checkRoleChanges(ctx.RoleChanges, tc.Assertions.RoleChanges)
 	if tc.Assertions.NoRoleChanges && len(ctx.RoleChanges) > 0 {
@@ -482,6 +484,48 @@ func (r *Runner) checkRoleChanges(changes []runtime.RoleChange, checks []RoleChe
 	}
 
 	return failures
+}
+
+// checkScheduledRuns compares the scheduled runs with the expected list, one by one.
+func checkScheduledRuns(runs []runtime.ScheduledRun, checks *[]ScheduledRunCheck) []string {
+	if checks == nil {
+		return nil
+	}
+	if len(runs) != len(*checks) {
+		return []string{fmt.Sprintf("expected %d scheduled runs, got %d: %s", len(*checks), len(runs), describeRuns(runs))}
+	}
+	var failures []string
+	for i, check := range *checks {
+		run := runs[i]
+		data := compactJSON(run.ExecData)
+		if (check.CCID != 0 && run.CCID != check.CCID) ||
+			(check.ChannelID != 0 && run.ChannelID != check.ChannelID) ||
+			(check.Delay != 0 && run.Delay != time.Duration(check.Delay)) ||
+			(check.Key != nil && (run.Key == nil || *run.Key != *check.Key)) ||
+			!strings.Contains(data, check.ExecDataContains) {
+			want := fmt.Sprintf("cc %d, channel %d, delay %s", check.CCID, check.ChannelID, time.Duration(check.Delay))
+			if check.Key != nil {
+				want += fmt.Sprintf(", key %q", *check.Key)
+			}
+			if check.ExecDataContains != "" {
+				want += fmt.Sprintf(", data containing %s", check.ExecDataContains)
+			}
+			failures = append(failures, fmt.Sprintf("scheduled run %d doesn't match (%s; 0 = any): %s", i, want, describeRuns(runs[i:i+1])))
+		}
+	}
+	return failures
+}
+
+func describeRuns(runs []runtime.ScheduledRun) string {
+	var parts []string
+	for _, r := range runs {
+		s := fmt.Sprintf("cc %d in channel %d after %s", r.CCID, r.ChannelID, r.Delay)
+		if r.Key != nil {
+			s += fmt.Sprintf(" (key %q)", *r.Key)
+		}
+		parts = append(parts, s+" with "+compactJSON(r.ExecData))
+	}
+	return "[" + strings.Join(parts, "; ") + "]"
 }
 
 // displayPath returns a template path relative to the working directory, so warnings

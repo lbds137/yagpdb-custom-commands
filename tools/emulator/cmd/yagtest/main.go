@@ -273,6 +273,14 @@ func runCommand(args []string) {
 		}
 	}
 
+	if runs := ctx.ScheduledRuns(); len(runs) > 0 && *verbose {
+		fmt.Println("\n=== Scheduled Runs ===")
+		for _, r := range runs {
+			data, _ := json.Marshal(r.ExecData)
+			fmt.Printf("CC %d in channel %d after %s: %s\n", r.CCID, r.ChannelID, r.Delay, data)
+		}
+	}
+
 	// Print database state if verbose
 	if *verbose {
 		entries := db.GetAll()

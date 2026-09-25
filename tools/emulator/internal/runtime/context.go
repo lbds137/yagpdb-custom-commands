@@ -105,6 +105,8 @@ type ExecutionContext struct {
 	// ResponsePings are who the response (the template's output) notifies
 	ResponsePings Pings
 
+	scheduled *[]ScheduledRun // see ScheduledRuns
+
 	// Set by mentionEveryone/mentionHere and mentionRole, so the response pings them
 	mentionEveryone bool
 	mentionRoles    []int64
