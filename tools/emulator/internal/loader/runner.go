@@ -4,10 +4,13 @@ package loader
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
@@ -18,15 +21,22 @@ type TestResult struct {
 	Passed   bool
 	Error    error
 	Failures []string
+	Warnings []string
 	Output   string
 	Duration string
+
+	SnapshotWritten bool // A new or updated snapshot was saved
 }
 
 // RunnerConfig configures the test runner.
 type RunnerConfig struct {
-	BaseDir   string // Base directory for resolving template paths
-	Verbose   bool   // Show detailed output
-	StopOnFail bool  // Stop on first failure
+	BaseDir         string         // Base directory for resolving template paths
+	Verbose         bool           // Show detailed output
+	StopOnFail      bool           // Stop on first failure
+	Strict          bool           // Fail on YAGPDB execution limits in every test
+	Schema          *schema.Schema // Expected database value types
+	UpdateSnapshots bool           // Rewrite snapshots instead of comparing
+	CI              bool           // A missing snapshot fails instead of being written
 }
 
 // Runner executes test cases.
@@ -65,6 +75,15 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 
 	// Create execution context
 	ctx := runtime.NewExecutionContext(tc.Context.Guild.ID, db)
+	ctx.SourceName = displayPath(r.config.BaseDir, tc.Template)
+	if ctx.SourceName == "" {
+		ctx.SourceName = fmt.Sprintf("inline template of %q", tc.Name)
+	}
+	ctx.Strict = r.config.Strict || tc.Strict
+	ctx.Schema = r.config.Schema
+	if tc.Context.Premium != nil && !*tc.Context.Premium {
+		ctx.SetNonPremium()
+	}
 	ctx.GuildName = tc.Context.Guild.Name
 	ctx.ChannelID = tc.Context.Channel.ID
 	ctx.ChannelName = tc.Context.Channel.Name
@@ -105,6 +124,9 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	engine := runtime.NewEngine(ctx)
 	output, execErr := engine.Execute(source)
 	result.Output = output
+	for _, d := range ctx.Diagnostics {
+		result.Warnings = append(result.Warnings, d.String())
+	}
 
 	// Check for expected errors
 	if tc.Expected.ErrorContains != "" {
@@ -140,6 +162,17 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	// Check role changes
 	failures = r.checkRoleChanges(ctx.RoleChanges, tc.Assertions.RoleChanges)
 	result.Failures = append(result.Failures, failures...)
+
+	if want := tc.Expected.WarningContains; want != "" && !containsAny(result.Warnings, want) {
+		result.Failures = append(result.Failures,
+			fmt.Sprintf("expected a warning containing %q but got: %q", want, result.Warnings))
+	}
+
+	if tc.Snapshot {
+		failures, written := r.checkSnapshot(tc, output, ctx, db)
+		result.Failures = append(result.Failures, failures...)
+		result.SnapshotWritten = written
+	}
 
 	result.Passed = len(result.Failures) == 0 && result.Error == nil
 	return result
@@ -311,6 +344,33 @@ func (r *Runner) checkRoleChanges(changes []runtime.RoleChange, checks []RoleChe
 	}
 
 	return failures
+}
+
+// displayPath returns a template path relative to the working directory, so warnings
+// print as clickable file:line locations.
+func displayPath(baseDir, template string) string {
+	if template == "" {
+		return ""
+	}
+	p := template
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(baseDir, p)
+	}
+	if wd, err := os.Getwd(); err == nil {
+		if rel, err := filepath.Rel(wd, p); err == nil {
+			return rel
+		}
+	}
+	return p
+}
+
+func containsAny(items []string, substr string) bool {
+	for _, item := range items {
+		if strings.Contains(item, substr) {
+			return true
+		}
+	}
+	return false
 }
 
 // RunTests executes multiple test cases and returns results.

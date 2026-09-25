@@ -2,9 +2,9 @@
 package runtime
 
 import (
-	"strings"
 	"time"
 
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
@@ -51,10 +51,13 @@ type ExecutionContext struct {
 	MessageContent string
 
 	// Command arguments
-	Args       []interface{}
-	CmdArgs    []interface{}
+	Args        []interface{}
+	CmdArgs     []interface{}
 	StrippedMsg string
 	Cmd         string
+
+	// SourceName names the template in warnings (usually its file path)
+	SourceName string
 
 	// ExecData for execCC calls
 	ExecData interface{}
@@ -62,22 +65,28 @@ type ExecutionContext struct {
 	// Premium mode
 	IsPremium bool
 
+	// Strict makes YAGPDB's execution limits fail the run, as they would in production.
+	// Without it, a breached limit is recorded as a warning and execution continues.
+	Strict bool
+
 	// Mocked services
 	DB *state.MockDB
 
+	// Schema, when set, holds the expected types of database values (warnings on mismatch).
+	Schema *schema.Schema
+
 	// Side effects captured during execution
-	Output       strings.Builder
 	SentMessages []SentMessage
 	RoleChanges  []RoleChange
 	FileUploads  []FileUpload
-	Errors       []error
 
-	// Execution limits
-	MaxOps      int
-	CurrentOps  int
-	MaxOutput   int
-	StartTime   time.Time
-	MaxDuration time.Duration
+	// Warnings found during execution (limits, db calls in loops, schema mismatches)
+	Diagnostics []Diagnostic
+
+	// Per-run call counters, keyed like YAGPDB's Context.Counters
+	Counters map[string]int
+
+	StartTime time.Time
 
 	// Available roles (for hasRole checks)
 	AvailableRoles map[int64]types.CtxRole
@@ -106,10 +115,8 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 		CmdArgs:        []interface{}{},
 		DB:             db,
 		IsPremium:      true,
-		MaxOps:         2500000, // Premium limit
-		MaxOutput:      25000,
+		Counters:       make(map[string]int),
 		StartTime:      time.Now(),
-		MaxDuration:    10 * time.Second,
 		AvailableRoles: make(map[int64]types.CtxRole),
 		CommandIDMap:   make(map[int64]string),
 		MaxExecCCDepth: 2, // YAGPDB default
@@ -119,7 +126,6 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 // SetNonPremium configures the context for non-premium limits.
 func (ctx *ExecutionContext) SetNonPremium() {
 	ctx.IsPremium = false
-	ctx.MaxOps = 1000000
 }
 
 // BuildTemplateData creates the data map passed to template execution (the "dot").
@@ -168,45 +174,45 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 
 	// Build permissions map
 	permissions := map[string]int64{
-		"Administrator":           0x8,
-		"ManageServer":            0x20,
-		"ManageRoles":             0x10000000,
-		"ManageChannels":          0x10,
-		"KickMembers":             0x2,
-		"BanMembers":              0x4,
-		"ManageMessages":          0x2000,
-		"MentionEveryone":         0x20000,
-		"ManageNicknames":         0x8000000,
-		"ManageWebhooks":          0x20000000,
-		"ManageEmojis":            0x40000000,
-		"ViewAuditLog":            0x80,
-		"SendMessages":            0x800,
-		"EmbedLinks":              0x4000,
-		"AttachFiles":             0x8000,
-		"ReadMessageHistory":      0x10000,
-		"UseExternalEmojis":       0x40000,
-		"Connect":                 0x100000,
-		"Speak":                   0x200000,
-		"MuteMembers":             0x400000,
-		"DeafenMembers":           0x800000,
-		"MoveMembers":             0x1000000,
-		"UseVAD":                  0x2000000,
-		"CreateInstantInvite":     0x1,
-		"ChangeNickname":          0x4000000,
-		"AddReactions":            0x40,
-		"ViewChannel":             0x400,
-		"SendTTSMessages":         0x1000,
-		"PrioritySpeaker":         0x100,
-		"Stream":                  0x200,
-		"UseSlashCommands":        0x80000000,
-		"RequestToSpeak":          0x100000000,
-		"ManageThreads":           0x400000000,
-		"CreatePublicThreads":     0x800000000,
-		"CreatePrivateThreads":    0x1000000000,
-		"UseExternalStickers":     0x2000000000,
-		"SendMessagesInThreads":   0x4000000000,
-		"UseEmbeddedActivities":   0x8000000000,
-		"ModerateMembers":         0x10000000000,
+		"Administrator":         0x8,
+		"ManageServer":          0x20,
+		"ManageRoles":           0x10000000,
+		"ManageChannels":        0x10,
+		"KickMembers":           0x2,
+		"BanMembers":            0x4,
+		"ManageMessages":        0x2000,
+		"MentionEveryone":       0x20000,
+		"ManageNicknames":       0x8000000,
+		"ManageWebhooks":        0x20000000,
+		"ManageEmojis":          0x40000000,
+		"ViewAuditLog":          0x80,
+		"SendMessages":          0x800,
+		"EmbedLinks":            0x4000,
+		"AttachFiles":           0x8000,
+		"ReadMessageHistory":    0x10000,
+		"UseExternalEmojis":     0x40000,
+		"Connect":               0x100000,
+		"Speak":                 0x200000,
+		"MuteMembers":           0x400000,
+		"DeafenMembers":         0x800000,
+		"MoveMembers":           0x1000000,
+		"UseVAD":                0x2000000,
+		"CreateInstantInvite":   0x1,
+		"ChangeNickname":        0x4000000,
+		"AddReactions":          0x40,
+		"ViewChannel":           0x400,
+		"SendTTSMessages":       0x1000,
+		"PrioritySpeaker":       0x100,
+		"Stream":                0x200,
+		"UseSlashCommands":      0x80000000,
+		"RequestToSpeak":        0x100000000,
+		"ManageThreads":         0x400000000,
+		"CreatePublicThreads":   0x800000000,
+		"CreatePrivateThreads":  0x1000000000,
+		"UseExternalStickers":   0x2000000000,
+		"SendMessagesInThreads": 0x4000000000,
+		"UseEmbeddedActivities": 0x8000000000,
+		"ModerateMembers":       0x10000000000,
 	}
 
 	return map[string]interface{}{
@@ -305,24 +311,4 @@ func (ctx *ExecutionContext) RecordFileUpload(channelID int64, filename, content
 		Filename:  filename,
 		Content:   content,
 	})
-}
-
-// CheckLimits verifies the execution is within limits.
-func (ctx *ExecutionContext) CheckLimits() error {
-	if ctx.CurrentOps > ctx.MaxOps {
-		return ErrTooManyOps
-	}
-	if time.Since(ctx.StartTime) > ctx.MaxDuration {
-		return ErrTimeout
-	}
-	if ctx.Output.Len() > ctx.MaxOutput {
-		return ErrOutputTooLarge
-	}
-	return nil
-}
-
-// IncrementOps increments the operation counter and checks limits.
-func (ctx *ExecutionContext) IncrementOps(n int) error {
-	ctx.CurrentOps += n
-	return ctx.CheckLimits()
 }

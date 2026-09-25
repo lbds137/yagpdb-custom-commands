@@ -26,8 +26,13 @@ func NewEngine(ctx *ExecutionContext) *Engine {
 // BuildFuncMap creates the FuncMap for template execution.
 func (e *Engine) BuildFuncMap() template.FuncMap {
 	dbFuncs := funcs.NewDatabaseFuncs(e.ctx.DB, e.ctx.GuildID)
+	dbFuncs.OnStore = func(fn string, userID int64, key string, value interface{}) {
+		if msg := e.ctx.Schema.Check(userID, key, value); msg != "" {
+			e.ctx.Warn(KindSchema, "%s: %s", fn, msg)
+		}
+	}
 
-	return template.FuncMap{
+	m := template.FuncMap{
 		// Type conversion
 		"str":        funcs.ToString,
 		"toString":   funcs.ToString,
@@ -95,12 +100,12 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"reQuoteMeta": funcs.ReQuoteMeta,
 
 		// Utilities
-		"in":     funcs.In,
-		"inFold": funcs.InFold,
-		"kindOf": funcs.KindOf,
-		"seq":    funcs.Seq,
+		"in":      funcs.In,
+		"inFold":  funcs.InFold,
+		"kindOf":  funcs.KindOf,
+		"seq":     funcs.Seq,
 		"randInt": funcs.RandInt,
-		"get":    e.getFunc, // Universal getter that works with interface{}
+		"get":     e.getFunc, // Universal getter that works with interface{}
 
 		// Database
 		"dbGet":               dbFuncs.DbGet,
@@ -118,16 +123,16 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"dbRank":              dbFuncs.DbRank,
 
 		// Discord mocks (output capture)
-		"sendMessage":             e.sendMessage,
-		"sendMessageRetID":        e.sendMessageRetID,
-		"sendDM":                  e.sendDM,
-		"editMessage":             e.editMessage,
-		"getMessage":              e.getMessage,
-		"deleteMessage":           e.deleteMessage,
-		"deleteTrigger":           e.deleteTrigger,
-		"deleteResponse":          e.deleteResponse,
-		"addReactions":            e.addReactions,
-		"addMessageReactions":     e.addMessageReactions,
+		"sendMessage":               e.sendMessage,
+		"sendMessageRetID":          e.sendMessageRetID,
+		"sendDM":                    e.sendDM,
+		"editMessage":               e.editMessage,
+		"getMessage":                e.getMessage,
+		"deleteMessage":             e.deleteMessage,
+		"deleteTrigger":             e.deleteTrigger,
+		"deleteResponse":            e.deleteResponse,
+		"addReactions":              e.addReactions,
+		"addMessageReactions":       e.addMessageReactions,
 		"deleteAllMessageReactions": e.deleteAllMessageReactions,
 
 		// Role functions
@@ -135,19 +140,19 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"hasRoleID":       e.hasRoleID,
 		"targetHasRole":   e.targetHasRole,
 		"targetHasRoleID": e.targetHasRoleID,
-		"addRole":        e.addRole,
-		"giveRole":       e.giveRole,
-		"removeRole":     e.removeRole,
-		"takeRole":       e.takeRole,
-		"setRoles":       e.setRoles,
-		"giveRoleID":     e.giveRoleID,
-		"takeRoleID":     e.takeRoleID,
-		"addRoleID":      e.addRoleID,
-		"removeRoleID":   e.removeRoleID,
+		"addRole":         e.addRole,
+		"giveRole":        e.giveRole,
+		"removeRole":      e.removeRole,
+		"takeRole":        e.takeRole,
+		"setRoles":        e.setRoles,
+		"giveRoleID":      e.giveRoleID,
+		"takeRoleID":      e.takeRoleID,
+		"addRoleID":       e.addRoleID,
+		"removeRoleID":    e.removeRoleID,
 
 		// Member/user functions
-		"getMember":      e.getMember,
-		"userArg":        e.userArg,
+		"getMember":              e.getMember,
+		"userArg":                e.userArg,
 		"getTargetPermissionsIn": e.getTargetPermissionsIn,
 
 		// Channel functions
@@ -167,13 +172,13 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"sendTemplate":       e.sendTemplate,
 
 		// Control flow
-		"execCC":                   e.execCC,
-		"exec":                     e.exec,
-		"execAdmin":                e.execAdmin,
-		"execTemplate":             e.execTemplateFunc,
-		"scheduleUniqueCC":         e.scheduleUniqueCC,
-		"cancelScheduledUniqueCC":  e.cancelScheduledUniqueCC,
-		"sleep":                    e.sleep,
+		"execCC":                  e.execCC,
+		"exec":                    e.exec,
+		"execAdmin":               e.execAdmin,
+		"execTemplate":            e.execTemplateFunc,
+		"scheduleUniqueCC":        e.scheduleUniqueCC,
+		"cancelScheduledUniqueCC": e.cancelScheduledUniqueCC,
+		"sleep":                   e.sleep,
 
 		// Mention functions
 		"mentionRoleID":   e.mentionRoleID,
@@ -186,25 +191,33 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"carg":      funcs.Carg,
 
 		// Misc
-		"or":      e.orFunc,
-		"and":     e.andFunc,
-		"not":     e.notFunc,
-		"eq":      e.eqFunc,
-		"ne":      e.neFunc,
-		"lt":      e.ltFunc,
-		"le":      e.leFunc,
-		"gt":      e.gtFunc,
-		"ge":      e.geFunc,
-		"len":     e.lenFunc,
-		"index":   e.indexFunc,
-		"return":  e.returnFunc,
-		"try":     e.tryFunc,
+		"or":     e.orFunc,
+		"and":    e.andFunc,
+		"not":    e.notFunc,
+		"eq":     e.eqFunc,
+		"ne":     e.neFunc,
+		"lt":     e.ltFunc,
+		"le":     e.leFunc,
+		"gt":     e.gtFunc,
+		"ge":     e.geFunc,
+		"len":    e.lenFunc,
+		"index":  e.indexFunc,
+		"return": e.returnFunc,
+		"try":    e.tryFunc,
 	}
+	for name, fn := range m {
+		m[name] = e.withLimits(name, fn)
+	}
+	return m
 }
 
 // Execute parses and executes a template.
 func (e *Engine) Execute(source string) (string, error) {
 	e.ctx.StartTime = time.Now()
+
+	if err := e.ctx.checkSourceLength(source); err != nil {
+		return "", err
+	}
 
 	// Preprocess the template to handle YAGPDB-specific constructs
 	source = PreprocessTemplate(source)
@@ -216,6 +229,10 @@ func (e *Engine) Execute(source string) (string, error) {
 		return "", fmt.Errorf("template parse error: %w", err)
 	}
 
+	for _, f := range findLoopDBCalls(tmpl) {
+		e.ctx.Warn(KindLoopDB, "%s", f.Message(e.ctx.SourceName))
+	}
+
 	var buf bytes.Buffer
 	data := e.ctx.BuildTemplateData()
 
@@ -223,7 +240,7 @@ func (e *Engine) Execute(source string) (string, error) {
 		return "", fmt.Errorf("template execution error: %w", err)
 	}
 
-	return buf.String(), nil
+	return e.ctx.checkOutput(buf.String(), time.Since(e.ctx.StartTime))
 }
 
 // Mock Discord functions
@@ -527,17 +544,17 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 		CmdArgs:         []interface{}{},
 		ExecData:        data,
 		IsPremium:       e.ctx.IsPremium,
+		Strict:          e.ctx.Strict,
 		DB:              e.ctx.DB, // Share database
-		MaxOps:          e.ctx.MaxOps,
-		CurrentOps:      e.ctx.CurrentOps,
-		MaxOutput:       e.ctx.MaxOutput,
+		Schema:          e.ctx.Schema,
+		Counters:        make(map[string]int), // execCC starts a new run with its own limits
 		StartTime:       e.ctx.StartTime,
-		MaxDuration:     e.ctx.MaxDuration,
 		AvailableRoles:  e.ctx.AvailableRoles,
 		CommandIDMap:    e.ctx.CommandIDMap,
 		ExecCCDepth:     e.ctx.ExecCCDepth + 1,
 		MaxExecCCDepth:  e.ctx.MaxExecCCDepth,
 		TemplateBaseDir: e.ctx.TemplateBaseDir,
+		SourceName:      templatePath,
 	}
 
 	// Execute child template
@@ -548,7 +565,14 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 	e.ctx.SentMessages = append(e.ctx.SentMessages, childCtx.SentMessages...)
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
-	e.ctx.CurrentOps = childCtx.CurrentOps
+	if err != nil {
+		// YAGPDB posts a failed execCC's error in the target channel; the caller carries on.
+		e.ctx.Warn(KindExecCC, "execCC %d (%s) failed: %v", commandID, filepath.Base(templatePath), err)
+	}
+	for _, d := range childCtx.Diagnostics {
+		d.Message = fmt.Sprintf("execCC %d (%s): %s", commandID, filepath.Base(templatePath), d.Message)
+		e.ctx.Diagnostics = append(e.ctx.Diagnostics, d)
+	}
 
 	// execCC doesn't return output to the caller
 	return ""

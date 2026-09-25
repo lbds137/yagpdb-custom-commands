@@ -2,10 +2,8 @@ package runtime
 
 import "errors"
 
-// Execution limit errors
+// Execution limit errors, worded as YAGPDB words them (common/templates/context_funcs.go).
 var (
-	ErrTooManyOps     = errors.New("too many operations")
-	ErrTimeout        = errors.New("execution timeout exceeded")
-	ErrOutputTooLarge = errors.New("output too large")
-	ErrStackTooDeep   = errors.New("execCC stack too deep")
+	ErrTooManyCalls    = errors.New("too many calls to this function")
+	ErrTooManyAPICalls = errors.New("too many potential Discord API calls")
 )
