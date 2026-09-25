@@ -11,6 +11,7 @@ import (
 
 // SentMessage represents a message that was "sent" during template execution.
 type SentMessage struct {
+	ID        int64
 	ChannelID int64
 	Content   string
 	Embed     interface{}
@@ -95,8 +96,10 @@ type ExecutionContext struct {
 
 	// Side effects captured during execution
 	SentMessages []SentMessage
-	RoleChanges  []RoleChange
-	FileUploads  []FileUpload
+	// EditedMessages are messages as editMessage left them, in the order they were edited
+	EditedMessages []SentMessage
+	RoleChanges    []RoleChange
+	FileUploads    []FileUpload
 
 	// Warnings found during execution (limits, db calls in loops, schema mismatches)
 	Diagnostics []Diagnostic
@@ -318,13 +321,14 @@ func (ctx *ExecutionContext) HasRole(roleID int64) bool {
 // RecordSentMessage records a message sent during execution. Messages the bot sends to a
 // channel can be fetched with getMessage, as on Discord; it returns their ID.
 func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embed interface{}) int64 {
+	*ctx.sentMessageIDs()++
+	id := firstSentMessageID + *ctx.sentIDs
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{
+		ID:        id,
 		ChannelID: channelID,
 		Content:   content,
 		Embed:     embed,
 	})
-	*ctx.sentMessageIDs()++
-	id := firstSentMessageID + *ctx.sentIDs
 	msg := types.CtxMessage{
 		ID:        id,
 		ChannelID: channelID,

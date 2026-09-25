@@ -104,6 +104,7 @@ var limitedFuncs = map[string]limitedFunc{
 	"mentionRoleID":    {limits: []callLimit{limitAPI}, silent: true},
 
 	"editMessage":            {limits: []callLimit{limitAPI}},
+	"editMessageNoEscape":    {limits: []callLimit{limitAPI}},
 	"getMessage":             {limits: []callLimit{limitAPI}},
 	"getMember":              {limits: []callLimit{limitAPI}},
 	"getChannel":             {limits: []callLimit{limitAPI}},
@@ -416,6 +417,17 @@ func (ctx *ExecutionContext) checkSend(fn, content string, embeds []interface{},
 		return false, nil
 	}
 	return false, err
+}
+
+// discordRefuses reports a call Discord would answer with an error: an error with
+// -strict, otherwise a warning (and the call does nothing).
+func (ctx *ExecutionContext) discordRefuses(fn, reason, detail string) error {
+	err := fmt.Errorf("%s: Discord refuses this (%s): %s", fn, reason, detail)
+	if !ctx.Strict {
+		ctx.warnOnce(err.Error())
+		return nil
+	}
+	return err
 }
 
 const msgEmpty = "the message is empty"

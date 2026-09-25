@@ -121,7 +121,9 @@ type ExpectedResult struct {
 type Assertions struct {
 	DBChecks     []DBCheck      `yaml:"db_checks"`
 	SentMessages []MessageCheck `yaml:"sent_messages"`
-	RoleChanges  []RoleCheck    `yaml:"role_changes"`
+	// EditedMessages check messages as editMessage left them
+	EditedMessages []MessageCheck `yaml:"edited_messages"`
+	RoleChanges    []RoleCheck    `yaml:"role_changes"`
 }
 
 // DBCheck defines a database assertion.

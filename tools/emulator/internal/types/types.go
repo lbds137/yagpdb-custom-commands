@@ -400,6 +400,16 @@ type MessageSend struct {
 	HasOther bool
 }
 
+// MessageEdit is what complexMessageEdit builds (YAGPDB's CreateMessageEdit): only the
+// fields it sets change. Content is nil when the edit leaves it alone.
+type MessageEdit struct {
+	Content  *string
+	Embeds   []interface{} // each as cembed built it; nil leaves the embeds alone
+	HasOther bool          // components, buttons or menus (not otherwise modelled)
+	// ComponentsV2 is the is_components_v2 flag, which skips YAGPDB's empty-edit check
+	ComponentsV2 bool
+}
+
 // Embed is what cembed builds: the dict after YAGPDB's conversion to a Discord embed
 // (CreateEmbed marshals it to JSON and decodes it into discordgo.MessageEmbed). Unknown
 // keys are dropped and wrong value types are errors, as in production.
