@@ -549,20 +549,10 @@ func runTests(opts testOptions) int {
 			return 1
 		}
 	} else {
-		// Try as test suite first
-		suite, suiteErr := loader.LoadTestSuite(path)
-		if suiteErr == nil && len(suite.Tests) > 0 {
-			for i := range suite.Tests {
-				tests = append(tests, &suite.Tests[i])
-			}
-		} else {
-			// Try as single test
-			tc, tcErr := loader.LoadTestCase(path)
-			if tcErr != nil {
-				fmt.Fprintf(os.Stderr, "Error loading tests: %v\n", tcErr)
-				return 1
-			}
-			tests = append(tests, tc)
+		tests, err = loader.LoadTestFile(path)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading tests: %v\n", err)
+			return 1
 		}
 	}
 

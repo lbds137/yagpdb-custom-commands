@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
@@ -176,6 +177,13 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	}
 	ctx.Members = tc.Context.Members
 	ctx.MemberRoles = tc.Context.MemberRoles
+	ctx.MemberNicks = tc.Context.MemberNicks
+	if len(tc.Context.MemberJoinedAgo) > 0 {
+		ctx.MemberJoinedAgo = make(map[int64]time.Duration, len(tc.Context.MemberJoinedAgo))
+		for id, ago := range tc.Context.MemberJoinedAgo {
+			ctx.MemberJoinedAgo[id] = time.Duration(ago)
+		}
+	}
 	for _, role := range tc.Context.Guild.Roles {
 		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color}
 	}

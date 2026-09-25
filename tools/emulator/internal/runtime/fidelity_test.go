@@ -266,3 +266,46 @@ func TestParseArgsOnlyParsesMessageTriggers(t *testing.T) {
 		t.Errorf("the execCC run parses nothing and fails nothing: %q %+v", ctx.Diagnostics, ctx.SentMessages)
 	}
 }
+
+func TestMembersHaveNicksAndJoinTimes(t *testing.T) {
+	ctx := newCtx(false, true)
+	ctx.Username = "Me"
+	ctx.MemberNicks = map[int64]string{ctx.UserID: "My Nick", 5: "Five"}
+	ctx.MemberJoinedAgo = map[int64]time.Duration{5: 12 * time.Hour}
+	out, err := run(t, ctx, `{{.Member.Nick}}|{{(getMember .User.ID).User.Username}}|`+
+		`{{(getMember 5).Nick}}|{{toInt (currentTime.Sub (getMember 5).JoinedAt.Parse).Hours}}|`+
+		`{{toInt (currentTime.Sub .Member.JoinedAt.Parse).Hours}}|{{printf "%T" .Member.JoinedAt}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Without a join time a member joined 30 days (720 hours) ago; JoinedAt is a string, as in discordgo
+	if want := "My Nick|Me|Five|12|720|types.Timestamp"; out != want {
+		t.Errorf("got %q, want %q", out, want)
+	}
+}
+
+func TestJoinedAtLooksLikeDiscords(t *testing.T) {
+	ts := types.NewTimestamp(time.Date(2021, 1, 2, 3, 4, 5, 120000000, time.FixedZone("x", 3600)))
+	if ts != "2021-01-02T02:04:05.120000+00:00" {
+		t.Errorf("got %s", ts)
+	}
+	if parsed, err := ts.Parse(); err != nil || parsed.Hour() != 2 {
+		t.Errorf("Parse: %v, %v", parsed, err)
+	}
+}
+
+func TestExecCCChildSeesMemberData(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{sendMessage nil (print (getMember 5).Nick "|" (toInt (currentTime.Sub (getMember 5).JoinedAt.Parse).Hours))}}`)
+	ctx := newCtx(false, true)
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	ctx.MemberNicks = map[int64]string{5: "Five"}
+	ctx.MemberJoinedAgo = map[int64]time.Duration{5: 3 * time.Hour}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil {
+		t.Fatal(err)
+	}
+	if len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Content != "Five|3" {
+		t.Errorf("sent %+v", ctx.SentMessages)
+	}
+}

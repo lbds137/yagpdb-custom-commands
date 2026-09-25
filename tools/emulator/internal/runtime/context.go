@@ -71,6 +71,10 @@ type ExecutionContext struct {
 	Members  []int64
 	// MemberRoles are other members' roles; the triggering user's are UserRoles
 	MemberRoles map[int64][]int64
+	// MemberNicks and MemberJoinedAgo give members' nicknames and how long before the run
+	// they joined, the triggering user's included (default DefaultJoinedAgo)
+	MemberNicks     map[int64]string
+	MemberJoinedAgo map[int64]time.Duration
 
 	// Reaction trigger: set for commands triggered by a reaction
 	Reaction      *types.CtxReaction
@@ -156,12 +160,7 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		Discriminator: ctx.Discriminator,
 	}
 
-	// Build member object
-	member := types.CtxMember{
-		User:     user,
-		Roles:    ctx.UserRoles,
-		JoinedAt: types.TemplateTime{Time: time.Now().Add(-24 * time.Hour)}, // Default: joined 24h ago
-	}
+	member := ctx.member(ctx.UserID)
 
 	// Build channel object
 	channel := types.CtxChannel{
@@ -386,6 +385,27 @@ func (ctx *ExecutionContext) isMember(userID int64) bool {
 		}
 	}
 	return false
+}
+
+// DefaultJoinedAgo is how long before now a member joined, unless a test says otherwise.
+const DefaultJoinedAgo = 30 * 24 * time.Hour
+
+// member is what YAGPDB's getMember gives for a server member.
+func (ctx *ExecutionContext) member(userID int64) types.CtxMember {
+	user := types.DiscordUser{ID: userID, Username: "MockUser"}
+	if userID == ctx.UserID {
+		user = types.DiscordUser{ID: userID, Username: ctx.Username, Discriminator: ctx.Discriminator}
+	}
+	ago, ok := ctx.MemberJoinedAgo[userID]
+	if !ok {
+		ago = DefaultJoinedAgo
+	}
+	return types.CtxMember{
+		User:     user,
+		Nick:     ctx.MemberNicks[userID],
+		Roles:    ctx.rolesOf(userID),
+		JoinedAt: types.NewTimestamp(ctx.StartTime.Add(-ago)),
+	}
 }
 
 // rolesOf returns a member's role IDs.

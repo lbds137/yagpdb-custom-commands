@@ -5,6 +5,8 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
+- Test YAML isn't parsed strictly: a misspelled or misplaced key (under `assertions:` or
+  `expected:`, say) is ignored, so the test passes without checking anything.
 - `.ValueSize` of database entries is an estimate, not YAGPDB's msgpack size.
 - Discord functions are mocks: `editMessage` is a no-op (so it skips Discord's message
   limits, which sends check), the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
@@ -12,8 +14,6 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   `roleAbove`, `sanitizeText`, `adjective`/`noun`/`verb`.
 - Role lookups accept IDs, mentions and names everywhere; YAGPDB's `FindRole` accepts a
   different set per function.
-- `getMember` of the triggering user is a generic mock (no nick, zero JoinedAt), and tests
-  can't set members' JoinedAt. That leaves guest's "within the grace period" path untestable.
 - A trailing backslash in a LIKE pattern is ignored; Postgres errors.
 - `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
   declares no guild roles accepts any role), and accepts any channel ID, since the
@@ -69,6 +69,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       fields are unset and `parseArgs` parses nothing, as in YAGPDB. `guild.prefix` sets
       `.ServerPrefix`; `yagtest run -message` gives a whole message; commands run by
       `execCC` see the caller's `.Message` (2026-09-25)
+- [x] Members have nicknames and join times (`member_nicks`, `member_joined_ago`; default
+      30 days ago); `.Member` and `getMember` build the same member, and `JoinedAt` is
+      discordgo's `Timestamp` string, formatted as Discord sends it. guest's grace-period
+      path is tested. A suite that doesn't parse reports its own error (2026-09-25)
 - [x] `parseArgs` is ported from YAGPDB and dcmd: the last argument takes the rest of the
       message, quotes group words, types and bounds are checked with dcmd's errors, and a
       command run by execCC or a reaction parses nothing (2026-09-25)

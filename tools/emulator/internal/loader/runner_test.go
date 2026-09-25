@@ -98,3 +98,21 @@ func TestSuiteDefaultPrefix(t *testing.T) {
 		t.Errorf("got %q, %v", res.Output, res.Error)
 	}
 }
+
+func TestBadSuiteReportsItsOwnError(t *testing.T) {
+	dir := t.TempDir()
+	for name, want := range map[string]string{
+		"days.yaml":     "72h, not 3d",
+		"negative.yaml": "negative",
+	} {
+		value := map[string]string{"days.yaml": "3d", "negative.yaml": "-1h"}[name]
+		src := "tests:\n  - name: x\n    template_source: \"hi\"\n    context:\n      member_joined_ago: { 5: " + value + " }\n"
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadTestFile(path); err == nil || !strings.Contains(err.Error(), want) || !strings.Contains(err.Error(), "line 5") {
+			t.Errorf("%s: want an error naming line 5 and %q, got %v", name, want, err)
+		}
+	}
+}

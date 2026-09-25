@@ -414,13 +414,8 @@ func (e *Engine) getMember(userID interface{}) *types.CtxMember {
 	if id == 0 || !e.ctx.isMember(id) {
 		return nil
 	}
-	return &types.CtxMember{
-		User: types.DiscordUser{
-			ID:       id,
-			Username: "MockUser",
-		},
-		Roles: e.ctx.rolesOf(id),
-	}
+	m := e.ctx.member(id)
+	return &m
 }
 
 // userArg follows YAGPDB's userArg (commands/tmplexec.go): an ID or mention of a server
@@ -654,10 +649,12 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) stri
 		TemplateBaseDir: e.ctx.TemplateBaseDir,
 		SourceName:      templatePath,
 		// The same server; a copy, since execCC runs after the caller finishes
-		Messages:    append([]types.CtxMessage(nil), e.ctx.Messages...),
-		sentIDs:     e.ctx.sentMessageIDs(),
-		Members:     e.ctx.Members,
-		MemberRoles: e.ctx.MemberRoles,
+		Messages:        append([]types.CtxMessage(nil), e.ctx.Messages...),
+		sentIDs:         e.ctx.sentMessageIDs(),
+		Members:         e.ctx.Members,
+		MemberRoles:     e.ctx.MemberRoles,
+		MemberNicks:     e.ctx.MemberNicks,
+		MemberJoinedAgo: e.ctx.MemberJoinedAgo,
 	}
 
 	// Execute child template
