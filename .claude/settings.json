@@ -24,5 +24,8 @@
     ],
     "deny": []
   },
-  "enableAllProjectMcpServers": false
+  "enableAllProjectMcpServers": false,
+  "worktree": {
+    "baseRef": "head"
+  }
 }
