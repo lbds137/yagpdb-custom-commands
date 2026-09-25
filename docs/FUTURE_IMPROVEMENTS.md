@@ -108,8 +108,7 @@ gets a failing test first.
   (`[message]`) and records no author ping. Discord refuses a reply to a message that
   doesn't exist by default (fail_if_not_exists; unverified here, YAGPDB doesn't set it).
   A `silent` message still counts its pings, though Discord sends no notification for it.
-- A failed execCC child's show_errors message isn't checked against Discord's
-  2000-character limit. That it pings no one is read from the code, not probed.
+- That a failed run's show_errors message pings no one is read from the code, not probed.
   With `-strict`, a child over the source-length limit sends that error as the message;
   YAGPDB wouldn't save such a command.
   Deletions are recorded, not made: a deleted message stays findable by getMessage for the
@@ -153,6 +152,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] A failed run's show_errors message is now checked against Discord's 2000-character
+      limit too (YAGPDB's ChannelMessageSend error is discarded, so an over-limit message
+      silently never posts); non-strict warns and still records it, strict warns and drops
+      it, and applies to a top-level run and an execCC child alike (2026-09-25)
 
 - [x] `SentMessage.Embeds` records every embed of a sent or edited message, not only the
       first; `has_embed`, `embed_contains` and `embed_title` match any of them, and
