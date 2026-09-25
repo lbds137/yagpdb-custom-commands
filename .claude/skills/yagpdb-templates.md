@@ -73,7 +73,18 @@ utility/         - General-purpose commands
 | Command size | 10k chars | 20k chars |
 | Operations per run (no time limit) | 1,000,000 | 2,500,000 |
 | `sleep` per run | 60 sec | 60 sec |
-| Embed description | 2,048 chars | 2,048 chars |
+| Output per run | 25,000 bytes | 25,000 bytes |
+| `execCC` + `scheduleUniqueCC` calls per run | 1 | 10 |
+| `sendDM` per run | 1 | 1 |
+| Command response (YAGPDB replaces a longer one) | 2,000 chars | 2,000 chars |
+| Nested immediate `execCC` | 2 deep | 2 deep |
+| Database calls per run | 10 | 50 |
+| Database entries per server | 50 × members | 500 × members |
+| Discord API calls per run | 100 | 100 |
+| Message content (Discord) | 2,000 chars | 2,000 chars |
+| Embed description (Discord) | 4,096 chars | 4,096 chars |
+
+Details and sources: `docs/API_REFERENCE.md` → YAGPDB System Limits.
 
 ### Research First
 

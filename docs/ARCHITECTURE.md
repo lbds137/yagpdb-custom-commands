@@ -107,7 +107,7 @@ Centralized message formatting and delivery:
 {{ define "embed_structure" }}
   - Author Information (User/Guild)
   - Color Management (Role-based/Custom)
-  - Content Truncation (2000 char limit)
+  - Content Truncation (description cut to 1,998 characters plus "…")
   - Auto-deletion Support
   - Thumbnail/Image Support
 {{ end }}
