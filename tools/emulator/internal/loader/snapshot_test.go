@@ -3,8 +3,11 @@ package loader
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func snapshotTest(dir, source string) *TestCase {
@@ -67,6 +70,48 @@ func TestSnapshotLifecycle(t *testing.T) {
 	}
 	if res := r.RunTest(snapshotTest(dir, changed)); !res.Passed {
 		t.Fatalf("after update the change should match: %+v", res.Failures)
+	}
+}
+
+// A failed run with no output posts "\nAn error caused...": yaml.v3 alone writes that, in
+// a list, as a block scalar it can't read back
+func TestSnapshotStringsReadBack(t *testing.T) {
+	dir := t.TempDir()
+	src := `{{sendMessage nil "\nAn error:\nline two"}}`
+	r := NewRunner(RunnerConfig{BaseDir: dir})
+	if res := r.RunTest(snapshotTest(dir, src)); !res.Passed || !res.SnapshotWritten {
+		t.Fatalf("first run should pass and write: %+v", res)
+	}
+	if res := r.RunTest(snapshotTest(dir, src)); !res.Passed || res.SnapshotWritten {
+		t.Fatalf("the saved snapshot should read back and match: %+v", res.Failures)
+	}
+
+	// Every string of up to 3 of the characters YAML treats specially
+	chars := []string{"\n", "\t", " ", "\r", "x", "#", ":", "-", "'", `"`, "|", "\u00a0"}
+	strs := []string{""}
+	for n := 0; n < 3; n++ {
+		for _, prefix := range strs {
+			if len([]rune(prefix)) == n {
+				for _, c := range chars {
+					strs = append(strs, prefix+c)
+				}
+			}
+		}
+	}
+	for _, str := range strs {
+		s := snapText(str)
+		snaps := map[string]Snapshot{"t": {Output: s, Messages: []SnapshotMessage{{Content: s, Embed: s}},
+			Files: []SnapshotFile{{Filename: s, Content: s}}, DB: []SnapshotEntry{{Key: s, Value: s}}}}
+		data, err := encodeSnapshots(snaps)
+		if err != nil {
+			t.Errorf("%q: %v", s, err)
+			continue
+		}
+		// Checked apart from encodeSnapshots' own check
+		var back map[string]Snapshot
+		if err := yaml.Unmarshal(data, &back); err != nil || !reflect.DeepEqual(back, snaps) {
+			t.Errorf("%q doesn't read back: %v\n%s", s, err, data)
+		}
 	}
 }
 

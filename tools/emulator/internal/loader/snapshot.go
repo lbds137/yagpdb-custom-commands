@@ -18,7 +18,7 @@ import (
 
 // Snapshot records what a test run produced: its output and side effects.
 type Snapshot struct {
-	Output      string            `yaml:"output"`
+	Output      snapText          `yaml:"output"`
 	Messages    []SnapshotMessage `yaml:"messages,omitempty"`
 	Edits       []SnapshotMessage `yaml:"edits,omitempty"`
 	Files       []SnapshotFile    `yaml:"files,omitempty"`
@@ -31,23 +31,23 @@ type Snapshot struct {
 
 // SnapshotMessage is a sent message. Embeds are stored as indented JSON.
 type SnapshotMessage struct {
-	ChannelID int64  `yaml:"channel_id"`
-	Content   string `yaml:"content,omitempty"`
-	Embed     string `yaml:"embed,omitempty"`
+	ChannelID int64    `yaml:"channel_id"`
+	Content   snapText `yaml:"content,omitempty"`
+	Embed     snapText `yaml:"embed,omitempty"`
 }
 
 // SnapshotFile is a file attached to a sent message (complexMessage's "file").
 type SnapshotFile struct {
-	ChannelID int64  `yaml:"channel_id"`
-	Filename  string `yaml:"filename"`
-	Content   string `yaml:"content"`
+	ChannelID int64    `yaml:"channel_id"`
+	Filename  snapText `yaml:"filename"`
+	Content   snapText `yaml:"content"`
 }
 
 // SnapshotEntry is a database entry after the run. Values are stored as JSON.
 type SnapshotEntry struct {
-	UserID int64  `yaml:"user_id"`
-	Key    string `yaml:"key"`
-	Value  string `yaml:"value"`
+	UserID int64    `yaml:"user_id"`
+	Key    snapText `yaml:"key"`
+	Value  snapText `yaml:"value"`
 }
 
 // SnapshotPath is where snapshots for tests from sourceFile are kept:
@@ -58,11 +58,11 @@ func SnapshotPath(sourceFile string) string {
 }
 
 func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB) Snapshot {
-	snap := Snapshot{Output: strings.TrimSpace(output)}
+	snap := Snapshot{Output: snapText(strings.TrimSpace(output))}
 	snap.Messages = snapshotMessages(ctx.SentMessages)
 	snap.Edits = snapshotMessages(ctx.EditedMessages)
 	for _, f := range ctx.FileUploads {
-		snap.Files = append(snap.Files, SnapshotFile{ChannelID: f.ChannelID, Filename: f.Filename, Content: f.Content})
+		snap.Files = append(snap.Files, SnapshotFile{ChannelID: f.ChannelID, Filename: snapText(f.Filename), Content: snapText(f.Content)})
 	}
 	for _, rc := range ctx.RoleChanges {
 		change := fmt.Sprintf("%s role %d for user %d", rc.Action, rc.RoleID, rc.UserID)
@@ -88,7 +88,7 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 		return entries[i].Key < entries[j].Key
 	})
 	for _, e := range entries {
-		snap.DB = append(snap.DB, SnapshotEntry{UserID: e.UserID, Key: e.Key, Value: compactJSON(e.Value)})
+		snap.DB = append(snap.DB, SnapshotEntry{UserID: e.UserID, Key: snapText(e.Key), Value: snapText(compactJSON(e.Value))})
 	}
 	return snap
 }
@@ -96,9 +96,9 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 func snapshotMessages(messages []runtime.SentMessage) []SnapshotMessage {
 	var out []SnapshotMessage
 	for _, msg := range messages {
-		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: msg.Content}
+		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: snapText(msg.Content)}
 		if msg.Embed != nil {
-			sm.Embed = readableJSON(msg.Embed)
+			sm.Embed = snapText(readableJSON(msg.Embed))
 		}
 		out = append(out, sm)
 	}
@@ -150,7 +150,7 @@ func writeSnapshot(path, name string, snap Snapshot) error {
 }
 
 func saveSnapshots(path string, snaps map[string]Snapshot) error {
-	data, err := yaml.Marshal(snaps)
+	data, err := encodeSnapshots(snaps)
 	if err != nil {
 		return err
 	}
@@ -158,6 +158,57 @@ func saveSnapshots(path string, snaps map[string]Snapshot) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
+}
+
+// snapText is text in a snapshot. yaml.v3 writes some text as a block scalar that
+// loses characters or that it can't parse at all (text starting with "\n" or "\t\n"
+// comes out as "|4-"), so text that wouldn't read back is double-quoted.
+type snapText string
+
+func (s snapText) MarshalYAML() (interface{}, error) {
+	if !yamlKeeps(string(s)) {
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.DoubleQuotedStyle, Value: string(s)}, nil
+	}
+	return string(s), nil
+}
+
+// yamlKeeps reports whether yaml.v3 reads s back as itself, in both places snapshot text
+// sits: a test's field, and a field of a list item.
+func yamlKeeps(s string) bool {
+	type item struct {
+		S string `yaml:"s"`
+	}
+	type doc struct {
+		S     string `yaml:"s"`
+		Items []item `yaml:"items"`
+	}
+	want := map[string]doc{"t": {S: s, Items: []item{{S: s}}}}
+	data, err := yaml.Marshal(want)
+	if err != nil {
+		return false
+	}
+	var got map[string]doc
+	if err := yaml.Unmarshal(data, &got); err != nil {
+		return false
+	}
+	return got["t"].S == s && len(got["t"].Items) == 1 && got["t"].Items[0].S == s
+}
+
+// encodeSnapshots is the snapshot file's YAML, checked to read back as snaps.
+func encodeSnapshots(snaps map[string]Snapshot) ([]byte, error) {
+	data, err := yaml.Marshal(snaps)
+	if err != nil {
+		return nil, err
+	}
+	var back map[string]Snapshot
+	if err := yaml.Unmarshal(data, &back); err != nil {
+		return nil, fmt.Errorf("the snapshot YAML wouldn't read back: %w", err)
+	}
+	got, _ := yaml.Marshal(back)
+	if !bytes.Equal(data, got) {
+		return nil, errors.New("the snapshot YAML wouldn't read back as written")
+	}
+	return data, nil
 }
 
 // checkSnapshot compares a run with its saved snapshot. A missing snapshot is written,
