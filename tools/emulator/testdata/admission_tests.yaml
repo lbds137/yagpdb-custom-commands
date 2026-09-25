@@ -139,6 +139,9 @@ tests:
     template: "../../../staff_utility/reject_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "No introduction"]
+      # YAGPDB's kick response (moderation/commands.go ~330, GenericCmdResp with noDur=true),
+      # with the target's String() as the emulator gives it here ("MockUser", discriminator "0")
+      exec_responses: { 'kick 500000000000000001 "No introduction"': "👢 Kicked `MockUser`" }
     assertions:
       sent_messages:
         - { channel_id: 900000000000000006, content_equals: "message_link copy" }
@@ -231,6 +234,9 @@ tests:
     context:
       args: ["500000000000000001"]
       member_roles: { 500000000000000001: [222222222222222222] }
+      # YAGPDB's kick response (moderation/commands.go ~330, GenericCmdResp with noDur=true),
+      # with the target's String() as the emulator gives it here ("MockUser", discriminator "0")
+      exec_responses: { 'kick 500000000000000001 "exceeding the inactivity grace period by **672** hours"': "👢 Kicked `MockUser`" }
     assertions:
       execs: [{ line: 'kick 500000000000000001 "exceeding the inactivity grace period by **672** hours"', admin: true }]
     snapshot: true
