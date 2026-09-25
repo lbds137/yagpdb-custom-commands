@@ -37,11 +37,11 @@ func TestMessageReactions(t *testing.T) {
 		// TargetUserID strips only a mention longer than 4 characters
 		{`{{deleteMessageReaction nil 77 "nobody" "a"}}|{{deleteMessageReaction nil 77 "<@6>" "a"}}`, "non-existing user|non-existing user", ""},
 		// Discord's refusals: an unknown message, an emoji that isn't a string
-		{`{{addMessageReactions nil 78 "a"}}`, "", "10008 Unknown Message"},
-		{`{{addMessageReactions nil 77 5}}`, "", "10014 Unknown Emoji): the emoji <int Value> is not a string"},
+		{`{{addMessageReactions nil 78 "a"}}`, "", `"code": 10008`},
+		{`{{addMessageReactions nil 77 5}}`, "", "the emoji <int Value> is not a string"},
 		{`{{addMessageReactions nil 77 nil}}`, "", "the emoji <invalid Value> is not a string"},
-		{`{{deleteMessageReaction nil 78 5 "a"}}`, "", "10008 Unknown Message"},
-		{`{{deleteAllMessageReactions nil 78 "a"}}`, "", "10008 Unknown Message"},
+		{`{{deleteMessageReaction nil 78 5 "a"}}`, "", `"code": 10008`},
+		{`{{deleteAllMessageReactions nil 78 "a"}}`, "", `"code": 10008`},
 	}
 	want := [][]string{
 		{"add 👍 on message 77 in channel 123456789", "add a on message 77 in channel 123456789", "add b on message 77 in channel 123456789"},
@@ -53,7 +53,7 @@ func TestMessageReactions(t *testing.T) {
 		ctx.Channels = map[int64]string{ctx.ChannelID: "general"} // 99 is unknown
 		out, err := run(t, ctx, c.src)
 		if c.err != "" {
-			if err == nil || !strings.Contains(err.Error(), c.err) {
+			if err == nil || !strings.Contains(explained(ctx, err), c.err) {
 				t.Errorf("%s: want error %q, got %q, %v", c.src, c.err, out, err)
 			}
 			continue
@@ -86,7 +86,7 @@ func TestMessageReactions(t *testing.T) {
 		t.Errorf("ints: %v, %q", err, reactions(ctx))
 	}
 	ctx = reactCtx()
-	if _, err := run(t, ctx, `{{$e := cslice}}{{range seq 0 21}}{{$e = $e.Append (str .)}}{{end}}{{addMessageReactions nil 77 $e}}`); err == nil || !strings.Contains(err.Error(), "add_reaction_message") || len(ctx.Reactions) != 20 {
+	if _, err := run(t, ctx, `{{$e := cslice}}{{range seq 0 21}}{{$e = $e.Append (str .)}}{{end}}{{addMessageReactions nil 77 $e}}`); err == nil || !strings.Contains(explained(ctx, err), "add_reaction_message") || len(ctx.Reactions) != 20 {
 		t.Errorf("21 emoji: %v, %d reactions", err, len(ctx.Reactions))
 	}
 }
@@ -102,7 +102,7 @@ func TestAddReactions(t *testing.T) {
 	}
 	ctx = reactCtx()
 	ctx.NoMessage = true
-	if _, err := run(t, ctx, `{{addReactions "a"}}`); err == nil || !strings.Contains(err.Error(), "10008 Unknown Message") ||
+	if _, err := run(t, ctx, `{{addReactions "a"}}`); err == nil || !strings.Contains(err.Error(), `"code": 10008`) ||
 		len(ctx.Reactions) != 0 || ctx.Counters["add_reaction_trigger"] != 1 {
 		t.Errorf("interval: %v, %q, %v", err, reactions(ctx), ctx.Counters)
 	}
@@ -122,7 +122,7 @@ func TestAddReactions(t *testing.T) {
 	if _, err := run(t, ctx, `{{execCC 7 42 0 nil}}`); err != nil || !slices.Equal(reactions(ctx), []string{"add a on message 55 in channel 123456789"}) {
 		t.Errorf("execCC child: %v, %q", err, reactions(ctx))
 	}
-	if _, err := run(t, reactCtx(), `{{addReactions 5}}`); err == nil || !strings.Contains(err.Error(), "10014 Unknown Emoji") {
+	if _, err := run(t, reactCtx(), `{{addReactions 5}}`); err == nil || !strings.Contains(err.Error(), `"code": 10014`) {
 		t.Errorf("an int emoji: %v", err)
 	}
 }
@@ -153,7 +153,7 @@ func TestAddResponseReactions(t *testing.T) {
 		t.Errorf("execCC child: %v, %q", err, reactions(ctx))
 	}
 	ctx = reactCtx()
-	if _, err := run(t, ctx, `{{addResponseReactions (seq 0 21)}}x`); err == nil || !strings.Contains(err.Error(), "add_reaction_response") {
+	if _, err := run(t, ctx, `{{addResponseReactions (seq 0 21)}}x`); err == nil || !strings.Contains(explained(ctx, err), "add_reaction_response") {
 		t.Errorf("21 response reactions: %v", err)
 	}
 }

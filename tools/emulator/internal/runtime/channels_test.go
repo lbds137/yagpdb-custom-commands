@@ -165,7 +165,7 @@ func TestGetMessageFindsTheTrigger(t *testing.T) {
 	}
 
 	ctx = channelCtx() // strict
-	if _, err := run(t, ctx, `{{editMessage nil .Message.ID "x"}}`); err == nil || !strings.Contains(err.Error(), "50005 Cannot edit a message authored by another user") {
+	if _, err := run(t, ctx, `{{editMessage nil .Message.ID "x"}}`); err == nil || !strings.Contains(err.Error(), `"code": 50005`) {
 		t.Errorf("editing the trigger: %v", err)
 	}
 

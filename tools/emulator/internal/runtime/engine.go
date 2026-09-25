@@ -374,10 +374,10 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	target := e.ctx.knownMessage(channelID, id)
 	switch {
 	case target == nil:
-		return "", e.ctx.discordRefuses("editMessage", "HTTP 404, 10008 Unknown Message",
+		return "", e.ctx.discordRefuses("editMessage", errUnknownMessage,
 			fmt.Sprintf("no message %d in channel %d", id, channelID))
 	case target.Author.ID != botUser.ID:
-		return "", e.ctx.discordRefuses("editMessage", "HTTP 403, 50005 Cannot edit a message authored by another user",
+		return "", e.ctx.discordRefuses("editMessage", errEditOthers,
 			fmt.Sprintf("message %d is by user %d", id, target.Author.ID))
 	}
 
