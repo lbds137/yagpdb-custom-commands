@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           # Same line as the dev machine (mise); go.mod's "go 1.21" is only the minimum
           go-version: "1.27"
