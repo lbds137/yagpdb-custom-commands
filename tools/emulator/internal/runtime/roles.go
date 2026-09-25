@@ -149,6 +149,25 @@ func (e *Engine) findRole(role interface{}, accept roleInputType) *types.CtxRole
 	return nil
 }
 
+// roleArg is RoleArg's lookup: the first of .Guild.Roles whose ID is id or whose name is
+// idName, exactly (a role name is case-sensitive here, unlike getRole's). With no roles
+// declared, an ID falls back to guildRole's assumed role.
+func (e *Engine) roleArg(id interface{}, idName string) *types.CtxRole {
+	roles := e.ctx.sortedRoles()
+	if len(roles) == 0 && e.ctx.GuildID != 0 {
+		roles = append(roles, types.CtxRole{ID: e.ctx.GuildID, Name: "@everyone"})
+	}
+	for _, v := range roles {
+		if id == interface{}(v.ID) || v.Name == idName {
+			return &v
+		}
+	}
+	if parsed, ok := id.(int64); ok && len(e.ctx.AvailableRoles) == 0 {
+		return e.guildRole(parsed)
+	}
+	return nil
+}
+
 // guildRole is the guild's role with that ID, or nil. When the test declares no roles,
 // any role ID is taken to exist, so commands run without listing the server's roles; a
 // warning names each such ID, since a stale one would be nil in production.
