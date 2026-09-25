@@ -410,11 +410,19 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 // getMessage returns a message the emulator knows (knownMessage: a test's, a sent one, the
 // triggering message), or a nil *CtxMessage like YAGPDB's for a message that doesn't exist:
 // `if $msg` is false and $msg.Author is a nil pointer error, as in production. A nil
-// channel is the current one.
+// channel is the current one. The message is a copy, as YAGPDB's is fetched from Discord
+// on each call: a later edit doesn't show through a message fetched before it.
 func (e *Engine) getMessage(channel, msgID interface{}) *types.CtxMessage {
 	id := funcs.ToInt64(msgID)
 	channelID := e.channelArg(channel) // an unknown channel finds nothing, as in YAGPDB
-	return e.ctx.knownMessage(channelID, id)
+	known := e.ctx.knownMessage(channelID, id)
+	if known == nil {
+		return nil
+	}
+	fetched := *known
+	fetched.Attachments = append([]interface{}(nil), known.Attachments...)
+	fetched.Embeds = types.EmbedStructs(types.EmbedMaps(known.Embeds)) // new embeds, not shared ones
+	return &fetched
 }
 
 // deleteMessage is YAGPDB's tmplDelMessage: the message is deleted after the delay (10
