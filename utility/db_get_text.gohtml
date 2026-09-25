@@ -14,7 +14,7 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
-{{ $sDictType := "*templates.SDict" }}
+{{ $plainMapType := "map[string]interface {}" }}
 {{ $stringType := "string" }}
 {{ $noResult := "(no result found)" }}
 
@@ -37,46 +37,40 @@
 {{ $title := "" }}
 {{ $result := "" }}
 {{ if $key }}
+    {{/* $found: the key exists (its value may be false, 0 or "") */}}
     {{ $value := "" }}
-    {{ $type := "" }}
+    {{ $found := false }}
 
     {{ $keyArray := split $key ":" }}
-    {{ $parentValue := "" }}
-    {{ $parentType := "" }}
-    {{ $lastParentValue := "" }}
-    {{ $firstSubkey := index $keyArray 0 }}
-    {{ $lastSubkey := index $keyArray (sub (len $keyArray) 1) }}
-    {{ if ge (len $keyArray) 2 }}
-        {{ $parentValue = (dbGet $userID $firstSubkey).Value }}
-        {{ $parentType = printf "%T" $parentValue }}
-        {{ if and $parentValue (eq $sDictType $parentType) }}
-            {{- range $subkey := $keyArray -}}
-                {{ $title = joinStr " > " $title $subkey }}
-                {{ if not $value }}
-                    {{ if eq $firstSubkey $subkey }}
-                        {{ $value = $parentValue }}
-                        {{ $type = $parentType }}
-                    {{ else }}
-                        {{ $value = "" }}
-                    {{ end }}
-                {{ else if eq $sDictType $type }}
-                    {{ $lastParentValue = $value }}
-                    {{ $value = $value.Get $subkey }}
-                    {{ $type = printf "%T" $value }}
-                {{ end }}
-            {{- end -}}
-        {{ end }}
-    {{ else }}
-        {{ $title = $key }}
-        {{ $value = (dbGet $userID $key).Value }}
+    {{ with dbGet $userID (index $keyArray 0) }}
+        {{ $found = true }}
+        {{ $value = .Value }}
     {{ end }}
+    {{ $title = index $keyArray 0 }}
+    {{- range $i, $subkey := $keyArray -}}
+        {{- if eq $i 0 }}{{ continue }}{{ end -}}
+        {{ $title = joinStr " > " $title $subkey }}
+        {{ if and $found (eq "map" (kindOf $value true)) }}
+            {{/* a dictionary inside stored JSON is a plain map, without Get: copy it */}}
+            {{ if eq $plainMapType (printf "%T" $value) }}
+                {{ $value = sdict $value }}
+            {{ end }}
+            {{ $found = $value.HasKey $subkey }}
+            {{ $value = $value.Get $subkey }}
+        {{ else }}
+            {{ $found = false }}
+        {{ end }}
+    {{- end -}}
 
-    {{ $result = or $value $noResult }}
-    {{ $type = printf "%T" $result }}
-
-    {{- /* format the value for user-friendly viewing */ -}}
-    {{ if ne $stringType $type }}
-        {{ $result = joinStr "" "```\n" (json $result true) "\n```" }}
+    {{ $result = $noResult }}
+    {{ if $found }}
+        {{ $result = $value }}
+        {{- /* format the value for user-friendly viewing */ -}}
+        {{ if ne $stringType (printf "%T" $value) }}
+            {{ $result = joinStr "" "```\n" (json $value true) "\n```" }}
+        {{ else if not $value }}
+            {{ $result = "\"\"" }}
+        {{ end }}
     {{ end }}
 {{ else }}
     {{ $title = "Missing Argument" }}
