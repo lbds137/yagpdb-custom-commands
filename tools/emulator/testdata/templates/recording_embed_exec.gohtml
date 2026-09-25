@@ -1,0 +1,2 @@
+{{- /* Mock embed_exec that sends its embed, so tests can assert the channel and title */ -}}
+{{ sendMessage (or .ExecData.ChannelID nil) (cembed "title" .ExecData.Title "description" (or .ExecData.Description "")) }}

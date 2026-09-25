@@ -1,0 +1,177 @@
+name: "Admission commands (admit, reject, screen, archive)"
+
+# The staff member runs commands in #staff (123456789012345678). The guest (500...001)
+# posted an introduction (message 700...001) in #introduction (900...002).
+defaults:
+  user:
+    id: 987654321098765432
+    username: "StaffMember"
+    roles: [111111111111111111]
+  channel:
+    id: 123456789012345678
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+  messages:
+    - id: 700000000000000001
+      channel_id: 900000000000000002
+      author_id: 500000000000000001
+      content: "Hi! I'm Guest, I like tea."
+  members: [987654321098765432, 500000000000000001]
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Delete Trigger Delay: 5, Delete Response Delay: 10, Default Avatar: "https://example.com/a.png" }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: 1, message_link: 2, ticket_adduser_exec: 3 }
+  - user_id: 0
+    key: "Channels"
+    value:
+      YAGPDB: 900000000000000001
+      Introduction: 900000000000000002
+      Introduction Archive: 900000000000000003
+      Welcome: 900000000000000004
+      Admission Log: 900000000000000005
+      Rejection Log: 900000000000000006
+  - user_id: 0
+    key: "Roles"
+    value: { Staff: 111111111111111111, Guest: 222222222222222222, Member: 333333333333333333, Minor: 444444444444444444, Adult: 555555555555555555 }
+  - user_id: 0
+    key: "Admin"
+    value: { Welcome Message: "Welcome to #{guild_name}, #{user_mention}!" }
+
+command_map:
+  1: "templates/recording_embed_exec.gohtml"
+  2: "templates/recording_message_link.gohtml"
+  3: "templates/recording_ticket_adduser.gohtml"
+
+tests:
+  # admit_user
+  - name: "admit_user: admits an adult"
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
+    assertions:
+      role_changes:
+        - { user_id: 500000000000000001, role_id: 555555555555555555, action: "add" }
+        - { user_id: 500000000000000001, role_id: 333333333333333333, action: "add" }
+        - { user_id: 500000000000000001, role_id: 222222222222222222, action: "remove" }
+      sent_messages:
+        - { channel_id: 900000000000000005, embed_title: "User Admission Record" }
+        - { channel_id: 900000000000000004, content_contains: "Welcome to Test Server, <@500000000000000001>!" }
+        - { channel_id: 900000000000000003, content_equals: "message_link copy" }
+    snapshot: true
+
+  - name: "admit_user: malformed link"
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/123/456", "adult"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
+
+  - name: "admit_user: deleted introduction"
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099", "adult"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
+
+  - name: "admit_user: link to another channel"
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000009/700000000000000001", "adult"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
+
+  - name: "admit_user: guest already left"
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
+      members: [987654321098765432]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid User" }
+
+  - name: "admit_user: missing user type"
+    template: "../../../staff_utility/admit_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid User Type" }
+
+  # reject_user
+  - name: "reject_user: rejects with a reason"
+    template: "../../../staff_utility/reject_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "No introduction"]
+    assertions:
+      sent_messages:
+        - { channel_id: 900000000000000006, content_equals: "message_link copy" }
+    snapshot: true
+
+  - name: "reject_user: malformed link"
+    template: "../../../staff_utility/reject_user.gohtml"
+    context:
+      args: ["not a link", "No introduction"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
+
+  - name: "reject_user: guest already left"
+    template: "../../../staff_utility/reject_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "No introduction"]
+      members: [987654321098765432]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid User" }
+
+  # screen_user
+  - name: "screen_user: opens a screening ticket"
+    template: "../../../staff_utility/screen_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "Needs a second look"]
+    assertions:
+      sent_messages:
+        - { channel_id: 999999999, content_contains: "added user 500000000000000001" }
+    snapshot: true
+
+  - name: "screen_user: malformed link"
+    template: "../../../staff_utility/screen_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666", "Needs a second look"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
+
+  - name: "screen_user: guest already left"
+    template: "../../../staff_utility/screen_user.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "Needs a second look"]
+      members: [987654321098765432]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid User" }
+
+  # archive
+  - name: "archive: malformed link"
+    template: "../../../staff_utility/archive.gohtml"
+    context:
+      args: ["https://discord.com/channels/x/y/z"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }
+
+  - name: "archive: deleted introduction"
+    template: "../../../staff_utility/archive.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"]
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Invalid Message Link" }

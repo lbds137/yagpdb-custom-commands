@@ -312,18 +312,6 @@ tests:
 
   # ===== Staff Utility Commands =====
 
-  - name: "admit_user - Admit with message link"
-    template: "../../../staff_utility/admit_user.gohtml"
-    context:
-      args: ["https://discord.com/channels/111222333444555666/888888888888888888/123123123123123123", "adult"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/123123123123123123", "adult"]
-
-  - name: "archive - Archive channel"
-    template: "../../../staff_utility/archive.gohtml"
-    context:
-      args: ["https://discord.com/channels/111222333444555666/888888888888888888/654654654654654654"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/654654654654654654"]
-
   - name: "bootstrap - Initialize with command IDs"
     template: "../../../staff_utility/bootstrap.gohtml"
     context:
@@ -342,12 +330,6 @@ tests:
       args: ["30"]
       cmd_args: ["30"]
 
-  - name: "reject_user - Reject with message link"
-    template: "../../../staff_utility/reject_user.gohtml"
-    context:
-      args: ["https://discord.com/channels/111222333444555666/888888888888888888/789789789789789789", "Did not meet requirements"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/789789789789789789", "Did not meet requirements"]
-
   - name: "role_ping - Ping a role"
     template: "../../../staff_utility/role_ping.gohtml"
     context:
@@ -359,12 +341,6 @@ tests:
     context:
       args: ["1", "Updated rule text here."]
       cmd_args: ["1", "Updated rule text here."]
-
-  - name: "screen_user - Screen user for admission"
-    template: "../../../staff_utility/screen_user.gohtml"
-    context:
-      args: ["https://discord.com/channels/111222333444555666/888888888888888888/321321321321321321", "Suspicious activity"]
-      cmd_args: ["https://discord.com/channels/111222333444555666/888888888888888888/321321321321321321", "Suspicious activity"]
 
   - name: "simple_db_lookup - Lookup knowledge entry"
     template: "../../../staff_utility/simple_db_lookup.gohtml"

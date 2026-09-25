@@ -42,17 +42,27 @@
 {{ $fullLinkRegex := joinStr "" $baseURLRegex "\\d{16,}/\\d{16,}/\\d{16,}" }}
 {{ $messageLink := reFind $fullLinkRegex $messageLinkArg }}
 
-{{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
-{{ $gcmSlice := split $gcmString "/" }}
-{{ $guildID := index $gcmSlice 0 }}
-{{ $channelID := index $gcmSlice 1 }}
-{{ $messageID := index $gcmSlice 2 }}
+{{/* The IDs stay empty when the argument isn't a message link */}}
+{{ $guildID := "" }}
+{{ $channelID := "" }}
+{{ $messageID := "" }}
+{{ if $messageLink }}
+    {{ $gcmSlice := split (reReplace $baseURLRegex $messageLink "") "/" }}
+    {{ $guildID = index $gcmSlice 0 }}
+    {{ $channelID = index $gcmSlice 1 }}
+    {{ $messageID = index $gcmSlice 2 }}
+{{ end }}
 
 {{ $guildCheck := eq $guildID (toString .Guild.ID) }}
 {{ $channelCheck := or (not $introductionChannelID) (eq $channelID (toString $introductionChannelID)) }}
 
+{{/* getMessage returns nil for a deleted message, which counts as an invalid link */}}
+{{ $message := "" }}
 {{ if and $guildCheck $channelCheck }}
-    {{ $message := getMessage $channelID $messageID }}
+    {{ $message = getMessage $channelID $messageID }}
+{{ end }}
+
+{{ if $message }}
     {{ $userID := $message.Author.ID }}
     {{ $user := userArg $userID }}
     {{ $guildMember := getMember $userID }}
@@ -92,7 +102,6 @@
             {{ end }}
             {{ if $introductionArchiveChannelID }}
                 {{ execCC $message_link $yagpdbChannelID 0 (sdict
-                    "ChannelID" $channelID
                     "Message" .Message
                     "ChannelID" $introductionArchiveChannelID
                     "DisableQuote" true
@@ -124,7 +133,7 @@
             ) }}
         {{ else }}
             {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-                "ChannelID" $channelID
+                "ChannelID" .Channel.ID
                 "Title" "Invalid User Type"
                 "Description" "⚠️ You must enter either `minor` or `adult` for the user type parameter!"
                 "DeleteResponse" true
@@ -133,7 +142,7 @@
         {{ end }}
     {{ else }}
         {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-            "ChannelID" $channelID
+            "ChannelID" .Channel.ID
             "Title" "Invalid User"
             "Description" (joinStr "" "⚠️ The user you are trying to admit is not currently in **" .Guild.Name "**!")
             "DeleteResponse" true
@@ -142,9 +151,9 @@
     {{ end }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" $channelID
+        "ChannelID" .Channel.ID
         "Title" "Invalid Message Link"
-        "Description" "⚠️ You must enter a valid introduction message link for the message link parameter!"
+        "Description" "⚠️ You must enter a link to an existing introduction message for the message link parameter!"
         "DeleteResponse" true
         "DeleteDelay" $deleteResponseDelay
     ) }}
