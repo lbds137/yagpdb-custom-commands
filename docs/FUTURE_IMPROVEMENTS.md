@@ -116,8 +116,10 @@ gets a failing test first.
   rest of the run (YAGPDB deletes from a goroutine or a scheduled event, so usually after
   the run ends, but a short delay can land mid-run). `editMessageNoEscape` is
   `editMessage` (edits notify no one either way).
-- An execCC child works on a copy of the messages, so its edits aren't seen by the
-  caller's later getMessage (YAGPDB's getMessage asks Discord, which has the edit).
+- An execCC child works on a copy of the messages, so the caller's later getMessage never
+  sees what the child sent or edited. YAGPDB starts the child in a goroutine (tmplRunCC's
+  `go ExecuteCustomCommand`), so the caller most likely reads first (inferred, not
+  probed), but a caller that sleeps can see the child's messages there.
 - `editMessage` gaps: a stored message keeps its embeds but no file, so edits of file
   messages can differ; message builders read keys as a map, so a
   repeated key (two `"embed"`s) counts once. A test message is the bot's to edit only
