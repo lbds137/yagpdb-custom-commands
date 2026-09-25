@@ -95,6 +95,10 @@ type GuildDef struct {
 	// OwnerID is .Guild.OwnerID (default: the triggering user)
 	OwnerID int64  `yaml:"owner_id"`
 	Prefix  string `yaml:"prefix"` // The command prefix (default: YAGPDB's "-")
+	// BotMentionEveryone is whether the bot has Discord's "Mention @everyone, @here, and
+	// All Roles" permission (default true). Without it @everyone and @here never ping, and
+	// a role mention pings only a mentionable role.
+	BotMentionEveryone *bool `yaml:"bot_mention_everyone"`
 }
 
 // RoleDef is a role in the guild.
@@ -103,6 +107,8 @@ type RoleDef struct {
 	Name     string `yaml:"name"`
 	Color    int    `yaml:"color"`
 	Position int    `yaml:"position"` // Higher is above; roleAbove compares these
+	// Mentionable lets anyone ping the role; see GuildDef.BotMentionEveryone
+	Mentionable bool `yaml:"mentionable"`
 }
 
 // DBEntry represents a database entry for setup.
@@ -393,6 +399,9 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.Guild.OwnerID == 0 {
 		tc.Context.Guild.OwnerID = defaults.Guild.OwnerID
+	}
+	if tc.Context.Guild.BotMentionEveryone == nil {
+		tc.Context.Guild.BotMentionEveryone = defaults.Guild.BotMentionEveryone
 	}
 
 	// Prepend shared DB entries

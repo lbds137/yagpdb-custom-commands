@@ -33,6 +33,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     premium: false                    # optional, default true
     user: { id: 1, roles: [111] }
     guild: { roles: [{ id: 111, name: "Staff", color: 3447003, position: 2 }] }  # if set, unknown roles are nil/errors
+    # guild.bot_mention_everyone: false -> only roles with mentionable: true ping, never @everyone/@here
     # guild.channels: [{ id: 9, name: "staff-log" }]: if set, channel arguments accept only these
     # (and the test's channel), by ID or name; else any ID, with a [channel] warning
     # guild.owner_id: .Guild.OwnerID (default: the triggering user); guild.prefix (default "-")
@@ -72,7 +73,10 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     no_role_changes: true             # give/take of a role they have/lack, or a non-member, change nothing
     response_pings: { everyone: true, users: [1], roles: [111] }  # exactly who the output notifies
     # (sent/edited message checks take pings: too). Typed <@&id>/@everyone ping only through
-    # mentionRole*/mentionEveryone, a complexMessage's allowed_mentions, or the NoEscape functions
+    # mentionRole*/mentionEveryone, a complexMessage's allowed_mentions, or the NoEscape functions.
+    # A complexMessage "reply" pings the replied-to author when replied_user is on (NoEscape
+    # turns it on); the trigger's .Message.ID is 234567890; replying to a message the test
+    # doesn't declare warns [message]
     scheduled_runs: [{ cc_id: 5, channel_id: 9, delay: 90s, key: "k", exec_data_contains: '"n":1' }]
     # exactly the runs execCC with a delay / scheduleUniqueCC left, in the order scheduled
     # (a replaced one moves last; [] for none). They aren't run: test that command separately

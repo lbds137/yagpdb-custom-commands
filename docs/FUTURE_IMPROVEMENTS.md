@@ -8,7 +8,14 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
   entry) serialize as the emulator's types, so their size differs from YAGPDB's. A value
   whose overflow past 100000 bytes is only whitespace is stored whole; YAGPDB stores it
-  cut off, so reading it back fails.
+  cut off, so reading it back fails. Deferred (2026-09-25): none of the 26 dbSet calls in
+  utility/ and staff_utility/ stores a Discord object, and the largest stored dict comes
+  from a 7.4 KB source. Promote when a command stores a Discord object or a value nears
+  100000 bytes; the fix is storing the msgpack bytes and decoding them with a copy of
+  YAGPDB's newDecoder, with the emulator's Discord types shaped like discordgo's.
+- getMessage finds only a test's `messages` and sent messages, not the triggering message
+  (which has an ID, 234567890 by default); YAGPDB would find it. knownMessage (mentions.go)
+  already knows the trigger and could serve getMessage too.
 - An immediate `execCC` runs inline, before the caller goes on; YAGPDB starts it in a
   goroutine, so it races with the rest of the caller (a `dbGet` right after an `execCC`
   that writes the key may read the old value in production). Scheduled runs are recorded,
@@ -28,10 +35,13 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - Discord functions are mocks: reaction calls only record, role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
   is a no-op, and there are no components or threads yet.
-- Pings follow the allowed mentions, but Discord also lets a role ping only when the role is
-  mentionable or the bot may mention everyone, and @everyone/@here only with that
-  permission; the emulator assumes the bot has it. A complexMessage `reply` isn't modelled,
-  so the replied-to author's ping (NoEscape, or `replied_user: true`) isn't recorded.
+- Pings: the bot's "Mention @everyone, @here, and All Roles" permission is one setting for
+  the whole server (Discord checks it per channel), and it defaults to granted. A role the
+  test doesn't declare is never mentionable. A reply to a message the emulator doesn't know
+  (not the trigger, a test's `messages` or a sent one) is assumed to exist: it warns
+  (`[message]`) and records no author ping. Discord refuses a reply to a message that
+  doesn't exist by default (fail_if_not_exists; unverified here, YAGPDB doesn't set it).
+  A `silent` message still counts its pings, though Discord sends no notification for it.
 - A failed execCC child's show_errors message isn't checked against Discord's
   2000-character limit. That it pings no one is read from the code, not probed.
   With `-strict`, a child over the source-length or time limit sends that error as the
@@ -166,6 +176,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
       used to return the previous message's ID after a refused send). Edits set
       EditedTimestamp (2026-09-25)
+- [x] Pings follow what Discord lets the bot ping: a guild's `bot_mention_everyone: false`
+      (the bot lacks "Mention @everyone, @here, and All Roles") stops @everyone/@here and
+      every role that isn't `mentionable`, in sends, responses and execCC children. A
+      complexMessage `reply` pings the replied-to author when the allowed mentions'
+      replied_user is set (the NoEscape functions set it); `reply` of 0 or less is
+      YAGPDB's error. The triggering message has an ID (it was 0) (2026-09-25)
 - [x] parseArgs' role argument is YAGPDB's RoleArg (copied): a mention or ID matches a
       role's ID or, as text, its exact (case-sensitive) name, the first role in guild order
       winning; a mention's last character is cut whatever it is; a mention that isn't a

@@ -402,7 +402,7 @@ func (ctx *ExecutionContext) response(output string) string {
 		ctx.Warn(KindLimit, "the response is %d characters; YAGPDB replaces responses over %d with a notice", n, maxResponseRunes)
 		return output // the notice YAGPDB sends pings no one
 	}
-	ctx.ResponsePings = pingsOf(output, ctx.responseMentions())
+	ctx.ResponsePings = ctx.pings(output, ctx.responseMentions(), ctx.ChannelID, 0)
 	return output
 }
 

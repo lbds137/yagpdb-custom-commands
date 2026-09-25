@@ -36,7 +36,7 @@ func TestFidelityOutputs(t *testing.T) {
 		{"mod returns a float, as in YAGPDB",
 			`{{kindOf (mod 7 2)}}`, "float64"},
 		{"messages have discordgo's Link",
-			`{{.Message.Link}}`, "https://discord.com/channels/1/123456789/0"},
+			`{{.Message.Link}}`, "https://discord.com/channels/1/123456789/234567890"},
 		{"the guild has an owner who is a member (the triggering user by default)",
 			`{{(userArg .Guild.OwnerID).Mention}}`, "<@987654321>"},
 		{"and evaluates every argument",

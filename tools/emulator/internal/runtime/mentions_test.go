@@ -252,3 +252,101 @@ func TestMessageByTrigger(t *testing.T) {
 		t.Errorf("reaction run: %q, %v; sent %q", out, err, sent(ctx))
 	}
 }
+
+// Without "Mention @everyone, @here, and All Roles" the bot pings only mentionable roles,
+// and never @everyone or @here: in sends, the response and an execCC child's response
+func TestPingsNeedTheBotsPermission(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{mentionRoleID 10}} {{mentionRoleID 20}}`)
+	for _, can := range []bool{true, false} {
+		ctx := roleCtx()
+		ctx.BotCannotMentionEveryone = !can
+		ctx.AvailableRoles[20] = types.CtxRole{ID: 20, Name: "Guest", Mentionable: true}
+		ctx.TemplateBaseDir = dir
+		ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+		src := `{{sendMessageNoEscape nil "<@5> <@&10> <@&20> <@&99> @here"}}{{execCC 7 nil 0 nil}}{{mentionEveryone}} {{mentionRoleID 10}} {{mentionRoleID 20}}`
+		if _, err := run(t, ctx, src); err != nil {
+			t.Fatal(err)
+		}
+		got := []string{ctx.SentMessages[0].Pings.String(), ctx.SentMessages[1].Pings.String(), ctx.ResponsePings.String()}
+		want := []string{"everyone <@5> <@&10> <@&20> <@&99>", "<@&10> <@&20>", "everyone <@&10> <@&20>"}
+		if !can {
+			want = []string{"<@5> <@&20>", "<@&20>", "<@&20>"}
+		}
+		if !slices.Equal(got, want) {
+			t.Errorf("bot may mention everyone %v: pings %q, want %q", can, got, want)
+		}
+	}
+}
+
+// A complexMessage reply pings the replied-to message's author only when the allowed
+// mentions' replied_user is set, as the NoEscape functions set it
+func TestReplyPings(t *testing.T) {
+	cases := []struct{ src, want string }{
+		{`{{sendMessage nil (complexMessage "reply" .Message.ID "content" "a")}}`, "nobody"},
+		{`{{sendMessageNoEscape nil (complexMessage "reply" .Message.ID "content" "a")}}`, "<@%d>"},
+		{`{{sendMessage nil (complexMessage "reply" .Message.ID "content" "a" "allowed_mentions" (sdict "replied_user" true))}}`, "<@%d>"},
+		{`{{sendMessage nil (complexMessage "reply" 77 "allowed_mentions" (sdict "replied_user" true "parse" (cslice "users")) "content" "<@5>")}}`, "<@5> <@6>"},
+		// a message in another channel isn't the one replied to
+		{`{{sendMessageNoEscape 42 (complexMessage "reply" .Message.ID "content" "a")}}`, "nobody"},
+		{`{{sendMessage 42 (complexMessage "reply" 77 "content" "a")}}`, "nobody"},
+		// the bot's own message: it doesn't notify itself
+		{`{{$id := sendMessageRetID nil "x"}}{{sendMessageNoEscape nil (complexMessage "reply" $id "content" "a")}}`, "nobody"},
+	}
+	for _, c := range cases {
+		ctx := roleCtx()
+		ctx.Channels = map[int64]string{ctx.ChannelID: ctx.ChannelName, 42: "other"}
+		ctx.Messages = []types.CtxMessage{{ID: 77, ChannelID: ctx.ChannelID, Author: types.DiscordUser{ID: 6}}}
+		ctx.MessageID = 55
+		if err := ctx.SetTriggerMessage(Trigger{Type: "Command", Text: "c"}, "-c"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := run(t, ctx, c.src); err != nil {
+			t.Fatalf("%s: %v", c.src, err)
+		}
+		want := c.want
+		if strings.Contains(want, "%d") {
+			want = fmt.Sprintf(want, ctx.UserID)
+		}
+		if got := ctx.SentMessages[len(ctx.SentMessages)-1].Pings.String(); got != want {
+			t.Errorf("%s: pings %s, want %s", c.src, got, want)
+		}
+		// a reply to a message the test doesn't declare warns, whether it pings or not
+		if w := kinds(ctx, KindMessage); strings.Contains(c.src, " 42 ") != (len(w) == 1) {
+			t.Errorf("%s: message warnings %q", c.src, w)
+		}
+	}
+	// an execCC child replies to the message its caller passed on
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{sendMessageNoEscape nil (complexMessage "reply" .Message.ID "content" "a")}}`)
+	ctx := roleCtx()
+	ctx.MessageID = 55
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	if err := ctx.SetTriggerMessage(Trigger{Type: "Command", Text: "c"}, "-c"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil || ctx.SentMessages[0].Pings.String() != fmt.Sprintf("<@%d>", ctx.UserID) {
+		t.Errorf("execCC reply: %v, %+v", err, ctx.SentMessages)
+	}
+	// a reaction run's child: its .Message has the reactor as author, not the real one
+	ctx = roleCtx()
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml"}
+	ctx.Reaction = &types.CtxReaction{MessageID: 555}
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil || ctx.SentMessages[0].Pings.String() != "nobody" || len(kinds(ctx, KindMessage)) != 1 {
+		t.Errorf("reaction execCC reply: %v, %+v, %q", err, ctx.SentMessages, ctx.Diagnostics)
+	}
+	// and its child's child
+	writeFile(t, dir+"/middle.gohtml", `{{execCC 7 nil 0 nil}}`)
+	ctx = roleCtx()
+	ctx.TemplateBaseDir = dir
+	ctx.CommandIDMap = map[int64]string{7: "child.gohtml", 8: "middle.gohtml"}
+	ctx.Reaction = &types.CtxReaction{MessageID: 555}
+	if _, err := run(t, ctx, `{{execCC 8 nil 0 nil}}`); err != nil || len(ctx.SentMessages) != 1 || ctx.SentMessages[0].Pings.String() != "nobody" {
+		t.Errorf("reaction execCC grandchild reply: %v, %+v", err, ctx.SentMessages)
+	}
+	if _, err := run(t, roleCtx(), `{{complexMessage "reply" 0}}`); err == nil || !strings.HasSuffix(err.Error(), "error calling complexMessage: invalid message id '0' provided to reply.") {
+		t.Errorf("reply 0: %v", err)
+	}
+}

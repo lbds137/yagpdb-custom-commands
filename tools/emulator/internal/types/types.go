@@ -400,6 +400,9 @@ type MessageSend struct {
 	HasOther bool
 	// AllowedMentions says which mentions in Content ping; complexMessage allows users
 	AllowedMentions AllowedMentions
+	// ReplyTo is complexMessage's "reply": the ID of the message this replies to, in the
+	// channel it's sent to
+	ReplyTo int64
 }
 
 // AllowedMentions stands in for discordgo.AllowedMentions: Parse holds "users", "roles"

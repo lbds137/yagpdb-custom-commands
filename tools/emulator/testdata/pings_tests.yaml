@@ -1,0 +1,38 @@
+name: "Ping Tests"
+
+# A server where the bot lacks "Mention @everyone, @here, and All Roles": only mentionable
+# roles ping, and @everyone/@here never do
+defaults:
+  guild:
+    bot_mention_everyone: false
+    roles:
+      - { id: 20, name: "Bump", mentionable: true }
+      - { id: 21, name: "Staff" }
+
+tests:
+  - name: "Without the permission only a mentionable role pings"
+    template_source: |
+      {{ sendMessageNoEscape nil "<@&20> <@&21> @here" }}
+      {{ mentionRoleID 20 }} {{ mentionRoleID 21 }} {{ mentionEveryone }}
+    assertions:
+      response_pings: { roles: [20] }
+      sent_messages:
+        - { pings: { roles: [20] } }
+
+  - name: "With the permission every allowed mention pings"
+    context:
+      guild: { bot_mention_everyone: true }
+    template_source: |
+      {{ mentionRoleID 20 }} {{ mentionRoleID 21 }} {{ mentionEveryone }}
+    assertions:
+      response_pings: { everyone: true, roles: [20, 21] }
+
+  - name: "A reply to the trigger pings its author when replied_user is allowed"
+    context:
+      message_content: "-test"
+      user: { id: 5 }
+    template_source: |
+      {{ sendMessageNoEscape nil (complexMessage "reply" .Message.ID "content" "pong") }}
+    assertions:
+      sent_messages:
+        - { content_equals: "pong", pings: { users: [5] } }

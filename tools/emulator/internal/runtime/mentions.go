@@ -48,7 +48,7 @@ var (
 
 // pingsOf is Discord's rule for which mentions in content ping: a mention type in Parse
 // pings every mention of that type, and otherwise only the IDs listed in Users or Roles do.
-// Mentions in embeds never ping. The emulator assumes the bot may ping every role.
+// Mentions in embeds never ping.
 func pingsOf(content string, allowed types.AllowedMentions) Pings {
 	var p Pings
 	if slices.Contains(allowed.Parse, "everyone") {
@@ -57,6 +57,54 @@ func pingsOf(content string, allowed types.AllowedMentions) Pings {
 	p.Users = mentionedIDs(userMentionRe, content, slices.Contains(allowed.Parse, "users"), allowed.Users)
 	p.Roles = mentionedIDs(roleMentionRe, content, slices.Contains(allowed.Parse, "roles"), allowed.Roles)
 	return p
+}
+
+// pings are who a message sent to channelID notifies: the mentions its allowed mentions let
+// ping (pingsOf), less those the bot may not ping (without "Mention @everyone, @here, and
+// All Roles": @everyone, @here and roles that aren't mentionable), and, for a reply with
+// RepliedUser allowed, the replied-to message's author (unless that's the bot). A reply to
+// a message the emulator doesn't know warns, allowed or not: Discord refuses a reply to a
+// message that doesn't exist.
+func (ctx *ExecutionContext) pings(content string, allowed types.AllowedMentions, channelID, replyTo int64) Pings {
+	p := pingsOf(content, allowed)
+	if ctx.BotCannotMentionEveryone {
+		p.Everyone = false
+		p.Roles = slices.DeleteFunc(p.Roles, func(id int64) bool {
+			return !ctx.AvailableRoles[id].Mentionable
+		})
+	}
+	if replyTo != 0 {
+		if m := ctx.knownMessage(channelID, replyTo); m == nil {
+			ctx.Warn(KindMessage, "a reply to message %d in channel %d, which the test doesn't declare (a test's messages): it is assumed to exist, and its author's ping isn't recorded", replyTo, channelID)
+		} else if allowed.RepliedUser && m.Author.ID != botUser.ID && !slices.Contains(p.Users, m.Author.ID) {
+			p.Users = append(p.Users, m.Author.ID)
+			slices.Sort(p.Users)
+		}
+	}
+	return p
+}
+
+// knownMessage is the message with that ID in the channel, as the emulator knows it: a
+// test's or a sent message, the message an execCC caller passed on (not a reaction run's,
+// whose author there is the reactor), or the triggering message. Nil when it's none of
+// those.
+func (ctx *ExecutionContext) knownMessage(channelID, id int64) *types.CtxMessage {
+	for i := range ctx.Messages {
+		if m := &ctx.Messages[i]; m.ID == id && m.ChannelID == channelID {
+			return m
+		}
+	}
+	var trigger types.CtxMessage
+	switch {
+	case ctx.InheritedMessage != nil && !ctx.inheritedFromReaction:
+		trigger = *ctx.InheritedMessage
+	case ctx.Reaction == nil && !ctx.NoMessage:
+		trigger = ctx.message()
+	}
+	if trigger.ID == id && trigger.ChannelID == channelID {
+		return &trigger
+	}
+	return nil
 }
 
 func mentionedIDs(re *regexp.Regexp, content string, all bool, allowed []int64) []int64 {

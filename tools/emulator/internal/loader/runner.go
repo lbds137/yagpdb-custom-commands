@@ -182,6 +182,9 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	ctx.Discriminator = tc.Context.User.Discriminator
 	ctx.UserRoles = tc.Context.User.Roles
 
+	if b := tc.Context.Guild.BotMentionEveryone; b != nil {
+		ctx.BotCannotMentionEveryone = !*b
+	}
 	for _, m := range tc.Context.Messages {
 		ctx.Messages = append(ctx.Messages, types.CtxMessage{
 			ID:        m.ID,
@@ -209,7 +212,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		ctx.ChannelOrder = append(ctx.ChannelOrder, ctx.ChannelID)
 	}
 	for _, role := range tc.Context.Guild.Roles {
-		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position}
+		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position, Mentionable: role.Mentionable}
 	}
 	if len(ctx.AvailableRoles) > 0 {
 		// Every guild has @everyone, whose ID is the guild's

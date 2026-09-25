@@ -236,8 +236,8 @@ func (e *Engine) sendMessage(args ...interface{}) (string, error) {
 	return e.send("sendMessage", true, args...)
 }
 
-// sendMessageNoEscape is sendMessage with every mention pinging, whatever a complexMessage's
-// allowed_mentions said.
+// sendMessageNoEscape is sendMessage with every mention the bot may ping pinging, whatever
+// a complexMessage's allowed_mentions said.
 func (e *Engine) sendMessageNoEscape(args ...interface{}) (string, error) {
 	return e.send("sendMessageNoEscape", false, args...)
 }
@@ -250,6 +250,7 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 	var embeds []interface{}
 	var file *types.MessageSend
 	var hasOther bool
+	var replyTo int64
 	allowed := usersOnly()
 
 	e.lastMessageID = 0 // nothing sent yet
@@ -271,6 +272,7 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 			}
 			hasOther = v.HasOther
 			allowed = v.AllowedMentions
+			replyTo = v.ReplyTo
 		case types.Embed:
 			embeds = []interface{}{v}
 		default:
@@ -292,7 +294,7 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 	if len(embeds) > 0 {
 		embed = embeds[0]
 	}
-	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embed, pingsOf(content, allowed))
+	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embed, e.ctx.pings(content, allowed, channelID, replyTo))
 	return "", nil
 }
 
@@ -601,7 +603,13 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 				return nil, err
 			}
 			msg.AllowedMentions = *parsed
-		case "reply", "silent", "ephemeral", "suppress_embeds", "is_components_v2":
+		case "reply":
+			msgID := funcs.ToInt64(val)
+			if msgID <= 0 {
+				return nil, fmt.Errorf("invalid message id '%s' provided to reply.", funcs.ToString(val))
+			}
+			msg.ReplyTo = msgID
+		case "silent", "ephemeral", "suppress_embeds", "is_components_v2":
 			// Accepted; the emulator doesn't model these
 		default:
 			return nil, fmt.Errorf(`invalid key "%s" passed to send message builder.`, key)
@@ -746,33 +754,34 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 
 	// Create child context (shares DB and other state)
 	childCtx := &ExecutionContext{
-		GuildID:         e.ctx.GuildID,
-		GuildName:       e.ctx.GuildName,
-		Prefix:          e.ctx.Prefix,
-		ChannelID:       channelID,
-		ChannelName:     e.ctx.channelName(channelID),
-		UserID:          e.ctx.UserID,
-		Username:        e.ctx.Username,
-		Discriminator:   e.ctx.Discriminator,
-		UserRoles:       e.ctx.UserRoles,
-		MessageContent:  e.ctx.MessageContent,
-		ExecData:        data,
-		IsPremium:       e.ctx.IsPremium,
-		Strict:          e.ctx.Strict,
-		DB:              e.ctx.DB, // Share database
-		Schema:          e.ctx.Schema,
-		Counters:        make(map[string]int), // execCC starts a new run with its own limits
-		StartTime:       e.ctx.StartTime,
-		AvailableRoles:  e.ctx.AvailableRoles,
-		Channels:        e.ctx.Channels,
-		ChannelOrder:    e.ctx.ChannelOrder,
-		OwnerID:         e.ctx.OwnerID,
-		CommandIDMap:    e.ctx.CommandIDMap,
-		CCID:            commandID,
-		ExecCCDepth:     e.ctx.ExecCCDepth + 1,
-		MaxExecCCDepth:  e.ctx.MaxExecCCDepth,
-		TemplateBaseDir: e.ctx.TemplateBaseDir,
-		SourceName:      templatePath,
+		GuildID:                  e.ctx.GuildID,
+		GuildName:                e.ctx.GuildName,
+		Prefix:                   e.ctx.Prefix,
+		ChannelID:                channelID,
+		ChannelName:              e.ctx.channelName(channelID),
+		UserID:                   e.ctx.UserID,
+		Username:                 e.ctx.Username,
+		Discriminator:            e.ctx.Discriminator,
+		UserRoles:                e.ctx.UserRoles,
+		MessageContent:           e.ctx.MessageContent,
+		ExecData:                 data,
+		IsPremium:                e.ctx.IsPremium,
+		Strict:                   e.ctx.Strict,
+		DB:                       e.ctx.DB, // Share database
+		Schema:                   e.ctx.Schema,
+		Counters:                 make(map[string]int), // execCC starts a new run with its own limits
+		StartTime:                e.ctx.StartTime,
+		AvailableRoles:           e.ctx.AvailableRoles,
+		Channels:                 e.ctx.Channels,
+		ChannelOrder:             e.ctx.ChannelOrder,
+		OwnerID:                  e.ctx.OwnerID,
+		BotCannotMentionEveryone: e.ctx.BotCannotMentionEveryone,
+		CommandIDMap:             e.ctx.CommandIDMap,
+		CCID:                     commandID,
+		ExecCCDepth:              e.ctx.ExecCCDepth + 1,
+		MaxExecCCDepth:           e.ctx.MaxExecCCDepth,
+		TemplateBaseDir:          e.ctx.TemplateBaseDir,
+		SourceName:               templatePath,
 		// The same server; a copy, since YAGPDB runs the child in a goroutine alongside the
 		// caller (the emulator runs it inline, so messages are in call order)
 		Messages:        append([]types.CtxMessage(nil), e.ctx.Messages...),
@@ -787,6 +796,7 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 	// YAGPDB passes the caller's message on (tmplextensions.go tmplRunCC: newCtx.Msg)
 	inherited := e.ctx.triggerMsg()
 	childCtx.InheritedMessage = &inherited
+	childCtx.inheritedFromReaction = e.ctx.Reaction != nil || e.ctx.inheritedFromReaction
 	childCtx.NoMember = e.ctx.NoMember // the child's context has the caller's (nil) member
 
 	// Execute child template
