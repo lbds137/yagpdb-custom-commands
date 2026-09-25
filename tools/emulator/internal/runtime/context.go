@@ -2,6 +2,7 @@
 package runtime
 
 import (
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
@@ -256,7 +257,7 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		// Command arguments
 		"Args":        ctx.Args,
 		"CmdArgs":     ctx.CmdArgs,
-		"StrippedMsg": ctx.StrippedMsg,
+		"StrippedMsg": ctx.strippedMsg(),
 		"Cmd":         ctx.Cmd,
 
 		// ExecData (from execCC) - use empty SDict if nil to prevent nil pointer errors
@@ -388,4 +389,13 @@ func (ctx *ExecutionContext) rolesOf(userID int64) []int64 {
 		return ctx.UserRoles
 	}
 	return ctx.MemberRoles[userID]
+}
+
+// strippedMsg is the message after the trigger: the one the test gives, or its arguments
+// joined back together.
+func (ctx *ExecutionContext) strippedMsg() string {
+	if ctx.StrippedMsg != "" {
+		return ctx.StrippedMsg
+	}
+	return funcs.JoinArgs(ctx.CmdArgs)
 }

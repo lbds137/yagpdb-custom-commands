@@ -16,8 +16,10 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - `getMember` of the triggering user is a generic mock (no nick, zero JoinedAt), and tests
   can't set members' JoinedAt. That leaves guest's "within the grace period" path untestable.
 - A trailing backslash in a LIKE pattern is ignored; Postgres errors.
-- `parseArgs` only errors on missing arguments; YAGPDB's also rejects arguments that don't
-  fit their `carg` type or bounds (e.g. `carg "int" "n" 1 10` given 50).
+- `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
+  declares no guild roles accepts any role), and accepts any channel ID, since the
+  emulator has no channel list. Tests give arguments as a list, so `.Args` doesn't start
+  with the trigger.
 
 ## IDE Integration
 
@@ -57,6 +59,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       so a failure is a real error (2026-09-25)
 - [x] Messages have `.Link`; sent messages get unique IDs and `getMessage` finds them (a nil
       channel is the current one, as in YAGPDB); tests can set `guild.owner_id` (bump_remind's owner ping is tested) (2026-09-25)
+- [x] `parseArgs` is ported from YAGPDB and dcmd: the last argument takes the rest of the
+      message, quotes group words, types and bounds are checked with dcmd's errors, and a
+      command run by execCC or a reaction parses nothing (2026-09-25)
 - [x] Gematria tests run on the real bootstrap (`setup_templates`) and check the computed
       values (`embed_contains`) (2026-09-25)
 - [x] File upload support in emulator (complexMessage with "file"/"filename")

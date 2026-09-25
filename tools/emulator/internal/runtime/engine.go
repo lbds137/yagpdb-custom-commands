@@ -706,8 +706,32 @@ func (e *Engine) mentionHere() string {
 	return "@here"
 }
 
-// parseArgs wraps the funcs.ArgsParser for template use.
+// parseArgs is YAGPDB's parseArgs. It parses only for a message trigger: run by execCC or
+// a reaction there is no message, so it returns no arguments and no error (commands called
+// both ways read .ExecData instead).
 func (e *Engine) parseArgs(numRequired int, failedMessage string, argDefs ...*funcs.ArgDef) (*funcs.ParsedArgs, error) {
-	parser := funcs.NewArgsParser(e.ctx.CmdArgs)
-	return parser.ParseArgs(numRequired, failedMessage, argDefs...)
+	if len(argDefs) == 0 || e.ctx.ExecCCDepth > 0 || e.ctx.Reaction != nil {
+		return funcs.ParseArgs("", 0, "", nil, funcs.Lookups{})
+	}
+	return funcs.ParseArgs(e.ctx.strippedMsg(), numRequired, failedMessage, argDefs, funcs.Lookups{
+		User: func(id int64) interface{} {
+			if u := e.userArg(id); u != nil {
+				return u
+			}
+			return nil
+		},
+		Member: func(id int64) interface{} {
+			if m := e.getMember(id); m != nil {
+				return m
+			}
+			return nil
+		},
+		Channel: func(id int64) interface{} { return e.getChannel(id) },
+		Role: func(arg string) interface{} {
+			if r := e.findRole(arg); r != nil {
+				return r
+			}
+			return nil
+		},
+	})
 }
