@@ -39,11 +39,11 @@ func (r ReactionChange) String() string {
 	return s + fmt.Sprintf(" on the response in channel %d", r.ChannelID)
 }
 
-// reactionCount counts one call against a limit: an error with -strict, otherwise a
-// warning, as the other limited functions do.
+// reactionCount counts one call against a limit: an error with -strict or inside
+// {{try}}, otherwise a warning, as the other limited functions do.
 func (e *Engine) reactionCount(fn string, l callLimit) error {
 	if err := e.ctx.countCall(fn, l); err != nil {
-		if e.ctx.Strict {
+		if e.ctx.Strict || e.ctx.caughtInTry(err) {
 			return err
 		}
 		e.ctx.warnOnce(err.Error() + "; YAGPDB stops the command here")

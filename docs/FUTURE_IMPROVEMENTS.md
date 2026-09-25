@@ -20,6 +20,13 @@ gets a failing test first.
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
+- A function's error text is the emulator's, not YAGPDB's, so a `{{catch}}` printing or
+  comparing `.Error` (and a failed run's error message) differs from production: a call
+  limit is "too many calls to this function (dbGet: over the limit of 10 ...)" where
+  YAGPDB's is "too many calls to this function"; a Discord refusal is "editMessage:
+  Discord refuses this (HTTP 404, 10008 ...)" where discordgo's REST error reads
+  differently; checkSend's too. Fix: YAGPDB's text in the error, the explanation in a
+  warning (found in review 2026-09-25; next unit).
 - Left as is (2026-09-25): a test whose name starts with a newline can't be
   snapshotted. The name is a YAML map key, which yaml.v3 can't write for such text; the
   write is refused with an error, so nothing is corrupted. Promote if a test needs it.
@@ -69,8 +76,6 @@ gets a failing test first.
   the emulator doesn't know is Discord's 10008 refusal, though the message may exist in
   production. addReactions in an interval run reacts to the stand-in message (ID 0), which
   Discord refuses; that the error is 10008 is inferred, not probed.
-- Without -strict, a function over its call limit warns "YAGPDB stops the command here"
-  and runs on, even inside `{{try}}`, where YAGPDB's error would go to `{{catch}}` instead.
 - A fixed clock (`clock:`) stands still for the whole run, where YAGPDB's moves on by
   milliseconds (sleep moves it on). The database's entry times follow the calling run's
   clock, so a sleep inside an execCC child doesn't move them, and a setup template's sleeps
@@ -137,6 +142,12 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ---
 
 ## Completed Improvements
+
+- [x] Without -strict, YAGPDB's function errors (call limits, Discord refusing a call or
+      a message, reaction limits) were warnings even inside `{{try}}`, so the run went
+      on where YAGPDB's `{{catch}}` would run. Inside `{{try}}` they are now returned (and
+      still warned about); the engine's `OnCall` patch says whether a call is inside one
+      (2026-09-25)
 
 - [x] `yagtest watch` runs every test path given, as `test` does, and `-stop-on-fail`
       skips the paths after a failing one (2026-09-25)

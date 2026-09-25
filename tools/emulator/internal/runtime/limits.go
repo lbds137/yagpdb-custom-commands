@@ -222,6 +222,17 @@ func (ctx *ExecutionContext) limitBreach(err error) error {
 	return nil
 }
 
+// caughtInTry reports whether a function's error, which outside strict mode is only a
+// warning, must be returned after all: inside {{try}}, YAGPDB's {{catch}} gets it, so the
+// run goes on differently. The warning is still recorded.
+func (ctx *ExecutionContext) caughtInTry(err error) bool {
+	if !ctx.inTry {
+		return false
+	}
+	ctx.warnOnce(err.Error() + "; inside {{try}}, so its {{catch}} runs, as in YAGPDB")
+	return true
+}
+
 // warnOnce records a limit warning unless the same one was already recorded this run.
 func (ctx *ExecutionContext) warnOnce(msg string) {
 	if ctx.warned == nil {
@@ -278,7 +289,7 @@ func (e *Engine) withLimits(name string, fn interface{}) interface{} {
 					return []reflect.Value{out, reflect.Zero(errorType)}
 				}
 			} else {
-				if e.ctx.Strict {
+				if e.ctx.Strict || e.ctx.caughtInTry(err) {
 					return []reflect.Value{reflect.Zero(outs[0]), reflect.ValueOf(&err).Elem()}
 				}
 				e.ctx.warnOnce(err.Error() + "; YAGPDB stops the command here")
@@ -392,7 +403,8 @@ const (
 // checkSend applies Discord's message limits to a send and reports whether to record it.
 // sendMessage gets Discord's error back, so strict mode returns it; sendDM discards the
 // error (context_funcs.go), so a rejected DM is silently not delivered. Outside strict
-// mode a breach is a warning and the message is recorded anyway.
+// mode a breach is a warning and the message is recorded anyway, except that inside
+// {{try}} sendMessage's error is returned for the {{catch}}.
 func (ctx *ExecutionContext) checkSend(fn, content string, embeds []interface{}, notEmpty, silent bool) (bool, error) {
 	problems := sendProblems(content, embeds, notEmpty)
 	if len(problems) == 0 {
@@ -403,7 +415,7 @@ func (ctx *ExecutionContext) checkSend(fn, content string, embeds []interface{},
 		reason = "HTTP 400, 50006 Cannot send an empty message"
 	}
 	err := fmt.Errorf("%s: Discord rejects this message (%s): %s", fn, reason, strings.Join(problems, "; "))
-	if !ctx.Strict {
+	if !ctx.Strict && (silent || !ctx.caughtInTry(err)) {
 		ctx.warnOnce(err.Error())
 		return true, nil
 	}
@@ -415,10 +427,10 @@ func (ctx *ExecutionContext) checkSend(fn, content string, embeds []interface{},
 }
 
 // discordRefuses reports a call Discord would answer with an error: an error with
-// -strict, otherwise a warning (and the call does nothing).
+// -strict or inside {{try}}, otherwise a warning (and the call does nothing).
 func (ctx *ExecutionContext) discordRefuses(fn, reason, detail string) error {
 	err := fmt.Errorf("%s: Discord refuses this (%s): %s", fn, reason, detail)
-	if !ctx.Strict {
+	if !ctx.Strict && !ctx.caughtInTry(err) {
 		ctx.warnOnce(err.Error())
 		return nil
 	}

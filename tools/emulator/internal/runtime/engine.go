@@ -199,6 +199,7 @@ func (e *Engine) execute(source string) (string, error) {
 		name = fmt.Sprintf("CC #%d", e.ctx.CCID)
 	}
 	tmpl := template.New(name).Funcs(e.BuildFuncMap()).MaxOps(e.ctx.maxOps())
+	tmpl = tmpl.OnCall(func(inTry bool) { e.ctx.inTry = inTry })
 	if !e.ctx.Strict {
 		tmpl = tmpl.OnMaxOps(func(ops, max int) {
 			e.ctx.Warn(KindLimit, "the template ran over %d operations; YAGPDB stops a custom command at %d "+
@@ -228,7 +229,9 @@ func (e *Engine) execute(source string) (string, error) {
 		}
 		w = yagpdbCap
 	}
-	if err := tmpl.Execute(w, e.ctx.BuildTemplateData()); err != nil {
+	err = tmpl.Execute(w, e.ctx.BuildTemplateData())
+	e.ctx.inTry = false
+	if err != nil {
 		if yagpdbCap != nil && yagpdbCap.err != nil {
 			// YAGPDB would have stopped at the 25k limit, before this error
 			e.ctx.Warn(KindLimit, "response grew too big (>25k); YAGPDB stops there, before the error below")

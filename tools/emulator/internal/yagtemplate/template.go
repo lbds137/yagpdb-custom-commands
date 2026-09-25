@@ -24,6 +24,8 @@ type common struct {
 
 	// EMULATOR PATCH: see OnMaxOps.
 	onMaxOps func(ops, max int)
+	// EMULATOR PATCH: see OnCall.
+	onCall func(inTry bool)
 }
 
 // Template is the representation of a parsed template. The *parse.Tree
@@ -175,6 +177,17 @@ func (t *Template) MaxOps(ops int) *Template {
 func (t *Template) OnMaxOps(f func(ops, max int)) *Template {
 	t.init()
 	t.onMaxOps = f
+	return t
+}
+
+// OnCall makes every function call first call f, with whether the call is inside a
+// try action (so an error it returns goes to the catch).
+//
+// EMULATOR PATCH: not in YAGPDB. Outside strict mode yagtest turns YAGPDB's errors into
+// warnings; inside a try it returns them, so the catch runs as it would in YAGPDB.
+func (t *Template) OnCall(f func(inTry bool)) *Template {
+	t.init()
+	t.onCall = f
 	return t
 }
 
