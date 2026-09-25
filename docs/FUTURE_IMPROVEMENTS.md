@@ -14,9 +14,9 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   bytes, so a longer fixture key can't be read back.
 - `execCC` with a delay passes its data as is; YAGPDB msgpack-encodes it (so types change
   and over 1000000 bytes fails with "ExecData is too big").
-- Discord functions are mocks: the role/reaction calls only record, `sendTemplate` is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
-- Role lookups accept IDs, mentions and names everywhere; YAGPDB's `FindRole` accepts a
-  different set per function.
+- Discord functions are mocks: reaction calls only record, role changes don't update the
+  members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
+  is a no-op, and there is no `sendMessageNoEscape`, components or threads yet.
 - `editMessage` gaps: the channel argument is read as a number (YAGPDB also takes channel
   names and refuses floats and unknown channels up front); a stored message keeps only its
   first embed and no file, so edits of multi-embed or file messages can differ; edits don't
@@ -28,7 +28,12 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - A trailing backslash in a LIKE pattern is ignored; Postgres errors.
 - `parseArgs` resolves `user`, `member` and `role` arguments through the mocks (a test that
   declares no guild roles accepts any role), and accepts any channel ID, since the
-  emulator has no channel list.
+  emulator has no channel list. Its `role` argument uses the role functions' lookup;
+  dcmd's RoleArg matches names case-sensitively and falls back from a numeric ID to a name.
+- Role gaps: a test that declares no guild roles treats any role ID as existing (so a
+  stale ID in the database still mentions and gives); mentionRole doesn't add to the
+  allowed mentions; getRole* over the call limit gives the API-call message, not YAGPDB's
+  "too many calls to this function".
 - A command run by `execCC` from a reaction-triggered command sees the test's
   `message_content` as `.Message`; YAGPDB passes on the reacted-to message.
 - Interval and None runs get a `.Message` with empty content; YAGPDB gives them none.
@@ -84,6 +89,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       30 days ago); `.Member` and `getMember` build the same member, and `JoinedAt` is
       discordgo's `Timestamp` string, formatted as Discord sends it. guest's grace-period
       path is tested. A suite that doesn't parse reports its own error (2026-09-25)
+- [x] The role functions follow YAGPDB's, all three forms each (plain, ID, Name): its
+      FindRole input rules per form, `mentionRole*` of an unknown role is "", and
+      give/take/add/remove change nothing for an unknown role, a non-member, or a member
+      who already has (or lacks) the role; a delay schedules the change (2026-09-25)
 - [x] `snowflakeToTime`, `humanizeDuration*`, `humanizeTimeSinceDays`, `sanitizeText`
       (YAGPDB's confusables tables), `adjective`/`noun`/`verb` (its word lists) and
       `roleAbove` are copied from YAGPDB; test roles take a `position` (2026-09-25)

@@ -125,6 +125,8 @@ type Assertions struct {
 	// EditedMessages check messages as editMessage left them
 	EditedMessages []MessageCheck `yaml:"edited_messages"`
 	RoleChanges    []RoleCheck    `yaml:"role_changes"`
+	// NoRoleChanges asserts the run changed no roles (a give of a role the member has, say)
+	NoRoleChanges bool `yaml:"no_role_changes"`
 }
 
 // DBCheck defines a database assertion.
@@ -148,9 +150,10 @@ type MessageCheck struct {
 
 // RoleCheck defines a role change assertion.
 type RoleCheck struct {
-	UserID int64  `yaml:"user_id"`
-	RoleID int64  `yaml:"role_id"`
-	Action string `yaml:"action"` // "add" or "remove"
+	UserID int64    `yaml:"user_id"`
+	RoleID int64    `yaml:"role_id"`
+	Action string   `yaml:"action"` // "add" or "remove"
+	Delay  Duration `yaml:"delay"`  // if set, the change is scheduled this far ahead
 }
 
 // TestSuite represents a collection of test cases.

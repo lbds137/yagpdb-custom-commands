@@ -89,6 +89,7 @@ tests:
     template: "../../../docs/cookbook/reaction_roles.gohtml"
     context:
       reaction: { emoji: "🎨", message_id: 555555555555555555, added: false }
+      user: { roles: [777777777777777777] } # the reactor has the role being taken
     assertions:
       role_changes:
         - { user_id: 900000000000000001, role_id: 777777777777777777, action: "remove" }

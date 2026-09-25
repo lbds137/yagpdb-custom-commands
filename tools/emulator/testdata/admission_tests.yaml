@@ -59,6 +59,7 @@ tests:
     template: "../../../staff_utility/admit_user.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
+      member_roles: { 500000000000000001: [222222222222222222] } # the guest has the Guest role
     assertions:
       role_changes:
         - { user_id: 500000000000000001, role_id: 555555555555555555, action: "add" }
@@ -100,6 +101,7 @@ tests:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "adult"]
       members: [987654321098765432]
     assertions:
+      no_role_changes: true
       sent_messages:
         - { channel_id: 123456789012345678, embed_title: "Invalid User" }
 

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSetupTemplatesRunFirstOnTheSameDatabase(t *testing.T) {
@@ -166,5 +167,30 @@ func TestExpectedErrorStillChecksWhatTheRunDid(t *testing.T) {
 	tc.Expected.OutputEquals = "after"
 	if res := r.RunTest(tc); res.Passed {
 		t.Error("a wrong output assertion must fail even when the expected error matched")
+	}
+}
+
+func TestRoleChangeAssertions(t *testing.T) {
+	tc := &TestCase{
+		Name:           "roles",
+		TemplateSource: `{{giveRoleID 5 10 "90"}}`,
+		Assertions:     Assertions{RoleChanges: []RoleCheck{{UserID: 5, RoleID: 10, Action: "add", Delay: Duration(90 * time.Second)}}},
+	}
+	tc.applyDefaults()
+	r := NewRunner(RunnerConfig{})
+	if res := r.RunTest(tc); !res.Passed {
+		t.Errorf("a matching delay passes: %q %v", res.Failures, res.Error)
+	}
+	tc.Assertions.RoleChanges[0].Delay = Duration(time.Minute)
+	if res := r.RunTest(tc); res.Passed {
+		t.Error("a different delay fails")
+	}
+	tc.Assertions = Assertions{NoRoleChanges: true}
+	if res := r.RunTest(tc); res.Passed {
+		t.Error("no_role_changes fails when a role changed")
+	}
+	tc.TemplateSource = "nothing"
+	if res := r.RunTest(tc); !res.Passed {
+		t.Errorf("no_role_changes passes when nothing changed: %q", res.Failures)
 	}
 }

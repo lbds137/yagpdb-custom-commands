@@ -130,6 +130,9 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 
 	// Check role changes
 	failures = r.checkRoleChanges(ctx.RoleChanges, tc.Assertions.RoleChanges)
+	if tc.Assertions.NoRoleChanges && len(ctx.RoleChanges) > 0 {
+		failures = append(failures, fmt.Sprintf("expected no role changes, got %+v", ctx.RoleChanges))
+	}
 	result.Failures = append(result.Failures, failures...)
 
 	if want := tc.Expected.WarningContains; want != "" && !containsAny(result.Warnings, want) {
@@ -187,6 +190,12 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	}
 	for _, role := range tc.Context.Guild.Roles {
 		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position}
+	}
+	if len(ctx.AvailableRoles) > 0 {
+		// Every guild has @everyone, whose ID is the guild's
+		if _, ok := ctx.AvailableRoles[ctx.GuildID]; !ok {
+			ctx.AvailableRoles[ctx.GuildID] = types.CtxRole{ID: ctx.GuildID, Name: "@everyone"}
+		}
 	}
 	if rd := tc.Context.Reaction; rd != nil {
 		ctx.Reaction = &types.CtxReaction{
@@ -436,7 +445,8 @@ func (r *Runner) checkRoleChanges(changes []runtime.RoleChange, checks []RoleChe
 	for i, check := range checks {
 		found := false
 		for _, change := range changes {
-			if change.UserID == check.UserID && change.RoleID == check.RoleID && change.Action == check.Action {
+			if change.UserID == check.UserID && change.RoleID == check.RoleID && change.Action == check.Action &&
+				(check.Delay == 0 || change.Delay == time.Duration(check.Delay)) {
 				found = true
 				break
 			}

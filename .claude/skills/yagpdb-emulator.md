@@ -35,7 +35,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     guild: { roles: [{ id: 111, name: "Staff", color: 3447003, position: 2 }] }  # if set, unknown roles are nil/errors
     # guild.owner_id: .Guild.OwnerID (default: the triggering user); guild.prefix (default "-")
     members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
-    member_roles: { 2: [111] }        # other members' roles
+    member_roles: { 2: [111] }        # other members' roles (takeRoleID only takes a role they have)
     member_nicks: { 1: "Nick" }       # nicknames (.Member and getMember), the triggering user's too
     member_joined_ago: { 2: 12h }     # join time before the run (default 30 days; JoinedAt.Parse)
     messages: [{ id: 7, channel_id: 9, author_id: 2, content: "hi" }]  # what getMessage finds
@@ -54,7 +54,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     db_checks: [{ user_id: 0, key: "K", value_equals: 1 }]   # or value_contains, not_exists
     sent_messages: [{ channel_id: 9, embed_title: "Title" }]  # or embed_contains: "`441`"
     edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits, first per channel (as edited)
-    role_changes: [{ user_id: 1, role_id: 111, action: "add" }]
+    role_changes: [{ user_id: 1, role_id: 111, action: "add" }]  # delay: 90s for a scheduled one
+    no_role_changes: true             # give/take of a role they have/lack, or a non-member, change nothing
 ```
 
 ## Project Structure
