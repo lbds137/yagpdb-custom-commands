@@ -12,6 +12,7 @@ const (
 	KindChannel  = "channel"  // a channel was assumed to exist
 	KindDB       = "db"       // a query production may fail where the mock doesn't
 	KindResponse = "response" // what YAGPDB sends differs from the template's output
+	KindMessage  = "message"  // a message the test doesn't declare was needed
 )
 
 // Diagnostic is a warning found while checking or running a template.

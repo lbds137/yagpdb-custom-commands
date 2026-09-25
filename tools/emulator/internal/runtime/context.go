@@ -42,7 +42,10 @@ type ExecutionContext struct {
 	GuildID   int64
 	GuildName string
 	OwnerID   int64 // The guild owner; 0 means the triggering user
-	Prefix    string
+	// BotCannotMentionEveryone: the bot lacks "Mention @everyone, @here, and All Roles", so
+	// only mentionable roles ping and @everyone/@here don't
+	BotCannotMentionEveryone bool
+	Prefix                   string
 
 	// Channel context
 	ChannelID   int64
@@ -79,6 +82,9 @@ type ExecutionContext struct {
 	// InheritedMessage is an execCC child's .Message: its caller's triggering message as
 	// YAGPDB keeps it (see triggerMsg)
 	InheritedMessage *types.CtxMessage
+	// inheritedFromReaction: InheritedMessage is a reaction run's, whose author is the
+	// reactor, not the message's real author
+	inheritedFromReaction bool
 
 	// Messages that exist, for getMessage; Members, if set, are the only users in the server
 	Messages []types.CtxMessage
@@ -166,6 +172,7 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 		ChannelID:      123456789,
 		ChannelName:    "test-channel",
 		UserID:         987654321,
+		MessageID:      234567890, // every Discord message has an ID
 		Username:       "TestUser",
 		Discriminator:  "0001",
 		UserRoles:      []int64{},
