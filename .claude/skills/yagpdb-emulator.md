@@ -45,6 +45,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run; its .Message is
                                       # the messages entry with that id in the run's channel
     # an interval/cron header: no .Message, .User or .Member; a None command keeps a message
+    # a header line  Case sensitive: `true`  makes the trigger case-sensitive (default: not)
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
   setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]  # run first, same DB

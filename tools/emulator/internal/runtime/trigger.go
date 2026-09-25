@@ -14,15 +14,18 @@ const DefaultPrefix = "-"
 
 // Trigger is a custom command's trigger, with the type named as the control panel names it
 // ("Command", "Starts with", "Contains", "Regex", "Exact match", "Reaction", "None", ...).
-// Triggers are case-insensitive, YAGPDB's default; headers can't make one case-sensitive.
+// Triggers are case-insensitive, YAGPDB's default, unless the header says
+// "Case sensitive: `true`" (the control panel's checkbox).
 type Trigger struct {
-	Type string
-	Text string
+	Type          string
+	Text          string
+	CaseSensitive bool
 }
 
 var (
 	headerTriggerType = regexp.MustCompile("Trigger type: `([^`]*)`")
 	headerTrigger     = regexp.MustCompile("Trigger: `([^`]*)`")
+	headerCase        = regexp.MustCompile("Case sensitive: `([^`]*)`")
 )
 
 // ReadTrigger reads a command's trigger from its header comment ("Trigger type: `Command`",
@@ -35,6 +38,9 @@ func ReadTrigger(source string) (t Trigger, ok bool) {
 	t.Type = m[1]
 	if m := headerTrigger.FindStringSubmatch(source); m != nil {
 		t.Text = m[1]
+	}
+	if m := headerCase.FindStringSubmatch(source); m != nil {
+		t.CaseSensitive = strings.EqualFold(m[1], "true")
 	}
 	return t, true
 }
@@ -58,7 +64,10 @@ func (t Trigger) MessageTriggered() bool {
 // message after the trigger, and the arguments (the first being the message up to and
 // including the trigger). prefix is the server's command prefix.
 func CheckMatch(prefix string, t Trigger, msg string) (match bool, stripped string, args []string) {
-	cmdMatch := "(?m)(?i)"
+	cmdMatch := "(?m)"
+	if !t.CaseSensitive {
+		cmdMatch += "(?i)"
+	}
 
 	switch t.Type {
 	case "Command":

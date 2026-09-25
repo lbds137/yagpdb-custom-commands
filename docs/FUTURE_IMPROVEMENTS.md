@@ -56,7 +56,6 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 - Component and modal triggers aren't modelled (YAGPDB's `.Message` there is the
   interaction's message with the clicker as author), nor is a join message's `ctx.Msg` (a
   blank message from the joining member, which an execCC from it would inherit).
-- Triggers are always case-insensitive (YAGPDB's default); a header can't say otherwise.
 
 ## IDE Integration
 
@@ -161,6 +160,8 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       YAGPDB's error message (formatCustomCommandRunErr copied: CC number, line, row, the
       source lines around it). Children's templates are named "CC #<n>", and errors carry
       YAGPDB's "Failed parsing/executing template" prefixes (2026-09-25)
+- [x] A header line "Case sensitive: `true`" makes the trigger case-sensitive, as the
+      control panel's checkbox drops CheckMatch's (?i) (2026-09-25)
 - [x] `.Message` follows what started the run: an interval or cron run has none, and no
       `.User`, `.Member` or `.BotUser` (its children neither); a reaction run's is the
       test's message with the reacted-to ID in the run's channel (its content and author);
