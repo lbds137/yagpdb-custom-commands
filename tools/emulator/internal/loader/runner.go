@@ -41,7 +41,8 @@ type RunnerConfig struct {
 
 // Runner executes test cases.
 type Runner struct {
-	config RunnerConfig
+	config         RunnerConfig
+	duplicateNames map[string]bool // snapshot keys used by more than one test
 }
 
 // NewRunner creates a new test runner.
@@ -107,6 +108,17 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	} else if len(tc.Context.Args) > 0 {
 		// Default CmdArgs to Args if not specified
 		ctx.CmdArgs = ctx.Args
+	}
+
+	if rd := tc.Context.Reaction; rd != nil {
+		ctx.Reaction = &types.CtxReaction{
+			UserID:    ctx.UserID,
+			MessageID: rd.MessageID,
+			ChannelID: ctx.ChannelID,
+			GuildID:   ctx.GuildID,
+			Emoji:     types.CtxEmoji{ID: rd.EmojiID, Name: rd.Emoji},
+		}
+		ctx.ReactionAdded = rd.Added == nil || *rd.Added
 	}
 
 	// Set ExecData if provided
@@ -376,6 +388,7 @@ func containsAny(items []string, substr string) bool {
 // RunTests executes multiple test cases and returns results.
 func (r *Runner) RunTests(tests []*TestCase) []*TestResult {
 	var results []*TestResult
+	r.duplicateNames = findDuplicateNames(tests)
 
 	for _, tc := range tests {
 		result := r.RunTest(tc)

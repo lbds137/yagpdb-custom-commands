@@ -3,6 +3,7 @@ package state
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -214,8 +215,9 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 	return newVal, nil
 }
 
-// GetPattern retrieves entries matching a LIKE pattern.
-func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int) []*types.LightDBEntry {
+// GetPattern retrieves entries matching a LIKE pattern, ordered by ID like YAGPDB
+// ("id asc", or "id desc" for dbGetPatternReverse).
+func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int, descending bool) []*types.LightDBEntry {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -236,7 +238,44 @@ func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int) []*ty
 		}
 	}
 
-	// Apply skip and limit
+	sort.Slice(results, func(i, j int) bool {
+		if descending {
+			return results[i].ID > results[j].ID
+		}
+		return results[i].ID < results[j].ID
+	})
+	return page(results, limit, skip)
+}
+
+// TopEntries returns entries of every user whose key matches the LIKE pattern, ordered
+// like YAGPDB's dbTopEntries ("value_num DESC, id DESC") or dbBottomEntries (ascending).
+// Non-numeric values count as 0, as they do in YAGPDB's value_num column.
+func (m *MockDB) TopEntries(pattern string, limit, skip int, ascending bool) []*types.LightDBEntry {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var results []*types.LightDBEntry
+	now := time.Now()
+	for _, entry := range m.entries {
+		if !entry.ExpiresAt.IsZero() && now.After(entry.ExpiresAt) {
+			continue
+		}
+		if matchPattern(entry.Key, pattern) {
+			results = append(results, entry)
+		}
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		a, b := valueNum(results[i]), valueNum(results[j])
+		if a != b {
+			return (a < b) == ascending
+		}
+		return (results[i].ID < results[j].ID) == ascending
+	})
+	return page(results, limit, skip)
+}
+
+func page(results []*types.LightDBEntry, limit, skip int) []*types.LightDBEntry {
 	if skip >= len(results) {
 		return nil
 	}
@@ -244,8 +283,20 @@ func (m *MockDB) GetPattern(userID int64, pattern string, limit, skip int) []*ty
 	if limit > 0 && len(results) > limit {
 		results = results[:limit]
 	}
-
 	return results
+}
+
+func valueNum(e *types.LightDBEntry) float64 {
+	switch v := types.UnwrapValue(e.Value).(type) {
+	case float64:
+		return v
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	default:
+		return 0
+	}
 }
 
 // Count returns the number of entries matching optional criteria.

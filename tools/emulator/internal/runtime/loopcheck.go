@@ -26,15 +26,24 @@ func (f loopFinding) Message(source string) string {
 
 // findLoopDBCalls finds database calls inside range loops. Each iteration is a separate
 // call against YAGPDB's per-run database limit, so a loop over user input or a large
-// list can run out of calls in production.
+// list can run out of calls in production. A {{template}} call inside a loop counts
+// when the named template makes database calls.
 func findLoopDBCalls(tmpl *template.Template) []loopFinding {
+	trees := map[string]*parse.Tree{}
+	for _, t := range tmpl.Templates() {
+		if t.Tree != nil && t.Tree.Root != nil {
+			trees[t.Name()] = t.Tree
+		}
+	}
+
 	var findings []loopFinding
 	for _, t := range tmpl.Templates() {
-		if t.Tree == nil || t.Tree.Root == nil {
+		tree := trees[t.Name()]
+		if tree == nil {
 			continue
 		}
-		w := &loopWalker{tree: t.Tree}
-		w.walk(t.Tree.Root, 0)
+		w := &loopWalker{tree: tree, trees: trees, resolveTemplates: true}
+		w.walk(tree.Root, 0)
 		findings = append(findings, w.findings...)
 	}
 	return findings
@@ -42,7 +51,35 @@ func findLoopDBCalls(tmpl *template.Template) []loopFinding {
 
 type loopWalker struct {
 	tree     *parse.Tree
+	trees    map[string]*parse.Tree // every defined template, for {{template}} calls
 	findings []loopFinding
+	called   []string // templates this tree calls
+
+	// resolveTemplates flags {{template}} calls in loops; off while dbFuncIn scans a
+	// template, which follows calls itself (with a guard against recursion)
+	resolveTemplates bool
+}
+
+// dbFuncIn returns the first database function the named template (or a template it
+// calls) uses, or "".
+func (w *loopWalker) dbFuncIn(name string, seen map[string]bool) string {
+	tree := w.trees[name]
+	if tree == nil || seen[name] {
+		return ""
+	}
+	seen[name] = true
+	inner := &loopWalker{tree: tree, trees: w.trees}
+	// Walking at depth 1 records every database call as a finding
+	inner.walk(tree.Root, 1)
+	if len(inner.findings) > 0 {
+		return inner.findings[0].Func
+	}
+	for _, called := range inner.called {
+		if f := w.dbFuncIn(called, seen); f != "" {
+			return f
+		}
+	}
+	return ""
 }
 
 func (w *loopWalker) walk(node parse.Node, loopDepth int) {
@@ -71,6 +108,15 @@ func (w *loopWalker) walk(node parse.Node, loopDepth int) {
 		w.walk(n.ElseList, loopDepth)
 	case *parse.TemplateNode:
 		w.pipe(n.Pipe, loopDepth)
+		w.called = append(w.called, n.Name)
+		if loopDepth > 0 && w.resolveTemplates {
+			if f := w.dbFuncIn(n.Name, map[string]bool{}); f != "" {
+				w.findings = append(w.findings, loopFinding{
+					Line: w.line(n),
+					Func: fmt.Sprintf("template %q (which calls %s)", n.Name, f),
+				})
+			}
+		}
 	}
 }
 
@@ -86,10 +132,19 @@ func (w *loopWalker) pipe(p *parse.PipeNode, loopDepth int) {
 			w.findings = append(w.findings, loopFinding{Line: w.line(id), Func: id.Ident})
 		}
 		for _, arg := range cmd.Args {
-			if sub, ok := arg.(*parse.PipeNode); ok {
-				w.pipe(sub, loopDepth)
-			}
+			w.arg(arg, loopDepth)
 		}
+	}
+}
+
+// arg looks for calls inside an argument: a parenthesized pipeline, or one with a
+// field access such as (dbGet 0 "k").Value, which parses as a chain.
+func (w *loopWalker) arg(node parse.Node, loopDepth int) {
+	switch n := node.(type) {
+	case *parse.PipeNode:
+		w.pipe(n, loopDepth)
+	case *parse.ChainNode:
+		w.arg(n.Node, loopDepth)
 	}
 }
 

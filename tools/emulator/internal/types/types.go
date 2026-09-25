@@ -332,6 +332,34 @@ type CtxMessage struct {
 	Embeds          []interface{}
 }
 
+// CtxReaction mirrors discordgo.MessageReaction, the .Reaction of reaction-triggered commands.
+type CtxReaction struct {
+	UserID    int64
+	MessageID int64
+	ChannelID int64
+	GuildID   int64
+	Emoji     CtxEmoji
+}
+
+// CtxEmoji mirrors discordgo.Emoji.
+type CtxEmoji struct {
+	ID       int64
+	Name     string
+	Animated bool
+}
+
+// APIName returns the emoji as Discord's API names it: "name:id" for custom emoji,
+// the character itself for Unicode emoji.
+func (e CtxEmoji) APIName() string {
+	if e.ID != 0 && e.Name != "" {
+		return fmt.Sprintf("%s:%d", e.Name, e.ID)
+	}
+	if e.Name != "" {
+		return e.Name
+	}
+	return fmt.Sprint(e.ID)
+}
+
 // StringKeyDictionary creates an SDict from key-value pairs.
 func StringKeyDictionary(pairs ...interface{}) (SDict, error) {
 	if len(pairs)%2 != 0 {

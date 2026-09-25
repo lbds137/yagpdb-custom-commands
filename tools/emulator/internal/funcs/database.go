@@ -99,7 +99,7 @@ func (d *DatabaseFuncs) DbGetPattern(userID interface{}, pattern interface{}, am
 		a = 100
 	}
 
-	entries := d.DB.GetPattern(uid, p, a, s)
+	entries := d.DB.GetPattern(uid, p, a, s, false)
 
 	// Convert to slice of interfaces for template use
 	result := make(types.Slice, len(entries))
@@ -120,12 +120,7 @@ func (d *DatabaseFuncs) DbGetPatternReverse(userID interface{}, pattern interfac
 		a = 100
 	}
 
-	entries := d.DB.GetPattern(uid, p, a, s)
-
-	// Reverse the results
-	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
-		entries[i], entries[j] = entries[j], entries[i]
-	}
+	entries := d.DB.GetPattern(uid, p, a, s, true)
 
 	result := make(types.Slice, len(entries))
 	for i, entry := range entries {
@@ -157,8 +152,7 @@ func (d *DatabaseFuncs) DbCount(args ...interface{}) interface{} {
 	return d.DB.Count(userID, pattern)
 }
 
-// DbTopEntries returns the top N entries by value_num.
-// This is a simplified implementation - YAGPDB uses SQL window functions.
+// DbTopEntries returns the top N entries of all users by value_num.
 func (d *DatabaseFuncs) DbTopEntries(pattern interface{}, amount interface{}, skip interface{}) interface{} {
 	p := ToString(pattern)
 	a := ToInt(amount)
@@ -168,20 +162,7 @@ func (d *DatabaseFuncs) DbTopEntries(pattern interface{}, amount interface{}, sk
 		a = 100
 	}
 
-	// Get all matching entries
-	entries := d.DB.GetPattern(0, p, 1000, 0)
-
-	// Sort by Value (numeric) descending - simplified
-	// In a real implementation, this would sort properly
-
-	// Apply skip and limit
-	if s >= len(entries) {
-		return types.Slice{}
-	}
-	entries = entries[s:]
-	if a > 0 && len(entries) > a {
-		entries = entries[:a]
-	}
+	entries := d.DB.TopEntries(p, a, s, false)
 
 	result := make(types.Slice, len(entries))
 	for i, entry := range entries {
@@ -200,17 +181,7 @@ func (d *DatabaseFuncs) DbBottomEntries(pattern interface{}, amount interface{},
 		a = 100
 	}
 
-	entries := d.DB.GetPattern(0, p, 1000, 0)
-
-	// Would sort ascending in real implementation
-
-	if s >= len(entries) {
-		return types.Slice{}
-	}
-	entries = entries[s:]
-	if a > 0 && len(entries) > a {
-		entries = entries[:a]
-	}
+	entries := d.DB.TopEntries(p, a, s, true)
 
 	result := make(types.Slice, len(entries))
 	for i, entry := range entries {
