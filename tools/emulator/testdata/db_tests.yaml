@@ -23,9 +23,9 @@ setup_db:
       Delete Trigger Delay: 5
   - user_id: 0
     key: "Commands"
-    value:
-      db: 456
-      embed_exec: 123
+    value: # strings, as the bootstrap stores them (str); commands toInt them
+      db: "456"
+      embed_exec: "123"
   - user_id: 0
     key: "Channels"
     value:
@@ -35,12 +35,15 @@ setup_db:
     value:
       Staff: 888888888
 
+command_map:
+  123: "../../../utility/embed_exec.gohtml"
+
 tests:
   - name: "Get existing database entry"
     template: "../../../utility/db.gohtml"
     context:
       args: ["get", "Global"]
-    # db.gohtml calls execCC which we mock, so we just check it executed without error
+    # db.gohtml's embed_exec child is the real command; a child that fails fails the test
 
   - name: "Get non-existent key"
     template: "../../../utility/db.gohtml"

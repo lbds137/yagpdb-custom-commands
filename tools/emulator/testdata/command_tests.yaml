@@ -39,12 +39,14 @@ setup_db:
       ExecCC Limit: 10
   - user_id: 0
     key: "Commands"
-    value:
-      embed_exec: 123
-      gematria: 124
-      message_link: 125
-      db_get_embed: 126
-      db_get_text: 127
+    value: # strings, as the bootstrap stores them (str); commands toInt them
+      embed_exec: "123"
+      gematria: "124"
+      message_link: "125"
+      db_get_embed: "126"
+      db_get_text: "127"
+      contrast: "128"
+      db: "129"
   - user_id: 0
     key: "Channels"
     value:
@@ -88,10 +90,12 @@ setup_db:
 
 command_map:
   123: "templates/recording_embed_exec.gohtml"
-  124: "templates/mock_gematria.gohtml"
-  125: "templates/mock_message_link.gohtml"
-  126: "templates/mock_db_get_embed.gohtml"
-  127: "templates/mock_db_get_text.gohtml"
+  124: "../../../utility/gematria.gohtml"
+  125: "../../../utility/message_link.gohtml"
+  126: "../../../utility/db_get_embed.gohtml"
+  127: "../../../utility/db_get_text.gohtml"
+  128: "../../../utility/contrast.gohtml"
+  129: "../../../utility/db.gohtml"
 
 tests:
   # ===== Utility Commands =====

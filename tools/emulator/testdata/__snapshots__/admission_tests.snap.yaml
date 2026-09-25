@@ -25,7 +25,7 @@
           value: '{"Admission Log":900000000000000005,"Introduction":900000000000000002,"Introduction Archive":900000000000000003,"Rejection Log":900000000000000006,"Welcome":900000000000000004,"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1,"message_link":2,"ticket_adduser_exec":3}'
+          value: '{"embed_exec":"1","message_link":"2","ticket_adduser_exec":"3"}'
         - user_id: 0
           key: Global
           value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Guest Grace Period Hours":48}'
@@ -48,7 +48,7 @@
           value: '{"Admission Log":900000000000000005,"Introduction":900000000000000002,"Introduction Archive":900000000000000003,"Rejection Log":900000000000000006,"Welcome":900000000000000004,"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1,"message_link":2,"ticket_adduser_exec":3}'
+          value: '{"embed_exec":"1","message_link":"2","ticket_adduser_exec":"3"}'
         - user_id: 0
           key: Global
           value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Guest Grace Period Hours":48}'
@@ -81,7 +81,7 @@
           value: '{"Admission Log":900000000000000005,"Introduction":900000000000000002,"Introduction Archive":900000000000000003,"Rejection Log":900000000000000006,"Welcome":900000000000000004,"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1,"message_link":2,"ticket_adduser_exec":3}'
+          value: '{"embed_exec":"1","message_link":"2","ticket_adduser_exec":"3"}'
         - user_id: 0
           key: Global
           value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Guest Grace Period Hours":48}'
@@ -107,7 +107,7 @@
           value: '{"Admission Log":900000000000000005,"Introduction":900000000000000002,"Introduction Archive":900000000000000003,"Rejection Log":900000000000000006,"Welcome":900000000000000004,"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1,"message_link":2,"ticket_adduser_exec":3}'
+          value: '{"embed_exec":"1","message_link":"2","ticket_adduser_exec":"3"}'
         - user_id: 0
           key: Global
           value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Guest Grace Period Hours":48}'
@@ -138,7 +138,7 @@
           value: '{"Admission Log":900000000000000005,"Introduction":900000000000000002,"Introduction Archive":900000000000000003,"Rejection Log":900000000000000006,"Welcome":900000000000000004,"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1,"message_link":2,"ticket_adduser_exec":3}'
+          value: '{"embed_exec":"1","message_link":"2","ticket_adduser_exec":"3"}'
         - user_id: 0
           key: Global
           value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Guest Grace Period Hours":48}'

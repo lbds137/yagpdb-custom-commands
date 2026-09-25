@@ -6,7 +6,7 @@
           value: '{"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1}'
+          value: '{"embed_exec":"1"}'
         - user_id: 0
           key: Global
           value: '{"Command Prefix":"-","Default Avatar":"https://example.com/a.png","Delete Trigger Delay":5,"Embed Color":5793266}'
@@ -21,7 +21,7 @@
           value: '{"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1}'
+          value: '{"embed_exec":"1"}'
         - user_id: 0
           key: Global
           value: '{"Command Prefix":"-","Default Avatar":"https://example.com/a.png","Delete Trigger Delay":5,"Embed Color":5793266}'
@@ -42,7 +42,7 @@
           value: '{"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1}'
+          value: '{"embed_exec":"1"}'
         - user_id: 0
           key: Global
           value: '{"Command Prefix":"-","Default Avatar":"https://example.com/a.png","Delete Trigger Delay":5,"Embed Color":5793266}'
@@ -57,7 +57,7 @@
           value: '{"YAGPDB":900000000000000001}'
         - user_id: 0
           key: Commands
-          value: '{"embed_exec":1}'
+          value: '{"embed_exec":"1"}'
         - user_id: 0
           key: Global
           value: '{"Command Prefix":"-","Default Avatar":"https://example.com/a.png","Delete Trigger Delay":5,"Embed Color":5793266}'

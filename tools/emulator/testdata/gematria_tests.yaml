@@ -11,7 +11,7 @@ setup_db:
     value: { Delete Trigger Delay: 5 }
   - user_id: 0
     key: "Commands"
-    value: { embed_exec: 1 }
+    value: { embed_exec: "1" } # a string, as the bootstrap stores it
   - user_id: 0
     key: "Channels"
     value: { YAGPDB: 900000000000000001 }

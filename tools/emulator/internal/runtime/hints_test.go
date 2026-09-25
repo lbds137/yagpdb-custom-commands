@@ -24,6 +24,8 @@ func TestHints(t *testing.T) {
 		{`{{totallyMadeUpThing}}`, "YAGPDB has no function totallyMadeUpThing", ""},
 		{`{{dbSet 0 "k" "v"}}{{(dbGet 0 "k").Foo}}`, "with .Value", ""},
 		{`{{$a := parseArgs 1 "usage" (carg "string" "x")}}`, "-args", "-t"},
+		// the hint names only conversions the parameter accepts
+		{`{{$id := "5"}}{{execCC $id nil 0 nil}}`, "Convert it first, with toInt or toInt64.", ""},
 	}
 	for _, c := range cases {
 		ctx := newCtx(false, true)

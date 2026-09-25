@@ -59,7 +59,11 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
   command_map: { 1: "templates/recording_embed_exec.gohtml" }  # execCC targets; a target's
                                       # output is a sent message in its channel, as in YAGPDB
                                       # (a failed one: YAGPDB's error message, unless its
-                                      # header turns Show errors off)
+                                      # header turns Show errors off). Map the real command
+                                      # where you can; a missing file is an error, an
+                                      # unmapped execCC warns [execcc], a failed child fails
+                                      # the test (unless warning_contains expects it). IDs are ints: store
+                                      # them as the bootstrap does (strings) and toInt them
   expected:
     output_contains: "..."            # also output_equals ("" = no output), output_matches, error_contains
                                       # (with error_contains, the other checks still run)

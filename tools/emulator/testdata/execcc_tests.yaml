@@ -28,7 +28,7 @@ tests:
         - channel_id: 999
           content_contains: "Channel test"
 
-  - name: "execCC to unknown command ID (silently fails)"
+  - name: "execCC to an unmapped command warns and carries on"
     template_source: |
       {{ execCC 999 nil 0 (sdict "Message" "Should not appear") }}
       Still works

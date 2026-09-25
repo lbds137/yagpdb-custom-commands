@@ -75,8 +75,7 @@ func Hint(err error) string {
 	}
 
 	if m := reWrongType.FindStringSubmatch(msg); m != nil {
-		return "a " + m[2] + " was passed where " + m[1] + " is needed. Convert it first, " +
-			"for example with toInt, toInt64, toFloat or str."
+		return "a " + m[2] + " was passed where " + m[1] + " is needed. Convert it first" + converterFor(m[1]) + "."
 	}
 
 	if m := reErrorCalling.FindStringSubmatch(msg); m != nil {
@@ -129,4 +128,18 @@ func editDistance(a, b string) int {
 		prev, cur = cur, prev
 	}
 	return prev[len(b)]
+}
+
+// converterFor names the conversion functions whose result the template engine accepts
+// for a parameter of that type (it converts between int kinds, and between float kinds).
+func converterFor(typ string) string {
+	switch {
+	case strings.HasPrefix(typ, "int"):
+		return ", with toInt or toInt64"
+	case strings.HasPrefix(typ, "float"):
+		return ", with toFloat"
+	case typ == "string":
+		return ", with str"
+	}
+	return ""
 }
