@@ -18,9 +18,10 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   that writes the key may read the old value in production). Scheduled runs are recorded,
   not run: test the scheduled command on its own with the recorded `exec_data` (a test's
   exec_data is a plain map, while the real run gets an `*sdict` with `.Get`/`.Set`).
-- `execCC` and `scheduleUniqueCC` don't check that the command exists (YAGPDB errors
-  "Couldn't find custom command" before its "Unknown channel"): an unmapped command is
-  skipped, since `command_map` is only the commands a test runs.
+- `command_map` is only the commands a test runs, so an unmapped command may exist in
+  production: execCC of one warns (`[execcc]`) and runs nothing, and a delayed run or
+  scheduleUniqueCC of one is scheduled. YAGPDB's disabled-command and disabled-group
+  errors aren't modelled.
 - Channels have only an ID and a name: no types, so threads, voice channels and DMs
   aren't told apart (YAGPDB's name lookup skips some types, and getMessage/editMessage
   refuse DMs), and getChannel has no other fields. A test that declares no channels
@@ -183,6 +184,16 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
       used to return the previous message's ID after a refused send). Edits set
       EditedTimestamp (2026-09-25)
+- [x] execCC, scheduleUniqueCC and cancelScheduledUniqueCC take the command as an `int`,
+      as in YAGPDB (a string or float variable is "wrong type for value"), and follow
+      tmplRunCC's order: the command is looked up (an Interval or Crontab command refused)
+      before the channel. An unmapped immediate execCC warns instead of doing nothing
+      silently, and a command_map file that can't be read is an error. That turned up
+      command_tests' four `mock_*` targets, which never existed (their children never
+      ran): they now map to the real commands, and the suites' Commands dicts hold string
+      IDs as the bootstrap stores them, plus the `contrast` and `db` entries. A failed
+      execCC child now fails its test unless the test expects it with warning_contains
+      (to YAGPDB's caller it's only a log line) (2026-09-25)
 - [x] Reactions are recorded (YAGPDB's tmplAddReactions, tmplAddResponseReactions,
       tmplAddMessageReactions, tmplDelMessageReaction, tmplDelAllMessageReactions copied,
       with their argument checks, early returns and printed "non-existing channel/user",

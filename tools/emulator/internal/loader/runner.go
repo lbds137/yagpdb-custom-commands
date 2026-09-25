@@ -153,6 +153,14 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 		result.Failures = append(result.Failures,
 			fmt.Sprintf("expected a warning containing %q but got: %q", want, result.Warnings))
 	}
+	// A failed execCC child is only a warning to its caller, as in YAGPDB, but a test fails
+	// on it unless it expects it (warning_contains)
+	for _, d := range ctx.Diagnostics {
+		if d.Kind == runtime.KindExecCC && strings.Contains(d.Message, ") failed: ") &&
+			(tc.Expected.WarningContains == "" || !strings.Contains(d.Message, tc.Expected.WarningContains)) {
+			result.Failures = append(result.Failures, "an execCC child failed (expect it with warning_contains): "+d.Message)
+		}
+	}
 
 	if tc.Snapshot {
 		failures, written := r.checkSnapshot(tc, output, ctx, db)

@@ -5,7 +5,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagstd"
 )
@@ -74,7 +73,10 @@ func (ctx *ExecutionContext) cancelScheduled(ccID int64, key string) {
 
 // scheduleUniqueCC is YAGPDB's tmplScheduleUniqueCC: a delayed run that replaces any run
 // scheduled for the same command and key. A delay of 0 or less does nothing.
-func (e *Engine) scheduleUniqueCC(ccID, channel, delay, key, data interface{}) (string, error) {
+func (e *Engine) scheduleUniqueCC(ccID int, channel, delay, key, data interface{}) (string, error) {
+	if _, _, _, err := e.findCC("scheduleUniqueCC", int64(ccID)); err != nil {
+		return "", err
+	}
 	channelID := e.channelArg(channel)
 	if channelID == 0 { // checked before the delay, as in YAGPDB
 		return "", errors.New("Unknown channel")
@@ -83,11 +85,11 @@ func (e *Engine) scheduleUniqueCC(ccID, channel, delay, key, data interface{}) (
 		return "", nil
 	}
 	k := yagstd.ToString(key)
-	return "", e.ctx.schedule(funcs.ToInt64(ccID), channelID, delay, &k, data)
+	return "", e.ctx.schedule(int64(ccID), channelID, delay, &k, data)
 }
 
 // cancelScheduledUniqueCC is YAGPDB's tmplCancelUniqueCC.
-func (e *Engine) cancelScheduledUniqueCC(ccID, key interface{}) string {
-	e.ctx.cancelScheduled(funcs.ToInt64(ccID), yagstd.ToString(key))
+func (e *Engine) cancelScheduledUniqueCC(ccID int, key interface{}) string {
+	e.ctx.cancelScheduled(int64(ccID), yagstd.ToString(key))
 	return ""
 }

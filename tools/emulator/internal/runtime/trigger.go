@@ -109,10 +109,12 @@ func ReadTrigger(source string) (t Trigger, ok bool) {
 	return t, true
 }
 
-// Scheduled reports whether the trigger runs the command on a schedule (an interval or
-// cron): no message or member starts such a run.
+// Scheduled reports whether the trigger runs the command on a schedule: an interval
+// ("Hourly interval", "Minute interval") or YAGPDB's "Crontab" (the control panel's
+// "Crontab (Beta)"). No message or member starts such a run.
 func (t Trigger) Scheduled() bool {
-	return strings.HasSuffix(strings.ToLower(t.Type), "interval") || strings.EqualFold(t.Type, "Cron")
+	typ := strings.ToLower(t.Type)
+	return strings.HasSuffix(typ, "interval") || strings.HasPrefix(typ, "crontab") || typ == "cron"
 }
 
 // MessageTriggered reports whether the trigger runs the command on messages.

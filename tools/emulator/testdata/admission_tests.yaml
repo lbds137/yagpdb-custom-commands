@@ -39,7 +39,7 @@ setup_db:
     value: { Delete Trigger Delay: 5, Delete Response Delay: 10, Default Avatar: "https://example.com/a.png", Guest Grace Period Hours: 48 }
   - user_id: 0
     key: "Commands"
-    value: { embed_exec: 1, message_link: 2, ticket_adduser_exec: 3 }
+    value: { embed_exec: "1", message_link: "2", ticket_adduser_exec: "3" } # strings, as the bootstrap stores them
   - user_id: 0
     key: "Channels"
     value:

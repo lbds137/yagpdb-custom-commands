@@ -23,7 +23,7 @@ setup_db:
     value: { Embed Color: 5793266, Delete Trigger Delay: 5, Default Avatar: "https://example.com/a.png" }
   - user_id: 0
     key: "Commands"
-    value: { embed_exec: 1 }
+    value: { embed_exec: "1" } # a string, as the bootstrap stores it
   - user_id: 0
     key: "Roles"
     value: { Staff: 111111111111111111 }

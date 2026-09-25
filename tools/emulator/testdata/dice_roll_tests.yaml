@@ -22,8 +22,8 @@ setup_db:
       Delete Response Delay: 10
   - user_id: 0
     key: "Commands"
-    value:
-      embed_exec: 123
+    value: # a string, as the bootstrap stores it
+      embed_exec: "123"
   - user_id: 0
     key: "Channels"
     value:

@@ -390,3 +390,22 @@ func TestCheckReactions(t *testing.T) {
 		t.Errorf("a wrong reactions check fails the test: %v, %q", res.Error, res.Failures)
 	}
 }
+
+// A failed execCC child fails its test, unless the test expects it with warning_contains
+func TestFailedChildFailsTheTest(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "broken.gohtml"), []byte(`{{index (cslice) 5}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := NewRunner(RunnerConfig{})
+	for _, want := range []string{"", "index out of range"} {
+		tc := &TestCase{Name: "child", TemplateSource: `{{execCC 9 nil 0 nil}}ok`, CommandMap: map[int64]string{9: filepath.Join(dir, "broken.gohtml")}}
+		tc.Expected.WarningContains = want
+		tc.applyDefaults()
+		res := r.RunTest(tc)
+		failed := len(res.Failures) == 1 && strings.Contains(res.Failures[0], "an execCC child failed")
+		if res.Error != nil || failed != (want == "") || (want != "" && len(res.Failures) != 0) {
+			t.Errorf("warning_contains %q: %v, %q", want, res.Error, res.Failures)
+		}
+	}
+}

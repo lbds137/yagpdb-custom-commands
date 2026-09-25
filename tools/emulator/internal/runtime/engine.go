@@ -730,12 +730,40 @@ func (e *Engine) createTicket(user, reason interface{}) types.SDict {
 
 // Cross-command execution
 
-// execCC is YAGPDB's tmplRunCC. With a delay it schedules the run (see schedule.go);
-// otherwise it runs the command now, at most two levels deep.
-func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (string, error) {
-	commandID := funcs.ToInt64(ccID)
+// findCC is tmplRunCC's and tmplScheduleUniqueCC's command lookup, with a test's
+// command_map standing in for the server's commands: a mapped command's template is read,
+// and an interval or cron command is refused as YAGPDB refuses it. mapped is false for a
+// command the test doesn't map, which may exist in production.
+func (e *Engine) findCC(fn string, ccID int64) (path string, source []byte, mapped bool, err error) {
+	path, mapped = e.ctx.CommandIDMap[ccID]
+	if !mapped {
+		return "", nil, false, nil
+	}
+	if e.ctx.TemplateBaseDir != "" && !filepath.IsAbs(path) {
+		path = filepath.Join(e.ctx.TemplateBaseDir, path)
+	}
+	source, err = os.ReadFile(path)
+	if err != nil { // the test's mistake, not YAGPDB's behaviour
+		return "", nil, true, fmt.Errorf("%s %d: can't read its command_map template: %w", fn, ccID, err)
+	}
+	if t, ok := ReadTrigger(string(source)); ok && t.Scheduled() {
+		return "", nil, true, errors.New("interval and cron type custom commands cannot be used with " + fn)
+	}
+	return path, source, true, nil
+}
+
+// execCC is YAGPDB's tmplRunCC: the command is looked up, then the channel; with a delay
+// the run is scheduled (see schedule.go), otherwise it runs now, at most two levels deep.
+// ccID is an int, as there: the template engine refuses a float or a string.
+func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) (string, error) {
+	commandID := int64(ccID)
+	templatePath, templateContent, mapped, err := e.findCC("execCC", commandID)
+	if err != nil {
+		return "", err
+	}
+
 	channelID := e.channelArg(channel)
-	if channelID == 0 { // tmplRunCC checks the channel before the delay
+	if channelID == 0 {
 		return "", errors.New("Unknown channel")
 	}
 
@@ -747,22 +775,9 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 		return "", errors.New("Max nested immediate execCC calls reached (2)")
 	}
 
-	// Look up command template path
-	templatePath, ok := e.ctx.CommandIDMap[commandID]
-	if !ok {
-		// Command not found in registry - this is normal for unmapped commands
-		return "", nil
-	}
-
-	// Resolve template path
-	if e.ctx.TemplateBaseDir != "" && !filepath.IsAbs(templatePath) {
-		templatePath = filepath.Join(e.ctx.TemplateBaseDir, templatePath)
-	}
-
-	// Load template
-	templateContent, err := os.ReadFile(templatePath)
-	if err != nil {
-		// Template file not found
+	if !mapped {
+		e.ctx.Warn(KindExecCC, "execCC %d isn't in the test's command_map, so it didn't run (YAGPDB "+
+			"runs that command, or fails \"Couldn't find custom command\" if there's none)", commandID)
 		return "", nil
 	}
 
