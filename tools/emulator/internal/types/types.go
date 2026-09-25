@@ -104,6 +104,30 @@ type TemplateValue struct {
 	V interface{}
 }
 
+// WrapValue wraps dict-like values in TemplateValue and returns everything else
+// unchanged, matching YAGPDB, where a stored string or number comes back as itself.
+func WrapValue(v interface{}) interface{} {
+	switch v.(type) {
+	case SDict, map[string]interface{}, Dict, map[interface{}]interface{}:
+		return TemplateValue{V: v}
+	default:
+		return v
+	}
+}
+
+// UnwrapValue returns the value inside a TemplateValue, or v itself.
+func UnwrapValue(v interface{}) interface{} {
+	if tv, ok := v.(TemplateValue); ok {
+		return tv.V
+	}
+	return v
+}
+
+// MarshalJSON encodes the wrapped value, so dumps show {"a":1} rather than {"V":{"a":1}}.
+func (tv TemplateValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(tv.V)
+}
+
 // Get retrieves a value from the wrapped dict-like type.
 // Returns a TemplateValue for dict-like results to enable method chaining.
 func (tv TemplateValue) Get(key interface{}) interface{} {
@@ -170,7 +194,7 @@ type LightDBEntry struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Key       string
-	Value     TemplateValue
+	Value     interface{}
 	ValueSize int
 	User      DiscordUser
 	ExpiresAt time.Time

@@ -91,7 +91,7 @@ func (m *MockDB) SetWithExpiry(userID int64, key string, value interface{}, ttlS
 		CreatedAt: createdAt,
 		UpdatedAt: now,
 		Key:       key,
-		Value:     types.TemplateValue{V: convertedValue},
+		Value:     types.WrapValue(convertedValue),
 		ValueSize: estimateSize(convertedValue),
 		ExpiresAt: expiresAt,
 	}
@@ -180,7 +180,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 			id = existing.ID
 			createdAt = existing.CreatedAt
 			// Try to get numeric value from the wrapped value
-			switch v := existing.Value.V.(type) {
+			switch v := types.UnwrapValue(existing.Value).(type) {
 			case float64:
 				currentVal = v
 			case int:
@@ -188,7 +188,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 			case int64:
 				currentVal = float64(v)
 			default:
-				return 0, fmt.Errorf("cannot increment non-numeric value of type %T", existing.Value.V)
+				return 0, fmt.Errorf("cannot increment non-numeric value of type %T", types.UnwrapValue(existing.Value))
 			}
 		}
 	} else {
@@ -206,7 +206,7 @@ func (m *MockDB) Incr(userID int64, key string, amount float64) (float64, error)
 		CreatedAt: createdAt,
 		UpdatedAt: now,
 		Key:       key,
-		Value:     types.TemplateValue{V: newVal},
+		Value:     newVal,
 		ValueSize: 8, // float64 size
 	}
 
