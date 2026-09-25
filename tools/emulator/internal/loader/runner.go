@@ -139,6 +139,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	result.Failures = append(result.Failures, failures...)
 
 	result.Failures = append(result.Failures, checkScheduledRuns(ctx.ScheduledRuns(), tc.Assertions.ScheduledRuns)...)
+	result.Failures = append(result.Failures, checkDeletions(ctx.Deletions, tc.Assertions.Deletions)...)
 
 	// Check role changes
 	failures = r.checkRoleChanges(ctx.RoleChanges, tc.Assertions.RoleChanges)
@@ -539,6 +540,47 @@ func checkScheduledRuns(runs []runtime.ScheduledRun, checks *[]ScheduledRunCheck
 		}
 	}
 	return failures
+}
+
+// checkDeletions compares the deletions with the expected list, one by one.
+func checkDeletions(deletions []runtime.Deletion, checks *[]DeletionCheck) []string {
+	if checks == nil {
+		return nil
+	}
+	var failures []string
+	for i, c := range *checks {
+		switch c.Of {
+		case "", "trigger", "message", "response":
+		default:
+			failures = append(failures, fmt.Sprintf("deletion check %d: of is %q; it takes trigger, message or response", i, c.Of))
+		}
+	}
+	if len(failures) > 0 {
+		return failures
+	}
+	if len(deletions) != len(*checks) {
+		return []string{fmt.Sprintf("expected %d deletions, got %d: %s", len(*checks), len(deletions), describeDeletions(deletions))}
+	}
+	for i, c := range *checks {
+		d := deletions[i]
+		if (c.Of != "" && d.Of != c.Of) || (c.ChannelID != 0 && d.ChannelID != c.ChannelID) ||
+			(c.MessageID != 0 && d.MessageID != c.MessageID) || (c.Delay != nil && d.Delay != time.Duration(*c.Delay)) {
+			want := fmt.Sprintf("of %q, channel %d, message %d", c.Of, c.ChannelID, c.MessageID)
+			if c.Delay != nil {
+				want += fmt.Sprintf(", after %s", time.Duration(*c.Delay))
+			}
+			failures = append(failures, fmt.Sprintf("deletion %d doesn't match (%s; unset = any): %s", i, want, d))
+		}
+	}
+	return failures
+}
+
+func describeDeletions(deletions []runtime.Deletion) string {
+	parts := make([]string, len(deletions))
+	for i, d := range deletions {
+		parts[i] = d.String()
+	}
+	return "[" + strings.Join(parts, "; ") + "]"
 }
 
 func describeRuns(runs []runtime.ScheduledRun) string {

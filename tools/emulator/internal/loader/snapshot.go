@@ -21,6 +21,7 @@ type Snapshot struct {
 	Messages    []SnapshotMessage `yaml:"messages,omitempty"`
 	Edits       []SnapshotMessage `yaml:"edits,omitempty"`
 	RoleChanges []string          `yaml:"role_changes,omitempty"`
+	Deletions   []string          `yaml:"deletions,omitempty"`
 	DB          []SnapshotEntry   `yaml:"db,omitempty"`
 }
 
@@ -55,6 +56,9 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 			change += fmt.Sprintf(" in %s", rc.Delay)
 		}
 		snap.RoleChanges = append(snap.RoleChanges, change)
+	}
+	for _, d := range ctx.Deletions {
+		snap.Deletions = append(snap.Deletions, d.String())
 	}
 	entries := db.GetAll()
 	sort.Slice(entries, func(i, j int) bool {

@@ -99,3 +99,17 @@ tests:
       sent_messages:
         - { channel_id: 0, pings: { users: [5] } }
         - { channel_id: 900000000000000002, pings: { everyone: true, roles: [20] } }
+
+  - name: "Deletions: the trigger, a message, and the sent response"
+    template_source: |
+      {{ deleteTrigger 5 }}{{ deleteMessage 900000000000000002 42 0 }}{{ deleteResponse 30 }}done
+    assertions:
+      deletions:
+        - { of: trigger, delay: 5s }
+        - { of: message, channel_id: 900000000000000002, message_id: 42, delay: 0s }
+        - { of: response, delay: 30s }
+
+  - name: "Deletions: none without deleteTrigger and friends"
+    template_source: "hi"
+    assertions:
+      deletions: []

@@ -146,10 +146,17 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 // Execute parses and executes a template.
 func (e *Engine) Execute(source string) (string, error) {
 	out, err := e.execute(source)
+	settings := ReadErrorSettings(source)
+	if e.ctx.ExecCCDepth == 0 && e.ctx.delResponse && e.ctx.delResponseDelay >= 1 &&
+		strings.TrimSpace(out) != "" && (err == nil || !settings.ShowErrors) {
+		// The response is sent, and deleted later; a delay under 1 sends none (a failed
+		// run's output still holds it here). An execCC child's is recorded by execCC,
+		// which knows its message.
+		e.ctx.recordDeletion("response", e.ctx.ChannelID, 0, e.ctx.delResponseDelay)
+	}
 	if err == nil {
 		return out, nil
 	}
-	settings := ReadErrorSettings(source)
 	if settings.ShowErrors {
 		// ExecuteCustomCommand posts the output and the error in the command's (or the
 		// redirect-errors) channel with ChannelMessageSend, whose empty allowed mentions
@@ -392,17 +399,43 @@ func (e *Engine) getMessage(channel, msgID interface{}) *types.CtxMessage {
 	return e.ctx.knownMessage(channelID, id)
 }
 
-func (e *Engine) deleteMessage(args ...interface{}) string {
-	return ""
+// deleteMessage is YAGPDB's tmplDelMessage: the message is deleted after the delay (10
+// seconds by default, at most a day), and nothing happens for an unknown channel. The
+// deletion is recorded; whether the message exists doesn't matter (YAGPDB ignores the error).
+func (e *Engine) deleteMessage(channel, msgID interface{}, args ...interface{}) string {
+	return e.delMessage("message", channel, msgID, args...)
 }
 
+// deleteTrigger is YAGPDB's tmplDelTrigger: deleteMessage of the run's message, which is
+// the reacted-to message in a reaction run and the caller's in an execCC child. An interval
+// run has none.
 func (e *Engine) deleteTrigger(args ...interface{}) string {
+	m := e.ctx.triggerMsg()
+	if m.ID == 0 { // YAGPDB's ctx.Msg is nil
+		return ""
+	}
+	return e.delMessage("trigger", m.ChannelID, m.ID, args...)
+}
+
+func (e *Engine) delMessage(of string, channel, msgID interface{}, args ...interface{}) string {
+	channelID := e.channelArg(channel) // ChannelArgNoDM
+	if channelID == 0 {
+		return ""
+	}
+	dur := 10
+	if len(args) > 0 {
+		dur = int(funcs.ToInt64(args[0]))
+	}
+	if dur > 86400 {
+		dur = 86400
+	}
+	e.ctx.recordDeletion(of, channelID, funcs.ToInt64(msgID), dur)
 	return ""
 }
 
 // deleteResponse is YAGPDB's tmplDelResponse: the response is deleted after the delay (10
-// seconds by default, at most a day). The emulator records no deletions, but a delay under
-// 1 means the response isn't sent at all.
+// seconds by default, at most a day), which is recorded when the response is sent; with a
+// delay under 1 it isn't sent at all.
 func (e *Engine) deleteResponse(args ...interface{}) string {
 	dur := 10
 	if len(args) > 0 {
@@ -798,13 +831,17 @@ func (e *Engine) execCC(ccID, channel, delay interface{}, data interface{}) (str
 	// child failed with show_errors on (Execute has posted the error message instead)
 	out, err := childEngine.Execute(string(templateContent))
 	if out != "" && (err == nil || !ReadErrorSettings(string(templateContent)).ShowErrors) {
-		childCtx.RecordSentMessage(channelID, out, nil, childCtx.ResponsePings)
+		id := childCtx.RecordSentMessage(channelID, out, nil, childCtx.ResponsePings)
+		if childCtx.delResponse { // a delay under 1 sends no response (the output is "")
+			childCtx.recordDeletion("response", channelID, id, childCtx.delResponseDelay)
+		}
 	}
 
 	// Propagate side effects back to parent
 	e.ctx.SentMessages = append(e.ctx.SentMessages, childCtx.SentMessages...)
 	e.ctx.EditedMessages = append(e.ctx.EditedMessages, childCtx.EditedMessages...)
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
+	e.ctx.Deletions = append(e.ctx.Deletions, childCtx.Deletions...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
 	if err != nil { // the caller carries on
 		e.ctx.Warn(KindExecCC, "execCC %d (%s) failed: %v", commandID, filepath.Base(templatePath), err)

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
 )
 
 func TestSetupTemplatesRunFirstOnTheSameDatabase(t *testing.T) {
@@ -299,3 +301,50 @@ func TestRoleChangeAssertions(t *testing.T) {
 }
 
 func str(s string) *string { return &s }
+
+// A deletions check lists every deletion in order; unset fields match anything, and an
+// explicit 0s delay means at once
+func TestCheckDeletions(t *testing.T) {
+	got := []runtime.Deletion{
+		{Of: "trigger", ChannelID: 9, MessageID: 5, Delay: 0},
+		{Of: "response", ChannelID: 9, Delay: 10 * time.Second},
+	}
+	zero, ten := Duration(0), Duration(10*time.Second)
+	cases := []struct {
+		checks []DeletionCheck
+		fail   string
+	}{
+		{[]DeletionCheck{{Of: "trigger", Delay: &zero}, {Delay: &ten}}, ""},
+		{[]DeletionCheck{{}, {Of: "response", ChannelID: 9}}, ""},
+		{[]DeletionCheck{{Of: "trigger"}}, "expected 1 deletions, got 2"},
+		{[]DeletionCheck{{Delay: &ten}, {}}, "deletion 0 doesn't match"},
+		{[]DeletionCheck{{MessageID: 6}, {}}, "deletion 0 doesn't match"},
+		{[]DeletionCheck{{}, {Of: "message"}}, "deletion 1 doesn't match"},
+		{[]DeletionCheck{{}, {ChannelID: 8}}, "deletion 1 doesn't match"},
+		{[]DeletionCheck{{Of: "reply"}, {}}, `of is "reply"`},
+	}
+	for i, c := range cases {
+		failures := strings.Join(checkDeletions(got, &c.checks), "\n")
+		if (c.fail == "") != (failures == "") || !strings.Contains(failures, c.fail) {
+			t.Errorf("case %d: failures %q, want %q", i, failures, c.fail)
+		}
+	}
+	if f := checkDeletions(nil, &[]DeletionCheck{}); f != nil {
+		t.Errorf("[] with no deletions: %q", f)
+	}
+	if f := checkDeletions(got, nil); f != nil {
+		t.Errorf("no check: %q", f)
+	}
+}
+
+// A test whose deletions differ from its deletions check fails
+func TestDeletionsCheckFailsTheTest(t *testing.T) {
+	r := NewRunner(RunnerConfig{})
+	tc := &TestCase{Name: "del", TemplateSource: `{{deleteTrigger 5}}`,
+		Assertions: Assertions{Deletions: &[]DeletionCheck{}}}
+	tc.applyDefaults()
+	res := r.RunTest(tc)
+	if res.Error != nil || len(res.Failures) != 1 || !strings.Contains(res.Failures[0], "expected 0 deletions, got 1") {
+		t.Errorf("got %v, %q", res.Error, res.Failures)
+	}
+}

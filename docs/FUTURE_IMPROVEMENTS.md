@@ -25,7 +25,7 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   aren't told apart (YAGPDB's name lookup skips some types, and getMessage/editMessage
   refuse DMs), and getChannel has no other fields. A test that declares no channels
   treats any channel ID as existing, with a `[channel]` warning per ID. Names are looked
-  up in declared order, standing in for Discord's positions. deleteMessage,
+  up in declared order, standing in for Discord's positions.
   addMessageReactions, deleteAllMessageReactions, getTargetPermissionsIn and sendTemplate
   ignore their channel (YAGPDB's deleteAllMessageReactions prints "non-existing channel"
   for an unknown one, and sendTemplate errors "unknown channel").
@@ -43,9 +43,10 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
   2000-character limit. That it pings no one is read from the code, not probed.
   With `-strict`, a child over the source-length or time limit sends that error as the
   message; YAGPDB wouldn't save such a command, and has no time-limit error there.
-  `deleteResponse`, `deleteMessage` and `deleteTrigger` record no deletions.
-  `editMessageNoEscape` is `editMessage` (edits notify
-  no one either way).
+  Deletions are recorded, not made: a deleted message stays findable by getMessage for the
+  rest of the run (YAGPDB deletes from a goroutine or a scheduled event, so usually after
+  the run ends, but a short delay can land mid-run). `editMessageNoEscape` is
+  `editMessage` (edits notify no one either way).
 - getMessage of a test's or a sent message returns the stored message itself, so a later
   editMessage shows through it (`{{$m := getMessage nil $id}}{{editMessage nil $id "b"}}
   {{$m.Content}}` is "b"; YAGPDB's earlier fetch keeps the old content). An execCC child
@@ -177,6 +178,13 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       channel argument is dcmd's. sendMessageRetID returns "" when nothing was sent (it
       used to return the previous message's ID after a refused send). Edits set
       EditedTimestamp (2026-09-25)
+- [x] Deletions are recorded (YAGPDB's tmplDelTrigger/tmplDelMessage/tmplDelResponse):
+      deleteTrigger deletes the run's message (the reacted-to one in a reaction run, the
+      caller's in an execCC child, none in an interval run), deleteMessage skips an
+      unknown channel, delays default to 10s, cap at a day and run at once under 1, and
+      deleteResponse deletes the response only when one is sent (an execCC child's by its
+      message ID). Tests assert them with `deletions:`, and snapshots record them
+      (2026-09-25)
 - [x] getMessage and editMessage find the triggering message (an execCC child its caller's)
       as well as a test's and sent messages, as YAGPDB, which asks Discord, does; editing
       it is Discord's "authored by another user" refusal. A reaction run's reacted message
