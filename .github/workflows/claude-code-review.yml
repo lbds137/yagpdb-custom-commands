@@ -116,6 +116,7 @@ jobs:
       contents: write
       pull-requests: write
       checks: read
+      statuses: read
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
