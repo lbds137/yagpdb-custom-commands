@@ -1,0 +1,24 @@
+# Assigns the repo owner to every PR they author (Lila's standing policy across her repos).
+# PRs from anyone else, dependabot included, are left alone. From dev-docs templates/assign-author.
+name: Assign PR author
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  assign:
+    if: github.event.pull_request.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Assign the author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: gh api "repos/$REPO/issues/$PR/assignees" -f "assignees[]=$AUTHOR" --silent
