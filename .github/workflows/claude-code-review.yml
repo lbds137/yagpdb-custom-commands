@@ -3,11 +3,18 @@ name: Claude Code Review
 # Template from ~/Documents/dev-docs/templates/claude-review (adapted from Tzurot's).
 # Needs the CLAUDE_CODE_OAUTH_TOKEN repo secret and the Claude GitHub App on the repo.
 # The action skips itself on the PR that adds or changes this file (it validates
-# against the default branch's copy), so the setup PR itself gets no review.
+# against the default branch's copy), so that PR gets no review and a red check:
+# it is merged by hand. The automerge job below merges the owner's non-draft PRs
+# once the review passes and every other check is green.
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# A newer push makes the running review (and its merge) moot.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   claude-review:
@@ -42,6 +49,7 @@ jobs:
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
+            HEAD SHA: ${{ github.event.pull_request.head.sha }}
 
             Please review this pull request and provide feedback on:
             - Code quality and best practices
@@ -58,27 +66,91 @@ jobs:
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR. Post a comment even if everything looks fine; silence is indistinguishable from a failed review.
 
+            Label every finding's severity as critical, high, medium or low. The LAST line of your comment must be exactly `VERDICT: BLOCK <HEAD SHA>` if any finding is critical, high or medium, otherwise exactly `VERDICT: PASS <HEAD SHA>`, with the full 40-character HEAD SHA given above and no other formatting. This line gates auto-merge: BLOCK stops the merge until a new push gets a passing review; low findings don't block.
+
           claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 
-      # The action can finish green having posted nothing. A silent green reads as
-      # "reviewed", which is worse than a red check, so fail when no claude[bot]
-      # comment landed after this run started.
-      - name: Verify a review was posted
+      # This job is the check auto-merge waits on, so it passes only on a posted review
+      # whose verdict names this run's head commit: VERDICT: PASS <sha>. The action can
+      # finish green having posted nothing, and a stale PASS for an earlier commit must
+      # not stand in for a review of this one.
+      - name: Verify the review passed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           base="${{ github.event.repository.default_branch }}"
           git fetch --quiet --depth=1 origin "$base"
           if ! git diff --quiet FETCH_HEAD -- .github/workflows/claude-code-review.yml; then
-            echo "Workflow file differs from $base: the review action skips itself on this PR; skipping the no-post check."
-            exit 0
+            echo "::error::This PR changes the review workflow, so no review ran (the action skips itself). Merge it manually after reading it."
+            exit 1
           fi
           since="${{ steps.review-start.outputs.ts }}"
-          count=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments?per_page=100" \
+          body=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments?per_page=100" \
             --paginate \
-            --jq "[.[] | select(.user.login == \"claude[bot]\" and .created_at >= \"$since\")] | length")
-          if [ "$count" -eq 0 ]; then
+            --jq "[.[] | select(.user.login == \"claude[bot]\" and .created_at >= \"$since\")] | sort_by(.created_at) | .[] | .body" )
+          if [ -z "$body" ]; then
             echo "::error::claude-review completed without posting a comment (no claude[bot] comment since $since). Re-run this job."
             exit 1
           fi
-          echo "Review verified: $count claude[bot] comment(s) posted since $since."
+          # Bold or backtick wrapping is stripped; only verdicts naming this commit count.
+          sha="${{ github.event.pull_request.head.sha }}"
+          verdict=$(printf '%s\n' "$body" | tr -d '*`\r' | grep -E "^VERDICT: (PASS|BLOCK) $sha[[:space:]]*\$" | tail -n1 | awk '{print $2}')
+          case "$verdict" in
+            PASS) echo "Review of $sha passed." ;;
+            BLOCK) echo "::error::The review found critical, high or medium issues. Fix them and push; the new review decides."; exit 1 ;;
+            *) echo "::error::No VERDICT line naming $sha, so this review can't gate a merge. Re-run this job."; exit 1 ;;
+          esac
+
+  # Merges the PR once the review passed and every other check on the head commit
+  # finished green. Done in-workflow rather than with GitHub's auto-merge, which
+  # needs required checks, and those need GitHub Pro on private repos. A merge made
+  # with GITHUB_TOKEN triggers no push workflows on the default branch.
+  automerge:
+    needs: claude-review
+    if: >-
+      github.event.pull_request.user.login == github.repository_owner &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Wait for the other checks
+        run: |
+          # Only the latest run of each check counts: a run cancelled by a newer one
+          # on the same commit must not block the merge.
+          for _ in $(seq 80); do
+            runs=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+              --jq '[.check_runs[] | select(.name != "automerge")] | group_by(.name) | map(max_by(.id))
+                    | .[] | "\(.status) \(.conclusion) \(.name)"')
+            # Legacy commit statuses too; with none, the combined state reads "pending".
+            status=$(gh api "repos/$REPO/commits/$SHA/status" --jq 'if .total_count == 0 then "none" else .state end')
+            if [ -n "$runs" ] && ! grep -qv '^completed ' <<< "$runs" && [ "$status" != pending ]; then
+              bad=$(grep -vE '^completed (success|skipped|neutral) ' <<< "$runs" || true)
+              case "$status" in failure|error) bad="$bad${bad:+$'\n'}commit status: $status" ;; esac
+              if [ -n "$bad" ]; then
+                echo "::error::Not merging; these checks did not pass:"; echo "$bad"; exit 1
+              fi
+              echo "All checks passed:"; echo "$runs"; exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::Checks still running after 40 minutes; merge by hand or re-run this job."
+          exit 1
+      - name: Merge
+        # --match-head-commit refuses if anything was pushed after the reviewed commit.
+        # The branch is deleted through the API: this job has no checkout for gh's
+        # --delete-branch to work in.
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          gh pr merge "$PR" --repo "$REPO" --rebase --match-head-commit "$SHA"
+          gh api -X DELETE "repos/$REPO/git/refs/heads/$HEAD_REF" ||
+            echo "::warning::Merged, but deleting branch $HEAD_REF failed."
