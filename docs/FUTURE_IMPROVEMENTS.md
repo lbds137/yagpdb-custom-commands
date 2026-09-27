@@ -233,12 +233,15 @@ gets a failing test first.
 - Shipped (8aa3b70): deploy/deploy.test.js no longer pins the sha256 of real command
   files; the parity test computes the Python-normalized hash at test time (spawnSync
   python3) and compares it with deploy.js's.
-- Fix next (found 2026-09-27): `vendor/yagpdb` is 193 upstream commits behind (vendored
-  0cf2ec5, 2025-12-18; upstream c579722, 2026-09-27). Upstream adds template functions
-  `hasAnyPermissions`, `targetHasAnyPermissions`, `memberAbove`, `memberAboveRole` that the
-  emulator doesn't know. Refresh with `vendor/update-yagpdb.sh`, then diff
-  `common/templates`, `lib/template` and `customcommands` for behavior the emulator copies
-  and port what changed.
+- Fix next: port the vendor refresh. `vendor/yagpdb` was refreshed 2026-09-27 (Lila's
+  yes) from 0cf2ec5 (2025-12-18) to c579722 (2026-09-27); the emulator still copies the old
+  code. `git -C vendor/yagpdb diff 0cf2ec5 c579722 -- common/templates lib/template
+  customcommands lib/dstate lib/discordgo/structs.go lib/discordgo/components.go
+  lib/discordgo/message.go lib/discordgo/interactions.go` (58 files, +7.7k/−2.3k with
+  voice/mls noise). Notable: lib/template exec.go/parse.go/template.go changed (the
+  emulator's internal/yagtemplate is that copy); new template functions
+  `hasAnyPermissions`, `targetHasAnyPermissions`, `memberAbove`, `memberAboveRole`;
+  components.go grew. Do this BEFORE the emulator components unit ("Interactive UX").
 - Deferred (found 2026-09-27): `scripts/lint-all.sh` passes a positional file argument to
   `yagpdb_lint.py`, which only accepts `--dir`; every file it hands over "fails" as a
   result. Fix next time the script is touched.
