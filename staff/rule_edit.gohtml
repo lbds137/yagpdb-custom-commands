@@ -2,7 +2,7 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `rule_edit`
-  Dependencies: `embed_exec`, `db`
+  Dependencies: `embed_exec`
 */ -}}
 
 {{ $args := parseArgs 2
@@ -20,7 +20,6 @@
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
-{{ $db := toInt ($commandsDict.Get "db") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
@@ -30,20 +29,56 @@
 {{ if $isValid }}
     {{ $ruleNumber := toInt $ruleArg }}
     {{ $key := joinStr "" "Rule #" $ruleNumber }}
-    {{ $value := $args.Get 1 }}
-    {{ $operation := "add" }}
-    {{ if eq $value "(nil)" }}
-        {{ $value = "" }}
-        {{ $operation = "remove" }}
+    {{ $text := $args.Get 1 }}
+    {{ $isDelete := eq $text "(nil)" }}
+
+    {{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+    {{ $found := $rulesDict.HasKey $key }}
+    {{ $old := "" }}
+    {{ if $found }}
+        {{ $old = $rulesDict.Get $key }}
     {{ end }}
 
-    {{ execCC $db $yagpdbChannelID 0 (sdict
+    {{ $title := "" }}
+    {{ $description := "" }}
+    {{ $fields := cslice }}
+
+    {{ if $isDelete }}
+        {{ if $found }}
+            {{ $rulesDict.Del $key }}
+            {{ dbSet 0 "Rules" $rulesDict }}
+            {{ $title = joinStr "" $key " removed" }}
+            {{ $description = $old }}
+        {{ else }}
+            {{ $title = joinStr "" $key " not found" }}
+            {{ $description = joinStr "" "⚠️ There is no rule #" $ruleNumber " to remove." }}
+        {{ end }}
+    {{ else if not $found }}
+        {{ $rulesDict.Set $key $text }}
+        {{ dbSet 0 "Rules" $rulesDict }}
+        {{ $title = joinStr "" $key " added" }}
+        {{ $description = $text }}
+    {{ else if eq $old $text }}
+        {{ $title = joinStr "" $key " unchanged" }}
+        {{ $description = $text }}
+    {{ else }}
+        {{ $rulesDict.Set $key $text }}
+        {{ dbSet 0 "Rules" $rulesDict }}
+        {{ $title = joinStr "" $key " updated" }}
+        {{ $description = $text }}
+        {{ $was := $old }}
+        {{ if gt (len (toRune $was)) 1024 }}
+            {{ $kept := slice (split $was "") 0 1023 }}
+            {{ $was = joinStr "" $kept "…" }}
+        {{ end }}
+        {{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
+    {{ end }}
+
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID
-        "UserID" 0
-        "Operation" $operation
-        "Key" "Rules"
-        "Value" (sdict $key $value)
-        "Title" "Rule Editing"
+        "Title" $title
+        "Description" $description
+        "Fields" $fields
     ) }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
