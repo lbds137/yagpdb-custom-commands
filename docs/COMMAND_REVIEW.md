@@ -16,6 +16,13 @@ hugemoji used to refuse a non-staff user's link to an NSFW channel from a non-NS
 silence; she chose "explain it", so it now warns (without naming the channel), and input
 with no custom emoji at all gets an Invalid Argument error (both 2026-09-27).
 
+**Race fixes (her calls, 2026-09-27):** an execCC child runs in its own goroutine
+(vendor customcommands/tmplextensions.go `go ExecuteCustomCommand`), so a sleep only makes
+ordering likely. hugemoji and contrasts will send their warning before fanning out and
+drop the 10 s sleep ("warn first"); rules will send the rule embeds itself, packed into as
+few messages as Discord's 10-embed / 6,000-character limits allow, instead of one execCC
+of `rule` per rule with 2 s sleeps ("one message").
+
 ## Bugs found (fixed 2026-09-27, each pinned by a test that failed on the old command)
 
 1. **Deleting a middle rule hides the last one.** `rule_edit N (nil)` removes `Rule #N`, but
