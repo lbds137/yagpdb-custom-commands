@@ -14,6 +14,12 @@ picks, then the minifier.
   ID (e.g. `ca:stale:2`); the handler rebuilds the page from it. Patterns from Tzurot's
   .claude/rules/04-discord.md: browse, not dump; summary first; ephemeral for staff tools
   where the trigger allows it; acknowledge within 3 s; last-page "next" disabled.
+- Add to channel_activity's browse view (Lila 2026-09-27, relayed: "a download button to
+  save channel stats"): a "Download" button whose handler replies with a CSV file
+  (complexMessage "file"/"filename", text/plain, max 100,000 chars, vendor general.go:
+  314-325): channel id, name, category, last message (ISO date), days quiet, bucket. Up
+  to 200 tracked channels (2 dbBottomEntries), about 12 KB. Ephemeral if the click
+  allows (it's an interaction). Format unconfirmed with Lila: propose CSV when building.
 - UX audit done 2026-09-27 (all 39 commands, vendor c579722; most are fine as is). Lila
   approved ALL of these, build order: (1) channel_activity browse; (2) rules browse, same
   pager, jump-to-rule select, public rulebook posting kept; (3) `/edit` slash opening a
@@ -75,6 +81,14 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   (moderation/commands.go:810), which exec's type switch doesn't match, so exec returns ""
   (commands/tmplexec.go:202-215). Its failures come back as errors that end the run, and
   capturing the result in `$silent` wouldn't catch those either.
+
+## Watch: tickets may move to Dyno
+
+- FYI (Lila 2026-09-27, relayed by the Night House site session; a separate project she
+  wants investigated first): she's considering Dyno Premium tickets instead of YAGPDB's
+  for better UX. If it happens, everyone/general/ticket_clean (nags about the YAGPDB
+  `tickets open` syntax in #ticket-submission) and bump/ticket-related DB keys become
+  candidates for retirement. Nothing to do until she decides.
 
 ## Known command bugs
 
