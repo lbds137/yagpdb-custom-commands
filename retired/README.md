@@ -12,6 +12,10 @@ wants the flow — and they're still covered by the emulator's admission tests
 - **`screen_user.gohtml`** - Screen potential users
 - **`ticket_adduser_exec.gohtml`** - Add users to support tickets
 
+`dice_roll.gohtml` (dice rolling) moved here on 2026-09-27: YAGPDB's built-in `-roll 2d6`
+does the same with fuller dice syntax. Its tests stay in
+`tools/emulator/testdata/dice_roll_tests.yaml`.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
 `make changed-since-deploy` (all three scan only `staff_utility/` and `utility/`). `make lint`
