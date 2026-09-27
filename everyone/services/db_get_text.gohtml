@@ -14,15 +14,30 @@
 
 {{ $key := "" }}
 {{ $userID := .User.ID }}
+{{ $refused := false }}
 {{ if .ExecData.Key }}
     {{ $key = .ExecData.Key }}
     {{ $userID = or .ExecData.UserID $userID }}
 {{ else if gt (len .CmdArgs) 0 }}
     {{ if gt (len .CmdArgs) 1 }}
         {{ if reFind "\\A\\d+\\z" (index .CmdArgs 0) }}
-            {{ $userID = toInt (index .CmdArgs 0) }}
+            {{ $targetUserID := toInt (index .CmdArgs 0) }}
+            {{/* Only fetch Roles when the check is actually needed, to keep DB calls
+                unchanged for the normal (own-ID) path */}}
+            {{ if ne $targetUserID $userID }}
+                {{ $rolesDict := (dbGet 0 "Roles").Value }}
+                {{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+                {{ if not (hasRoleID $staffRoleID) }}
+                    {{ $refused = true }}
+                {{ end }}
+            {{ end }}
+            {{ if not $refused }}
+                {{ $userID = $targetUserID }}
+            {{ end }}
         {{ end }}
-        {{ $key = index .CmdArgs 1 }}
+        {{ if not $refused }}
+            {{ $key = index .CmdArgs 1 }}
+        {{ end }}
     {{ else }}
         {{ $key = index .CmdArgs 0 }}
     {{ end }}
@@ -30,7 +45,10 @@
 
 {{ $title := "" }}
 {{ $result := "" }}
-{{ if $key }}
+{{ if $refused }}
+    {{ $title = "Access Denied" }}
+    {{ $result = "⚠️ Only staff can look up another member's or the server's entries." }}
+{{ else if $key }}
     {{/* $found: the key exists (its value may be false, 0 or "") */}}
     {{ $value := "" }}
     {{ $found := false }}
