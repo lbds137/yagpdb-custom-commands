@@ -41,9 +41,16 @@ read it at `/home/deck/Projects/yagpdb-custom-commands/vendor/yagpdb/`.
   run `make prune-snapshots`; after an intended output change, `make update-snapshots`,
   then read the snapshot diff.
 - The Bash tool's `grep` is ugrep (`$` in a pattern is an anchor, counts can mislead):
-  use `/usr/bin/grep` or `git grep` for anything a claim rests on.
+  use `/usr/bin/grep` or `git grep` for anything a claim rests on. `vendor/` is
+  gitignored, so `git grep` never searches it: use `/usr/bin/grep -rn` there.
+- Every YAGPDB function, argument or key a spec names is checked in vendor before
+  dispatch (a spec once said `complexMessage "embeds"`; YAGPDB only takes `"embed"`).
 - Interpreter rewrites of files (python heredocs) are blocked: edit with the Edit tool.
 - Never `rm -r`/`rm -rf`, even a scratch directory: make a new directory each time.
+  Workers broke this twice on 2026-09-27 despite the spec; say it in the dispatch prompt too.
+- Long fixture strings (thousands of characters) are generated with the shell
+  (`printf 'x%.0s' $(seq 1 2100)`) and appended in small pieces: a worker typing one out hit
+  the 64k output-token cap and died mid-unit.
 - A typed nil in an `interface{}` is not `== nil` (template data and function returns).
 - Mutation checks: confirm the suite is green first, and check each mutant compiles
   (a build failure isn't a kill).
