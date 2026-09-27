@@ -1902,12 +1902,15 @@ tests:
         - { embed_contains: "Value successfully retrieved!" }
 
   # ===== db_get_text / db_get_embed =====
-  # (a numeric first argument reads that user's data; 0 is the server's)
+  # (a numeric first argument reads that user's data; 0 is the server's; reading a user ID
+  # other than one's own requires the Staff role, security fix 2026-09-27 - these tests
+  # exercise dict 0, so they run as staff to keep testing traversal, not the access check)
 
   - name: "db_get_text - A stored false is a value"
     template: "../../../everyone/services/db_get_text.gohtml"
     context:
       args: ["0", "Directory:Show Empty"]
+      user: { roles: [111111111] }
     assertions:
       sent_messages: [{ content_contains: "### Directory > Show Empty\n\n```\nfalse\n```" }]
 
@@ -1915,6 +1918,7 @@ tests:
     template: "../../../everyone/services/db_get_text.gohtml"
     context:
       args: ["0", "J:Inner:a"]
+      user: { roles: [111111111] }
     setup_templates: ["templates/json_dict_setup.gohtml"]
     assertions:
       sent_messages: [{ content_contains: "### J > Inner > a\n\n```\n1\n```" }]
@@ -1923,6 +1927,7 @@ tests:
     template: "../../../everyone/services/db_get_text.gohtml"
     context:
       args: ["0", "Admin:Welcome Message:Deeper"]
+      user: { roles: [111111111] }
     assertions:
       sent_messages: [{ content_equals: "### Admin > Welcome Message > Deeper\n\n(no result found)" }]
 
@@ -1930,6 +1935,7 @@ tests:
     template: "../../../everyone/services/db_get_text.gohtml"
     context:
       args: ["0", "Nope:x"]
+      user: { roles: [111111111] }
     assertions:
       sent_messages: [{ content_equals: "### Nope > x\n\n(no result found)" }]
 
@@ -1937,6 +1943,7 @@ tests:
     template: "../../../everyone/services/db_get_embed.gohtml"
     context:
       args: ["0", "Nested:n"]
+      user: { roles: [111111111] }
     setup_db:
       - { user_id: 0, key: "Nested", value: { n: 0 } }
     assertions:
@@ -1946,6 +1953,7 @@ tests:
     template: "../../../everyone/services/db_get_text.gohtml"
     context:
       args: ["0", "Admin"]
+      user: { roles: [111111111] }
     assertions:
       sent_messages: [{ content_equals: "### Admin\n\n```\n{\n\t\"Welcome Message\": \"Welcome to the server!\"\n}\n```" }]
 
@@ -1953,6 +1961,7 @@ tests:
     template: "../../../everyone/services/db_get_text.gohtml"
     context:
       args: ["0", "Nope"]
+      user: { roles: [111111111] }
     assertions:
       sent_messages: [{ content_equals: "### Nope\n\n(no result found)" }]
 
@@ -1960,6 +1969,7 @@ tests:
     template: "../../../everyone/services/db_get_text.gohtml"
     context:
       args: ["0", "Empty"]
+      user: { roles: [111111111] }
     setup_db:
       - { user_id: 0, key: "Empty", value: "" }
     assertions:
@@ -1969,6 +1979,7 @@ tests:
     template: "../../../everyone/services/db_get_embed.gohtml"
     context:
       args: ["0", "Admin"]
+      user: { roles: [111111111] }
     assertions:
       sent_messages: [{ embed_title: "Admin", embed_contains: "Welcome to the server!" }]
 
@@ -1976,9 +1987,121 @@ tests:
     template: "../../../everyone/services/db_get_embed.gohtml"
     context:
       args: ["0", "J:Inner:a"]
+      user: { roles: [111111111] }
     setup_templates: ["templates/json_dict_setup.gohtml"]
     assertions:
       sent_messages: [{ embed_title: "J > Inner > a", embed_contains: '"description": "```\n1\n```"' }]
+
+  # ----- Access control (security fix 2026-09-27) -----
+  # Default test user (987654321098765432) has no Staff role unless given one.
+
+  - name: "db_get_text - A member can't look up user 0 (Admin dict)"
+    template: "../../../everyone/services/db_get_text.gohtml"
+    context:
+      args: ["0", "Admin"]
+    assertions:
+      sent_messages:
+        [
+          {
+            content_equals: "### Access Denied\n\n⚠️ Only staff can look up another member's or the server's entries.",
+          },
+        ]
+
+  - name: "db_get_text - A member can't look up another member's entries"
+    template: "../../../everyone/services/db_get_text.gohtml"
+    context:
+      args: ["555555555", "Key"]
+    assertions:
+      sent_messages:
+        [
+          {
+            content_equals: "### Access Denied\n\n⚠️ Only staff can look up another member's or the server's entries.",
+          },
+        ]
+
+  - name: "db_get_text - A member looking up their own ID works"
+    template: "../../../everyone/services/db_get_text.gohtml"
+    context:
+      args: ["987654321098765432", "Profile"]
+    setup_db:
+      - { user_id: 987654321098765432, key: "Profile", value: "hello" }
+    assertions:
+      sent_messages: [{ content_equals: "### Profile\n\nhello" }]
+
+  - name: "db_get_text - Staff can look up user 0 (Admin dict)"
+    template: "../../../everyone/services/db_get_text.gohtml"
+    context:
+      args: ["0", "Admin"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ content_contains: "Welcome to the server!" }]
+
+  - name: "db_get_text - A member with one argument reads their own key"
+    template: "../../../everyone/services/db_get_text.gohtml"
+    context:
+      args: ["Profile"]
+    setup_db:
+      - { user_id: 987654321098765432, key: "Profile", value: "hello" }
+    assertions:
+      sent_messages: [{ content_equals: "### Profile\n\nhello" }]
+
+  - name: "db_get_text - ExecData with a UserID stays trusted (no staff check)"
+    template: "../../../everyone/services/db_get_text.gohtml"
+    context:
+      exec_data: { Key: "Profile", UserID: 987654321098765432 }
+    setup_db:
+      - { user_id: 987654321098765432, key: "Profile", value: "hello" }
+    assertions:
+      sent_messages: [{ content_equals: "### Profile\n\nhello" }]
+
+  - name: "db_get_embed - A member can't look up user 0 (Admin dict)"
+    template: "../../../everyone/services/db_get_embed.gohtml"
+    context:
+      args: ["0", "Admin"]
+    assertions:
+      sent_messages: [{ embed_title: "Access Denied", embed_contains: "Only staff can look up" }]
+
+  - name: "db_get_embed - A member can't look up another member's entries"
+    template: "../../../everyone/services/db_get_embed.gohtml"
+    context:
+      args: ["555555555", "Key"]
+    assertions:
+      sent_messages: [{ embed_title: "Access Denied", embed_contains: "Only staff can look up" }]
+
+  - name: "db_get_embed - A member looking up their own ID works"
+    template: "../../../everyone/services/db_get_embed.gohtml"
+    context:
+      args: ["987654321098765432", "Profile"]
+    setup_db:
+      - { user_id: 987654321098765432, key: "Profile", value: "hello" }
+    assertions:
+      sent_messages: [{ embed_title: "Profile", embed_contains: "hello" }]
+
+  - name: "db_get_embed - Staff can look up user 0 (Admin dict)"
+    template: "../../../everyone/services/db_get_embed.gohtml"
+    context:
+      args: ["0", "Admin"]
+      user: { roles: [111111111] }
+    assertions:
+      sent_messages: [{ embed_title: "Admin", embed_contains: "Welcome to the server!" }]
+
+  - name: "db_get_embed - A member with one argument reads their own key"
+    template: "../../../everyone/services/db_get_embed.gohtml"
+    context:
+      args: ["Profile"]
+    setup_db:
+      - { user_id: 987654321098765432, key: "Profile", value: "hello" }
+    assertions:
+      sent_messages: [{ embed_title: "Profile", embed_contains: "hello" }]
+
+  - name: "db_get_embed - ExecData with a UserID stays trusted (no staff check)"
+    template: "../../../everyone/services/db_get_embed.gohtml"
+    context:
+      exec_data: { Key: "Profile", UserID: 987654321098765432 }
+    setup_db:
+      - { user_id: 987654321098765432, key: "Profile", value: "hello" }
+    assertions:
+      sent_messages: [{ embed_title: "Profile", embed_contains: "hello" }]
 
   - name: "define - A 300-character term truncates the embed title and keeps the URL"
     template: "../../../everyone/knowledge/define.gohtml"
