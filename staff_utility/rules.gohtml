@@ -2,18 +2,17 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `rules`
-  Dependencies: `embed_exec`, `rule`
+  Dependencies: `embed_exec`
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
-{{/* the loop below is this run's only execCC fan-out (the no-rules branch is
-  mutually exclusive), so clamp straight to YAGPDB's 10-per-run premium cap */}}
-{{ $execCCLimit := toInt (min (toInt ($globalDict.Get "ExecCC Limit")) 10) }}
+{{ $serverURL := or ($globalDict.Get "Server URL") "" }}
+{{ $dbEmbedColor := toInt ($globalDict.Get "Embed Color") }}
+{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
-{{ $rule := toInt ($commandsDict.Get "rule") }}
 
 {{ $rulesDict := (dbGet 0 "Rules").Value }}
 
@@ -50,23 +49,87 @@
             {{ $endingRule = $endArg }}
         {{ end }}
     {{ end }}
-    {{ $execCCCount := 0 }}
+
+    {{/* embed_exec's guild-author branch (no AuthorID in ExecData): the same author on
+      every rule embed here, computed once */}}
+    {{ $gIconExtension := ".png" }}
+    {{ if ge (toInt $guildPremiumTier) 1 }}
+        {{ $gIconExtension = ".gif" }}
+    {{ end }}
+    {{ $gIcon := "" }}
+    {{ if .Guild.Icon }}
+        {{ $gIcon = (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
+    {{ else }}
+        {{ $gIcon = $globalDict.Get "Default Avatar" }}
+    {{ end }}
+    {{ $author := sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
+    {{ $authorNameLen := len (toRune (print (or $author.name ""))) }}
+
+    {{/* `rule`'s title rule: "Rule #N", or "Rules" when the dict holds exactly one rule
+      total (not just in the chosen range) */}}
+    {{ $singleRuleTitle := eq (len $rulesDict) 1 }}
+
+    {{/* one item per rule in range, each already cut to embed_exec's own 4,096 / 6,000
+      per-embed limits (lines 47-68 there), plus its packed length (title + description +
+      author name, what counts toward Discord's 6,000-per-message total) */}}
+    {{ $items := cslice }}
     {{- range $i := seq (sub $startingRule 1) $endingRule -}}
         {{- $iHuman := add 1 $i -}}
-        {{- if $rulesDict.HasKey (joinStr "" "Rule #" $iHuman) -}}
-            {{- if lt $execCCCount $execCCLimit -}}
-                {{- execCC $rule $yagpdbChannelID 0 (sdict
-                    "ChannelID" $channelID
-                    "RuleNumber" $iHuman
-                ) -}}
-                {{- sleep 2 -}}
-            {{- else -}}
-                {{- sendMessage $channelID (joinStr ""
-                    "Skipping execCC call #" (add 1 $execCCCount) " due to having exceeded the limit of " $execCCLimit " calls!"
-                ) -}}
+        {{- $key := joinStr "" "Rule #" $iHuman -}}
+        {{- if $rulesDict.HasKey $key -}}
+            {{- $title := $key -}}
+            {{- if $singleRuleTitle -}}
+                {{- $title = "Rules" -}}
             {{- end -}}
-            {{- $execCCCount = add 1 $execCCCount -}}
+            {{- $otherLen := add $authorNameLen (len (toRune $title)) -}}
+            {{- $descriptionMaxLen := toInt (min 4096 (sub 6000 $otherLen)) -}}
+            {{- $ruleText := $rulesDict.Get $key -}}
+            {{- $description := $ruleText -}}
+            {{- if gt (len (toRune $ruleText)) $descriptionMaxLen -}}
+                {{- $description = "" -}}
+                {{- if ge $descriptionMaxLen 1 -}}
+                    {{- $kept := slice (split $ruleText "") 0 (sub $descriptionMaxLen 1) -}}
+                    {{- $description = joinStr "" $kept "…" -}}
+                {{- end -}}
+            {{- end -}}
+            {{- $embed := cembed
+                "title" $title
+                "description" $description
+                "color" $dbEmbedColor
+                "author" $author
+                "image" (sdict "url" "")
+                "thumbnail" (sdict "url" "") -}}
+            {{- $embedLen := add $otherLen (len (toRune $description)) -}}
+            {{- $items = $items.Append (sdict "embed" $embed "len" $embedLen) -}}
         {{- end -}}
+    {{- end -}}
+
+    {{/* pack the embeds in order into as few messages as Discord allows: at most 10 per
+      message, and at most 6,000 characters per message across every embed's title,
+      description and author name (docs/API_REFERENCE.md; vendor
+      common/templates/general.go's maxEmbeds = 10) */}}
+    {{ $messages := cslice }}
+    {{ $curEmbeds := cslice }}
+    {{ $curLen := 0 }}
+    {{- range $item := $items -}}
+        {{- $eEmbed := $item.Get "embed" -}}
+        {{- $eLen := $item.Get "len" -}}
+        {{- $overCount := ge (len $curEmbeds) 10 -}}
+        {{- $overLen := gt (add $curLen $eLen) 6000 -}}
+        {{- if and (gt (len $curEmbeds) 0) (or $overCount $overLen) -}}
+            {{- $messages = $messages.Append $curEmbeds -}}
+            {{- $curEmbeds = cslice -}}
+            {{- $curLen = 0 -}}
+        {{- end -}}
+        {{- $curEmbeds = $curEmbeds.Append $eEmbed -}}
+        {{- $curLen = add $curLen $eLen -}}
+    {{- end -}}
+    {{- if gt (len $curEmbeds) 0 -}}
+        {{- $messages = $messages.Append $curEmbeds -}}
+    {{- end -}}
+
+    {{- range $msgEmbeds := $messages -}}
+        {{- sendMessage $channelID (complexMessage "embed" $msgEmbeds) -}}
     {{- end -}}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict

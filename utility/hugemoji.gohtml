@@ -79,46 +79,11 @@
 
 {{ $userID := .User.ID }}
 {{ $channelID := .Channel.ID }}
-{{ $tooManyEmojis := false }}
-{{- range $i, $entry := $dictSortHelper -}}
-  {{- $emojiStr := $entry.Get "emojiString" -}}
-  {{- $msgLink := $entry.Get "messageLink" }}
-  {{- if lt $i $execCCLimit -}}
-    {{- $fileExtension := ".png" -}}
-    {{- if reFind $animatedEmojiRegex $emojiStr -}}
-      {{- $fileExtension = ".gif" -}}
-    {{- end -}}
-    {{- $emojiStrParts := split $emojiStr ":" -}}
-    {{- $emojiName := index $emojiStrParts 1 -}}
-    {{- $emojiUrl := joinStr ""
-      "https://cdn.discordapp.com/emojis/" (reFind $emojiIDRegex $emojiStr) $fileExtension "?v=1" -}}
-
-    {{- $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) -}}
-    {{- if $msgLink -}}
-      {{- $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $msgLink ")" -}}
-      {{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
-    {{ end }}
-
-    {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
-      "AuthorID" $userID
-      "ChannelID" $channelID
-      "Title" "Emoji Expander"
-      "ImageURL" $emojiUrl
-      "Fields" $fields
-    ) -}}
-  {{- else if not $tooManyEmojis -}}
-    {{- $tooManyEmojis = true -}}
-  {{- end -}}
-{{- end -}}
-
-{{ deleteTrigger $deleteTriggerDelay }}
-
 {{ $foundAny := gt (len $dictSortHelper) 0 }}
-{{ if $foundAny }}
-  {{- /* timing is notoriously unreliable with `execCC` so wait a while before sending
-    any warning message */ -}}
-  {{ sleep 10 }}
-{{ end }}
+{{/* the overflow count doesn't depend on the execCC loop below, so it (and both warnings)
+  can be computed and sent before the loop fans out; a sendMessage here is a blocking REST
+  call and always lands before an execCC child, which YAGPDB runs in its own goroutine */}}
+{{ $tooManyEmojis := gt (len $dictSortHelper) $execCCLimit }}
 
 {{ if $tooManyEmojis }}
   {{ $emojiIgnoredCount := sub (len $dictSortHelper) $execCCLimit }}
@@ -147,6 +112,37 @@
   ) }}
   {{ deleteMessage $channelID $nsfwWarningMsgID $deleteResponseDelay }}
 {{ end }}
+
+{{- range $i, $entry := $dictSortHelper -}}
+  {{- $emojiStr := $entry.Get "emojiString" -}}
+  {{- $msgLink := $entry.Get "messageLink" }}
+  {{- if lt $i $execCCLimit -}}
+    {{- $fileExtension := ".png" -}}
+    {{- if reFind $animatedEmojiRegex $emojiStr -}}
+      {{- $fileExtension = ".gif" -}}
+    {{- end -}}
+    {{- $emojiStrParts := split $emojiStr ":" -}}
+    {{- $emojiName := index $emojiStrParts 1 -}}
+    {{- $emojiUrl := joinStr ""
+      "https://cdn.discordapp.com/emojis/" (reFind $emojiIDRegex $emojiStr) $fileExtension "?v=1" -}}
+
+    {{- $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) -}}
+    {{- if $msgLink -}}
+      {{- $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $msgLink ")" -}}
+      {{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
+    {{ end }}
+
+    {{- execCC $embed_exec $yagpdbChannelID 0 (sdict
+      "AuthorID" $userID
+      "ChannelID" $channelID
+      "Title" "Emoji Expander"
+      "ImageURL" $emojiUrl
+      "Fields" $fields
+    ) -}}
+  {{- end -}}
+{{- end -}}
+
+{{ deleteTrigger $deleteTriggerDelay }}
 
 {{ if and (not $foundAny) (eq $nsfwRefusedCount 0) }}
   {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
