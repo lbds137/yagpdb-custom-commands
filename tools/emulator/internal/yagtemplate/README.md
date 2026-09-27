@@ -5,7 +5,7 @@ YAGPDB's fork of Go's `text/template` (`lib/template` in
 executes templates exactly as YAGPDB does: `try`/`catch`, `while`, `return`,
 `execTemplate`, YAGPDB's `eq`/`index`/`len`/`and`/`or`, and the operation limit.
 
-- Source: yagpdb commit `0cf2ec5` (2025-12-18), `lib/template` and `lib/template/parse`.
+- Source: yagpdb commit `c579722` (2026-09-27), `lib/template` and `lib/template/parse`.
 - Licenses: Go's BSD license (`LICENSE-GO`, the original text/template) and YAGPDB's MIT
   license (`LICENSE-YAGPDB`, its changes).
 - Local changes, all marked `EMULATOR PATCH`:
