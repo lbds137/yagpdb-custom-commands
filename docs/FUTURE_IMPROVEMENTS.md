@@ -2,6 +2,35 @@
 
 This document tracks potential enhancements for the YAGPDB custom commands project.
 
+## Planned retirements
+
+- `kb` (Lila 2026-09-27): dedupe with `-define` by moving the `Knowledge` dict's two
+  real entries ("The Seven Tenets", "The Seven Satanic Tenets"; per the 2026-01-03 dump) to
+  the website, which is then the single source, as with the rules. Trigger: the Night
+  House site session reports them live. Then retire `kb` to `retired/`, drop it from
+  deploy/panel.json, and Lila deletes it and the `Knowledge` dict in YAGPDB.
+  `db_get_embed` stays: `simple_db_lookup` still calls it.
+
+## Free-tier compatibility (Lila 2026-09-27: the suite should work on free servers too)
+
+Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
+(vendor tmplextensions.go:184/394, customcommands.go:164-176, 357-360).
+- Planned: a parser-based minifier (drop comments, rename variables per scope, re-print),
+  proven equivalent by running the whole emulator suite on the minified output; output
+  committed as `dist/free/`, used by the deploy manifest only for commands over a free
+  server's limit (panel.json gets a per-server tier). Needed by db (17,538) and gematria
+  (11,514): comment/indent stripping alone leaves them at ~10.5k/10.8k; variable renaming
+  gets both to ~7.7k (measured 2026-09-27).
+- Ruled out: passing embed_exec's Global fields through ExecData to save its one dbGet.
+  It stays within limits on both tiers (each run has its own counters) and would couple
+  ~30 callers to embed_exec's internals.
+- Ruled out (audit error): "multi-word pyramid exceeds the execCC nesting cap". Its
+  per-word execCC is delayed (1s); only immediate execCC sets StackDepth
+  (tmplextensions.go:237), so each scheduled word starts at depth 0.
+- To check: staff/directory.gohtml:98 calls `exec "Clean"` bare, while batch_delrep and
+  inactivity capture exec's result in `$silent`; if exec returns text, the interval run
+  may post it. Verify with the emulator's exec model before changing.
+
 ## Known command bugs
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
