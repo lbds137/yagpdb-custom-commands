@@ -1,0 +1,48 @@
+name: "log_user (unlisted, unmanaged; watched-user placeholder, never the real ID)"
+
+# The committed file's watched-user key is the placeholder "999999999999999999" (fits int64,
+# round-trips through toString -- unlike an earlier all-zero placeholder, which could never
+# match any real int64's decimal string; see .claude/dispatch/import-log-user.md's report).
+# These tests run against the REAL committed file, not a stand-in.
+
+defaults:
+  channel:
+    id: 123456789012345678
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    channels:
+      - { id: 888888888888888888, name: "yagpdb" }
+      - { id: 777777777777777777, name: "watch-log" }
+
+command_map:
+  32: "templates/recording_log_user_watch.gohtml"
+
+tests:
+  - name: "log_user: the watched placeholder ID fires one execCC with the expected ExecData"
+    template: "../../../everyone/general/log_user.gohtml"
+    context:
+      user: { id: 999999999999999999, username: "Watched" }
+      message_content: "look at this"
+    strict: true
+    assertions:
+      sent_messages:
+        - channel_id: 777777777777777777
+          content_contains: "ChannelID=777777777777777777"
+        - channel_id: 777777777777777777
+          content_contains: "DisableAuthor=true"
+        - channel_id: 777777777777777777
+          content_contains: "DisableQuote=true"
+        - channel_id: 777777777777777777
+          content_contains: "KeepTrigger=true"
+        - channel_id: 777777777777777777
+          content_contains: "MessageContent=look at this"
+
+  - name: "log_user: an ordinary user -> no exec"
+    template: "../../../everyone/general/log_user.gohtml"
+    context:
+      user: { id: 555555555555555555, username: "Ordinary" }
+      message_content: "hello there"
+    strict: true
+    assertions:
+      sent_messages: []

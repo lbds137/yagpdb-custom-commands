@@ -56,7 +56,8 @@ Retired commands (`retired/`) are kept for reference and never deployed.
 2. **Service Commands**
    - `embed_exec` - Universal embed creation service
    - `db` - Database operations interface
-   - `message_link` - Message reference and linking service, called by log_user (panel-only, not in this repo)
+   - `message_link` - Message reference and linking service, called by log_user
+     (everyone/general/, unmanaged: never deployed, the live copy holds the real watched ID)
    - `simple_db_edit` / `simple_db_lookup` - Database management utilities
 
 3. **Command Structure**
@@ -242,7 +243,9 @@ when Claude-in-Chrome is available.
 Fallback (also what the skill's dry run reports for the owner to review): the owner copies
 each changed `.gohtml` file into the YAGPDB control panel by hand. `make changed-since-deploy`
 lists the command files that changed since the `deployed` git tag; after pasting them, move
-the tag with `make mark-deployed`.
+the tag with `make mark-deployed`. It skips files `deploy/panel.json`'s `"unmanaged"` list
+names (e.g. `log_user`) and prints a `skipped (unmanaged, ...)` line for each instead, since
+pasting one would overwrite the live copy's real values with this repo's placeholder.
 
 The owner pastes in one batch when a round of work is finished, not after each fix. Don't
 ask for pastes mid-work; when the work is done, report the `make changed-since-deploy` list

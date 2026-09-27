@@ -91,7 +91,11 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # nth: 2 = the second message there (default: the first)
                                       # sent_after_seconds: 10 = exactly this many whole seconds
                                       # of sleep had elapsed in the run when it was sent
+                                      # absent = unchecked; [] = assert the run sent no messages
+                                      # at all (like execs/deletions/scheduled_runs/reactions)
     edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits (as edited); "" = empty
+                                      # content; same absent/[] rule as sent_messages: absent =
+                                      # unchecked, [] = assert the run edited no messages at all
     role_changes: [{ user_id: 1, role_id: 111, action: "add" }]  # delay: 90s for a scheduled one
     no_role_changes: true             # give/take of a role they have/lack, or a non-member, change nothing
     response_pings: { everyone: true, users: [1], roles: [111] }  # exactly who the output notifies

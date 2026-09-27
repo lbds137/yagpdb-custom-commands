@@ -42,5 +42,6 @@
     "everyone/hebrew/alefbet.gohtml": {"main": 83, "lotv": 14},
     "everyone/knowledge/define.gohtml": {"main": 84},
     "everyone/services/message_link.gohtml": {"main": 32, "lotv": 11}
-  }
+  },
+  "unmanaged": ["everyone/general/log_user.gohtml"]
 }

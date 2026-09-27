@@ -9,7 +9,9 @@ commit sha in the manifest (the repo is public, so that origin sends
 so a deploy can only ever write the exact bytes that were committed.
 
 The manual paste (`make changed-since-deploy` / `make mark-deployed`, in this repo's
-CLAUDE.md) stays as the fallback when Claude-in-Chrome isn't available.
+CLAUDE.md) stays as the fallback when Claude-in-Chrome isn't available. Its paste list also
+skips `panel.json`'s `"unmanaged"` files, printing a `skipped (unmanaged, ...)` line for each
+instead of listing them, so the same overwrite risk noted below can't reach the manual path.
 
 ## Steps
 
@@ -38,10 +40,14 @@ CLAUDE.md) stays as the fallback when Claude-in-Chrome isn't available.
    as often as on a failed one. Success/failure is decided solely by the read-back hash.
 9. If `SERVER=main` and everything came back clean, `make mark-deployed`.
 
+`deploy/panel.json`'s top-level `"unmanaged"` list names repo files (like `log_user`) that
+mirror a live panel command without an id: the manifest and deploy tooling skip them entirely.
+
 ## Before retiring or deleting a command
 
-Check the live panel for callers first: it can have commands the repo doesn't (panel-only
-commands like `log_user`, or test commands). Do a read-only pass over the panel tab, the same
+Check the live panel for callers first: it can have commands the repo doesn't (test commands,
+or an unmanaged file's own live copy holding data this repo's copy can't -- see `log_user`
+above). Do a read-only pass over the panel tab, the same
 tab procedure this skill already uses, searching live command code for the command's name and
 for its `Commands`-dict key. Only once that comes up empty is it safe to retire or delete.
 

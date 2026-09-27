@@ -18,6 +18,15 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 - Ruled out (audit error): "multi-word pyramid exceeds the execCC nesting cap". Its
   per-word execCC is delayed (1s); only immediate execCC sets StackDepth
   (tmplextensions.go:237), so each scheduled word starts at depth 0.
+- Ruled out (sweep error, 2026-09-27): an and/or sweep (YAGPDB's and/or are eager,
+  vendor lib/template/funcs.go:342/357; 128 call sites) claimed four crashes: db.gohtml's
+  `and $entry $entry.Value`, bootstrap/staff_roles' `or (dbGet 0 "X").Value sdict`, and
+  `or $user.String ...` on a nil userArg in message_link and avatar_viewer. None crash:
+  `.Field` on an untyped nil evaluates to nothing (lib/template/exec.go:794-799), probed in
+  the emulator, whose engine is YAGPDB's copy (only op-limit and call-count hooks
+  differ). Only a typed nil pointer's field errors (exec.go:803-806, 863-865), and
+  message_link already guards getMember for that. The eager-and hazard that is real:
+  eq/lt on mismatched types (the simple_db_edit rewrite hit it and guards it).
 - To check: staff/directory.gohtml:98 calls `exec "Clean"` bare, while batch_delrep and
   inactivity capture exec's result in `$silent`; if exec returns text, the interval run
   may post it. Verify with the emulator's exec model before changing.

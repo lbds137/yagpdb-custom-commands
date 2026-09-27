@@ -145,11 +145,11 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	result.Failures = append(result.Failures, failures...)
 
 	// Check sent messages
-	failures = r.checkMessages(ctx.SentMessages, tc.Assertions.SentMessages, "sent")
+	failures = r.checkMessageAssertion(ctx.SentMessages, tc.Assertions.SentMessages, "sent")
 	if f := checkPings(ctx.ResponsePings, tc.Assertions.ResponsePings); f != "" {
 		failures = append(failures, "response "+f)
 	}
-	failures = append(failures, r.checkMessages(ctx.EditedMessages, tc.Assertions.EditedMessages, "edited")...)
+	failures = append(failures, r.checkMessageAssertion(ctx.EditedMessages, tc.Assertions.EditedMessages, "edited")...)
 	result.Failures = append(result.Failures, failures...)
 
 	result.Failures = append(result.Failures, checkScheduledRuns(ctx.ScheduledRuns(), tc.Assertions.ScheduledRuns)...)
@@ -444,6 +444,28 @@ func (r *Runner) checkDatabase(db *state.MockDB, checks []DBCheck) []string {
 	}
 
 	return failures
+}
+
+// checkMessageAssertion checks a sent_messages or edited_messages assertion (how says
+// which): absent (nil) skips the check entirely, a non-nil empty list asserts the run
+// sent/edited no matching messages at all, and a non-empty list is checked message by
+// message exactly as before.
+func (r *Runner) checkMessageAssertion(messages []runtime.SentMessage, checks *[]MessageCheck, how string) []string {
+	if checks == nil {
+		return nil
+	}
+	if len(*checks) == 0 {
+		if len(messages) == 0 {
+			return nil
+		}
+		return []string{fmt.Sprintf("expected 0 %s messages, got %d; first: %s",
+			how, len(messages), describeSentMessage(messages[0]))}
+	}
+	return r.checkMessages(messages, *checks, how)
+}
+
+func describeSentMessage(m runtime.SentMessage) string {
+	return fmt.Sprintf("channel %d: %q", m.ChannelID, m.Content)
 }
 
 // checkMessages checks sent or edited messages (how says which); each check matches the
