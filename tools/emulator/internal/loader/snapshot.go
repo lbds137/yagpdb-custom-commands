@@ -34,6 +34,9 @@ type SnapshotMessage struct {
 	ChannelID int64      `yaml:"channel_id"`
 	Content   snapText   `yaml:"content,omitempty"`
 	Embeds    []snapText `yaml:"embeds,omitempty"`
+	// SentAfterSeconds is omitted when zero, so an existing snapshot of a message sent
+	// before any sleep stays unchanged.
+	SentAfterSeconds int `yaml:"sent_after_seconds,omitempty"`
 }
 
 // SnapshotFile is a file attached to a sent message (complexMessage's "file").
@@ -96,7 +99,7 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 func snapshotMessages(messages []runtime.SentMessage) []SnapshotMessage {
 	var out []SnapshotMessage
 	for _, msg := range messages {
-		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: snapText(msg.Content)}
+		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: snapText(msg.Content), SentAfterSeconds: msg.SentAfterSeconds}
 		for _, e := range msg.Embeds {
 			sm.Embeds = append(sm.Embeds, snapText(readableJSON(e)))
 		}

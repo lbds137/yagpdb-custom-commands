@@ -59,6 +59,30 @@ func TestSleepMovesTheDatabaseClock(t *testing.T) {
 	}
 }
 
+// A sent message records how far the run's clock had moved on from sleep, and an execCC
+// child's messages count its caller's sleeps too.
+func TestSleepRecordsSentAfterSeconds(t *testing.T) {
+	ctx := newCtx(true, true)
+	if _, err := run(t, ctx, `{{sendMessage nil "a"}}{{sleep 3}}{{sendMessage nil "b"}}`); err != nil {
+		t.Fatal(err)
+	}
+	if len(ctx.SentMessages) != 2 || ctx.SentMessages[0].SentAfterSeconds != 0 || ctx.SentMessages[1].SentAfterSeconds != 3 {
+		t.Errorf("got %+v", ctx.SentMessages)
+	}
+
+	dir := t.TempDir()
+	writeFile(t, dir+"/child.gohtml", `{{sendMessage nil "child"}}`)
+	childCtx := channelCtx()
+	childCtx.TemplateBaseDir = dir
+	childCtx.CommandIDMap = map[int64]string{1: "child.gohtml"}
+	if _, err := run(t, childCtx, `{{sleep 3}}{{execCC 1 nil 0 nil}}`); err != nil {
+		t.Fatal(err)
+	}
+	if len(childCtx.SentMessages) != 1 || childCtx.SentMessages[0].SentAfterSeconds != 3 {
+		t.Errorf("got %+v", childCtx.SentMessages)
+	}
+}
+
 // A join time is a fact: an execCC child sees the same one after its caller slept
 func TestSleepKeepsJoinTimesInExecCCChild(t *testing.T) {
 	dir := t.TempDir()
