@@ -735,3 +735,44 @@ func TestDeclaredThreadStaysOutOfGuildState(t *testing.T) {
 		t.Errorf("got %q, %v; want %q", res.Output, res.Error, want)
 	}
 }
+
+// components_contains matches any of a message's action rows as JSON (custom_id, label...)
+func TestComponentsContains(t *testing.T) {
+	src := `{{sendMessage 9 (complexMessage "buttons" (sdict "label" "Next" "custom_id" "pg:2") ` +
+		`"menus" (sdict "type" "user" "custom_id" "pick"))}}{{sendMessage 9 "plain"}}`
+	cases := []struct {
+		name     string
+		checks   []MessageCheck
+		failures []string
+	}{
+		{"matches the button's prefixed custom id", []MessageCheck{
+			{ChannelID: 9, ComponentsContains: `"custom_id": "templates-pg:2"`}}, nil},
+		{"matches the menu in the second row", []MessageCheck{
+			{ChannelID: 9, ComponentsContains: "templates-pick"}}, nil},
+		{"matches a label", []MessageCheck{{ChannelID: 9, ComponentsContains: `"label": "Next"`}}, nil},
+		{"matching neither fails naming both rows", []MessageCheck{
+			{ChannelID: 9, ComponentsContains: "Prev"}},
+			[]string{"components should contain", "templates-pg:2", "templates-pick"}},
+		{"a message without components fails", []MessageCheck{
+			{ChannelID: 9, Nth: 2, ComponentsContains: "Next"}},
+			[]string{`expected components containing "Next" but none found`}},
+	}
+	for _, c := range cases {
+		tc := &TestCase{Name: c.name, TemplateSource: src, Assertions: Assertions{SentMessages: &c.checks}}
+		tc.applyDefaults()
+		res := NewRunner(RunnerConfig{}).RunTest(tc)
+		wantFailures := 0
+		if len(c.failures) > 0 {
+			wantFailures = 1
+		}
+		if res.Error != nil || len(res.Failures) != wantFailures {
+			t.Errorf("%s: %v, %q", c.name, res.Error, res.Failures)
+			continue
+		}
+		for _, want := range c.failures {
+			if !strings.Contains(res.Failures[0], want) {
+				t.Errorf("%s: failure %q, want it to contain %q", c.name, res.Failures, want)
+			}
+		}
+	}
+}

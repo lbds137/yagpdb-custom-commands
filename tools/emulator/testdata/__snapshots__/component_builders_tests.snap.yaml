@@ -1,0 +1,108 @@
+An edit replaces the buttons; the edited message shows them:
+    output: "2"
+    messages:
+        - channel_id: 123456789012345678
+          content: page 1
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Next",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-pg:2",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    edits:
+        - channel_id: 123456789012345678
+          content: page 2
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Prev",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-pg:1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Next",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-pg:3",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+'An embed with 3 buttons and a menu: rows, prefixed IDs, read back':
+    output: templates-pg:ca:stale:0|templates-pg:ca:stale:2|https://example.com/docs|templates-bucket|
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "description": "Page 1 of 3",
+                "title": "Channels"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Prev",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-pg:ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Next",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-pg:ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "Docs",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://example.com/docs",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "custom_id": "templates-bucket",
+                    "placeholder": "Bucket",
+                    "options": [
+                      {
+                        "label": "Active",
+                        "value": "active",
+                        "description": "",
+                        "default": false
+                      },
+                      {
+                        "label": "Stale",
+                        "value": "stale",
+                        "description": "",
+                        "default": true
+                      }
+                    ],
+                    "disabled": false,
+                    "required": false,
+                    "type": 3
+                  }
+                ],
+                "type": 1
+              }

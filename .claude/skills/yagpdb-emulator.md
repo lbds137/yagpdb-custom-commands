@@ -93,6 +93,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # of sleep had elapsed in the run when it was sent
                                       # absent = unchecked; [] = assert the run sent no messages
                                       # at all (like execs/deletions/scheduled_runs/reactions)
+                                      # components_contains: "templates-pg:2" = substring of any
+                                      # of the message's action rows as JSON (see Buttons and menus)
     edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits (as edited); "" = empty
                                       # content; same absent/[] rule as sent_messages: absent =
                                       # unchecked, [] = assert the run edited no messages at all
@@ -172,6 +174,22 @@ Copy YAGPDB's code rather than rewriting it (fetch its source with `vendor/updat
   errors); dbGet and userArg return untyped nil (field access reads as no value).
 - Discord functions are mocks. Output is not whitespace-trimmed like YAGPDB's response;
   assertions trim it.
+
+## Buttons and menus
+
+`cbutton`/`cmenu` and complexMessage's `buttons` (up to 40), `menus` (up to 5) and
+`components` (built ones, flat or as rows) are YAGPDB's own code
+(`internal/runtime/components.go`, vendor common/templates/components.go): buttons pack 5
+to a row up to 5 rows, a string menu takes a row of its own, every custom ID gets the
+`templates-` prefix (numbered `templates-0`, `templates-1`... when empty; over 90 chars
+after the prefix is `custom id too long`), and a link button loses its ID. Sent and edited
+messages carry them: assert with `components_contains: "templates-pg:2"` (a substring of
+any action row as JSON: custom_id, label, placeholder...), read them back with
+`(getMessage nil $id).Components` (rows of `.Components`, each with `.CustomID`, `.Label`,
+`.URL`, `.Options`), and snapshots list them under `components:` in Discord's shape. A
+`complexMessageEdit` without a components key keeps a message's rows; `"components"
+cslice` clears them. Interactions (clicking them, sendResponse, updateMessage) aren't
+modelled yet: docs/design/emulator-interactions.md.
 
 ## When to Use This Skill
 

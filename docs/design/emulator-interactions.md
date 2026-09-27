@@ -141,6 +141,17 @@ the component's message in place. Snapshots gain `interaction_responses:` and
   (customcommands.go:958-963); CCActionExecLimit for several CCs on one custom ID
   (handle_component.go:261-268).
 
+### Vendor quirks copied as-is (rules for OUR commands; unit 1, reviewed 2026-09-27)
+- More than 25 flat components drop the last row: distributeComponentsIntoActionsRows
+  stops at index 24 (components.go:1068) but appends the tail row only at the last input
+  (:1090), so 26 or even 40 "buttons" give 4 rows (20 buttons). Never pass more than 25.
+- Only string select menus (type 3) refuse to share a custom row (:1050, :1055);
+  user/role/mentionable/channel menus don't. Put every menu in its own row anyway.
+- A string menu's 1-25 options check only fires above 25 (:304 reads MenuType, which the
+  "type" key never sets): a menu with zero options builds fine and Discord rejects it.
+- cbutton returns a pointer that validation numbers in place (validateCustomID, no
+  duplicate check despite its comment): give every button an explicit custom_id.
+
 ## (e) Left out (promote trigger)
 
 Foreign tokens for editResponse/getResponse/deleteInteractionResponse (a command stores a

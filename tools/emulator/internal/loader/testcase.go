@@ -343,6 +343,9 @@ type MessageCheck struct {
 	HasEmbed        bool    `yaml:"has_embed"`
 	EmbedTitle      string  `yaml:"embed_title"`    // matches any of the message's embeds
 	EmbedContains   string  `yaml:"embed_contains"` // substring of any of the message's embeds as JSON (title, fields, ...)
+	// ComponentsContains is a substring of any of the message's action rows as JSON (a
+	// custom_id, a label, ...)
+	ComponentsContains string `yaml:"components_contains"`
 	// Pings is exactly who the message notifies (edits notify no one)
 	Pings *PingsCheck `yaml:"pings"`
 	// SentAfterSeconds is exactly how many seconds into the run's sleeps the message was

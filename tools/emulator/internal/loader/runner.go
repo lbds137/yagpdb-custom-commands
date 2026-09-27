@@ -552,6 +552,30 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 			}
 		}
 
+		if check.ComponentsContains != "" {
+			if len(found.Components) == 0 {
+				failures = append(failures,
+					fmt.Sprintf("message check %d: expected components containing %q but none found",
+						i, check.ComponentsContains))
+			} else {
+				var matched bool
+				var rows []string
+				for _, c := range found.Components {
+					row := readableJSON(c)
+					rows = append(rows, row)
+					if strings.Contains(row, check.ComponentsContains) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					failures = append(failures,
+						fmt.Sprintf("message check %d: components should contain %q but the rows are:\n%s",
+							i, check.ComponentsContains, strings.Join(rows, "\n---\n")))
+				}
+			}
+		}
+
 		if check.EmbedTitle != "" {
 			var titles []string
 			var matched bool

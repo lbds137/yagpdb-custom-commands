@@ -59,6 +59,8 @@ IMPLEMENTED=(
     "createTicket"
     # Embeds
     "cembed" "complexMessage" "complexMessageEdit" "sendTemplate"
+    # Message components
+    "cbutton" "cmenu"
     # Control flow
     "execCC" "exec" "execAdmin" "execTemplate" "scheduleUniqueCC" "cancelScheduledUniqueCC"
     "sleep" "catch"

@@ -46,10 +46,15 @@ picks, then the minifier.
 - Prerequisite: the emulator doesn't model interactions: Slash (.Options, .CmdArgs,
   subcommands), Component and Modal triggers (.CustomID, .Values, .IsButton/.IsMenu),
   context-menu (.TargetUser/.TargetMember/.Message), sendResponse/updateMessage/sendModal/
-  ephemeralResponse, complexMessage buttons/menus, the 1-per-run interaction response.
-  Build them from vendor c579722 (customcommands/handle_slashcommand.go,
-  handle_component.go, handle_contextmenu.go; common/templates/context_interactions.go,
-  general.go) after the vendor port below.
+  ephemeralResponse, the 1-per-run interaction response. Design and unit order:
+  docs/design/emulator-interactions.md (f). Unit 1 (component builders) shipped
+  2026-09-27: cbutton/cmenu, complexMessage(+Edit) buttons/menus/components as action
+  rows with YAGPDB's custom-ID prefixing and every vendor error text, components on sent,
+  edited and read-back messages, `components_contains` and snapshot `components:`
+  (tools/emulator/internal/runtime/components.go, types/components.go). Units 2-4 (the
+  interaction core + Component trigger, slash + context menus, modals) are next, from
+  vendor c579722 (customcommands/handle_slashcommand.go, handle_component.go,
+  handle_contextmenu.go; common/templates/context_interactions.go, general.go).
 
 ## Free-tier compatibility (Lila 2026-09-27: the suite should work on free servers too)
 

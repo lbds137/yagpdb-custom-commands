@@ -1,0 +1,75 @@
+name: "Component builders: cbutton, cmenu and complexMessage's buttons/menus/components"
+
+defaults:
+  channel:
+    id: 123456789012345678
+
+tests:
+  - name: "An embed with 3 buttons and a menu: rows, prefixed IDs, read back"
+    snapshot: true
+    template_source: |
+      {{ $id := sendMessageRetID nil (complexMessage
+        "embed" (cembed "title" "Channels" "description" "Page 1 of 3")
+        "buttons" (cslice
+          (sdict "label" "Prev" "custom_id" "pg:ca:stale:0" "style" "secondary" "disabled" true)
+          (sdict "label" "Next" "custom_id" "pg:ca:stale:2" "style" "primary")
+          (cbutton "label" "Docs" "style" "link" "url" "https://example.com/docs"))
+        "menus" (cmenu "custom_id" "bucket" "placeholder" "Bucket"
+          "options" (cslice
+            (sdict "label" "Active" "value" "active")
+            (sdict "label" "Stale" "value" "stale" "default" true)))) }}
+      {{- $m := getMessage nil $id }}
+      {{- range $row := $m.Components }}
+        {{- range $c := $row.Components }}
+          {{- if $c.CustomID }}{{ $c.CustomID }}|{{ else }}{{ $c.URL }}|{{ end }}
+        {{- end }}
+      {{- end }}
+    expected:
+      output_equals: "templates-pg:ca:stale:0|templates-pg:ca:stale:2|https://example.com/docs|templates-bucket|"
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          embed_title: "Channels"
+          components_contains: '"custom_id": "templates-pg:ca:stale:2"'
+        - channel_id: 123456789012345678
+          components_contains: '"placeholder": "Bucket"'
+
+  - name: "Components alone are not an empty message"
+    strict: true
+    template_source: |
+      {{ sendMessage nil (complexMessage "components" (cbutton "label" "Go")) }}Sent
+    expected:
+      output_equals: "Sent"
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, content_equals: "", components_contains: '"label": "Go"' }
+
+  - name: "A custom ID over 90 characters is YAGPDB's error"
+    template_source: |
+      {{ $long := printf "%091d" 0 }}
+      {{ sendMessage nil (complexMessage "buttons" (sdict "label" "x" "custom_id" $long)) }}
+    expected:
+      error_contains: "custom id too long (max 90 chars)"
+
+  - name: "A link button needs a url; a button needs a label or emoji"
+    template_source: |
+      {{ try }}{{ cbutton "label" "x" "style" "link" }}{{ catch }}{{ .Error }}; {{ end }}
+      {{- try }}{{ cbutton "style" "danger" }}{{ catch }}{{ .Error }}{{ end }}
+    expected:
+      output_equals: "a url field is required for a link button; button must have a label or emoji"
+
+  - name: "An edit replaces the buttons; the edited message shows them"
+    snapshot: true
+    template_source: |
+      {{ $id := sendMessageRetID nil (complexMessage "content" "page 1"
+        "buttons" (sdict "label" "Next" "custom_id" "pg:2")) }}
+      {{- editMessage nil $id (complexMessageEdit "content" "page 2"
+        "buttons" (cslice (sdict "label" "Prev" "custom_id" "pg:1") (sdict "label" "Next" "custom_id" "pg:3"))) }}
+      {{- len (index (getMessage nil $id).Components 0).Components }}
+    expected:
+      output_equals: "2"
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, components_contains: "templates-pg:2" }
+      edited_messages:
+        - { channel_id: 123456789012345678, content_equals: "page 2", components_contains: "templates-pg:3" }
