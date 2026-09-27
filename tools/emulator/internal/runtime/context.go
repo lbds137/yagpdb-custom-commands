@@ -206,7 +206,16 @@ type ExecutionContext struct {
 	// Channels are the server's channels by ID (name as value), when the test declares them;
 	// empty, any channel ID is taken to exist (see channelArg)
 	Channels map[int64]string
-	// ChannelDetails are the declared channels' type, parent, position, topic and NSFW
+	// Threads are the server's declared threads by ID (name as value), YAGPDB's
+	// dstate.GuildSet.Threads: resolvable by ChannelArg/getChannelOrThread but absent from
+	// .Guild.Channels, ChannelOrder and getChannel (baseChannelArg,
+	// vendor common/templates/context_funcs.go)
+	Threads map[int64]string
+	// ThreadOrder is Threads' keys in declaration order, for a deterministic name lookup
+	// (baseChannelArg's second, thread-only loop tries text-like channels first)
+	ThreadOrder []int64
+	// ChannelDetails are the declared channels' (and threads') type, parent, position,
+	// topic and NSFW
 	ChannelDetails map[int64]types.CtxChannel
 	// ChannelOrder is the channels in YAGPDB's order (.Guild.Channels, name lookups):
 	// sorted by position as its state tracker sorts them (SortChannels)
@@ -246,6 +255,7 @@ func NewExecutionContext(guildID int64, db *state.MockDB) *ExecutionContext {
 		StartTime:      time.Now(),
 		AvailableRoles: make(map[int64]types.CtxRole),
 		Channels:       make(map[int64]string),
+		Threads:        make(map[int64]string),
 		CommandIDMap:   make(map[int64]string),
 		MaxExecCCDepth: 2, // YAGPDB default
 	}
@@ -304,6 +314,12 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	channel := ctx.channelState(ctx.ChannelID)
 	if channel.Name == "" {
 		channel.Name = ctx.ChannelName
+	}
+	// ChannelOrThreadParent: the channel itself, or a thread's parent (ChannelOrThreadParentID,
+	// vendor common/dutil.go)
+	channelOrThreadParent := channel
+	if channel.IsThread {
+		channelOrThreadParent = ctx.channelState(channel.ParentID)
 	}
 	guildChannels := make([]types.ChannelState, 0, len(ctx.ChannelOrder))
 	for _, id := range ctx.ChannelOrder {
@@ -384,10 +400,10 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		"server":       &guild,
 		"ServerPrefix": ctx.Prefix,
 
-		// Channel; with no threads modelled, a channel is its own parent
+		// Channel; ChannelOrThreadParent is the channel itself, or a thread's parent
 		"Channel":               &channel,
 		"channel":               &channel,
-		"ChannelOrThreadParent": &channel,
+		"ChannelOrThreadParent": &channelOrThreadParent,
 
 		// Message
 		"Message": message,
@@ -671,12 +687,13 @@ func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
 // channelNamed is the ID of the first channel, in position order, with that name (any
 // case), or 0; no channel has an empty name. Without declared channels only the current
 // one has a name. As in YAGPDB's baseChannelArg, only text, voice, announcement and forum
-// channels are found by name (not categories).
+// channels are found by name (not categories) — tried first — then threads (declaration
+// order), so a thread never shadows a same-named text-like channel.
 func (ctx *ExecutionContext) channelNamed(name string) int64 {
 	if name == "" {
 		return 0
 	}
-	if len(ctx.Channels) == 0 {
+	if len(ctx.Channels) == 0 && len(ctx.Threads) == 0 {
 		if strings.EqualFold(name, ctx.ChannelName) {
 			return ctx.ChannelID
 		}
@@ -690,16 +707,32 @@ func (ctx *ExecutionContext) channelNamed(name string) int64 {
 			}
 		}
 	}
+	for _, id := range ctx.ThreadOrder {
+		if strings.EqualFold(name, ctx.Threads[id]) {
+			return id
+		}
+	}
 	return 0
 }
 
 // Discord's channel types (discordgo.ChannelType) the emulator tells apart
 const (
-	channelTypeText  = 0
-	channelTypeVoice = 2
-	channelTypeNews  = 5
-	channelTypeForum = 15
+	channelTypeText               = 0
+	channelTypeVoice              = 2
+	channelTypeNews               = 5
+	channelTypeGuildNewsThread    = 10
+	channelTypeGuildPublicThread  = 11
+	channelTypeGuildPrivateThread = 12
+	channelTypeForum              = 15
 )
+
+// IsThreadChannelType reports whether a Discord channel type (10/11/12) is a thread, as
+// discordgo's ChannelType.IsThread does (vendor lib/discordgo/structs.go). Exported so the
+// loader can keep a declared thread out of .Guild.Channels/ChannelOrder, the way YAGPDB's
+// dstate.GuildSet.Channels holds no threads.
+func IsThreadChannelType(t int) bool {
+	return t == channelTypeGuildNewsThread || t == channelTypeGuildPublicThread || t == channelTypeGuildPrivateThread
+}
 
 // channelState is the channel as YAGPDB's state tracker has it: a declared channel's
 // details, or just its ID and name.
@@ -710,6 +743,8 @@ func (ctx *ExecutionContext) channelState(id int64) types.CtxChannel {
 	}
 	c.GuildID = ctx.GuildID
 	c.IsForum = c.Type == channelTypeForum // as CtxChannelFromCS sets it
+	// as CtxChannelFromCS sets it (cs.Type.IsThread(), vendor lib/discordgo/structs.go)
+	c.IsThread = IsThreadChannelType(c.Type)
 	return c
 }
 

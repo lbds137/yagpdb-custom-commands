@@ -286,6 +286,124 @@ func TestChannelIsForum(t *testing.T) {
 	}
 }
 
+// IsThread follows the type (10/11/12), as YAGPDB's CtxChannelFromCS sets it
+// (cs.Type.IsThread(), vendor lib/discordgo/structs.go)
+func TestChannelIsThread(t *testing.T) {
+	ctx := channelCtx()
+	ctx.ChannelDetails = map[int64]types.CtxChannel{ctx.ChannelID: {ID: ctx.ChannelID, Name: "a-thread", Type: channelTypeGuildPublicThread}}
+	if out, err := run(t, ctx, `{{.Channel.IsThread}} {{(getChannel 42).IsThread}}`); err != nil || out != "true false" {
+		t.Errorf("got %q, %v", out, err)
+	}
+}
+
+// ChannelOrThreadParent is the channel itself, or (for a thread) its parent
+// (ChannelOrThreadParentID, vendor common/dutil.go)
+func TestChannelOrThreadParent(t *testing.T) {
+	ctx := channelCtx() // ctx.ChannelID (42's sibling) is a normal, non-thread channel
+	if out, err := run(t, ctx, `{{eq .ChannelOrThreadParent.ID .Channel.ID}}`); err != nil || out != "true" {
+		t.Errorf("non-thread: got %q, %v", out, err)
+	}
+
+	ctx = channelCtx()
+	ctx.ChannelDetails = map[int64]types.CtxChannel{
+		ctx.ChannelID: {ID: ctx.ChannelID, Name: "a-thread", Type: channelTypeGuildPublicThread, ParentID: 42},
+	}
+	if out, err := run(t, ctx, `{{.ChannelOrThreadParent.ID}} {{.ChannelOrThreadParent.Name}}`); err != nil || out != "42 Staff-Log" {
+		t.Errorf("thread: got %q, %v", out, err)
+	}
+}
+
+// A declared thread (type 10/11/12) is kept out of .Guild.Channels, ChannelOrder and
+// getChannel/name lookups, as dstate.GuildSet.Channels holds no thread state (vendor
+// common/templates/context_funcs.go's tmplGetChannel errors "channel not in state" for a
+// channel GetChannel can't find); only its own declared details still resolve via .Channel,
+// since a run's triggering channel is looked up directly, not through that state.
+func TestThreadNotInGuildState(t *testing.T) {
+	ctx := channelCtx() // ctx.ChannelID is the thread; 42 "Staff-Log" is its declared parent
+	ctx.ChannelDetails = map[int64]types.CtxChannel{
+		ctx.ChannelID: {ID: ctx.ChannelID, Name: "a-thread", Type: channelTypeGuildPublicThread, ParentID: 42},
+	}
+	// mirrors what the loader does for a declared thread (runner.go): out of
+	// Channels/ChannelOrder (absent from .Guild.Channels) but into Threads/ThreadOrder
+	// (still resolvable by ChannelArg/getChannelOrThread, just not by getChannel)
+	delete(ctx.Channels, ctx.ChannelID)
+	ctx.ChannelOrder = []int64{42}
+	ctx.Threads = map[int64]string{ctx.ChannelID: "a-thread"}
+	ctx.ThreadOrder = []int64{ctx.ChannelID}
+
+	out, err := run(t, ctx, `{{.Channel.IsThread}} {{.Channel.ParentID}} `+
+		`{{range .Guild.Channels}}{{.ID}},{{end}} `+
+		`{{try}}{{getChannel `+fmt.Sprint(ctx.ChannelID)+`}}{{catch}}caught: {{.Error}}{{end}}`)
+	if want := "true 42 42, caught: channel not in state"; err != nil || out != want {
+		t.Errorf("got %q, %v; want %q", out, err, want)
+	}
+}
+
+// getChannelOrThread resolves a declared thread (GS.GetChannelOrThread checks Threads
+// too), unlike getChannel; vendor tmplGetChannelOrThread, context_funcs.go
+func TestGetChannelOrThreadResolvesAThread(t *testing.T) {
+	ctx := channelCtx()
+	ctx.ChannelDetails = map[int64]types.CtxChannel{
+		ctx.ChannelID: {ID: ctx.ChannelID, Name: "a-thread", Type: channelTypeGuildPublicThread, ParentID: 42},
+	}
+	delete(ctx.Channels, ctx.ChannelID)
+	ctx.ChannelOrder = []int64{42}
+	ctx.Threads = map[int64]string{ctx.ChannelID: "a-thread"}
+	ctx.ThreadOrder = []int64{ctx.ChannelID}
+
+	out, err := run(t, ctx, `{{(getChannelOrThread `+fmt.Sprint(ctx.ChannelID)+`).Name}} `+
+		`{{(getChannelOrThread `+fmt.Sprint(ctx.ChannelID)+`).IsThread}}`)
+	if want := "a-thread true"; err != nil || out != want {
+		t.Errorf("got %q, %v; want %q", out, err, want)
+	}
+}
+
+// A thread is a real send target by ID, as production's ChannelArg resolves it
+// (baseChannelArg -> GS.GetChannelOrThread); sendMessage records into it like any channel.
+func TestSendMessageToThreadByID(t *testing.T) {
+	ctx := channelCtx()
+	threadID := int64(77)
+	ctx.ChannelDetails = map[int64]types.CtxChannel{threadID: {ID: threadID, Name: "a-thread", Type: channelTypeGuildPublicThread, ParentID: ctx.ChannelID}}
+	ctx.Threads = map[int64]string{threadID: "a-thread"}
+	ctx.ThreadOrder = []int64{threadID}
+
+	if _, err := run(t, ctx, `{{sendMessage 77 "hi from the thread"}}`); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	if len(ctx.SentMessages) != 1 || ctx.SentMessages[0].ChannelID != threadID || ctx.SentMessages[0].Content != "hi from the thread" {
+		t.Errorf("got %+v", ctx.SentMessages)
+	}
+}
+
+// A name is matched against text-like channels first (types 0/2/5/15), then threads, so a
+// thread never shadows a same-named text-like channel; it's still found when no channel
+// has that name. baseChannelArg's two loops, vendor context_funcs.go:100-107.
+func TestThreadNameLookupOrder(t *testing.T) {
+	ctx := channelCtx()
+	textID, threadID := int64(50), int64(51)
+	ctx.Channels[textID] = "dup-name"
+	ctx.ChannelOrder = append(ctx.ChannelOrder, textID)
+	ctx.ChannelDetails = map[int64]types.CtxChannel{
+		textID:   {ID: textID, Name: "dup-name", Type: channelTypeText},
+		threadID: {ID: threadID, Name: "dup-name", Type: channelTypeGuildPublicThread},
+	}
+	ctx.Threads = map[int64]string{threadID: "dup-name"}
+	ctx.ThreadOrder = []int64{threadID}
+
+	// a same-named text channel wins
+	if out, err := run(t, ctx, `{{(getChannel "dup-name").ID}}`); err != nil || out != fmt.Sprint(textID) {
+		t.Errorf("text wins: got %q, %v; want %d", out, err, textID)
+	}
+
+	// with no text-like channel of that name, the thread is found (via getChannelOrThread,
+	// since getChannel itself would error for a resolved thread)
+	delete(ctx.Channels, textID)
+	ctx.ChannelOrder = nil
+	if out, err := run(t, ctx, `{{(getChannelOrThread "dup-name").ID}}`); err != nil || out != fmt.Sprint(threadID) {
+		t.Errorf("falls back to thread: got %q, %v; want %d", out, err, threadID)
+	}
+}
+
 // A channel a test marks ChannelsCannotSend (guild.channels bot_cannot_send) fails a send
 // as Discord's REST call would (403 Missing Permissions), with nothing recorded; YAGPDB's
 // tmplSendMessage has no permission pre-check, so this is the send's own error

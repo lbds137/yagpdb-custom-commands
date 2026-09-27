@@ -137,12 +137,26 @@ gets a failing test first.
   (`&c.MS.User`, `DgoMember()`, `*discordgo.Message`): a pointer-receiver method on them
   isn't reachable, and `printf "%T"` and printing differ. `.Channel` and `.Guild` are
   pointers already. Promote when a command calls such a method or prints one of them.
-- Channels: a declared channel has a type, parent, position, topic and NSFW flag, but no
-  threads (YAGPDB's .Guild.Threads, thread name lookups, ChannelArgNoDMNoThread), no DMs
-  (getMessage/editMessage refuse them) and no permission overwrites. A test that declares
+- Channels: a declared channel has a type, parent, position, topic and NSFW flag, and no
+  DMs (getMessage/editMessage refuse them) or permission overwrites. A test that declares
   no channels treats any channel ID as existing, with a `[channel]` warning per ID, and
   its .Guild.Channels is empty. getTargetPermissionsIn and sendTemplate ignore their
-  channel (YAGPDB's sendTemplate errors "unknown channel").
+  channel (YAGPDB's sendTemplate errors "unknown channel"). Threads (a `guild.channels`
+  entry of type 10/11/12): resolved by ChannelArg/getChannelOrThread and by name
+  (text-like channels tried first, then threads), the way baseChannelArg does
+  (vendor common/templates/context_funcs.go); absent from .Guild.Channels/ChannelOrder,
+  the way dstate.GuildSet.Channels holds no thread state; getChannel errors "channel not
+  in state" for one, the way GS.GetChannel (channels only) does (2026-09-27,
+  tools/emulator/internal/runtime/channels_test.go's TestThreadNotInGuildState,
+  TestGetChannelOrThreadResolvesAThread, TestSendMessageToThreadByID,
+  TestThreadNameLookupOrder). Not modelled: `getThread`'s live-Discord-API fallback for a
+  thread not already declared (getThread isn't implemented at all — no emulator function
+  calls it); `ChannelArgNoDMNoThread` (only vendor's `editChannelTopic` uses it, and the
+  emulator doesn't implement `editChannelTopic`); and a thread's own
+  ThreadMetadata/message-count/parent-forum-tag fields (a `guild.channels` thread entry
+  has the same type/parent/position/topic/NSFW shape as any other declared channel).
+  Promote the `getThread`/`editChannelTopic` gaps when a command calls either; promote the
+  thread-metadata gap when a command reads a thread's own metadata.
 - Reactions: an emoji is refused only when it isn't a string ("<int Value>"); an unknown
   or misspelled emoji, which Discord refuses (10014), is recorded. Reacting to a message
   the emulator doesn't know is Discord's 10008 refusal, though the message may exist in
@@ -159,7 +173,8 @@ gets a failing test first.
   `string` only).
 - Discord functions are mocks: role changes don't update the
   members' roles within the run (as in YAGPDB, whose state updates later), `sendTemplate`
-  is a no-op, and there are no components or threads yet.
+  is a no-op, and there are no components yet (threads are modelled as of 2026-09-27,
+  see the Channels gap above for what's still missing).
 - Pings: the bot's "Mention @everyone, @here, and All Roles" permission is one setting for
   the whole server (Discord checks it per channel), and it defaults to granted. A role the
   test doesn't declare is never mentionable. A reply to a message the emulator doesn't know

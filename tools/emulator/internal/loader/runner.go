@@ -247,8 +247,6 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	}
 	ctx.ChannelDetails = map[int64]types.CtxChannel{}
 	for _, ch := range tc.Context.Guild.Channels {
-		ctx.Channels[ch.ID] = ch.Name
-		ctx.ChannelOrder = append(ctx.ChannelOrder, ch.ID)
 		ctx.ChannelDetails[ch.ID] = types.CtxChannel{ID: ch.ID, Name: ch.Name, Type: ch.Type,
 			ParentID: ch.ParentID, Position: ch.Position, Topic: ch.Topic, NSFW: ch.NSFW}
 		if ch.BotCannotSend {
@@ -257,11 +255,24 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 			}
 			ctx.ChannelsCannotSend[ch.ID] = true
 		}
+		// Threads aren't in dstate.GuildSet.Channels (YAGPDB's state tracker keeps them in
+		// GS.Threads instead), so they never appear in .Guild.Channels or ChannelOrder, and
+		// getChannel can't find them; but ChannelArg/getChannelOrThread and a name lookup
+		// still resolve them (baseChannelArg, vendor common/templates/context_funcs.go), so
+		// they're declared into Threads/ThreadOrder instead of Channels/ChannelOrder.
+		if runtime.IsThreadChannelType(ch.Type) {
+			ctx.Threads[ch.ID] = ch.Name
+			ctx.ThreadOrder = append(ctx.ThreadOrder, ch.ID)
+			continue
+		}
+		ctx.Channels[ch.ID] = ch.Name
+		ctx.ChannelOrder = append(ctx.ChannelOrder, ch.ID)
 	}
 	if name, ok := ctx.Channels[ctx.ChannelID]; ok {
 		ctx.ChannelName = name // declared, the test's channel has its declared name
-	} else if len(ctx.Channels) > 0 {
-		// the test's channel, undeclared: a text channel at position 0
+	} else if _, declared := ctx.ChannelDetails[ctx.ChannelID]; !declared && len(ctx.Channels) > 0 {
+		// the test's channel, undeclared: a text channel at position 0 (a declared thread
+		// is not "undeclared": it's deliberately kept out of Channels/ChannelOrder above)
 		ctx.Channels[ctx.ChannelID] = ctx.ChannelName
 		ctx.ChannelOrder = append(ctx.ChannelOrder, ctx.ChannelID)
 	}

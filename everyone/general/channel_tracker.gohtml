@@ -1,0 +1,14 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Regex`
+  Trigger: `.*`
+  Dependencies: none
+*/ -}}
+{{- /* no template function can read a channel's last message, so this records one on
+  every message instead; a thread or forum post credits its parent channel */ -}}
+
+{{- $channelID := .Channel.ID -}}
+{{- if .Channel.IsThread -}}
+  {{- $channelID = .Channel.ParentID -}}
+{{- end -}}
+{{- dbSet $channelID "Last Active" currentTime.Unix -}}

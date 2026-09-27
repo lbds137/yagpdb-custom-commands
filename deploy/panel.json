@@ -11,6 +11,8 @@
     "everyone/color/hex_to_int.gohtml": {"main": 18, "lotv": 6},
     "everyone/services/db_get_embed.gohtml": {"main": 22, "lotv": 5},
     "everyone/general/ticket_clean.gohtml": {"main": 29},
+    "everyone/general/channel_tracker.gohtml": {"main": 85},
+    "staff/channel_activity.gohtml": {"main": 86},
     "everyone/general/avatar_viewer.gohtml": {"main": 31, "lotv": 7},
     "staff/simple_db_edit.gohtml": {"main": 37, "lotv": 23},
     "staff/directory.gohtml": {"main": 38, "lotv": 19},

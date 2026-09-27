@@ -1,0 +1,1257 @@
+name: "channel_tracker + channel_activity (dead-channel audit)"
+description: >
+  channel_tracker (everyone/general, Regex `.*`) records a channel's last-active time on
+  every message, since no template function can read a channel's last message. staff's
+  channel_activity reads those records back, oldest first, to show which channels have
+  gone quiet.
+
+# 10 "Info" is a normal category; 11/12/13/14 are its channels (text, announcement, voice,
+# forum). 20 "Excluded Cat" is excluded wholesale (Directory's Exclude Categories); its
+# child 21 would otherwise be eligible. 22 is excluded directly (Exclude Channels), also
+# under 10. 99 is where staff run commands; it is deliberately NOT declared as a guild
+# channel, matching how the emulator adds an undeclared trigger channel.
+defaults:
+  channel: { id: 99, name: "staff" }
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    channels:
+      - { id: 10, name: "Info", type: 4, position: 0 }
+      - { id: 11, name: "general", type: 0, parent_id: 10, position: 0 }
+      - { id: 12, name: "announce", type: 5, parent_id: 10, position: 1 }
+      - { id: 13, name: "voice", type: 2, parent_id: 10, position: 2 }
+      - { id: 14, name: "forum", type: 15, parent_id: 10, position: 3 }
+      - { id: 20, name: "Excluded Cat", type: 4, position: 1 }
+      - { id: 21, name: "excluded-cat-channel", type: 0, parent_id: 20, position: 0 }
+      - { id: 22, name: "excluded-channel", type: 0, parent_id: 10, position: 4 }
+
+setup_db:
+  - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5, Embed Color: 3447003 } }
+  # 99 (staff) is where commands run: the emulator auto-adds an undeclared trigger channel
+  # as a real text channel (runner.go), so it must be excluded to keep it out of the audit
+  - { user_id: 0, key: "Directory", value: { Exclude Categories: [20], Exclude Channels: [22, 99] } }
+
+tests:
+  # channel_tracker
+  - name: "channel_tracker: normal channel records .Channel.ID with a numeric value"
+    template: "../../../everyone/general/channel_tracker.gohtml"
+    context:
+      channel: { id: 11, name: "general" }
+      message_content: "just chatting"
+      clock: 2026-01-01T00:00:00Z
+    assertions:
+      db_checks:
+        - { user_id: 11, key: "Last Active", value_equals: 1767225600 }
+      sent_messages: []
+      deletions: []
+
+  - name: "channel_tracker: a thread credits .Channel.ParentID, not the thread itself"
+    # channel 30 (type 11 = GUILD_PUBLIC_THREAD, parent 11 "general") must still be
+    # declared under guild.channels to get a type at all: the emulator only builds a
+    # triggering channel's CtxChannel details (type, parent_id, IsThread, ...) from a
+    # matching guild.channels entry (runner.go), and context.channel alone carries no
+    # type. What IS now modelled, matching vendor's baseChannelArg
+    # (common/templates/context_funcs.go): a declared thread is absent from
+    # .Guild.Channels/ChannelOrder (dstate.GuildSet.Channels holds no threads) and
+    # getChannel errors "channel not in state" for it (GS.GetChannel finds channels only),
+    # but it's still a real send/getChannelOrThread/name-lookup target via
+    # ctx.Threads/ThreadOrder (GS.GetChannelOrThread, GS.Threads) — see
+    # TestThreadNotInGuildState, TestGetChannelOrThreadResolvesAThread,
+    # TestSendMessageToThreadByID and TestThreadNameLookupOrder,
+    # tools/emulator/internal/runtime/channels_test.go. Not modelled: ChannelArgNoDMNoThread
+    # (no emulator function maps to it — only vendor's editChannelTopic uses it, and the
+    # emulator doesn't implement editChannelTopic) and tmplGetThread's live-Discord-API
+    # fallback for an undeclared thread (getThread itself isn't implemented at all).
+    template: "../../../everyone/general/channel_tracker.gohtml"
+    context:
+      channel: { id: 30, name: "a-thread" }
+      guild:
+        channels:
+          - { id: 10, name: "Info", type: 4, position: 0 }
+          - { id: 11, name: "general", type: 0, parent_id: 10, position: 0 }
+          - { id: 30, name: "a-thread", type: 11, parent_id: 11, position: 0 }
+      message_content: "just chatting in the thread"
+      clock: 2026-01-01T00:00:00Z
+    assertions:
+      db_checks:
+        - { user_id: 11, key: "Last Active", value_equals: 1767225600 }
+        - { user_id: 30, key: "Last Active", not_exists: true }
+      sent_messages: []
+      deletions: []
+
+  # channel_activity
+  - name: "channel_activity: ordering, exclusion (channel + category), deleted-channel skip, untracked section"
+    template: "../../../staff/channel_activity.gohtml"
+    snapshot: true
+    context:
+      clock: 2026-01-01T00:00:00Z
+    setup_db:
+      - { user_id: 999999, key: "Last Active", value: 1000 } # deleted channel: not in .Guild.Channels
+      - { user_id: 11, key: "Last Active", value: 2000 } # general: eligible, oldest of the eligible
+      - { user_id: 22, key: "Last Active", value: 3000 } # excluded-channel: excluded directly
+      - { user_id: 21, key: "Last Active", value: 4000 } # excluded-cat-channel: parent category excluded
+      - { user_id: 12, key: "Last Active", value: 5000 } # announce: eligible, newer
+      # 14 (forum) is eligible but never tracked -> "No messages since tracking began"
+      # 13 (voice) is untracked too but not a text-like type -> omitted entirely
+    assertions:
+      sent_messages:
+        - { channel_id: 99, embed_title: "Channel activity" }
+
+  - name: "channel_activity: nothing recorded yet"
+    template: "../../../staff/channel_activity.gohtml"
+    context:
+      guild: { channels: [] }
+    assertions:
+      sent_messages:
+        - { channel_id: 99, embed_title: "Channel activity", embed_contains: "channel_tracker is running" }
+      deletions:
+        - { channel_id: 99 }
+
+
+  - name: "channel_activity: splits a long description across two embeds"
+    template: "../../../staff/channel_activity.gohtml"
+    context:
+      guild:
+        channels:
+          - { id: 500000001, name: "c1", type: 0 }
+          - { id: 500000002, name: "c2", type: 0 }
+          - { id: 500000003, name: "c3", type: 0 }
+          - { id: 500000004, name: "c4", type: 0 }
+          - { id: 500000005, name: "c5", type: 0 }
+          - { id: 500000006, name: "c6", type: 0 }
+          - { id: 500000007, name: "c7", type: 0 }
+          - { id: 500000008, name: "c8", type: 0 }
+          - { id: 500000009, name: "c9", type: 0 }
+          - { id: 500000010, name: "c10", type: 0 }
+          - { id: 500000011, name: "c11", type: 0 }
+          - { id: 500000012, name: "c12", type: 0 }
+          - { id: 500000013, name: "c13", type: 0 }
+          - { id: 500000014, name: "c14", type: 0 }
+          - { id: 500000015, name: "c15", type: 0 }
+          - { id: 500000016, name: "c16", type: 0 }
+          - { id: 500000017, name: "c17", type: 0 }
+          - { id: 500000018, name: "c18", type: 0 }
+          - { id: 500000019, name: "c19", type: 0 }
+          - { id: 500000020, name: "c20", type: 0 }
+          - { id: 500000021, name: "c21", type: 0 }
+          - { id: 500000022, name: "c22", type: 0 }
+          - { id: 500000023, name: "c23", type: 0 }
+          - { id: 500000024, name: "c24", type: 0 }
+          - { id: 500000025, name: "c25", type: 0 }
+          - { id: 500000026, name: "c26", type: 0 }
+          - { id: 500000027, name: "c27", type: 0 }
+          - { id: 500000028, name: "c28", type: 0 }
+          - { id: 500000029, name: "c29", type: 0 }
+          - { id: 500000030, name: "c30", type: 0 }
+          - { id: 500000031, name: "c31", type: 0 }
+          - { id: 500000032, name: "c32", type: 0 }
+          - { id: 500000033, name: "c33", type: 0 }
+          - { id: 500000034, name: "c34", type: 0 }
+          - { id: 500000035, name: "c35", type: 0 }
+          - { id: 500000036, name: "c36", type: 0 }
+          - { id: 500000037, name: "c37", type: 0 }
+          - { id: 500000038, name: "c38", type: 0 }
+          - { id: 500000039, name: "c39", type: 0 }
+          - { id: 500000040, name: "c40", type: 0 }
+          - { id: 500000041, name: "c41", type: 0 }
+          - { id: 500000042, name: "c42", type: 0 }
+          - { id: 500000043, name: "c43", type: 0 }
+          - { id: 500000044, name: "c44", type: 0 }
+          - { id: 500000045, name: "c45", type: 0 }
+          - { id: 500000046, name: "c46", type: 0 }
+          - { id: 500000047, name: "c47", type: 0 }
+          - { id: 500000048, name: "c48", type: 0 }
+          - { id: 500000049, name: "c49", type: 0 }
+          - { id: 500000050, name: "c50", type: 0 }
+          - { id: 500000051, name: "c51", type: 0 }
+          - { id: 500000052, name: "c52", type: 0 }
+          - { id: 500000053, name: "c53", type: 0 }
+          - { id: 500000054, name: "c54", type: 0 }
+          - { id: 500000055, name: "c55", type: 0 }
+          - { id: 500000056, name: "c56", type: 0 }
+          - { id: 500000057, name: "c57", type: 0 }
+          - { id: 500000058, name: "c58", type: 0 }
+          - { id: 500000059, name: "c59", type: 0 }
+          - { id: 500000060, name: "c60", type: 0 }
+          - { id: 500000061, name: "c61", type: 0 }
+          - { id: 500000062, name: "c62", type: 0 }
+          - { id: 500000063, name: "c63", type: 0 }
+          - { id: 500000064, name: "c64", type: 0 }
+          - { id: 500000065, name: "c65", type: 0 }
+          - { id: 500000066, name: "c66", type: 0 }
+          - { id: 500000067, name: "c67", type: 0 }
+          - { id: 500000068, name: "c68", type: 0 }
+          - { id: 500000069, name: "c69", type: 0 }
+          - { id: 500000070, name: "c70", type: 0 }
+          - { id: 500000071, name: "c71", type: 0 }
+          - { id: 500000072, name: "c72", type: 0 }
+          - { id: 500000073, name: "c73", type: 0 }
+          - { id: 500000074, name: "c74", type: 0 }
+          - { id: 500000075, name: "c75", type: 0 }
+          - { id: 500000076, name: "c76", type: 0 }
+          - { id: 500000077, name: "c77", type: 0 }
+          - { id: 500000078, name: "c78", type: 0 }
+          - { id: 500000079, name: "c79", type: 0 }
+          - { id: 500000080, name: "c80", type: 0 }
+          - { id: 500000081, name: "c81", type: 0 }
+          - { id: 500000082, name: "c82", type: 0 }
+          - { id: 500000083, name: "c83", type: 0 }
+          - { id: 500000084, name: "c84", type: 0 }
+          - { id: 500000085, name: "c85", type: 0 }
+          - { id: 500000086, name: "c86", type: 0 }
+          - { id: 500000087, name: "c87", type: 0 }
+          - { id: 500000088, name: "c88", type: 0 }
+          - { id: 500000089, name: "c89", type: 0 }
+          - { id: 500000090, name: "c90", type: 0 }
+          - { id: 500000091, name: "c91", type: 0 }
+          - { id: 500000092, name: "c92", type: 0 }
+          - { id: 500000093, name: "c93", type: 0 }
+          - { id: 500000094, name: "c94", type: 0 }
+          - { id: 500000095, name: "c95", type: 0 }
+          - { id: 500000096, name: "c96", type: 0 }
+          - { id: 500000097, name: "c97", type: 0 }
+          - { id: 500000098, name: "c98", type: 0 }
+          - { id: 500000099, name: "c99", type: 0 }
+          - { id: 500000100, name: "c100", type: 0 }
+          - { id: 500000101, name: "c101", type: 0 }
+          - { id: 500000102, name: "c102", type: 0 }
+          - { id: 500000103, name: "c103", type: 0 }
+          - { id: 500000104, name: "c104", type: 0 }
+          - { id: 500000105, name: "c105", type: 0 }
+          - { id: 500000106, name: "c106", type: 0 }
+          - { id: 500000107, name: "c107", type: 0 }
+          - { id: 500000108, name: "c108", type: 0 }
+          - { id: 500000109, name: "c109", type: 0 }
+          - { id: 500000110, name: "c110", type: 0 }
+          - { id: 500000111, name: "c111", type: 0 }
+          - { id: 500000112, name: "c112", type: 0 }
+          - { id: 500000113, name: "c113", type: 0 }
+          - { id: 500000114, name: "c114", type: 0 }
+          - { id: 500000115, name: "c115", type: 0 }
+          - { id: 500000116, name: "c116", type: 0 }
+          - { id: 500000117, name: "c117", type: 0 }
+          - { id: 500000118, name: "c118", type: 0 }
+          - { id: 500000119, name: "c119", type: 0 }
+          - { id: 500000120, name: "c120", type: 0 }
+          - { id: 500000121, name: "c121", type: 0 }
+          - { id: 500000122, name: "c122", type: 0 }
+          - { id: 500000123, name: "c123", type: 0 }
+          - { id: 500000124, name: "c124", type: 0 }
+          - { id: 500000125, name: "c125", type: 0 }
+          - { id: 500000126, name: "c126", type: 0 }
+          - { id: 500000127, name: "c127", type: 0 }
+          - { id: 500000128, name: "c128", type: 0 }
+          - { id: 500000129, name: "c129", type: 0 }
+          - { id: 500000130, name: "c130", type: 0 }
+          - { id: 500000131, name: "c131", type: 0 }
+          - { id: 500000132, name: "c132", type: 0 }
+          - { id: 500000133, name: "c133", type: 0 }
+          - { id: 500000134, name: "c134", type: 0 }
+          - { id: 500000135, name: "c135", type: 0 }
+          - { id: 500000136, name: "c136", type: 0 }
+          - { id: 500000137, name: "c137", type: 0 }
+          - { id: 500000138, name: "c138", type: 0 }
+          - { id: 500000139, name: "c139", type: 0 }
+          - { id: 500000140, name: "c140", type: 0 }
+          - { id: 500000141, name: "c141", type: 0 }
+          - { id: 500000142, name: "c142", type: 0 }
+          - { id: 500000143, name: "c143", type: 0 }
+          - { id: 500000144, name: "c144", type: 0 }
+          - { id: 500000145, name: "c145", type: 0 }
+          - { id: 500000146, name: "c146", type: 0 }
+          - { id: 500000147, name: "c147", type: 0 }
+          - { id: 500000148, name: "c148", type: 0 }
+          - { id: 500000149, name: "c149", type: 0 }
+          - { id: 500000150, name: "c150", type: 0 }
+          - { id: 500000151, name: "c151", type: 0 }
+          - { id: 500000152, name: "c152", type: 0 }
+          - { id: 500000153, name: "c153", type: 0 }
+          - { id: 500000154, name: "c154", type: 0 }
+          - { id: 500000155, name: "c155", type: 0 }
+          - { id: 500000156, name: "c156", type: 0 }
+          - { id: 500000157, name: "c157", type: 0 }
+          - { id: 500000158, name: "c158", type: 0 }
+          - { id: 500000159, name: "c159", type: 0 }
+          - { id: 500000160, name: "c160", type: 0 }
+          - { id: 500000161, name: "c161", type: 0 }
+          - { id: 500000162, name: "c162", type: 0 }
+          - { id: 500000163, name: "c163", type: 0 }
+          - { id: 500000164, name: "c164", type: 0 }
+          - { id: 500000165, name: "c165", type: 0 }
+          - { id: 500000166, name: "c166", type: 0 }
+          - { id: 500000167, name: "c167", type: 0 }
+          - { id: 500000168, name: "c168", type: 0 }
+          - { id: 500000169, name: "c169", type: 0 }
+          - { id: 500000170, name: "c170", type: 0 }
+          - { id: 500000171, name: "c171", type: 0 }
+          - { id: 500000172, name: "c172", type: 0 }
+          - { id: 500000173, name: "c173", type: 0 }
+          - { id: 500000174, name: "c174", type: 0 }
+          - { id: 500000175, name: "c175", type: 0 }
+          - { id: 500000176, name: "c176", type: 0 }
+          - { id: 500000177, name: "c177", type: 0 }
+          - { id: 500000178, name: "c178", type: 0 }
+          - { id: 500000179, name: "c179", type: 0 }
+          - { id: 500000180, name: "c180", type: 0 }
+          - { id: 500000181, name: "c181", type: 0 }
+          - { id: 500000182, name: "c182", type: 0 }
+          - { id: 500000183, name: "c183", type: 0 }
+          - { id: 500000184, name: "c184", type: 0 }
+          - { id: 500000185, name: "c185", type: 0 }
+          - { id: 500000186, name: "c186", type: 0 }
+          - { id: 500000187, name: "c187", type: 0 }
+          - { id: 500000188, name: "c188", type: 0 }
+          - { id: 500000189, name: "c189", type: 0 }
+          - { id: 500000190, name: "c190", type: 0 }
+    setup_db:
+      - { user_id: 500000001, key: "Last Active", value: 1001 }
+      - { user_id: 500000002, key: "Last Active", value: 1002 }
+      - { user_id: 500000003, key: "Last Active", value: 1003 }
+      - { user_id: 500000004, key: "Last Active", value: 1004 }
+      - { user_id: 500000005, key: "Last Active", value: 1005 }
+      - { user_id: 500000006, key: "Last Active", value: 1006 }
+      - { user_id: 500000007, key: "Last Active", value: 1007 }
+      - { user_id: 500000008, key: "Last Active", value: 1008 }
+      - { user_id: 500000009, key: "Last Active", value: 1009 }
+      - { user_id: 500000010, key: "Last Active", value: 1010 }
+      - { user_id: 500000011, key: "Last Active", value: 1011 }
+      - { user_id: 500000012, key: "Last Active", value: 1012 }
+      - { user_id: 500000013, key: "Last Active", value: 1013 }
+      - { user_id: 500000014, key: "Last Active", value: 1014 }
+      - { user_id: 500000015, key: "Last Active", value: 1015 }
+      - { user_id: 500000016, key: "Last Active", value: 1016 }
+      - { user_id: 500000017, key: "Last Active", value: 1017 }
+      - { user_id: 500000018, key: "Last Active", value: 1018 }
+      - { user_id: 500000019, key: "Last Active", value: 1019 }
+      - { user_id: 500000020, key: "Last Active", value: 1020 }
+      - { user_id: 500000021, key: "Last Active", value: 1021 }
+      - { user_id: 500000022, key: "Last Active", value: 1022 }
+      - { user_id: 500000023, key: "Last Active", value: 1023 }
+      - { user_id: 500000024, key: "Last Active", value: 1024 }
+      - { user_id: 500000025, key: "Last Active", value: 1025 }
+      - { user_id: 500000026, key: "Last Active", value: 1026 }
+      - { user_id: 500000027, key: "Last Active", value: 1027 }
+      - { user_id: 500000028, key: "Last Active", value: 1028 }
+      - { user_id: 500000029, key: "Last Active", value: 1029 }
+      - { user_id: 500000030, key: "Last Active", value: 1030 }
+      - { user_id: 500000031, key: "Last Active", value: 1031 }
+      - { user_id: 500000032, key: "Last Active", value: 1032 }
+      - { user_id: 500000033, key: "Last Active", value: 1033 }
+      - { user_id: 500000034, key: "Last Active", value: 1034 }
+      - { user_id: 500000035, key: "Last Active", value: 1035 }
+      - { user_id: 500000036, key: "Last Active", value: 1036 }
+      - { user_id: 500000037, key: "Last Active", value: 1037 }
+      - { user_id: 500000038, key: "Last Active", value: 1038 }
+      - { user_id: 500000039, key: "Last Active", value: 1039 }
+      - { user_id: 500000040, key: "Last Active", value: 1040 }
+      - { user_id: 500000041, key: "Last Active", value: 1041 }
+      - { user_id: 500000042, key: "Last Active", value: 1042 }
+      - { user_id: 500000043, key: "Last Active", value: 1043 }
+      - { user_id: 500000044, key: "Last Active", value: 1044 }
+      - { user_id: 500000045, key: "Last Active", value: 1045 }
+      - { user_id: 500000046, key: "Last Active", value: 1046 }
+      - { user_id: 500000047, key: "Last Active", value: 1047 }
+      - { user_id: 500000048, key: "Last Active", value: 1048 }
+      - { user_id: 500000049, key: "Last Active", value: 1049 }
+      - { user_id: 500000050, key: "Last Active", value: 1050 }
+      - { user_id: 500000051, key: "Last Active", value: 1051 }
+      - { user_id: 500000052, key: "Last Active", value: 1052 }
+      - { user_id: 500000053, key: "Last Active", value: 1053 }
+      - { user_id: 500000054, key: "Last Active", value: 1054 }
+      - { user_id: 500000055, key: "Last Active", value: 1055 }
+      - { user_id: 500000056, key: "Last Active", value: 1056 }
+      - { user_id: 500000057, key: "Last Active", value: 1057 }
+      - { user_id: 500000058, key: "Last Active", value: 1058 }
+      - { user_id: 500000059, key: "Last Active", value: 1059 }
+      - { user_id: 500000060, key: "Last Active", value: 1060 }
+      - { user_id: 500000061, key: "Last Active", value: 1061 }
+      - { user_id: 500000062, key: "Last Active", value: 1062 }
+      - { user_id: 500000063, key: "Last Active", value: 1063 }
+      - { user_id: 500000064, key: "Last Active", value: 1064 }
+      - { user_id: 500000065, key: "Last Active", value: 1065 }
+      - { user_id: 500000066, key: "Last Active", value: 1066 }
+      - { user_id: 500000067, key: "Last Active", value: 1067 }
+      - { user_id: 500000068, key: "Last Active", value: 1068 }
+      - { user_id: 500000069, key: "Last Active", value: 1069 }
+      - { user_id: 500000070, key: "Last Active", value: 1070 }
+      - { user_id: 500000071, key: "Last Active", value: 1071 }
+      - { user_id: 500000072, key: "Last Active", value: 1072 }
+      - { user_id: 500000073, key: "Last Active", value: 1073 }
+      - { user_id: 500000074, key: "Last Active", value: 1074 }
+      - { user_id: 500000075, key: "Last Active", value: 1075 }
+      - { user_id: 500000076, key: "Last Active", value: 1076 }
+      - { user_id: 500000077, key: "Last Active", value: 1077 }
+      - { user_id: 500000078, key: "Last Active", value: 1078 }
+      - { user_id: 500000079, key: "Last Active", value: 1079 }
+      - { user_id: 500000080, key: "Last Active", value: 1080 }
+      - { user_id: 500000081, key: "Last Active", value: 1081 }
+      - { user_id: 500000082, key: "Last Active", value: 1082 }
+      - { user_id: 500000083, key: "Last Active", value: 1083 }
+      - { user_id: 500000084, key: "Last Active", value: 1084 }
+      - { user_id: 500000085, key: "Last Active", value: 1085 }
+      - { user_id: 500000086, key: "Last Active", value: 1086 }
+      - { user_id: 500000087, key: "Last Active", value: 1087 }
+      - { user_id: 500000088, key: "Last Active", value: 1088 }
+      - { user_id: 500000089, key: "Last Active", value: 1089 }
+      - { user_id: 500000090, key: "Last Active", value: 1090 }
+      - { user_id: 500000091, key: "Last Active", value: 1091 }
+      - { user_id: 500000092, key: "Last Active", value: 1092 }
+      - { user_id: 500000093, key: "Last Active", value: 1093 }
+      - { user_id: 500000094, key: "Last Active", value: 1094 }
+      - { user_id: 500000095, key: "Last Active", value: 1095 }
+      - { user_id: 500000096, key: "Last Active", value: 1096 }
+      - { user_id: 500000097, key: "Last Active", value: 1097 }
+      - { user_id: 500000098, key: "Last Active", value: 1098 }
+      - { user_id: 500000099, key: "Last Active", value: 1099 }
+      - { user_id: 500000100, key: "Last Active", value: 1100 }
+      - { user_id: 500000101, key: "Last Active", value: 1101 }
+      - { user_id: 500000102, key: "Last Active", value: 1102 }
+      - { user_id: 500000103, key: "Last Active", value: 1103 }
+      - { user_id: 500000104, key: "Last Active", value: 1104 }
+      - { user_id: 500000105, key: "Last Active", value: 1105 }
+      - { user_id: 500000106, key: "Last Active", value: 1106 }
+      - { user_id: 500000107, key: "Last Active", value: 1107 }
+      - { user_id: 500000108, key: "Last Active", value: 1108 }
+      - { user_id: 500000109, key: "Last Active", value: 1109 }
+      - { user_id: 500000110, key: "Last Active", value: 1110 }
+      - { user_id: 500000111, key: "Last Active", value: 1111 }
+      - { user_id: 500000112, key: "Last Active", value: 1112 }
+      - { user_id: 500000113, key: "Last Active", value: 1113 }
+      - { user_id: 500000114, key: "Last Active", value: 1114 }
+      - { user_id: 500000115, key: "Last Active", value: 1115 }
+      - { user_id: 500000116, key: "Last Active", value: 1116 }
+      - { user_id: 500000117, key: "Last Active", value: 1117 }
+      - { user_id: 500000118, key: "Last Active", value: 1118 }
+      - { user_id: 500000119, key: "Last Active", value: 1119 }
+      - { user_id: 500000120, key: "Last Active", value: 1120 }
+      - { user_id: 500000121, key: "Last Active", value: 1121 }
+      - { user_id: 500000122, key: "Last Active", value: 1122 }
+      - { user_id: 500000123, key: "Last Active", value: 1123 }
+      - { user_id: 500000124, key: "Last Active", value: 1124 }
+      - { user_id: 500000125, key: "Last Active", value: 1125 }
+      - { user_id: 500000126, key: "Last Active", value: 1126 }
+      - { user_id: 500000127, key: "Last Active", value: 1127 }
+      - { user_id: 500000128, key: "Last Active", value: 1128 }
+      - { user_id: 500000129, key: "Last Active", value: 1129 }
+      - { user_id: 500000130, key: "Last Active", value: 1130 }
+      - { user_id: 500000131, key: "Last Active", value: 1131 }
+      - { user_id: 500000132, key: "Last Active", value: 1132 }
+      - { user_id: 500000133, key: "Last Active", value: 1133 }
+      - { user_id: 500000134, key: "Last Active", value: 1134 }
+      - { user_id: 500000135, key: "Last Active", value: 1135 }
+      - { user_id: 500000136, key: "Last Active", value: 1136 }
+      - { user_id: 500000137, key: "Last Active", value: 1137 }
+      - { user_id: 500000138, key: "Last Active", value: 1138 }
+      - { user_id: 500000139, key: "Last Active", value: 1139 }
+      - { user_id: 500000140, key: "Last Active", value: 1140 }
+      - { user_id: 500000141, key: "Last Active", value: 1141 }
+      - { user_id: 500000142, key: "Last Active", value: 1142 }
+      - { user_id: 500000143, key: "Last Active", value: 1143 }
+      - { user_id: 500000144, key: "Last Active", value: 1144 }
+      - { user_id: 500000145, key: "Last Active", value: 1145 }
+      - { user_id: 500000146, key: "Last Active", value: 1146 }
+      - { user_id: 500000147, key: "Last Active", value: 1147 }
+      - { user_id: 500000148, key: "Last Active", value: 1148 }
+      - { user_id: 500000149, key: "Last Active", value: 1149 }
+      - { user_id: 500000150, key: "Last Active", value: 1150 }
+      - { user_id: 500000151, key: "Last Active", value: 1151 }
+      - { user_id: 500000152, key: "Last Active", value: 1152 }
+      - { user_id: 500000153, key: "Last Active", value: 1153 }
+      - { user_id: 500000154, key: "Last Active", value: 1154 }
+      - { user_id: 500000155, key: "Last Active", value: 1155 }
+      - { user_id: 500000156, key: "Last Active", value: 1156 }
+      - { user_id: 500000157, key: "Last Active", value: 1157 }
+      - { user_id: 500000158, key: "Last Active", value: 1158 }
+      - { user_id: 500000159, key: "Last Active", value: 1159 }
+      - { user_id: 500000160, key: "Last Active", value: 1160 }
+      - { user_id: 500000161, key: "Last Active", value: 1161 }
+      - { user_id: 500000162, key: "Last Active", value: 1162 }
+      - { user_id: 500000163, key: "Last Active", value: 1163 }
+      - { user_id: 500000164, key: "Last Active", value: 1164 }
+      - { user_id: 500000165, key: "Last Active", value: 1165 }
+      - { user_id: 500000166, key: "Last Active", value: 1166 }
+      - { user_id: 500000167, key: "Last Active", value: 1167 }
+      - { user_id: 500000168, key: "Last Active", value: 1168 }
+      - { user_id: 500000169, key: "Last Active", value: 1169 }
+      - { user_id: 500000170, key: "Last Active", value: 1170 }
+      - { user_id: 500000171, key: "Last Active", value: 1171 }
+      - { user_id: 500000172, key: "Last Active", value: 1172 }
+      - { user_id: 500000173, key: "Last Active", value: 1173 }
+      - { user_id: 500000174, key: "Last Active", value: 1174 }
+      - { user_id: 500000175, key: "Last Active", value: 1175 }
+      - { user_id: 500000176, key: "Last Active", value: 1176 }
+      - { user_id: 500000177, key: "Last Active", value: 1177 }
+      - { user_id: 500000178, key: "Last Active", value: 1178 }
+      - { user_id: 500000179, key: "Last Active", value: 1179 }
+      - { user_id: 500000180, key: "Last Active", value: 1180 }
+      - { user_id: 500000181, key: "Last Active", value: 1181 }
+      - { user_id: 500000182, key: "Last Active", value: 1182 }
+      - { user_id: 500000183, key: "Last Active", value: 1183 }
+      - { user_id: 500000184, key: "Last Active", value: 1184 }
+      - { user_id: 500000185, key: "Last Active", value: 1185 }
+      - { user_id: 500000186, key: "Last Active", value: 1186 }
+      - { user_id: 500000187, key: "Last Active", value: 1187 }
+      - { user_id: 500000188, key: "Last Active", value: 1188 }
+      - { user_id: 500000189, key: "Last Active", value: 1189 }
+      - { user_id: 500000190, key: "Last Active", value: 1190 }
+    assertions:
+      sent_messages:
+        - { channel_id: 99, nth: 1, embed_title: "Channel activity", embed_contains: "<#500000001>" }
+        - { channel_id: 99, nth: 2, embed_contains: "<#500000190>" }
+      deletions:
+        - { channel_id: 99 }
+
+  - name: "channel_activity: 200-entry cap hit -> note appears, untracked section absent, no third call"
+    # the template contains exactly two dbBottomEntries call sites (one unconditional, one
+    # inside "if $needSecond"), so no code path can call it a third time regardless of
+    # data; a third call would also exceed the free-tier db_multiple cap (2) and error.
+    template: "../../../staff/channel_activity.gohtml"
+    snapshot: true
+    context:
+      guild:
+        channels:
+          - { id: 600000001, name: "d1", type: 0 }
+          - { id: 600000002, name: "d2", type: 0 }
+          - { id: 600000003, name: "d3", type: 0 }
+          - { id: 600000004, name: "d4", type: 0 }
+          - { id: 600000005, name: "d5", type: 0 }
+          - { id: 600000006, name: "d6", type: 0 }
+          - { id: 600000007, name: "d7", type: 0 }
+          - { id: 600000008, name: "d8", type: 0 }
+          - { id: 600000009, name: "d9", type: 0 }
+          - { id: 600000010, name: "d10", type: 0 }
+          - { id: 600000011, name: "d11", type: 0 }
+          - { id: 600000012, name: "d12", type: 0 }
+          - { id: 600000013, name: "d13", type: 0 }
+          - { id: 600000014, name: "d14", type: 0 }
+          - { id: 600000015, name: "d15", type: 0 }
+          - { id: 600000016, name: "d16", type: 0 }
+          - { id: 600000017, name: "d17", type: 0 }
+          - { id: 600000018, name: "d18", type: 0 }
+          - { id: 600000019, name: "d19", type: 0 }
+          - { id: 600000020, name: "d20", type: 0 }
+          - { id: 600000021, name: "d21", type: 0 }
+          - { id: 600000022, name: "d22", type: 0 }
+          - { id: 600000023, name: "d23", type: 0 }
+          - { id: 600000024, name: "d24", type: 0 }
+          - { id: 600000025, name: "d25", type: 0 }
+          - { id: 600000026, name: "d26", type: 0 }
+          - { id: 600000027, name: "d27", type: 0 }
+          - { id: 600000028, name: "d28", type: 0 }
+          - { id: 600000029, name: "d29", type: 0 }
+          - { id: 600000030, name: "d30", type: 0 }
+          - { id: 600000031, name: "d31", type: 0 }
+          - { id: 600000032, name: "d32", type: 0 }
+          - { id: 600000033, name: "d33", type: 0 }
+          - { id: 600000034, name: "d34", type: 0 }
+          - { id: 600000035, name: "d35", type: 0 }
+          - { id: 600000036, name: "d36", type: 0 }
+          - { id: 600000037, name: "d37", type: 0 }
+          - { id: 600000038, name: "d38", type: 0 }
+          - { id: 600000039, name: "d39", type: 0 }
+          - { id: 600000040, name: "d40", type: 0 }
+          - { id: 600000041, name: "d41", type: 0 }
+          - { id: 600000042, name: "d42", type: 0 }
+          - { id: 600000043, name: "d43", type: 0 }
+          - { id: 600000044, name: "d44", type: 0 }
+          - { id: 600000045, name: "d45", type: 0 }
+          - { id: 600000046, name: "d46", type: 0 }
+          - { id: 600000047, name: "d47", type: 0 }
+          - { id: 600000048, name: "d48", type: 0 }
+          - { id: 600000049, name: "d49", type: 0 }
+          - { id: 600000050, name: "d50", type: 0 }
+          - { id: 600000051, name: "d51", type: 0 }
+          - { id: 600000052, name: "d52", type: 0 }
+          - { id: 600000053, name: "d53", type: 0 }
+          - { id: 600000054, name: "d54", type: 0 }
+          - { id: 600000055, name: "d55", type: 0 }
+          - { id: 600000056, name: "d56", type: 0 }
+          - { id: 600000057, name: "d57", type: 0 }
+          - { id: 600000058, name: "d58", type: 0 }
+          - { id: 600000059, name: "d59", type: 0 }
+          - { id: 600000060, name: "d60", type: 0 }
+          - { id: 600000061, name: "d61", type: 0 }
+          - { id: 600000062, name: "d62", type: 0 }
+          - { id: 600000063, name: "d63", type: 0 }
+          - { id: 600000064, name: "d64", type: 0 }
+          - { id: 600000065, name: "d65", type: 0 }
+          - { id: 600000066, name: "d66", type: 0 }
+          - { id: 600000067, name: "d67", type: 0 }
+          - { id: 600000068, name: "d68", type: 0 }
+          - { id: 600000069, name: "d69", type: 0 }
+          - { id: 600000070, name: "d70", type: 0 }
+          - { id: 600000071, name: "d71", type: 0 }
+          - { id: 600000072, name: "d72", type: 0 }
+          - { id: 600000073, name: "d73", type: 0 }
+          - { id: 600000074, name: "d74", type: 0 }
+          - { id: 600000075, name: "d75", type: 0 }
+          - { id: 600000076, name: "d76", type: 0 }
+          - { id: 600000077, name: "d77", type: 0 }
+          - { id: 600000078, name: "d78", type: 0 }
+          - { id: 600000079, name: "d79", type: 0 }
+          - { id: 600000080, name: "d80", type: 0 }
+          - { id: 600000081, name: "d81", type: 0 }
+          - { id: 600000082, name: "d82", type: 0 }
+          - { id: 600000083, name: "d83", type: 0 }
+          - { id: 600000084, name: "d84", type: 0 }
+          - { id: 600000085, name: "d85", type: 0 }
+          - { id: 600000086, name: "d86", type: 0 }
+          - { id: 600000087, name: "d87", type: 0 }
+          - { id: 600000088, name: "d88", type: 0 }
+          - { id: 600000089, name: "d89", type: 0 }
+          - { id: 600000090, name: "d90", type: 0 }
+          - { id: 600000091, name: "d91", type: 0 }
+          - { id: 600000092, name: "d92", type: 0 }
+          - { id: 600000093, name: "d93", type: 0 }
+          - { id: 600000094, name: "d94", type: 0 }
+          - { id: 600000095, name: "d95", type: 0 }
+          - { id: 600000096, name: "d96", type: 0 }
+          - { id: 600000097, name: "d97", type: 0 }
+          - { id: 600000098, name: "d98", type: 0 }
+          - { id: 600000099, name: "d99", type: 0 }
+          - { id: 600000100, name: "d100", type: 0 }
+          - { id: 600000101, name: "d101", type: 0 }
+          - { id: 600000102, name: "d102", type: 0 }
+          - { id: 600000103, name: "d103", type: 0 }
+          - { id: 600000104, name: "d104", type: 0 }
+          - { id: 600000105, name: "d105", type: 0 }
+          - { id: 600000106, name: "d106", type: 0 }
+          - { id: 600000107, name: "d107", type: 0 }
+          - { id: 600000108, name: "d108", type: 0 }
+          - { id: 600000109, name: "d109", type: 0 }
+          - { id: 600000110, name: "d110", type: 0 }
+          - { id: 600000111, name: "d111", type: 0 }
+          - { id: 600000112, name: "d112", type: 0 }
+          - { id: 600000113, name: "d113", type: 0 }
+          - { id: 600000114, name: "d114", type: 0 }
+          - { id: 600000115, name: "d115", type: 0 }
+          - { id: 600000116, name: "d116", type: 0 }
+          - { id: 600000117, name: "d117", type: 0 }
+          - { id: 600000118, name: "d118", type: 0 }
+          - { id: 600000119, name: "d119", type: 0 }
+          - { id: 600000120, name: "d120", type: 0 }
+          - { id: 600000121, name: "d121", type: 0 }
+          - { id: 600000122, name: "d122", type: 0 }
+          - { id: 600000123, name: "d123", type: 0 }
+          - { id: 600000124, name: "d124", type: 0 }
+          - { id: 600000125, name: "d125", type: 0 }
+          - { id: 600000126, name: "d126", type: 0 }
+          - { id: 600000127, name: "d127", type: 0 }
+          - { id: 600000128, name: "d128", type: 0 }
+          - { id: 600000129, name: "d129", type: 0 }
+          - { id: 600000130, name: "d130", type: 0 }
+          - { id: 600000131, name: "d131", type: 0 }
+          - { id: 600000132, name: "d132", type: 0 }
+          - { id: 600000133, name: "d133", type: 0 }
+          - { id: 600000134, name: "d134", type: 0 }
+          - { id: 600000135, name: "d135", type: 0 }
+          - { id: 600000136, name: "d136", type: 0 }
+          - { id: 600000137, name: "d137", type: 0 }
+          - { id: 600000138, name: "d138", type: 0 }
+          - { id: 600000139, name: "d139", type: 0 }
+          - { id: 600000140, name: "d140", type: 0 }
+          - { id: 600000141, name: "d141", type: 0 }
+          - { id: 600000142, name: "d142", type: 0 }
+          - { id: 600000143, name: "d143", type: 0 }
+          - { id: 600000144, name: "d144", type: 0 }
+          - { id: 600000145, name: "d145", type: 0 }
+          - { id: 600000146, name: "d146", type: 0 }
+          - { id: 600000147, name: "d147", type: 0 }
+          - { id: 600000148, name: "d148", type: 0 }
+          - { id: 600000149, name: "d149", type: 0 }
+          - { id: 600000150, name: "d150", type: 0 }
+          - { id: 600000151, name: "d151", type: 0 }
+          - { id: 600000152, name: "d152", type: 0 }
+          - { id: 600000153, name: "d153", type: 0 }
+          - { id: 600000154, name: "d154", type: 0 }
+          - { id: 600000155, name: "d155", type: 0 }
+          - { id: 600000156, name: "d156", type: 0 }
+          - { id: 600000157, name: "d157", type: 0 }
+          - { id: 600000158, name: "d158", type: 0 }
+          - { id: 600000159, name: "d159", type: 0 }
+          - { id: 600000160, name: "d160", type: 0 }
+          - { id: 600000161, name: "d161", type: 0 }
+          - { id: 600000162, name: "d162", type: 0 }
+          - { id: 600000163, name: "d163", type: 0 }
+          - { id: 600000164, name: "d164", type: 0 }
+          - { id: 600000165, name: "d165", type: 0 }
+          - { id: 600000166, name: "d166", type: 0 }
+          - { id: 600000167, name: "d167", type: 0 }
+          - { id: 600000168, name: "d168", type: 0 }
+          - { id: 600000169, name: "d169", type: 0 }
+          - { id: 600000170, name: "d170", type: 0 }
+          - { id: 600000171, name: "d171", type: 0 }
+          - { id: 600000172, name: "d172", type: 0 }
+          - { id: 600000173, name: "d173", type: 0 }
+          - { id: 600000174, name: "d174", type: 0 }
+          - { id: 600000175, name: "d175", type: 0 }
+          - { id: 600000176, name: "d176", type: 0 }
+          - { id: 600000177, name: "d177", type: 0 }
+          - { id: 600000178, name: "d178", type: 0 }
+          - { id: 600000179, name: "d179", type: 0 }
+          - { id: 600000180, name: "d180", type: 0 }
+          - { id: 600000181, name: "d181", type: 0 }
+          - { id: 600000182, name: "d182", type: 0 }
+          - { id: 600000183, name: "d183", type: 0 }
+          - { id: 600000184, name: "d184", type: 0 }
+          - { id: 600000185, name: "d185", type: 0 }
+          - { id: 600000186, name: "d186", type: 0 }
+          - { id: 600000187, name: "d187", type: 0 }
+          - { id: 600000188, name: "d188", type: 0 }
+          - { id: 600000189, name: "d189", type: 0 }
+          - { id: 600000190, name: "d190", type: 0 }
+          - { id: 600000191, name: "d191", type: 0 }
+          - { id: 600000192, name: "d192", type: 0 }
+          - { id: 600000193, name: "d193", type: 0 }
+          - { id: 600000194, name: "d194", type: 0 }
+          - { id: 600000195, name: "d195", type: 0 }
+          - { id: 600000196, name: "d196", type: 0 }
+          - { id: 600000197, name: "d197", type: 0 }
+          - { id: 600000198, name: "d198", type: 0 }
+          - { id: 600000199, name: "d199", type: 0 }
+          - { id: 600000200, name: "d200", type: 0 }
+    setup_db:
+      - { user_id: 600000001, key: "Last Active", value: 2001 }
+      - { user_id: 600000002, key: "Last Active", value: 2002 }
+      - { user_id: 600000003, key: "Last Active", value: 2003 }
+      - { user_id: 600000004, key: "Last Active", value: 2004 }
+      - { user_id: 600000005, key: "Last Active", value: 2005 }
+      - { user_id: 600000006, key: "Last Active", value: 2006 }
+      - { user_id: 600000007, key: "Last Active", value: 2007 }
+      - { user_id: 600000008, key: "Last Active", value: 2008 }
+      - { user_id: 600000009, key: "Last Active", value: 2009 }
+      - { user_id: 600000010, key: "Last Active", value: 2010 }
+      - { user_id: 600000011, key: "Last Active", value: 2011 }
+      - { user_id: 600000012, key: "Last Active", value: 2012 }
+      - { user_id: 600000013, key: "Last Active", value: 2013 }
+      - { user_id: 600000014, key: "Last Active", value: 2014 }
+      - { user_id: 600000015, key: "Last Active", value: 2015 }
+      - { user_id: 600000016, key: "Last Active", value: 2016 }
+      - { user_id: 600000017, key: "Last Active", value: 2017 }
+      - { user_id: 600000018, key: "Last Active", value: 2018 }
+      - { user_id: 600000019, key: "Last Active", value: 2019 }
+      - { user_id: 600000020, key: "Last Active", value: 2020 }
+      - { user_id: 600000021, key: "Last Active", value: 2021 }
+      - { user_id: 600000022, key: "Last Active", value: 2022 }
+      - { user_id: 600000023, key: "Last Active", value: 2023 }
+      - { user_id: 600000024, key: "Last Active", value: 2024 }
+      - { user_id: 600000025, key: "Last Active", value: 2025 }
+      - { user_id: 600000026, key: "Last Active", value: 2026 }
+      - { user_id: 600000027, key: "Last Active", value: 2027 }
+      - { user_id: 600000028, key: "Last Active", value: 2028 }
+      - { user_id: 600000029, key: "Last Active", value: 2029 }
+      - { user_id: 600000030, key: "Last Active", value: 2030 }
+      - { user_id: 600000031, key: "Last Active", value: 2031 }
+      - { user_id: 600000032, key: "Last Active", value: 2032 }
+      - { user_id: 600000033, key: "Last Active", value: 2033 }
+      - { user_id: 600000034, key: "Last Active", value: 2034 }
+      - { user_id: 600000035, key: "Last Active", value: 2035 }
+      - { user_id: 600000036, key: "Last Active", value: 2036 }
+      - { user_id: 600000037, key: "Last Active", value: 2037 }
+      - { user_id: 600000038, key: "Last Active", value: 2038 }
+      - { user_id: 600000039, key: "Last Active", value: 2039 }
+      - { user_id: 600000040, key: "Last Active", value: 2040 }
+      - { user_id: 600000041, key: "Last Active", value: 2041 }
+      - { user_id: 600000042, key: "Last Active", value: 2042 }
+      - { user_id: 600000043, key: "Last Active", value: 2043 }
+      - { user_id: 600000044, key: "Last Active", value: 2044 }
+      - { user_id: 600000045, key: "Last Active", value: 2045 }
+      - { user_id: 600000046, key: "Last Active", value: 2046 }
+      - { user_id: 600000047, key: "Last Active", value: 2047 }
+      - { user_id: 600000048, key: "Last Active", value: 2048 }
+      - { user_id: 600000049, key: "Last Active", value: 2049 }
+      - { user_id: 600000050, key: "Last Active", value: 2050 }
+      - { user_id: 600000051, key: "Last Active", value: 2051 }
+      - { user_id: 600000052, key: "Last Active", value: 2052 }
+      - { user_id: 600000053, key: "Last Active", value: 2053 }
+      - { user_id: 600000054, key: "Last Active", value: 2054 }
+      - { user_id: 600000055, key: "Last Active", value: 2055 }
+      - { user_id: 600000056, key: "Last Active", value: 2056 }
+      - { user_id: 600000057, key: "Last Active", value: 2057 }
+      - { user_id: 600000058, key: "Last Active", value: 2058 }
+      - { user_id: 600000059, key: "Last Active", value: 2059 }
+      - { user_id: 600000060, key: "Last Active", value: 2060 }
+      - { user_id: 600000061, key: "Last Active", value: 2061 }
+      - { user_id: 600000062, key: "Last Active", value: 2062 }
+      - { user_id: 600000063, key: "Last Active", value: 2063 }
+      - { user_id: 600000064, key: "Last Active", value: 2064 }
+      - { user_id: 600000065, key: "Last Active", value: 2065 }
+      - { user_id: 600000066, key: "Last Active", value: 2066 }
+      - { user_id: 600000067, key: "Last Active", value: 2067 }
+      - { user_id: 600000068, key: "Last Active", value: 2068 }
+      - { user_id: 600000069, key: "Last Active", value: 2069 }
+      - { user_id: 600000070, key: "Last Active", value: 2070 }
+      - { user_id: 600000071, key: "Last Active", value: 2071 }
+      - { user_id: 600000072, key: "Last Active", value: 2072 }
+      - { user_id: 600000073, key: "Last Active", value: 2073 }
+      - { user_id: 600000074, key: "Last Active", value: 2074 }
+      - { user_id: 600000075, key: "Last Active", value: 2075 }
+      - { user_id: 600000076, key: "Last Active", value: 2076 }
+      - { user_id: 600000077, key: "Last Active", value: 2077 }
+      - { user_id: 600000078, key: "Last Active", value: 2078 }
+      - { user_id: 600000079, key: "Last Active", value: 2079 }
+      - { user_id: 600000080, key: "Last Active", value: 2080 }
+      - { user_id: 600000081, key: "Last Active", value: 2081 }
+      - { user_id: 600000082, key: "Last Active", value: 2082 }
+      - { user_id: 600000083, key: "Last Active", value: 2083 }
+      - { user_id: 600000084, key: "Last Active", value: 2084 }
+      - { user_id: 600000085, key: "Last Active", value: 2085 }
+      - { user_id: 600000086, key: "Last Active", value: 2086 }
+      - { user_id: 600000087, key: "Last Active", value: 2087 }
+      - { user_id: 600000088, key: "Last Active", value: 2088 }
+      - { user_id: 600000089, key: "Last Active", value: 2089 }
+      - { user_id: 600000090, key: "Last Active", value: 2090 }
+      - { user_id: 600000091, key: "Last Active", value: 2091 }
+      - { user_id: 600000092, key: "Last Active", value: 2092 }
+      - { user_id: 600000093, key: "Last Active", value: 2093 }
+      - { user_id: 600000094, key: "Last Active", value: 2094 }
+      - { user_id: 600000095, key: "Last Active", value: 2095 }
+      - { user_id: 600000096, key: "Last Active", value: 2096 }
+      - { user_id: 600000097, key: "Last Active", value: 2097 }
+      - { user_id: 600000098, key: "Last Active", value: 2098 }
+      - { user_id: 600000099, key: "Last Active", value: 2099 }
+      - { user_id: 600000100, key: "Last Active", value: 2100 }
+      - { user_id: 600000101, key: "Last Active", value: 2101 }
+      - { user_id: 600000102, key: "Last Active", value: 2102 }
+      - { user_id: 600000103, key: "Last Active", value: 2103 }
+      - { user_id: 600000104, key: "Last Active", value: 2104 }
+      - { user_id: 600000105, key: "Last Active", value: 2105 }
+      - { user_id: 600000106, key: "Last Active", value: 2106 }
+      - { user_id: 600000107, key: "Last Active", value: 2107 }
+      - { user_id: 600000108, key: "Last Active", value: 2108 }
+      - { user_id: 600000109, key: "Last Active", value: 2109 }
+      - { user_id: 600000110, key: "Last Active", value: 2110 }
+      - { user_id: 600000111, key: "Last Active", value: 2111 }
+      - { user_id: 600000112, key: "Last Active", value: 2112 }
+      - { user_id: 600000113, key: "Last Active", value: 2113 }
+      - { user_id: 600000114, key: "Last Active", value: 2114 }
+      - { user_id: 600000115, key: "Last Active", value: 2115 }
+      - { user_id: 600000116, key: "Last Active", value: 2116 }
+      - { user_id: 600000117, key: "Last Active", value: 2117 }
+      - { user_id: 600000118, key: "Last Active", value: 2118 }
+      - { user_id: 600000119, key: "Last Active", value: 2119 }
+      - { user_id: 600000120, key: "Last Active", value: 2120 }
+      - { user_id: 600000121, key: "Last Active", value: 2121 }
+      - { user_id: 600000122, key: "Last Active", value: 2122 }
+      - { user_id: 600000123, key: "Last Active", value: 2123 }
+      - { user_id: 600000124, key: "Last Active", value: 2124 }
+      - { user_id: 600000125, key: "Last Active", value: 2125 }
+      - { user_id: 600000126, key: "Last Active", value: 2126 }
+      - { user_id: 600000127, key: "Last Active", value: 2127 }
+      - { user_id: 600000128, key: "Last Active", value: 2128 }
+      - { user_id: 600000129, key: "Last Active", value: 2129 }
+      - { user_id: 600000130, key: "Last Active", value: 2130 }
+      - { user_id: 600000131, key: "Last Active", value: 2131 }
+      - { user_id: 600000132, key: "Last Active", value: 2132 }
+      - { user_id: 600000133, key: "Last Active", value: 2133 }
+      - { user_id: 600000134, key: "Last Active", value: 2134 }
+      - { user_id: 600000135, key: "Last Active", value: 2135 }
+      - { user_id: 600000136, key: "Last Active", value: 2136 }
+      - { user_id: 600000137, key: "Last Active", value: 2137 }
+      - { user_id: 600000138, key: "Last Active", value: 2138 }
+      - { user_id: 600000139, key: "Last Active", value: 2139 }
+      - { user_id: 600000140, key: "Last Active", value: 2140 }
+      - { user_id: 600000141, key: "Last Active", value: 2141 }
+      - { user_id: 600000142, key: "Last Active", value: 2142 }
+      - { user_id: 600000143, key: "Last Active", value: 2143 }
+      - { user_id: 600000144, key: "Last Active", value: 2144 }
+      - { user_id: 600000145, key: "Last Active", value: 2145 }
+      - { user_id: 600000146, key: "Last Active", value: 2146 }
+      - { user_id: 600000147, key: "Last Active", value: 2147 }
+      - { user_id: 600000148, key: "Last Active", value: 2148 }
+      - { user_id: 600000149, key: "Last Active", value: 2149 }
+      - { user_id: 600000150, key: "Last Active", value: 2150 }
+      - { user_id: 600000151, key: "Last Active", value: 2151 }
+      - { user_id: 600000152, key: "Last Active", value: 2152 }
+      - { user_id: 600000153, key: "Last Active", value: 2153 }
+      - { user_id: 600000154, key: "Last Active", value: 2154 }
+      - { user_id: 600000155, key: "Last Active", value: 2155 }
+      - { user_id: 600000156, key: "Last Active", value: 2156 }
+      - { user_id: 600000157, key: "Last Active", value: 2157 }
+      - { user_id: 600000158, key: "Last Active", value: 2158 }
+      - { user_id: 600000159, key: "Last Active", value: 2159 }
+      - { user_id: 600000160, key: "Last Active", value: 2160 }
+      - { user_id: 600000161, key: "Last Active", value: 2161 }
+      - { user_id: 600000162, key: "Last Active", value: 2162 }
+      - { user_id: 600000163, key: "Last Active", value: 2163 }
+      - { user_id: 600000164, key: "Last Active", value: 2164 }
+      - { user_id: 600000165, key: "Last Active", value: 2165 }
+      - { user_id: 600000166, key: "Last Active", value: 2166 }
+      - { user_id: 600000167, key: "Last Active", value: 2167 }
+      - { user_id: 600000168, key: "Last Active", value: 2168 }
+      - { user_id: 600000169, key: "Last Active", value: 2169 }
+      - { user_id: 600000170, key: "Last Active", value: 2170 }
+      - { user_id: 600000171, key: "Last Active", value: 2171 }
+      - { user_id: 600000172, key: "Last Active", value: 2172 }
+      - { user_id: 600000173, key: "Last Active", value: 2173 }
+      - { user_id: 600000174, key: "Last Active", value: 2174 }
+      - { user_id: 600000175, key: "Last Active", value: 2175 }
+      - { user_id: 600000176, key: "Last Active", value: 2176 }
+      - { user_id: 600000177, key: "Last Active", value: 2177 }
+      - { user_id: 600000178, key: "Last Active", value: 2178 }
+      - { user_id: 600000179, key: "Last Active", value: 2179 }
+      - { user_id: 600000180, key: "Last Active", value: 2180 }
+      - { user_id: 600000181, key: "Last Active", value: 2181 }
+      - { user_id: 600000182, key: "Last Active", value: 2182 }
+      - { user_id: 600000183, key: "Last Active", value: 2183 }
+      - { user_id: 600000184, key: "Last Active", value: 2184 }
+      - { user_id: 600000185, key: "Last Active", value: 2185 }
+      - { user_id: 600000186, key: "Last Active", value: 2186 }
+      - { user_id: 600000187, key: "Last Active", value: 2187 }
+      - { user_id: 600000188, key: "Last Active", value: 2188 }
+      - { user_id: 600000189, key: "Last Active", value: 2189 }
+      - { user_id: 600000190, key: "Last Active", value: 2190 }
+      - { user_id: 600000191, key: "Last Active", value: 2191 }
+      - { user_id: 600000192, key: "Last Active", value: 2192 }
+      - { user_id: 600000193, key: "Last Active", value: 2193 }
+      - { user_id: 600000194, key: "Last Active", value: 2194 }
+      - { user_id: 600000195, key: "Last Active", value: 2195 }
+      - { user_id: 600000196, key: "Last Active", value: 2196 }
+      - { user_id: 600000197, key: "Last Active", value: 2197 }
+      - { user_id: 600000198, key: "Last Active", value: 2198 }
+      - { user_id: 600000199, key: "Last Active", value: 2199 }
+      - { user_id: 600000200, key: "Last Active", value: 2200 }
+    assertions:
+      sent_messages:
+        - { channel_id: 99, nth: 1, embed_title: "Channel activity" }
+        - { channel_id: 99, nth: 2, embed_contains: "Only the oldest 200 tracked channels were checked" }
+
+  - name: "channel_activity: second call ran (100-199 entries) and the untracked section still shows"
+    template: "../../../staff/channel_activity.gohtml"
+    snapshot: true
+    context:
+      guild:
+        channels:
+          - { id: 700000201, name: "untracked-eligible", type: 0 }
+          - { id: 700000001, name: "e1", type: 0 }
+          - { id: 700000002, name: "e2", type: 0 }
+          - { id: 700000003, name: "e3", type: 0 }
+          - { id: 700000004, name: "e4", type: 0 }
+          - { id: 700000005, name: "e5", type: 0 }
+          - { id: 700000006, name: "e6", type: 0 }
+          - { id: 700000007, name: "e7", type: 0 }
+          - { id: 700000008, name: "e8", type: 0 }
+          - { id: 700000009, name: "e9", type: 0 }
+          - { id: 700000010, name: "e10", type: 0 }
+          - { id: 700000011, name: "e11", type: 0 }
+          - { id: 700000012, name: "e12", type: 0 }
+          - { id: 700000013, name: "e13", type: 0 }
+          - { id: 700000014, name: "e14", type: 0 }
+          - { id: 700000015, name: "e15", type: 0 }
+          - { id: 700000016, name: "e16", type: 0 }
+          - { id: 700000017, name: "e17", type: 0 }
+          - { id: 700000018, name: "e18", type: 0 }
+          - { id: 700000019, name: "e19", type: 0 }
+          - { id: 700000020, name: "e20", type: 0 }
+          - { id: 700000021, name: "e21", type: 0 }
+          - { id: 700000022, name: "e22", type: 0 }
+          - { id: 700000023, name: "e23", type: 0 }
+          - { id: 700000024, name: "e24", type: 0 }
+          - { id: 700000025, name: "e25", type: 0 }
+          - { id: 700000026, name: "e26", type: 0 }
+          - { id: 700000027, name: "e27", type: 0 }
+          - { id: 700000028, name: "e28", type: 0 }
+          - { id: 700000029, name: "e29", type: 0 }
+          - { id: 700000030, name: "e30", type: 0 }
+          - { id: 700000031, name: "e31", type: 0 }
+          - { id: 700000032, name: "e32", type: 0 }
+          - { id: 700000033, name: "e33", type: 0 }
+          - { id: 700000034, name: "e34", type: 0 }
+          - { id: 700000035, name: "e35", type: 0 }
+          - { id: 700000036, name: "e36", type: 0 }
+          - { id: 700000037, name: "e37", type: 0 }
+          - { id: 700000038, name: "e38", type: 0 }
+          - { id: 700000039, name: "e39", type: 0 }
+          - { id: 700000040, name: "e40", type: 0 }
+          - { id: 700000041, name: "e41", type: 0 }
+          - { id: 700000042, name: "e42", type: 0 }
+          - { id: 700000043, name: "e43", type: 0 }
+          - { id: 700000044, name: "e44", type: 0 }
+          - { id: 700000045, name: "e45", type: 0 }
+          - { id: 700000046, name: "e46", type: 0 }
+          - { id: 700000047, name: "e47", type: 0 }
+          - { id: 700000048, name: "e48", type: 0 }
+          - { id: 700000049, name: "e49", type: 0 }
+          - { id: 700000050, name: "e50", type: 0 }
+          - { id: 700000051, name: "e51", type: 0 }
+          - { id: 700000052, name: "e52", type: 0 }
+          - { id: 700000053, name: "e53", type: 0 }
+          - { id: 700000054, name: "e54", type: 0 }
+          - { id: 700000055, name: "e55", type: 0 }
+          - { id: 700000056, name: "e56", type: 0 }
+          - { id: 700000057, name: "e57", type: 0 }
+          - { id: 700000058, name: "e58", type: 0 }
+          - { id: 700000059, name: "e59", type: 0 }
+          - { id: 700000060, name: "e60", type: 0 }
+          - { id: 700000061, name: "e61", type: 0 }
+          - { id: 700000062, name: "e62", type: 0 }
+          - { id: 700000063, name: "e63", type: 0 }
+          - { id: 700000064, name: "e64", type: 0 }
+          - { id: 700000065, name: "e65", type: 0 }
+          - { id: 700000066, name: "e66", type: 0 }
+          - { id: 700000067, name: "e67", type: 0 }
+          - { id: 700000068, name: "e68", type: 0 }
+          - { id: 700000069, name: "e69", type: 0 }
+          - { id: 700000070, name: "e70", type: 0 }
+          - { id: 700000071, name: "e71", type: 0 }
+          - { id: 700000072, name: "e72", type: 0 }
+          - { id: 700000073, name: "e73", type: 0 }
+          - { id: 700000074, name: "e74", type: 0 }
+          - { id: 700000075, name: "e75", type: 0 }
+          - { id: 700000076, name: "e76", type: 0 }
+          - { id: 700000077, name: "e77", type: 0 }
+          - { id: 700000078, name: "e78", type: 0 }
+          - { id: 700000079, name: "e79", type: 0 }
+          - { id: 700000080, name: "e80", type: 0 }
+          - { id: 700000081, name: "e81", type: 0 }
+          - { id: 700000082, name: "e82", type: 0 }
+          - { id: 700000083, name: "e83", type: 0 }
+          - { id: 700000084, name: "e84", type: 0 }
+          - { id: 700000085, name: "e85", type: 0 }
+          - { id: 700000086, name: "e86", type: 0 }
+          - { id: 700000087, name: "e87", type: 0 }
+          - { id: 700000088, name: "e88", type: 0 }
+          - { id: 700000089, name: "e89", type: 0 }
+          - { id: 700000090, name: "e90", type: 0 }
+          - { id: 700000091, name: "e91", type: 0 }
+          - { id: 700000092, name: "e92", type: 0 }
+          - { id: 700000093, name: "e93", type: 0 }
+          - { id: 700000094, name: "e94", type: 0 }
+          - { id: 700000095, name: "e95", type: 0 }
+          - { id: 700000096, name: "e96", type: 0 }
+          - { id: 700000097, name: "e97", type: 0 }
+          - { id: 700000098, name: "e98", type: 0 }
+          - { id: 700000099, name: "e99", type: 0 }
+          - { id: 700000100, name: "e100", type: 0 }
+          - { id: 700000101, name: "e101", type: 0 }
+          - { id: 700000102, name: "e102", type: 0 }
+          - { id: 700000103, name: "e103", type: 0 }
+          - { id: 700000104, name: "e104", type: 0 }
+          - { id: 700000105, name: "e105", type: 0 }
+          - { id: 700000106, name: "e106", type: 0 }
+          - { id: 700000107, name: "e107", type: 0 }
+          - { id: 700000108, name: "e108", type: 0 }
+          - { id: 700000109, name: "e109", type: 0 }
+          - { id: 700000110, name: "e110", type: 0 }
+          - { id: 700000111, name: "e111", type: 0 }
+          - { id: 700000112, name: "e112", type: 0 }
+          - { id: 700000113, name: "e113", type: 0 }
+          - { id: 700000114, name: "e114", type: 0 }
+          - { id: 700000115, name: "e115", type: 0 }
+          - { id: 700000116, name: "e116", type: 0 }
+          - { id: 700000117, name: "e117", type: 0 }
+          - { id: 700000118, name: "e118", type: 0 }
+          - { id: 700000119, name: "e119", type: 0 }
+          - { id: 700000120, name: "e120", type: 0 }
+          - { id: 700000121, name: "e121", type: 0 }
+          - { id: 700000122, name: "e122", type: 0 }
+          - { id: 700000123, name: "e123", type: 0 }
+          - { id: 700000124, name: "e124", type: 0 }
+          - { id: 700000125, name: "e125", type: 0 }
+          - { id: 700000126, name: "e126", type: 0 }
+          - { id: 700000127, name: "e127", type: 0 }
+          - { id: 700000128, name: "e128", type: 0 }
+          - { id: 700000129, name: "e129", type: 0 }
+          - { id: 700000130, name: "e130", type: 0 }
+          - { id: 700000131, name: "e131", type: 0 }
+          - { id: 700000132, name: "e132", type: 0 }
+          - { id: 700000133, name: "e133", type: 0 }
+          - { id: 700000134, name: "e134", type: 0 }
+          - { id: 700000135, name: "e135", type: 0 }
+          - { id: 700000136, name: "e136", type: 0 }
+          - { id: 700000137, name: "e137", type: 0 }
+          - { id: 700000138, name: "e138", type: 0 }
+          - { id: 700000139, name: "e139", type: 0 }
+          - { id: 700000140, name: "e140", type: 0 }
+          - { id: 700000141, name: "e141", type: 0 }
+          - { id: 700000142, name: "e142", type: 0 }
+          - { id: 700000143, name: "e143", type: 0 }
+          - { id: 700000144, name: "e144", type: 0 }
+          - { id: 700000145, name: "e145", type: 0 }
+          - { id: 700000146, name: "e146", type: 0 }
+          - { id: 700000147, name: "e147", type: 0 }
+          - { id: 700000148, name: "e148", type: 0 }
+          - { id: 700000149, name: "e149", type: 0 }
+          - { id: 700000150, name: "e150", type: 0 }
+    setup_db:
+      - { user_id: 700000001, key: "Last Active", value: 3001 }
+      - { user_id: 700000002, key: "Last Active", value: 3002 }
+      - { user_id: 700000003, key: "Last Active", value: 3003 }
+      - { user_id: 700000004, key: "Last Active", value: 3004 }
+      - { user_id: 700000005, key: "Last Active", value: 3005 }
+      - { user_id: 700000006, key: "Last Active", value: 3006 }
+      - { user_id: 700000007, key: "Last Active", value: 3007 }
+      - { user_id: 700000008, key: "Last Active", value: 3008 }
+      - { user_id: 700000009, key: "Last Active", value: 3009 }
+      - { user_id: 700000010, key: "Last Active", value: 3010 }
+      - { user_id: 700000011, key: "Last Active", value: 3011 }
+      - { user_id: 700000012, key: "Last Active", value: 3012 }
+      - { user_id: 700000013, key: "Last Active", value: 3013 }
+      - { user_id: 700000014, key: "Last Active", value: 3014 }
+      - { user_id: 700000015, key: "Last Active", value: 3015 }
+      - { user_id: 700000016, key: "Last Active", value: 3016 }
+      - { user_id: 700000017, key: "Last Active", value: 3017 }
+      - { user_id: 700000018, key: "Last Active", value: 3018 }
+      - { user_id: 700000019, key: "Last Active", value: 3019 }
+      - { user_id: 700000020, key: "Last Active", value: 3020 }
+      - { user_id: 700000021, key: "Last Active", value: 3021 }
+      - { user_id: 700000022, key: "Last Active", value: 3022 }
+      - { user_id: 700000023, key: "Last Active", value: 3023 }
+      - { user_id: 700000024, key: "Last Active", value: 3024 }
+      - { user_id: 700000025, key: "Last Active", value: 3025 }
+      - { user_id: 700000026, key: "Last Active", value: 3026 }
+      - { user_id: 700000027, key: "Last Active", value: 3027 }
+      - { user_id: 700000028, key: "Last Active", value: 3028 }
+      - { user_id: 700000029, key: "Last Active", value: 3029 }
+      - { user_id: 700000030, key: "Last Active", value: 3030 }
+      - { user_id: 700000031, key: "Last Active", value: 3031 }
+      - { user_id: 700000032, key: "Last Active", value: 3032 }
+      - { user_id: 700000033, key: "Last Active", value: 3033 }
+      - { user_id: 700000034, key: "Last Active", value: 3034 }
+      - { user_id: 700000035, key: "Last Active", value: 3035 }
+      - { user_id: 700000036, key: "Last Active", value: 3036 }
+      - { user_id: 700000037, key: "Last Active", value: 3037 }
+      - { user_id: 700000038, key: "Last Active", value: 3038 }
+      - { user_id: 700000039, key: "Last Active", value: 3039 }
+      - { user_id: 700000040, key: "Last Active", value: 3040 }
+      - { user_id: 700000041, key: "Last Active", value: 3041 }
+      - { user_id: 700000042, key: "Last Active", value: 3042 }
+      - { user_id: 700000043, key: "Last Active", value: 3043 }
+      - { user_id: 700000044, key: "Last Active", value: 3044 }
+      - { user_id: 700000045, key: "Last Active", value: 3045 }
+      - { user_id: 700000046, key: "Last Active", value: 3046 }
+      - { user_id: 700000047, key: "Last Active", value: 3047 }
+      - { user_id: 700000048, key: "Last Active", value: 3048 }
+      - { user_id: 700000049, key: "Last Active", value: 3049 }
+      - { user_id: 700000050, key: "Last Active", value: 3050 }
+      - { user_id: 700000051, key: "Last Active", value: 3051 }
+      - { user_id: 700000052, key: "Last Active", value: 3052 }
+      - { user_id: 700000053, key: "Last Active", value: 3053 }
+      - { user_id: 700000054, key: "Last Active", value: 3054 }
+      - { user_id: 700000055, key: "Last Active", value: 3055 }
+      - { user_id: 700000056, key: "Last Active", value: 3056 }
+      - { user_id: 700000057, key: "Last Active", value: 3057 }
+      - { user_id: 700000058, key: "Last Active", value: 3058 }
+      - { user_id: 700000059, key: "Last Active", value: 3059 }
+      - { user_id: 700000060, key: "Last Active", value: 3060 }
+      - { user_id: 700000061, key: "Last Active", value: 3061 }
+      - { user_id: 700000062, key: "Last Active", value: 3062 }
+      - { user_id: 700000063, key: "Last Active", value: 3063 }
+      - { user_id: 700000064, key: "Last Active", value: 3064 }
+      - { user_id: 700000065, key: "Last Active", value: 3065 }
+      - { user_id: 700000066, key: "Last Active", value: 3066 }
+      - { user_id: 700000067, key: "Last Active", value: 3067 }
+      - { user_id: 700000068, key: "Last Active", value: 3068 }
+      - { user_id: 700000069, key: "Last Active", value: 3069 }
+      - { user_id: 700000070, key: "Last Active", value: 3070 }
+      - { user_id: 700000071, key: "Last Active", value: 3071 }
+      - { user_id: 700000072, key: "Last Active", value: 3072 }
+      - { user_id: 700000073, key: "Last Active", value: 3073 }
+      - { user_id: 700000074, key: "Last Active", value: 3074 }
+      - { user_id: 700000075, key: "Last Active", value: 3075 }
+      - { user_id: 700000076, key: "Last Active", value: 3076 }
+      - { user_id: 700000077, key: "Last Active", value: 3077 }
+      - { user_id: 700000078, key: "Last Active", value: 3078 }
+      - { user_id: 700000079, key: "Last Active", value: 3079 }
+      - { user_id: 700000080, key: "Last Active", value: 3080 }
+      - { user_id: 700000081, key: "Last Active", value: 3081 }
+      - { user_id: 700000082, key: "Last Active", value: 3082 }
+      - { user_id: 700000083, key: "Last Active", value: 3083 }
+      - { user_id: 700000084, key: "Last Active", value: 3084 }
+      - { user_id: 700000085, key: "Last Active", value: 3085 }
+      - { user_id: 700000086, key: "Last Active", value: 3086 }
+      - { user_id: 700000087, key: "Last Active", value: 3087 }
+      - { user_id: 700000088, key: "Last Active", value: 3088 }
+      - { user_id: 700000089, key: "Last Active", value: 3089 }
+      - { user_id: 700000090, key: "Last Active", value: 3090 }
+      - { user_id: 700000091, key: "Last Active", value: 3091 }
+      - { user_id: 700000092, key: "Last Active", value: 3092 }
+      - { user_id: 700000093, key: "Last Active", value: 3093 }
+      - { user_id: 700000094, key: "Last Active", value: 3094 }
+      - { user_id: 700000095, key: "Last Active", value: 3095 }
+      - { user_id: 700000096, key: "Last Active", value: 3096 }
+      - { user_id: 700000097, key: "Last Active", value: 3097 }
+      - { user_id: 700000098, key: "Last Active", value: 3098 }
+      - { user_id: 700000099, key: "Last Active", value: 3099 }
+      - { user_id: 700000100, key: "Last Active", value: 3100 }
+      - { user_id: 700000101, key: "Last Active", value: 3101 }
+      - { user_id: 700000102, key: "Last Active", value: 3102 }
+      - { user_id: 700000103, key: "Last Active", value: 3103 }
+      - { user_id: 700000104, key: "Last Active", value: 3104 }
+      - { user_id: 700000105, key: "Last Active", value: 3105 }
+      - { user_id: 700000106, key: "Last Active", value: 3106 }
+      - { user_id: 700000107, key: "Last Active", value: 3107 }
+      - { user_id: 700000108, key: "Last Active", value: 3108 }
+      - { user_id: 700000109, key: "Last Active", value: 3109 }
+      - { user_id: 700000110, key: "Last Active", value: 3110 }
+      - { user_id: 700000111, key: "Last Active", value: 3111 }
+      - { user_id: 700000112, key: "Last Active", value: 3112 }
+      - { user_id: 700000113, key: "Last Active", value: 3113 }
+      - { user_id: 700000114, key: "Last Active", value: 3114 }
+      - { user_id: 700000115, key: "Last Active", value: 3115 }
+      - { user_id: 700000116, key: "Last Active", value: 3116 }
+      - { user_id: 700000117, key: "Last Active", value: 3117 }
+      - { user_id: 700000118, key: "Last Active", value: 3118 }
+      - { user_id: 700000119, key: "Last Active", value: 3119 }
+      - { user_id: 700000120, key: "Last Active", value: 3120 }
+      - { user_id: 700000121, key: "Last Active", value: 3121 }
+      - { user_id: 700000122, key: "Last Active", value: 3122 }
+      - { user_id: 700000123, key: "Last Active", value: 3123 }
+      - { user_id: 700000124, key: "Last Active", value: 3124 }
+      - { user_id: 700000125, key: "Last Active", value: 3125 }
+      - { user_id: 700000126, key: "Last Active", value: 3126 }
+      - { user_id: 700000127, key: "Last Active", value: 3127 }
+      - { user_id: 700000128, key: "Last Active", value: 3128 }
+      - { user_id: 700000129, key: "Last Active", value: 3129 }
+      - { user_id: 700000130, key: "Last Active", value: 3130 }
+      - { user_id: 700000131, key: "Last Active", value: 3131 }
+      - { user_id: 700000132, key: "Last Active", value: 3132 }
+      - { user_id: 700000133, key: "Last Active", value: 3133 }
+      - { user_id: 700000134, key: "Last Active", value: 3134 }
+      - { user_id: 700000135, key: "Last Active", value: 3135 }
+      - { user_id: 700000136, key: "Last Active", value: 3136 }
+      - { user_id: 700000137, key: "Last Active", value: 3137 }
+      - { user_id: 700000138, key: "Last Active", value: 3138 }
+      - { user_id: 700000139, key: "Last Active", value: 3139 }
+      - { user_id: 700000140, key: "Last Active", value: 3140 }
+      - { user_id: 700000141, key: "Last Active", value: 3141 }
+      - { user_id: 700000142, key: "Last Active", value: 3142 }
+      - { user_id: 700000143, key: "Last Active", value: 3143 }
+      - { user_id: 700000144, key: "Last Active", value: 3144 }
+      - { user_id: 700000145, key: "Last Active", value: 3145 }
+      - { user_id: 700000146, key: "Last Active", value: 3146 }
+      - { user_id: 700000147, key: "Last Active", value: 3147 }
+      - { user_id: 700000148, key: "Last Active", value: 3148 }
+      - { user_id: 700000149, key: "Last Active", value: 3149 }
+      - { user_id: 700000150, key: "Last Active", value: 3150 }
+    assertions:
+      sent_messages:
+        - { channel_id: 99, nth: 1, embed_title: "Channel activity", embed_contains: "<#700000201>" }
+
+  - name: "channel_activity: deleted-channel cleanup deletes exactly 6 of 8 stale entries, oldest first"
+    template: "../../../staff/channel_activity.gohtml"
+    context:
+      guild:
+        channels:
+          - { id: 800000100, name: "kept-eligible", type: 0 }
+    setup_db:
+      - { user_id: 800000001, key: "Last Active", value: 100 }
+      - { user_id: 800000002, key: "Last Active", value: 200 }
+      - { user_id: 800000003, key: "Last Active", value: 300 }
+      - { user_id: 800000004, key: "Last Active", value: 400 }
+      - { user_id: 800000005, key: "Last Active", value: 500 }
+      - { user_id: 800000006, key: "Last Active", value: 600 }
+      - { user_id: 800000007, key: "Last Active", value: 700 }
+      - { user_id: 800000008, key: "Last Active", value: 800 }
+      - { user_id: 800000100, key: "Last Active", value: 5000 }
+    assertions:
+      db_checks:
+        - { user_id: 800000001, key: "Last Active", not_exists: true }
+        - { user_id: 800000002, key: "Last Active", not_exists: true }
+        - { user_id: 800000003, key: "Last Active", not_exists: true }
+        - { user_id: 800000004, key: "Last Active", not_exists: true }
+        - { user_id: 800000005, key: "Last Active", not_exists: true }
+        - { user_id: 800000006, key: "Last Active", not_exists: true }
+        - { user_id: 800000007, key: "Last Active", value_equals: 700 }
+        - { user_id: 800000008, key: "Last Active", value_equals: 800 }
+        - { user_id: 800000100, key: "Last Active", value_equals: 5000 }
