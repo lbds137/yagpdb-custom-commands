@@ -10,8 +10,24 @@
 (function () {
   "use strict";
 
+  // Trailing-whitespace class: exactly Python's str.isspace() membership (this must match
+  // scripts/deploy-manifest.py's `text.rstrip()`, since Python is the manifest side of the
+  // live-panel-vs-manifest comparison), NOT JS's `\s` -- the two disagree (JS's \s includes
+  // U+FEFF, which isspace() doesn't; isspace() includes U+001C-001F and U+0085, which \s
+  // doesn't). Derived by running, in Python: `[hex(c) for c in range(0x110000) if
+  // chr(c).isspace()]`.
+  // eslint-disable-next-line no-control-regex -- U+001C-001F/U+0085 are load-bearing here.
+  var TRAILING_WHITESPACE = new RegExp(
+    "[" +
+      "\\u0009\\u000A\\u000B\\u000C\\u000D" +
+      "\\u001C\\u001D\\u001E\\u001F" +
+      "\\u0020\\u0085\\u00A0\\u1680" +
+      "\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000" +
+      "]+$"
+  );
+
   function normalize(s) {
-    return s.replace(/\r\n/g, "\n").replace(/\s+$/, "");
+    return s.replace(/\r\n/g, "\n").replace(TRAILING_WHITESPACE, "");
   }
 
   async function sha256hex(s) {
