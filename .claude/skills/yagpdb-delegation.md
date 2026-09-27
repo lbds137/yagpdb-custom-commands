@@ -18,7 +18,12 @@ the skill's PROJECT slots; the skill has the spec template and the transfer step
 
 Nothing to install: the Go module cache is shared, and `make ci` builds `bin/yagtest`
 itself. YAGPDB's source (`vendor/yagpdb/`) is gitignored, so it is absent from a worktree:
-read it at `/home/deck/Projects/yagpdb-custom-commands/vendor/yagpdb/`.
+read it at `/home/deck/Projects/yagpdb-custom-commands/vendor/yagpdb/`. Read it with
+plain cat/grep/diff: the worktree guard blocks git commands aimed at it. The same guard
+may refuse the step-0 base-check block as one command ("too complex"); then run its
+checks as separate plain commands, same four conditions.
+- `scripts/gen-yagpdb-funcs.sh` reads vendor from the main checkout's path, so a worker
+  can't run it; the driver runs it after transfer.
 
 ## Ceilings
 
