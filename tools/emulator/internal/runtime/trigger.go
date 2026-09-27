@@ -141,6 +141,30 @@ func (t Trigger) MessageTriggered() bool {
 	return false
 }
 
+// RoleTriggered reports whether the trigger runs the command on a role change (the control
+// panel's "Role Change" option; YAGPDB's CommandTriggerRole). No message starts such a run.
+func (t Trigger) RoleTriggered() bool {
+	return t.Type == "Role Change"
+}
+
+// disallowedExecCCType is YAGPDB's triggerStrings name for a trigger type execCC and
+// scheduleUniqueCC refuse (customcommands/tmplextensions.go, customcommands.go
+// triggerStrings): "Interval" (both hourly and minute intervals share CommandTriggerInterval),
+// "Crontab", or "Role". ok is false for any other (allowed) trigger type.
+func (t Trigger) disallowedExecCCType() (name string, ok bool) {
+	switch {
+	case t.Scheduled():
+		typ := strings.ToLower(t.Type)
+		if strings.HasSuffix(typ, "interval") {
+			return "Interval", true
+		}
+		return "Crontab", true
+	case t.RoleTriggered():
+		return "Role", true
+	}
+	return "", false
+}
+
 // CheckMatch is YAGPDB's customcommands.CheckMatch: whether msg triggers the command, the
 // message after the trigger, and the arguments (the first being the message up to and
 // including the trigger). prefix is the server's command prefix.
