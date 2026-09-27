@@ -50,7 +50,9 @@ read it at `/home/deck/Projects/yagpdb-custom-commands/vendor/yagpdb/`.
   Workers broke this twice on 2026-09-27 despite the spec; say it in the dispatch prompt too.
 - Long fixture strings (thousands of characters) are generated with the shell
   (`printf 'x%.0s' $(seq 1 2100)`) and appended in small pieces: a worker typing one out hit
-  the 64k output-token cap and died mid-unit.
+  the 64k output-token cap and died mid-unit. A second worker did the same with this
+  line in its spec, so any unit that needs long fixtures puts the `printf ... >> file`
+  recipe in the dispatch prompt itself, plus "view fixture files through `cut -c1-200`".
 - A typed nil in an `interface{}` is not `== nil` (template data and function returns).
 - Mutation checks: confirm the suite is green first, and check each mutant compiles
   (a build failure isn't a kill).
