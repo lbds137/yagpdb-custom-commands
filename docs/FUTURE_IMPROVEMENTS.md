@@ -250,9 +250,15 @@ gets a failing test first.
   `go ExecuteCustomCommand`), so the caller most likely reads first (inferred, not
   probed), but a caller that sleeps can see the child's messages there.
 - `editMessage` gaps: a stored message keeps its embeds but no file, so edits of file
-  messages can differ; message builders read keys as a map, so a
-  repeated key (two `"embed"`s) counts once. A test message is the bot's to edit only
-  with `author_id: 1234567890`.
+  messages can differ. A test message is the bot's to edit only with
+  `author_id: 1234567890`, and no message is ever `.Pinned` (pins aren't modelled).
+  `editMessage` counts any sticker or forward key of a complexMessage as keeping the edit
+  non-empty, though YAGPDB's ToMessageEdit drops them (only components carry over).
+- Deferred (found 2026-09-27): `sendDM` takes its message as a string only (engine.go
+  `sendDM`, ToString), but c579722's tmplSendDM runs it through parseMessageInput
+  (context_funcs.go:74-86): it takes an embed or a complexMessage, and sends nothing for a
+  message with no content, embed, file or components. Promote when a command sendDMs an
+  embed or a complexMessage (none does today).
 - A LIKE pattern is matched against the rows the query's other conditions select, so the
   trailing-escape error comes only from a row whose match reaches the escape. Postgres
   also runs LIKE while planning, on the key column's statistics (every server's keys),
@@ -281,7 +287,7 @@ gets a failing test first.
   `hasAnyPermissions`, `targetHasAnyPermissions`, `memberAbove`, `memberAboveRole`;
   components.go grew. Do this BEFORE the emulator components unit ("Interactive UX").
   Analysis 2026-09-27 (read-only, c579722 line numbers) split the port into units after
-  the lib/template re-sync (shipped 9e12156): (1) message builders: complexMessageEdit =
+  the lib/template re-sync (shipped 9e12156): (1) message builders (shipped): complexMessageEdit =
   complexMessage (general.go:263, returns *MessageSend, error text "send message builder"),
   editMessage on parseMessageInput (context_funcs.go:32-70, 457; accepts MessageSend, no
   null check, an embed-only edit sends content "" — pin with a test), a repeated "embed" key

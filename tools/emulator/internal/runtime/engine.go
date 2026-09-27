@@ -117,7 +117,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		// Message builders (YAGPDB's build Discord structs)
 		"cembed":             e.cembed,
 		"complexMessage":     e.complexMessage,
-		"complexMessageEdit": e.complexMessageEdit,
+		"complexMessageEdit": e.complexMessage, // both CreateComplexMessage (context.go:113-114)
 		"sendTemplate":       e.sendTemplate,
 
 		// Control flow
@@ -266,16 +266,60 @@ func (e *Engine) sendMessageNoEscape(args ...interface{}) (string, error) {
 	return e.send("sendMessageNoEscape", false, args...)
 }
 
+// parseMessageInput is YAGPDB's (context_funcs.go:32-70): what the send and edit functions
+// make of their message argument. An embed read back from a message is a *MessageEmbed
+// (discordgo's), cembed's result a types.Embed. YAGPDB's *InteractionResponseData and
+// *ComponentBuilder cases aren't here: the emulator has neither type (no interactions, no
+// componentBuilder), so such a value can't reach this.
+func parseMessageInput(msg interface{}) *types.MessageSend {
+	msgSend := &types.MessageSend{AllowedMentions: usersOnly()}
+
+	switch typedMsg := msg.(type) {
+	case types.Embed:
+		msgSend.Embeds = []interface{}{typedMsg}
+	case *types.MessageEmbed:
+		msgSend.Embeds = []interface{}{embedOrNil(typedMsg)}
+	case []*types.MessageEmbed:
+		if typedMsg != nil {
+			msgSend.Embeds = make([]interface{}, 0, len(typedMsg))
+		}
+		for _, embed := range typedMsg {
+			msgSend.Embeds = append(msgSend.Embeds, embedOrNil(embed))
+		}
+	case *types.MessageSend:
+		msgSend = typedMsg
+	default:
+		msgSend.Content = funcs.ToString(msg)
+	}
+
+	if !msgSend.ComponentsV2 && len(msgSend.Embeds) > 0 {
+		// only keep valid embeds (YAGPDB also drops GetMarshalNil ones, which no template
+		// function makes)
+		var embeds []interface{}
+		for _, embed := range msgSend.Embeds {
+			if embed != nil {
+				embeds = append(embeds, embed)
+			}
+		}
+		msgSend.Embeds = embeds
+	}
+
+	return msgSend
+}
+
+// embedOrNil converts a discordgo-shaped embed to an Embed, keeping a nil one an untyped
+// nil (a typed nil in an interface{} is not == nil) so parseMessageInput drops it.
+func embedOrNil(embed *types.MessageEmbed) interface{} {
+	if embed == nil {
+		return nil
+	}
+	return types.EmbedMap(embed)
+}
+
 // send is YAGPDB's tmplSendMessage; filterSpecialMentions keeps roles and @everyone from
 // pinging unless a complexMessage allows them.
 func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}) (string, error) {
 	var channelID int64 = e.ctx.ChannelID
-	var content string
-	var embeds []interface{}
-	var file *types.MessageSend
-	var hasOther bool
-	var replyTo int64
-	allowed := usersOnly()
 
 	e.lastMessageID = 0 // nothing sent yet
 	if len(args) >= 1 {
@@ -284,30 +328,15 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 			return "", nil
 		}
 	}
+	msgSend := &types.MessageSend{AllowedMentions: usersOnly()}
 	if len(args) >= 2 {
-		switch v := args[1].(type) {
-		case string:
-			content = v
-		case *types.MessageSend:
-			content = v.Content
-			embeds = v.Embeds
-			if v.HasFile {
-				file = v
-			}
-			hasOther = v.HasOther
-			allowed = v.AllowedMentions
-			replyTo = v.ReplyTo
-		case types.Embed:
-			embeds = []interface{}{v}
-		// an embed read back from a message (tmplSendMessage takes *discordgo.MessageEmbed
-		// and []*discordgo.MessageEmbed)
-		case *types.MessageEmbed:
-			embeds = []interface{}{types.EmbedMap(v)}
-		case []*types.MessageEmbed:
-			embeds = types.EmbedMaps(v)
-		default:
-			content = funcs.ToString(v)
-		}
+		msgSend = parseMessageInput(args[1])
+	}
+	content, embeds, hasOther := msgSend.Content, msgSend.Embeds, msgSend.HasOther
+	allowed, replyTo := msgSend.AllowedMentions, msgSend.ReplyTo
+	var file *types.MessageSend
+	if msgSend.HasFile {
+		file = msgSend
 	}
 
 	if !filterSpecialMentions {
@@ -363,30 +392,18 @@ func (e *Engine) sendDM(msg interface{}) (string, error) {
 // editMessage is YAGPDB's editMessage: it edits a message the bot sent, and Discord's
 // limits apply to the edited message as they do to a sent one. Editing a message that
 // doesn't exist, or someone else's, fails as Discord fails it.
+//
+// As tmplEditMessage (context_funcs.go:440-470) it takes any message input
+// (parseMessageInput) and edits with msgSend.ToMessageEdit(), which always sets the
+// content (lib/discordgo/message.go:683-690): an edit without content clears the old
+// text. Embeds are sent only when non-nil (MessageEdit.MarshalJSON), so nil keeps them.
 func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	channelID := e.channelArg(channel) // ChannelArgNoDM
 	if channelID == 0 {
 		return "", errors.New("unknown channel")
 	}
 
-	var change types.MessageEdit
-	switch m := msg.(type) {
-	case *types.MessageEdit:
-		change = *m
-		// YAGPDB's own check, before Discord sees the edit
-		if !m.ComponentsV2 && m.Content != nil && strings.TrimSpace(*m.Content) == "" && len(m.Embeds) == 0 {
-			return "", errors.New("both content and embed cannot be null")
-		}
-	case types.Embed:
-		change.Embeds = []interface{}{m}
-	case *types.MessageEmbed: // tmplEditMessage takes these too
-		change.Embeds = []interface{}{types.EmbedMap(m)}
-	case []*types.MessageEmbed:
-		change.Embeds = types.EmbedMaps(m)
-	default:
-		content := fmt.Sprint(msg)
-		change.Content = &content
-	}
+	change := parseMessageInput(msg)
 
 	id := funcs.ToInt64(msgID)
 	target := e.ctx.knownMessage(channelID, id)
@@ -399,10 +416,7 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 			fmt.Sprintf("message %d is by user %d", id, target.Author.ID))
 	}
 
-	content, embeds := target.Content, types.EmbedMaps(target.Embeds)
-	if change.Content != nil {
-		content = *change.Content
-	}
+	content, embeds := change.Content, types.EmbedMaps(target.Embeds)
 	if change.Embeds != nil {
 		embeds = change.Embeds
 	}
@@ -593,9 +607,39 @@ func toEmbed(args ...interface{}) (types.Embed, error) {
 	return types.BuildEmbed(d)
 }
 
-// complexMessage follows YAGPDB's CreateMessageSend (common/templates/general.go): known keys
-// are case-insensitive, an unknown key is an error, "embed" takes one embed or a slice of
-// up to 10, and a file gets a .txt name.
+// builderPairs is YAGPDB's CreateComponentBuilder (general.go:117-175) as
+// CreateComplexMessage reads it: one map's entries (in map order, as there), or the
+// key-value pairs in order, a repeated key kept each time. Its *ComponentBuilder
+// argument isn't modelled (no componentBuilder).
+func builderPairs(values ...interface{}) (keys []string, vals []interface{}, err error) {
+	if len(values) == 1 {
+		// The one-map case reads the map as StringKeyDictionary does, with its errors
+		dict, err := yagstd.StringKeyDictionary(values...)
+		if err != nil {
+			return nil, nil, err
+		}
+		for key, val := range dict {
+			keys, vals = append(keys, key), append(vals, val)
+		}
+		return keys, vals, nil
+	}
+	if len(values)%2 != 0 {
+		return nil, nil, errors.New("invalid dict call")
+	}
+	for i := 0; i < len(values); i += 2 {
+		s, ok := values[i].(string)
+		if !ok {
+			return nil, nil, errors.New("Only string keys supported in sdict")
+		}
+		keys, vals = append(keys, s), append(vals, values[i+1])
+	}
+	return keys, vals, nil
+}
+
+// complexMessage is YAGPDB's CreateComplexMessage (common/templates/general.go:263), which
+// complexMessageEdit is too (context.go:113-114): known keys are case-insensitive and read
+// in order, an unknown key is an error, "embed" takes one embed or a slice of up to 10 and
+// replaces any earlier "embed", and a file gets a .txt name.
 func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error) {
 	if len(args) < 1 {
 		return &types.MessageSend{}, nil
@@ -603,15 +647,16 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 	if m, ok := args[0].(*types.MessageSend); len(args) == 1 && ok {
 		return m, nil
 	}
-	// Keys and values as YAGPDB's StringKeyDictionary reads them (one sdict, or pairs)
-	dict, err := yagstd.StringKeyDictionary(args...)
+	keys, vals, err := builderPairs(args...)
 	if err != nil {
 		return nil, err
 	}
 
 	msg := &types.MessageSend{AllowedMentions: usersOnly()}
 	filename := "attachment_" + e.ctx.Now().Format("2006-01-02_15-04-05")
-	for key, val := range dict {
+	for i, key := range keys {
+		val := vals[i]
+
 		switch strings.ToLower(key) {
 		case "content":
 			msg.Content = funcs.ToString(val)
@@ -619,6 +664,7 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 			if val == nil {
 				continue
 			}
+			msg.Embeds = make([]interface{}, 0)
 			rv := reflect.ValueOf(val)
 			for rv.Kind() == reflect.Pointer {
 				rv = rv.Elem()
@@ -670,7 +716,12 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 				return nil, fmt.Errorf("invalid message id '%s' provided to reply.", funcs.ToString(val))
 			}
 			msg.ReplyTo = msgID
-		case "silent", "ephemeral", "suppress_embeds", "is_components_v2":
+		case "is_components_v2":
+			if val == nil || val == false {
+				continue
+			}
+			msg.ComponentsV2 = true
+		case "silent", "ephemeral", "suppress_embeds":
 			// Accepted; the emulator doesn't model these
 		default:
 			return nil, fmt.Errorf(`invalid key "%s" passed to send message builder.`, key)
@@ -678,64 +729,6 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 	}
 	if msg.HasFile {
 		msg.Filename = filename + ".txt"
-	}
-	return msg, nil
-}
-
-// complexMessageEdit is YAGPDB's CreateMessageEdit: content and embeds, with the keys it
-// accepts but the emulator doesn't model.
-func (e *Engine) complexMessageEdit(args ...interface{}) (*types.MessageEdit, error) {
-	if len(args) < 1 {
-		return &types.MessageEdit{}, nil
-	}
-	if m, ok := args[0].(*types.MessageEdit); len(args) == 1 && ok {
-		return m, nil
-	}
-	dict, err := yagstd.StringKeyDictionary(args...)
-	if err != nil {
-		return nil, err
-	}
-
-	msg := &types.MessageEdit{}
-	for key, val := range dict {
-		switch strings.ToLower(key) {
-		case "content":
-			temp := fmt.Sprint(val)
-			msg.Content = &temp
-		case "embed":
-			if val == nil {
-				continue
-			}
-			rv := reflect.ValueOf(val)
-			for rv.Kind() == reflect.Pointer {
-				rv = rv.Elem()
-			}
-			if rv.Kind() == reflect.Slice {
-				for j := 0; j < rv.Len() && j < 10; j++ {
-					embed, err := toEmbed(rv.Index(j).Interface())
-					if err != nil {
-						return nil, err
-					}
-					msg.Embeds = append(msg.Embeds, embed)
-				}
-			} else {
-				embed, err := toEmbed(val)
-				if err != nil {
-					return nil, err
-				}
-				msg.Embeds = append(msg.Embeds, embed)
-			}
-		case "components", "buttons", "menus":
-			if val != nil {
-				msg.HasOther = true
-			}
-		case "is_components_v2":
-			msg.ComponentsV2 = val != nil && val != false
-		case "silent", "allowed_mentions", "suppress_embeds":
-			// Accepted; the emulator doesn't model these
-		default:
-			return nil, errors.New(`invalid key "` + key + `" passed to message edit builder`)
-		}
 	}
 	return msg, nil
 }

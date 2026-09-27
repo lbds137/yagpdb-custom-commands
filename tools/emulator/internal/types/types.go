@@ -416,6 +416,9 @@ type CtxMessage struct {
 	EditedTimestamp Timestamp // "" until edited
 	Attachments     []interface{}
 	Embeds          []*MessageEmbed // as discordgo.Message holds them
+	// Pinned is dstate.MessageState's (lib/dstate/interface.go:425): the emulator doesn't
+	// model pins, so it is always false
+	Pinned bool
 }
 
 // Link is discordgo's Message.Link. A value receiver, so it works on the mocks' values and
@@ -452,12 +455,16 @@ func (e CtxEmoji) APIName() string {
 	return fmt.Sprint(e.ID)
 }
 
-// MessageSend stands in for the *discordgo.MessageSend that YAGPDB's complexMessage builds.
+// MessageSend stands in for the *discordgo.MessageSend that YAGPDB's complexMessage and
+// complexMessageEdit build (both are CreateComplexMessage, context.go:113-114), and that
+// its send and edit functions make of any message input (parseMessageInput).
 type MessageSend struct {
-	Content  string
-	Embeds   []interface{} // each as cembed built it
-	File     string        // attached file contents, if any
-	Filename string        // with YAGPDB's forced .txt extension
+	Content string
+	// Embeds are each as cembed built it. Nil and empty differ for an edit, as in
+	// discordgo's MessageEdit: nil leaves the message's embeds alone, empty clears them.
+	Embeds   []interface{}
+	File     string // attached file contents, if any
+	Filename string // with YAGPDB's forced .txt extension
 	HasFile  bool
 	// HasOther is set by keys that make a message non-empty without content, embeds or a
 	// file: buttons, menus, components, a sticker or a forward (not otherwise modelled).
@@ -467,6 +474,9 @@ type MessageSend struct {
 	// ReplyTo is complexMessage's "reply": the ID of the message this replies to, in the
 	// channel it's sent to
 	ReplyTo int64
+	// ComponentsV2 is the is_components_v2 flag (MessageFlagsIsComponentsV2), with which
+	// parseMessageInput keeps nil embeds
+	ComponentsV2 bool
 }
 
 // AllowedMentions stands in for discordgo.AllowedMentions: Parse holds "users", "roles"
@@ -476,16 +486,6 @@ type AllowedMentions struct {
 	Users       []int64
 	Roles       []int64
 	RepliedUser bool
-}
-
-// MessageEdit is what complexMessageEdit builds (YAGPDB's CreateMessageEdit): only the
-// fields it sets change. Content is nil when the edit leaves it alone.
-type MessageEdit struct {
-	Content  *string
-	Embeds   []interface{} // each as cembed built it; nil leaves the embeds alone
-	HasOther bool          // components, buttons or menus (not otherwise modelled)
-	// ComponentsV2 is the is_components_v2 flag, which skips YAGPDB's empty-edit check
-	ComponentsV2 bool
 }
 
 // Embed is what cembed builds: the dict after YAGPDB's conversion to a Discord embed

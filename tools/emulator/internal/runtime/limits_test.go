@@ -580,16 +580,20 @@ func TestEditMessage(t *testing.T) {
 	}{
 		{"content only keeps the embed", send + `{{editMessage nil $id "b"}}{{$m := getMessage nil $id}}{{$m.Content}} {{len $m.Embeds}}`, true, "", "b 1"},
 		{"an edit can clear the content", send + `{{editMessage nil $id (complexMessageEdit "content" "" "embed" (cembed "title" "U"))}}{{(getMessage nil $id).Content}}|`, true, "", "|"},
-		// YAGPDB checks the edit alone, so this fails even though the message has an embed
-		{"YAGPDB refuses blank content and no embed", send + `{{editMessage nil $id (complexMessageEdit "content" " ")}}`, false, "both content and embed cannot be null", ""},
-		{"a number is printed as YAGPDB prints it", send + `{{editMessage nil $id 1.5}}{{(getMessage nil $id).Content}}`, true, "", "1.5"},
-		{"an embed alone keeps the content", send + `{{editMessage nil $id (cembed "title" "U")}}{{(getMessage nil $id).Content}}`, true, "", "a"},
-		{"components v2 skips YAGPDB's check", send + `{{editMessage nil $id (complexMessageEdit "content" "" "is_components_v2" true)}}`, false, "", ""},
+		// c579722 dropped YAGPDB's "both content and embed cannot be null" check: the
+		// edit clears the content and the message keeps its embed
+		{"no content and no embed keeps the embed", send + `{{editMessage nil $id (complexMessageEdit "content" "")}}{{len (getMessage nil $id).Embeds}}`, true, "", "1"},
+		// parseMessageInput's ToString, which prints a float64 with 'E'
+		{"a number is printed as YAGPDB prints it", send + `{{editMessage nil $id 1.5}}{{(getMessage nil $id).Content}}`, true, "", "1.5E+00"},
+		// ToMessageEdit always sends the content, "" here
+		{"an embed alone clears the content", send + `{{editMessage nil $id (cembed "title" "U")}}{{(getMessage nil $id).Content}}|`, true, "", "|"},
+		{"is_components_v2 is accepted", send + `{{editMessage nil $id (complexMessageEdit "content" "" "is_components_v2" true)}}`, false, "", ""},
 		{"unknown message", `{{editMessage nil 42 "x"}}`, true, `"code": 10008`, ""},
 		{"a message in another channel", send + `{{editMessage 99 $id "x"}}`, true, `"code": 10008`, ""},
 		{"someone else's message", `{{editMessage nil 7 "x"}}`, true, "50005", ""},
 		{"too long", send + `{{editMessage nil $id (printf "%2001s" "x")}}`, true, "HTTP 400", ""},
-		{"unknown key", `{{complexMessageEdit "file" "x"}}`, false, `invalid key "file" passed to message edit builder`, ""},
+		// complexMessageEdit is CreateComplexMessage, with its error text
+		{"unknown key", `{{complexMessageEdit "contnet" "x"}}`, false, `invalid key "contnet" passed to send message builder.`, ""},
 	}
 	for _, c := range cases {
 		ctx := newCtx(c.strict, true)
