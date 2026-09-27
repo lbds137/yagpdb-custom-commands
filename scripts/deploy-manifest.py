@@ -15,6 +15,14 @@ any mapped file differs between the working tree and HEAD, unless
 DEPLOY_MANIFEST_SKIP_DIRTY_CHECK=1 (also test-only: it then hashes the working tree
 instead of HEAD, so `make ci` can run it mid-edit, including for a command not yet
 committed).
+
+Usage: scripts/deploy-manifest.py --hash <file>   (or `--hash -` to read stdin as UTF-8)
+
+Test/tooling mode: prints sha256_hex(normalize(content)) for the given file (or stdin)
+using this script's own normalize() and sha256_hex(), with no other behavior change.
+This is what deploy/deploy.test.js shells out to, to check deploy.js's independent JS
+normalize/sha256hex implementation for parity with this script's, on both real command
+files and synthetic edge-case strings.
 """
 import hashlib
 import json
@@ -56,6 +64,16 @@ def working_tree_matches_head(path: str) -> bool:
 
 
 def main() -> int:
+    if len(sys.argv) > 2 and sys.argv[1] == "--hash":
+        target = sys.argv[2]
+        if target == "-":
+            content = sys.stdin.read()
+        else:
+            with open(target, encoding="utf-8") as f:
+                content = f.read()
+        print(sha256_hex(normalize(content)))
+        return 0
+
     if len(sys.argv) > 1:
         server = sys.argv[1]
     else:

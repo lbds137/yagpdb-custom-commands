@@ -13,8 +13,31 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { webcrypto } = require("node:crypto");
+const { spawnSync } = require("node:child_process");
 
 const REPO_ROOT = path.join(__dirname, "..");
+
+// Shells out to scripts/deploy-manifest.py's own --hash mode (its own normalize() +
+// sha256_hex(), see that file's docstring), so this test is checking deploy.js's
+// independent JS implementation against the Python source of truth, not against a second
+// copy of the same expectation.
+function pythonHash(input) {
+  const result = spawnSync(
+    "python3",
+    ["scripts/deploy-manifest.py", "--hash", input.fromStdin ? "-" : input.path],
+    {
+      cwd: REPO_ROOT,
+      input: input.fromStdin ? input.text : undefined,
+      encoding: "utf8",
+    }
+  );
+  assert.equal(
+    result.status,
+    0,
+    `deploy-manifest.py --hash failed: ${result.stderr || result.error}`
+  );
+  return result.stdout.trim();
+}
 
 function loadDeployJs() {
   const code = fs.readFileSync(path.join(__dirname, "deploy.js"), "utf8");
@@ -30,33 +53,50 @@ function loadDeployJs() {
   return sandbox.window.yagDeploy;
 }
 
-// Expected shas: computed directly with scripts/deploy-manifest.py's own normalize()
-// (`text.replace("\r\n","\n").rstrip()`) + `hashlib.sha256(...).hexdigest()` against the
-// files at HEAD (2026-09-27, commit 680b48a) -- NOT re-derived from deploy.js. This is the
-// parity check: deploy.js's independent JS implementation must land on the same digests.
-const PARITY_CASES = [
-  {
-    // Recomputed 2026-09-27 (retire-kb): define.gohtml gained the kb-alias sdict.
-    path: "everyone/knowledge/define.gohtml",
-    sha256: "79d649eaead85457935e1cc1886555a64add4847453f5f6e3f7337cdf3a01a73",
-  },
-  {
-    path: "staff/rules.gohtml",
-    sha256: "5b5ae100902d97a0a181e9df99c511367b9f31c36f4d8c565577e3bc8e470ad7",
-  },
-  {
-    // Has Hebrew text -- exercises UTF-8 encoding parity, not just ASCII.
-    path: "everyone/hebrew/alefbet.gohtml",
-    sha256: "daba3c53b5344ab11614e95f9854062a74a7213646345f5107888fc154025575",
-  },
+// Real command files the parity test hashes both ways (deploy.js's JS implementation vs.
+// scripts/deploy-manifest.py's --hash mode) and compares -- no pinned constants, so an edit
+// to any of these files never breaks this test on its own (only a real normalize/hash
+// disagreement would).
+const PARITY_FILES = [
+  "everyone/knowledge/define.gohtml",
+  "staff/rules.gohtml",
+  // Has Hebrew text -- exercises UTF-8 encoding parity, not just ASCII.
+  "everyone/hebrew/alefbet.gohtml",
+  "everyone/services/embed_exec.gohtml",
 ];
 
 test("normalize/sha256hex match the Python manifest normalization for real command files", async () => {
   const yagDeploy = loadDeployJs();
-  for (const { path: relPath, sha256 } of PARITY_CASES) {
+  for (const relPath of PARITY_FILES) {
     const raw = fs.readFileSync(path.join(REPO_ROOT, relPath), "utf8");
     const jsHash = await yagDeploy.sha256hex(yagDeploy.normalize(raw));
-    assert.equal(jsHash, sha256, `sha256hex(normalize()) mismatch for ${relPath}`);
+    const pyHash = pythonHash({ path: relPath });
+    assert.equal(jsHash, pyHash, `sha256hex(normalize()) mismatch for ${relPath}`);
+  }
+});
+
+// Synthetic edge cases for the trailing-whitespace strip: Python's str.rstrip() (with no
+// argument) strips characters where str.isspace() is true, and JS's `\s` character class
+// doesn't have the same membership -- notably JS's \s includes U+FEFF (BOM/zero-width
+// no-break space) while Python's isspace() does not, and Python's isspace() includes the
+// C0 separators U+001C-001F and U+0085 (NEL) while JS's \s does not. Both include U+00A0 and
+// U+2028. deploy.js's normalize() must match Python's set exactly, since deploy-manifest.py
+// (Python) is the manifest side of the live-panel-vs-manifest comparison.
+const EDGE_CASES = [
+  { label: "CRLF line endings", text: "line one\r\nline two\r\n" },
+  { label: "trailing spaces+tabs+newlines", text: "payload  \t \n\n  \t\n" },
+  { label: "Hebrew text", text: "שלום עולם\n" },
+  { label: "trailing U+00A0 (no-break space)", text: "payload " },
+  { label: "trailing U+FEFF (BOM/zero-width no-break space)", text: "payload﻿" },
+  { label: "trailing U+2028 (line separator)", text: "payload " },
+];
+
+test("normalize matches Python's rstrip()/isspace() exactly on synthetic edge cases", async () => {
+  const yagDeploy = loadDeployJs();
+  for (const { label, text } of EDGE_CASES) {
+    const jsHash = await yagDeploy.sha256hex(yagDeploy.normalize(text));
+    const pyHash = pythonHash({ fromStdin: true, text });
+    assert.equal(jsHash, pyHash, `normalize() disagreement for: ${label}`);
   }
 });
 
