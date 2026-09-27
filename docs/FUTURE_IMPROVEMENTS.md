@@ -6,6 +6,9 @@ This document tracks potential enhancements for the YAGPDB custom commands proje
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- The 2026-09-27 command review (`docs/COMMAND_REVIEW.md`, "Bugs found") lists four more:
+  a deleted middle rule hides the last rule, simple_db_lookup can't read `Commands`,
+  `db dump` skips `Staff` and `Inactivity Prune`, and contrasts drops colors silently.
 - The Global "ExecCC Limit" setting (bootstrap default 10) is trusted as is: YAGPDB allows
   10 execCC calls per run on premium (1 on a free server), counted together with
   scheduleUniqueCC, so a setting above that makes rules, contrasts, hugemoji and pyramid
