@@ -482,8 +482,8 @@ class YAGPDBLinter:
         """Lint all .gohtml files in a directory"""
         path = Path(directory)
         # Top-level folders that hold no custom commands: emulator fixtures, the YAGPDB
-        # source, git internals
-        skip_dirs = {"tools", "vendor", ".git"}
+        # source, git internals, and agent worktrees (whole repo copies under .claude/)
+        skip_dirs = {"tools", "vendor", ".git", ".claude"}
 
         for gohtml_file in path.rglob("*.gohtml"):
             parts = gohtml_file.relative_to(path).parts
