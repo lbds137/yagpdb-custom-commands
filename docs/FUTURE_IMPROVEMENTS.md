@@ -44,7 +44,10 @@ picks, then the minifier.
   50; live panel lists Slash Command / User and Message Context Menu types, checked
   2026-09-27).
   Group related commands into one slash command with subcommands where they belong
-  together (Lila 2026-09-27), e.g. `/hebrew gematria|atbash|alefbet|pyramid|random`,
+  together (Lila 2026-09-27), e.g. `/hebrew atbash|alefbet|pyramid|random` with
+  `/gematria` on its own or under a broader root (gematria is multi-script: digits,
+  Hebrew, Phoenician, Greek incl. polytonic, Latin, Arabic abjad —
+  staff/gematria_bootstrap.gohtml; so not under /hebrew),
   `/color contrast|contrasts|random|hex`, staff tools under a few roots. Constraints:
   YAGPDB supports ONE level of subcommands (handle_slashcommand.go:125-140; no
   subcommand groups), up to 10 per command free / 25 premium (customcommands.go:
@@ -314,6 +317,16 @@ gets a failing test first.
   blank message from the joining member, which an execCC from it would inherit).
 
 ## Tooling defects
+
+- Proposed (2026-09-27, Lila asked whether the bootstrap's hand-set dicts are silly;
+  awaiting her pick): keep config in a few DB dicts (one dbGet each fits the free tier's
+  10 DB calls per run), but stop typing IDs by hand. (1) The `Commands` dict comes from
+  deploy/panel.json, which already holds every command's panel id: the deploy tool
+  generates a one-shot config command (dbSet "Commands" …) from it after each deploy,
+  replacing bootstrap's embed_exec/db arguments and every `simple_db_edit Commands …`
+  step (today: channel_activity_pager). (2) Role and channel IDs come from a `/setup`
+  slash command with Discord's role/channel pickers once slash commands land (resolving
+  by name at runtime breaks on a rename, so IDs stay stored).
 
 - Shipped (8aa3b70): deploy/deploy.test.js no longer pins the sha256 of real command
   files; the parity test computes the Python-normalized hash at test time (spawnSync
