@@ -233,13 +233,19 @@ The following tools are generally safe to use without explicit permission:
 
 ### Deployment
 
-YAGPDB has no API for custom commands: the owner copies each changed `.gohtml` file into
-the YAGPDB control panel by hand. `make changed-since-deploy` lists the command files that
-changed since the `deployed` git tag; after pasting them, move the tag with
-`make mark-deployed`.
+YAGPDB has no API for custom commands. The primary path is `.claude/skills/yagpdb-deploy.md`:
+Claude drives a Claude-in-Chrome browser tab in the owner's logged-in session and pastes each
+command's exact committed bytes via a form POST, verified by hash before and after. Use it
+when Claude-in-Chrome is available.
+
+Fallback (also what the skill's dry run reports for the owner to review): the owner copies
+each changed `.gohtml` file into the YAGPDB control panel by hand. `make changed-since-deploy`
+lists the command files that changed since the `deployed` git tag; after pasting them, move
+the tag with `make mark-deployed`.
 
 The owner pastes in one batch when a round of work is finished, not after each fix. Don't
-ask for pastes mid-work; when the work is done, report the `make changed-since-deploy` list.
+ask for pastes mid-work; when the work is done, report the `make changed-since-deploy` list
+(or, when using the skill, its dry-run and live-run statuses).
 
 ### Tools Requiring Approval
 The following operations should be discussed before executing:

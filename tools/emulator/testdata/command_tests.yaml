@@ -91,7 +91,7 @@ setup_db:
 command_map:
   123: "../../../everyone/services/embed_exec.gohtml"
   124: "../../../everyone/hebrew/gematria.gohtml"
-  125: "../../../everyone/links/message_link.gohtml"
+  125: "../../../retired/message_link.gohtml"
   126: "../../../everyone/services/db_get_embed.gohtml"
   127: "../../../everyone/services/db_get_text.gohtml"
   128: "../../../everyone/color/contrast.gohtml"

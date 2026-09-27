@@ -17,6 +17,11 @@ jobs:
           go-version: "1.27"
           cache-dependency-path: tools/emulator/go.sum
 
+      - uses: actions/setup-node@v5
+        with:
+          # Same major version as the dev machine (mise), for deploy/deploy.test.js
+          node-version: "24"
+
       # Go vet + unit tests, template tests (CI=true makes a missing snapshot fail),
-      # the command linter, and a gofmt check
+      # the command linter, the deploy tooling tests, and a gofmt check
       - run: make ci

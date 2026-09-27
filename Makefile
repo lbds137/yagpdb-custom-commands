@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed
+.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -52,7 +52,7 @@ watch: build-emulator ## Rerun template tests whenever a command or test changes
 # As on GitHub (which sets CI): a missing or stale snapshot fails instead of being written
 # or only warned about
 ci: export CI := true
-ci: test-go test test-templates lint ## Everything CI runs
+ci: test-go test test-templates lint test-deploy ## Everything CI runs
 	@echo "🔍 Checking Go formatting..."
 	@test -z "$$(gofmt -l tools/emulator)" || (gofmt -l tools/emulator && echo "❌ Run: gofmt -w tools/emulator" && exit 1)
 	@echo "✅ All checks passed"
@@ -105,3 +105,13 @@ changed-since-deploy: ## List command files changed since the `deployed` tag (pa
 mark-deployed: ## Record that the current commit's commands are live in YAGPDB
 	@git tag -f deployed HEAD >/dev/null && echo "deployed → $$(git log -1 --format='%h %s' HEAD)"
 	@git push -q -f origin deployed 2>/dev/null && echo "Tag pushed" || echo "Tag not pushed (offline?); run: git push -f origin deployed"
+
+deploy-manifest: ## Print the deploy manifest for SERVER=<main|lotv> (needs HEAD pushed)
+	@test -n "$(SERVER)" || (echo "Usage: make deploy-manifest SERVER=main" && exit 1)
+	@python3 scripts/deploy-manifest.py $(SERVER)
+
+test-deploy: ## Node parity tests for deploy.js + the panel.json/manifest checks
+	@echo "🧪 Running deploy tooling tests..."
+	@node --test deploy/deploy.test.js
+	@python3 scripts/deploy_panel_check.py
+	@python3 scripts/deploy_manifest_test.py
