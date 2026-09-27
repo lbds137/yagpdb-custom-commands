@@ -226,7 +226,8 @@ func TestMessageByTrigger(t *testing.T) {
 	}
 
 	// An interval run has no .Message and no member; its child gets a blank message from
-	// the bot (ID 0, this guild, the caller's channel), and no member either
+	// the bot (ID 0, this guild, the caller's channel), and no member either. .BotUser is
+	// set regardless of member (vendor context.go: unconditional, unlike User/Member)
 	ctx = withChildren(roleCtx())
 	ctx.NoMessage, ctx.NoMember = true, true
 	writeFile(t, dir+"/blank.gohtml", `{{sendMessage nil (print "blank " .Message.ID " " .Message.GuildID " " .User " " .Member)}}`)
@@ -234,8 +235,18 @@ func TestMessageByTrigger(t *testing.T) {
 	out, err = run(t, ctx, `{{.Message}} {{.Message.Content}} {{.User}} {{.user}} {{.Member}} {{.BotUser}}{{execCC 7 99 0 nil}}{{execCC 9 99 0 nil}}`)
 	want = fmt.Sprintf("child %d [] %d | grandchild %d [] | blank 0 %d <nil> <nil>", // print gets nil
 		botUser.ID, ctx.ChannelID, botUser.ID, ctx.GuildID)
-	if err != nil || out != strings.Repeat("<no value> ", 5)+"<no value>" || sent(ctx) != want {
+	wantOut := strings.Repeat("<no value> ", 5) + fmt.Sprint(botUser)
+	if err != nil || out != wantOut || sent(ctx) != want {
 		t.Errorf("interval run: %q, %v; sent %q", out, err, sent(ctx))
+	}
+
+	// .BotUser.ID is readable even without a member (vendor context.go sets .BotUser
+	// unconditionally, unlike .User/.Member)
+	ctx = roleCtx()
+	ctx.NoMessage, ctx.NoMember = true, true
+	out, err = run(t, ctx, `{{.BotUser.ID}}`)
+	if err != nil || out != fmt.Sprint(botUser.ID) {
+		t.Errorf("BotUser.ID without member: %q, %v", out, err)
 	}
 
 	// A reaction run's .Message is the reacted-to message; its child gets it with the

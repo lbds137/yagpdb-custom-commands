@@ -779,8 +779,9 @@ func (e *Engine) createTicket(user, reason interface{}) types.SDict {
 
 // findCC is tmplRunCC's and tmplScheduleUniqueCC's command lookup, with a test's
 // command_map standing in for the server's commands: a mapped command's template is read,
-// and an interval or cron command is refused as YAGPDB refuses it. mapped is false for a
-// command the test doesn't map, which may exist in production.
+// and an Interval, Crontab or Role-trigger command is refused as YAGPDB refuses it (vendor
+// customcommands/tmplextensions.go). mapped is false for a command the test doesn't map,
+// which may exist in production.
 func (e *Engine) findCC(fn string, ccID int64) (path string, source []byte, mapped bool, err error) {
 	path, mapped = e.ctx.CommandIDMap[ccID]
 	if !mapped {
@@ -793,8 +794,10 @@ func (e *Engine) findCC(fn string, ccID int64) (path string, source []byte, mapp
 	if err != nil { // the test's mistake, not YAGPDB's behaviour
 		return "", nil, true, fmt.Errorf("%s %d: can't read its command_map template: %w", fn, ccID, err)
 	}
-	if t, ok := ReadTrigger(string(source)); ok && t.Scheduled() {
-		return "", nil, true, errors.New("interval and cron type custom commands cannot be used with " + fn)
+	if t, ok := ReadTrigger(string(source)); ok {
+		if name, disallowed := t.disallowedExecCCType(); disallowed {
+			return "", nil, true, fmt.Errorf("custom commands of type %s cannot be used with %s", name, fn)
+		}
 	}
 	return path, source, true, nil
 }

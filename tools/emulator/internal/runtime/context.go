@@ -98,9 +98,10 @@ type ExecutionContext struct {
 	// ExecData for execCC calls
 	ExecData interface{}
 	// NoMessage and NoMember are set for a scheduled (interval or cron) run, which YAGPDB
-	// starts with neither: no .Message, and no .User, .Member or .BotUser. An execCC child
-	// of such a run keeps NoMember and gets a blank .Message (see triggerMsg). A None
-	// command only runs by execCC, so it always has its caller's message.
+	// starts with neither: no .Message, and no .User or .Member (.BotUser is always set,
+	// member or not). An execCC child of such a run keeps NoMember and gets a blank
+	// .Message (see triggerMsg). A None command only runs by execCC, so it always has its
+	// caller's message.
 	NoMessage bool
 	NoMember  bool
 	// InheritedMessage is an execCC child's .Message: its caller's triggering message as
@@ -443,8 +444,9 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	case ctx.NoMessage:
 		delete(data, "Message")
 	}
-	if ctx.NoMember { // setupBaseData sets these only when there is a member
-		for _, k := range []string{"User", "user", "Member", "BotUser"} {
+	if ctx.NoMember { // setupBaseData sets User/user/Member only when there is a member;
+		// BotUser is set unconditionally (vendor context.go), so it stays
+		for _, k := range []string{"User", "user", "Member"} {
 			delete(data, k)
 		}
 	}

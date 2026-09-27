@@ -102,16 +102,20 @@ func TestCCIDIsAnInt(t *testing.T) {
 	}
 }
 
-// tmplRunCC's order: the command is looked up (an interval or cron command refused) before
-// the channel; an unmapped command warns when run now, and a delayed one is scheduled
+// tmplRunCC's order: the command is looked up (an Interval, Crontab or Role-trigger
+// command refused, with YAGPDB's exact vendor text) before the channel; an unmapped
+// command warns when run now, and a delayed one is scheduled
 func TestExecCCLookupOrder(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir+"/timed.gohtml", "{{/*\n\tTrigger type: `Interval`\n*/}}hi")
-	writeFile(t, dir+"/cron.gohtml", "{{/*\n\tTrigger type: `Crontab`\n*/}}hi") // YAGPDB's name
+	writeFile(t, dir+"/cron.gohtml", "{{/*\n\tTrigger type: `Crontab`\n*/}}hi")     // YAGPDB's name
+	writeFile(t, dir+"/role.gohtml", "{{/*\n\tTrigger type: `Role Change`\n*/}}hi") // control panel's label
 	cases := []struct{ src, err string }{
-		{`{{execCC 5 99 0 nil}}`, "interval and cron type custom commands cannot be used with execCC"},
-		{`{{execCC 6 99 10 nil}}`, "interval and cron type custom commands cannot be used with execCC"},
-		{`{{scheduleUniqueCC 5 99 10 "k" nil}}`, "interval and cron type custom commands cannot be used with scheduleUniqueCC"},
+		{`{{execCC 5 99 0 nil}}`, "custom commands of type Interval cannot be used with execCC"},
+		{`{{execCC 6 99 10 nil}}`, "custom commands of type Crontab cannot be used with execCC"},
+		{`{{execCC 9 99 0 nil}}`, "custom commands of type Role cannot be used with execCC"},
+		{`{{scheduleUniqueCC 5 99 10 "k" nil}}`, "custom commands of type Interval cannot be used with scheduleUniqueCC"},
+		{`{{scheduleUniqueCC 9 99 10 "k" nil}}`, "custom commands of type Role cannot be used with scheduleUniqueCC"},
 		{`{{execCC 7 nil 0 nil}}`, "execCC 7: can't read its command_map template"},
 		{`{{scheduleUniqueCC 7 nil 10 "k" nil}}`, "scheduleUniqueCC 7: can't read its command_map template"},
 		{`{{execCC 8 99 0 nil}}`, "Unknown channel"}, // unmapped: then the channel
@@ -119,7 +123,7 @@ func TestExecCCLookupOrder(t *testing.T) {
 	for _, c := range cases {
 		ctx := channelCtx() // 99 isn't one of its channels
 		ctx.TemplateBaseDir = dir
-		ctx.CommandIDMap = map[int64]string{5: "timed.gohtml", 6: "cron.gohtml", 7: "missing.gohtml"}
+		ctx.CommandIDMap = map[int64]string{5: "timed.gohtml", 6: "cron.gohtml", 7: "missing.gohtml", 9: "role.gohtml"}
 		if _, err := run(t, ctx, c.src); err == nil || !strings.Contains(err.Error(), c.err) {
 			t.Errorf("%s: %v, want %q", c.src, err, c.err)
 		}
