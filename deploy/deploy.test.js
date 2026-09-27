@@ -85,6 +85,14 @@ test("normalize/sha256hex match the Python manifest normalization for real comma
 const EDGE_CASES = [
   { label: "CRLF line endings", text: "line one\r\nline two\r\n" },
   { label: "trailing spaces+tabs+newlines", text: "payload  \t \n\n  \t\n" },
+  {
+    label: "trailing U+0085 (NEL)",
+    text: "payload" + String.fromCodePoint(0x0085),
+  },
+  {
+    label: "trailing U+001C (file separator)",
+    text: "payload" + String.fromCodePoint(0x001c),
+  },
   { label: "Hebrew text", text: "שלום עולם\n" },
   { label: "trailing U+00A0 (no-break space)", text: "payload " },
   { label: "trailing U+FEFF (BOM/zero-width no-break space)", text: "payload﻿" },
@@ -98,6 +106,15 @@ test("normalize matches Python's rstrip()/isspace() exactly on synthetic edge ca
     const pyHash = pythonHash({ fromStdin: true, text });
     assert.equal(jsHash, pyHash, `normalize() disagreement for: ${label}`);
   }
+});
+
+test("deploy-manifest.py --hash with no path argument prints usage and exits 2", () => {
+  const result = spawnSync("python3", ["scripts/deploy-manifest.py", "--hash"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /usage: deploy-manifest\.py --hash <file\|->/);
 });
 
 test("parseHeader reads a Command header", () => {

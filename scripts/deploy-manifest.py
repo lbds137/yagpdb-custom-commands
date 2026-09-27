@@ -64,10 +64,13 @@ def working_tree_matches_head(path: str) -> bool:
 
 
 def main() -> int:
-    if len(sys.argv) > 2 and sys.argv[1] == "--hash":
+    if len(sys.argv) > 1 and sys.argv[1] == "--hash":
+        if len(sys.argv) < 3:
+            print("usage: deploy-manifest.py --hash <file|->", file=sys.stderr)
+            return 2
         target = sys.argv[2]
         if target == "-":
-            content = sys.stdin.read()
+            content = sys.stdin.buffer.read().decode("utf-8")
         else:
             with open(target, encoding="utf-8") as f:
                 content = f.read()
