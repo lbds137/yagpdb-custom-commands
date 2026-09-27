@@ -51,10 +51,28 @@ picks, then the minifier.
   2026-09-27: cbutton/cmenu, complexMessage(+Edit) buttons/menus/components as action
   rows with YAGPDB's custom-ID prefixing and every vendor error text, components on sent,
   edited and read-back messages, `components_contains` and snapshot `components:`
-  (tools/emulator/internal/runtime/components.go, types/components.go). Units 2-4 (the
-  interaction core + Component trigger, slash + context menus, modals) are next, from
-  vendor c579722 (customcommands/handle_slashcommand.go, handle_component.go,
-  handle_contextmenu.go; common/templates/context_interactions.go, general.go).
+  (tools/emulator/internal/runtime/components.go, types/components.go). Unit 2 (the
+  interaction core + Component trigger) shipped 2026-09-27: `Trigger type: \`Message
+  Component\`` matched as YAGPDB matches it (a regex on the prefix-stripped custom ID),
+  `Defer mode:` header, the handler's data keys (.Interaction, .InteractionData,
+  .CustomID, .Cmd/.CmdArgs/.StrippedID, .IsButton/.IsMenu/.MenuType/.Values, .Message =
+  the clicked message by the clicker), sendResponse*/updateMessage*/ephemeralResponse
+  with the vendor errors and the one-response rule, the output routed as response /
+  followup / deferred edit, `context.interaction: { type: component }` and the
+  `interaction_responses:` assertion (tools/emulator/internal/runtime/interactions.go;
+  the skill has a click recipe). Units 3-4 (slash + context menus, modals) are next,
+  from vendor c579722 (customcommands/handle_slashcommand.go, handle_contextmenu.go;
+  common/templates/context_interactions.go sendModal, general.go).
+- Deferred (unit 2 review, 2026-09-27): `.Interaction.MessageComponentData` (discordgo's
+  method on the embedded Interaction, lib/discordgo/interactions.go:271) isn't modelled:
+  a YAGPDB template can call it, the emulator's `.Interaction` has no such method (use
+  `.InteractionData`). Promote when a command calls it.
+- Emulator divergence to know (unit 2): YAGPDB runs an execCC child in a goroutine
+  (tmplextensions.go:249) sharing the caller's Interaction pointer, so a caller that both
+  execCCs and prints races the child for the interaction's one response. The emulator
+  runs the child inline: the child's sendResponse always wins and the caller's output is
+  always the followup. Commands must never mix the two (either the child responds, or the
+  caller does); a test can't tell you which one Discord would have picked.
 
 ## Free-tier compatibility (Lila 2026-09-27: the suite should work on free servers too)
 

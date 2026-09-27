@@ -80,7 +80,10 @@ type ContextDef struct {
 	// Seed seeds randInt, shuffle, adjective, noun and verb; unset, they're random
 	Seed     *TestSeed    `yaml:"seed"`
 	Reaction *ReactionDef `yaml:"reaction"` // Makes this a reaction-triggered run
-	Messages []MessageDef `yaml:"messages"` // Messages getMessage can find
+	// Interaction makes this a run answering an interaction: a click on a button or menu
+	// of a message in messages: (a Message Component trigger)
+	Interaction *InteractionDef `yaml:"interaction"`
+	Messages    []MessageDef    `yaml:"messages"` // Messages getMessage can find
 	// MessageContent is the whole triggering message, trigger included (instead of args);
 	// with exec_data or reaction, the message .Message is
 	MessageContent string  `yaml:"message_content"`
@@ -179,6 +182,63 @@ type ReactionDef struct {
 	EmojiID   int64  `yaml:"emoji_id"`   // Custom emoji ID (0 for Unicode emoji)
 	MessageID int64  `yaml:"message_id"` // Message that was reacted to
 	Added     *bool  `yaml:"added"`      // false for a removed reaction (default true)
+}
+
+// InteractionDef describes the interaction that triggered a command. Only a component
+// click (type: component) is modelled; modal, slash and context-menu interactions are
+// units 3 and 4 of docs/design/emulator-interactions.md.
+type InteractionDef struct {
+	Type string `yaml:"type"` // "component"
+	// CustomID is the clicked component's custom ID as the command wrote it (the
+	// templates- prefix YAGPDB adds is implied; giving it is fine too)
+	CustomID  string   `yaml:"custom_id"`
+	MessageID int64    `yaml:"message_id"` // the message clicked, in messages: (in the run's channel)
+	Values    []string `yaml:"values"`     // a menu's chosen values (.Values)
+	// Component is the clicked component's kind: button (the default), string_menu,
+	// user_menu, role_menu, mentionable_menu or channel_menu
+	Component string `yaml:"component"`
+}
+
+// componentKinds are InteractionDef.Component's values and their component types.
+var componentKinds = map[string]types.ComponentType{
+	"":                 types.ButtonComponent,
+	"button":           types.ButtonComponent,
+	"string_menu":      types.SelectMenuComponent,
+	"user_menu":        types.UserSelectMenuComponent,
+	"role_menu":        types.RoleSelectMenuComponent,
+	"mentionable_menu": types.MentionableSelectMenuComponent,
+	"channel_menu":     types.ChannelSelectMenuComponent,
+}
+
+// validate rejects an interaction the emulator can't run.
+func (d *InteractionDef) validate() error {
+	switch d.Type {
+	case "component":
+	case "modal", "slash", "user_menu", "message_menu":
+		return fmt.Errorf("interaction type %q isn't modelled yet (docs/design/emulator-interactions.md units 3-4); only component is", d.Type)
+	default:
+		return fmt.Errorf("interaction type %q: write type: component", d.Type)
+	}
+	kind, ok := componentKinds[d.Component]
+	if !ok {
+		return fmt.Errorf("interaction component %q isn't button, string_menu, user_menu, role_menu, mentionable_menu or channel_menu", d.Component)
+	}
+	if d.CustomID == "" {
+		return fmt.Errorf("interaction needs the custom_id clicked")
+	}
+	if d.MessageID == 0 {
+		return fmt.Errorf("interaction needs the message_id clicked (a messages: entry)")
+	}
+	if kind == types.ButtonComponent && len(d.Values) > 0 {
+		return fmt.Errorf("interaction values need a menu component (component: string_menu ...); a button has none")
+	}
+	return nil
+}
+
+// click is the interaction as the runtime takes it.
+func (d *InteractionDef) click() runtime.ComponentClick {
+	return runtime.ComponentClick{CustomID: d.CustomID, MessageID: d.MessageID,
+		ComponentType: componentKinds[d.Component], Values: d.Values}
 }
 
 // UserDef defines user context.
@@ -281,6 +341,21 @@ type Assertions struct {
 	// Execs are exactly the bot commands the run executed with exec and execAdmin, in
 	// order (`[]` for none)
 	Execs *[]ExecCheck `yaml:"execs"`
+	// InteractionResponses are exactly the run's answers to its interaction, in order
+	// (`[]` for none): the response, followups, a deferred response's edit, an update
+	// of the component's message
+	InteractionResponses *[]InteractionResponseCheck `yaml:"interaction_responses"`
+}
+
+// InteractionResponseCheck matches an interaction response; unset fields match anything.
+type InteractionResponseCheck struct {
+	Kind      string `yaml:"kind"` // "message", "followup", "deferred_edit" or "update"
+	Ephemeral *bool  `yaml:"ephemeral"`
+	// The message's checks, as a sent_messages entry has them
+	ContentContains    string `yaml:"content_contains"`
+	EmbedTitle         string `yaml:"embed_title"`
+	EmbedContains      string `yaml:"embed_contains"`
+	ComponentsContains string `yaml:"components_contains"`
 }
 
 // ExecCheck matches an exec or execAdmin call; unset fields match anything.
@@ -351,6 +426,9 @@ type MessageCheck struct {
 	// SentAfterSeconds is exactly how many seconds into the run's sleeps the message was
 	// sent (whole seconds); unset checks nothing
 	SentAfterSeconds *int `yaml:"sent_after_seconds"`
+	// Ephemeral is whether the message is an interaction response only the clicker
+	// sees; unset checks nothing
+	Ephemeral *bool `yaml:"ephemeral"`
 }
 
 // RoleCheck defines a role change assertion.
@@ -389,11 +467,31 @@ func LoadTestCase(filename string) (*TestCase, error) {
 	tc.applyDefaults()
 	tc.SourceFile = filename
 
+	if err := tc.validateContext(); err != nil {
+		return nil, fmt.Errorf("%s: %w", filename, err)
+	}
 	if err := tc.validateNoTrigger(); err != nil {
 		return nil, fmt.Errorf("%s: %w", filename, err)
 	}
 
 	return &tc, nil
+}
+
+// validateContext rejects a context that says two things about how the command was
+// triggered: an interaction can't come with args, message_content, a reaction or
+// exec_data, and must be one the emulator models.
+func (tc *TestCase) validateContext() error {
+	c := tc.Context
+	if c.Interaction == nil {
+		return nil
+	}
+	if len(c.Args) > 0 || c.MessageContent != "" || c.Reaction != nil || c.ExecData != nil {
+		return fmt.Errorf("test %q: interaction can't be combined with args, message_content, reaction or exec_data", tc.Name)
+	}
+	if err := c.Interaction.validate(); err != nil {
+		return fmt.Errorf("test %q: %w", tc.Name, err)
+	}
+	return nil
 }
 
 // validateNoTrigger rejects expected.no_trigger combined with any other expected: field or
@@ -434,8 +532,8 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 
 	// A suite's defaults can't trigger or feed a command; each test says that for itself
 	d := ts.Defaults
-	if len(d.Args) > 0 || d.ExecData != nil || d.MessageContent != "" || d.Reaction != nil {
-		return nil, fmt.Errorf("%s: defaults can't set args, exec_data, message_content or reaction; set them per test", filename)
+	if len(d.Args) > 0 || d.ExecData != nil || d.MessageContent != "" || d.Reaction != nil || d.Interaction != nil {
+		return nil, fmt.Errorf("%s: defaults can't set args, exec_data, message_content, reaction or interaction; set them per test", filename)
 	}
 
 	// Apply defaults to all tests
@@ -449,6 +547,9 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 		if ts.Tests[i].Context.User.ID == runtime.BotUserID {
 			return nil, fmt.Errorf("%s: test %q: user.id %d is the bot's; YAGPDB runs no custom command for a bot's message",
 				filename, ts.Tests[i].Name, runtime.BotUserID)
+		}
+		if err := ts.Tests[i].validateContext(); err != nil {
+			return nil, fmt.Errorf("%s: %w", filename, err)
 		}
 		if err := ts.Tests[i].validateNoTrigger(); err != nil {
 			return nil, fmt.Errorf("%s: %w", filename, err)

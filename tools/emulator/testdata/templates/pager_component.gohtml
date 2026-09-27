@@ -1,0 +1,17 @@
+{{/*
+  Test pager (not a real command): a Component-trigger handler that rebuilds a page
+  from the button's custom ID (pg:<bucket>:<page>) and edits the message in place.
+
+  Trigger type: `Message Component`
+  Trigger: `^pg:(\w+):(\d+)$`
+*/}}
+{{- $parts := split .CustomID ":" }}
+{{- $bucket := index $parts 1 }}
+{{- $page := toInt (index $parts 2) }}
+{{- $prev := sdict "label" "Prev" "style" "secondary" "custom_id" (printf "pg:%s:%d" $bucket (sub $page 1)) }}
+{{- $next := sdict "label" "Next" "style" "primary" "custom_id" (printf "pg:%s:%d" $bucket (add $page 1)) }}
+{{- if le $page 1 }}{{ $prev.Set "disabled" true }}{{ end }}
+{{- if ge $page 3 }}{{ $next.Set "disabled" true }}{{ end }}
+{{- updateMessage (complexMessageEdit
+	"embed" (cembed "title" "Channels" "description" (printf "Page %d of 3 (%s)" $page $bucket))
+	"buttons" (cslice $prev $next)) }}

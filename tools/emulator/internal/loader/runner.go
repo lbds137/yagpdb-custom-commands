@@ -156,6 +156,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	result.Failures = append(result.Failures, checkDeletions(ctx.Deletions, tc.Assertions.Deletions)...)
 	result.Failures = append(result.Failures, checkExecs(ctx.Execs, tc.Assertions.Execs)...)
 	result.Failures = append(result.Failures, checkReactions(ctx.Reactions, tc.Assertions.Reactions)...)
+	result.Failures = append(result.Failures, checkInteractionResponses(ctx.InteractionResponses, tc.Assertions.InteractionResponses)...)
 
 	// Check role changes
 	failures = r.checkRoleChanges(ctx.RoleChanges, tc.Assertions.RoleChanges)
@@ -313,7 +314,9 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 // setTriggerMessage gives the command the message that triggered it: the test's
 // message_content, or its args after the trigger the template's header names. Commands
 // run by execCC or a reaction have no trigger, but message_content can set their .Message;
-// commands without a message trigger have neither. It also returns the trigger it resolved
+// commands without a message trigger have neither. A component interaction gives a
+// Message Component command the click instead, which must match its trigger regex (an
+// ErrTriggerMismatch otherwise, like a message). It also returns the trigger it resolved
 // (the zero Trigger for exec_data/reaction contexts, which have none), for callers that
 // want to describe it, such as a no_trigger assertion's failure message.
 func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContext) (runtime.Trigger, error) {
@@ -333,6 +336,16 @@ func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContex
 			name = "test"
 		}
 		t = runtime.Trigger{Type: "Command", Text: name}
+	}
+	if c.Interaction != nil {
+		if !t.ComponentTriggered() {
+			return t, fmt.Errorf("a component interaction needs a Message Component trigger; the template's is %q", t.Type)
+		}
+		return t, ctx.SetInteractionComponent(t, c.Interaction.click(), runtime.ReadDeferMode(source))
+	}
+	if t.ComponentTriggered() {
+		return t, fmt.Errorf("a Message Component trigger runs on a click: give context.interaction " +
+			"{ type: component, custom_id, message_id }")
 	}
 	if !t.MessageTriggered() {
 		if len(c.Args) > 0 || c.MessageContent != "" {
@@ -610,6 +623,12 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 					i, *check.SentAfterSeconds, found.SentAfterSeconds))
 		}
 
+		if check.Ephemeral != nil && found.Ephemeral != *check.Ephemeral {
+			failures = append(failures,
+				fmt.Sprintf("message check %d: ephemeral mismatch:\n  expected: %v\n  got:      %v",
+					i, *check.Ephemeral, found.Ephemeral))
+		}
+
 		if f := checkPings(found.Pings, check.Pings); f != "" {
 			failures = append(failures, fmt.Sprintf("message check %d: %s", i, f))
 		}
@@ -783,6 +802,46 @@ func checkReactions(changes []runtime.ReactionChange, checks *[]ReactionCheck) [
 				want += ", on the response"
 			}
 			failures = append(failures, fmt.Sprintf("reaction change %d doesn't match (%s; unset = any): %s", i, want, r))
+		}
+	}
+	return failures
+}
+
+// checkInteractionResponses compares the interaction responses with the expected list,
+// one by one. The message checks are sent_messages' (any embed, any action row).
+func checkInteractionResponses(responses []runtime.InteractionResponse, checks *[]InteractionResponseCheck) []string {
+	if checks == nil {
+		return nil
+	}
+	var failures []string
+	for i, c := range *checks {
+		switch c.Kind {
+		case "", runtime.ResponseMessage, runtime.ResponseFollowup, runtime.ResponseDeferredEdit, runtime.ResponseUpdate:
+		default:
+			failures = append(failures, fmt.Sprintf("interaction response check %d: kind is %q; it takes message, followup, deferred_edit or update", i, c.Kind))
+		}
+	}
+	if len(failures) > 0 {
+		return failures
+	}
+	if len(responses) != len(*checks) {
+		parts := make([]string, len(responses))
+		for i, r := range responses {
+			parts[i] = r.String()
+		}
+		return []string{fmt.Sprintf("expected %d interaction responses, got %d: [%s]", len(*checks), len(responses), strings.Join(parts, "; "))}
+	}
+	for i, c := range *checks {
+		r := responses[i]
+		if (c.Kind != "" && r.Kind != c.Kind) || (c.Ephemeral != nil && r.Ephemeral != *c.Ephemeral) {
+			failures = append(failures, fmt.Sprintf("interaction response %d doesn't match (kind %q, ephemeral %s; unset = any): %s",
+				i, c.Kind, fmtBoolPtr(c.Ephemeral), r))
+		}
+		msg := runtime.SentMessage{ID: r.MessageID, ChannelID: r.ChannelID, Content: r.Content, Embeds: r.Embeds, Components: r.Components}
+		check := MessageCheck{ContentContains: c.ContentContains, EmbedTitle: c.EmbedTitle,
+			EmbedContains: c.EmbedContains, ComponentsContains: c.ComponentsContains}
+		for _, f := range (&Runner{}).checkMessages([]runtime.SentMessage{msg}, []MessageCheck{check}, "interaction response") {
+			failures = append(failures, fmt.Sprintf("interaction response %d: %s", i, f))
 		}
 	}
 	return failures

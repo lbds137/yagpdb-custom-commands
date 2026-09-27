@@ -1,0 +1,9 @@
+{{/*
+  Test handler (not a real command): the click is acknowledged without a loading state,
+  and the output edits the message's content in place, keeping its embeds and buttons.
+
+  Trigger type: `Message Component`
+  Trigger: `^ack:`
+  Defer mode: `Update Message Response`
+*/}}
+{{- "Acknowledged " }}{{ .CustomID }}
