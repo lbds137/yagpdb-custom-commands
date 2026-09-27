@@ -51,6 +51,21 @@
 {{ $validArgPresent := gt (len $chosenArg) 0 }}
 
 {{ if $validArgPresent }}
+  {{/* the dropped-colors warning doesn't depend on the execCC loop below, so it goes out
+    before the loop fans out; a sendMessage here is a blocking REST call and always lands
+    before an execCC child, which YAGPDB runs in its own goroutine */}}
+  {{ if gt $droppedCount 0 }}
+    {{ $subjectAndVerb := "" }}
+    {{ if eq 1 $droppedCount }}
+      {{ $subjectAndVerb = "color was" }}
+    {{ else }}
+      {{ $subjectAndVerb = "colors were" }}
+    {{ end }}
+    {{ $errorMsgID := sendMessageRetID $channelID (joinStr " "
+      "⚠️ Warning:" $droppedCount $subjectAndVerb "not analyzed because only" $execCCLimit "colors can be analyzed at a time."
+    ) }}
+    {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
+  {{ end }}
   {{- range $i, $curArg := $chosenArg -}}
     {{- execCC $contrast $yagpdbChannelID 0 (sdict
       "ChannelID" $channelID
@@ -68,18 +83,3 @@
 {{ end }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
-
-{{ if gt $droppedCount 0 }}
-  {{- /* timing is notoriously unreliable with `execCC` so wait a while before sending the error message */ -}}
-  {{ sleep 10 }}
-  {{ $subjectAndVerb := "" }}
-  {{ if eq 1 $droppedCount }}
-    {{ $subjectAndVerb = "color was" }}
-  {{ else }}
-    {{ $subjectAndVerb = "colors were" }}
-  {{ end }}
-  {{ $errorMsgID := sendMessageRetID $channelID (joinStr " "
-    "⚠️ Warning:" $droppedCount $subjectAndVerb "not analyzed because only" $execCCLimit "colors can be analyzed at a time."
-  ) }}
-  {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
-{{ end }}

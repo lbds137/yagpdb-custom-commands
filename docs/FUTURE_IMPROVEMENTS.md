@@ -20,7 +20,10 @@ gets a failing test first.
   is, and YAGPDB allows 10 execCC calls per run on premium (1 on a free server), counted
   together with scheduleUniqueCC, so a setting above that made rules, contrasts, hugemoji
   and pyramid fail at the 11th call instead of skipping. Each now clamps its own read of
-  the setting to `min(setting, 10)` before using it.
+  the setting to `min(setting, 10)` before using it. (Race fixes, 2026-09-27: rules no
+  longer execCC's `rule` at all, so it no longer reads or clamps "ExecCC Limit"; it now
+  packs its own embeds into as few messages as Discord's 10-embed / 6,000-character
+  limits allow instead. contrasts and hugemoji are unaffected, and still clamp it.)
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
@@ -491,7 +494,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       execCC child's messages counting its caller's sleeps too); a `sent_messages` check's
       `sent_after_seconds: N` asserts it exactly, and a snapshot's message record carries it
       only when it's nonzero. Pins today's sleeps: hugemoji's NSFW-refusal and limit
-      warnings, contrasts' dropped-colors warning, rules' per-rule messages (2026-09-27)
+      warnings, contrasts' dropped-colors warning, rules' per-rule messages (2026-09-27).
+      The race fixes the same day removed those sleeps; the tests now pin their warnings
+      at 0 s, sent before the first execCC
 - [x] exec and execAdmin record the command line as YAGPDB builds it (`execs:`,
       snapshots), so the kicks in guest, reject_user and inactivity are pinned; they
       were silent no-ops (2026-09-25)
