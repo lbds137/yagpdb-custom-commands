@@ -4,8 +4,8 @@
 
 ### File Structure
 ```
-staff_utility/   - Admin/moderation tools
-utility/         - General-purpose commands
+staff/           - Admin/moderation tools (flat)
+everyone/        - General-purpose commands, in topic subfolders
 retired/         - Commands no longer deployed (see retired/README.md)
 ```
 

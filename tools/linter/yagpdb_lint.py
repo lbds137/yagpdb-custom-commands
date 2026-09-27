@@ -211,8 +211,8 @@ class PermissionCheckRule(Rule):
         # so they don't need individual permission checks.
         # This rule is now disabled but kept for potential future use.
         
-        # Only check non-staff-utility commands that might need conditional staff permissions
-        if "staff_utility/" not in filename:
+        # Only check non-staff commands that might need conditional staff permissions
+        if "staff" not in Path(filename).parts:
             # Check for commands that do staff-specific operations without permission checks
             has_db_write_global = any("dbSet 0" in line for line in lines)
             has_permission_check = any(
@@ -220,7 +220,7 @@ class PermissionCheckRule(Rule):
                 for line in lines
             )
             
-            # If command writes to global database but isn't in staff_utility and has no permission check
+            # If command writes to global database but isn't in staff/ and has no permission check
             if has_db_write_global and not has_permission_check:
                 # Find the first dbSet 0 line
                 db_write_line = 1
@@ -392,13 +392,13 @@ class DatabaseOperationRule(Rule):
         for i, line in enumerate(lines):
             # Check for direct dbSet operations on user ID 0 without proper validation
             if "dbSet 0" in line:
-                # Staff utilities and bootstrap are expected to write to global database
-                is_staff_utility = "staff_utility/" in filename
+                # Staff commands and bootstrap are expected to write to global database
+                is_staff = "staff" in Path(filename).parts
                 is_bootstrap = "bootstrap.gohtml" in filename
-                
-                # Some utility commands may legitimately need to write global data
+
+                # Some everyone-group commands may legitimately need to write global data
                 # (like bump tracking), so this is now just a warning
-                if not is_staff_utility and not is_bootstrap:
+                if not is_staff and not is_bootstrap:
                     # Find the column where dbSet starts
                     column = line.find("dbSet 0") + 1
                     results.append(LintResult(

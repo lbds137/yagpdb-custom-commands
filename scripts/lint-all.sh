@@ -88,23 +88,19 @@ lint_template() {
     fi
 }
 
-# Lint utility templates
-echo -e "${BLUE}--- Utility Commands ---${NC}"
-for template in "$PROJECT_ROOT"/utility/*.gohtml; do
-    if [[ -f "$template" ]]; then
-        lint_template "$template"
-    fi
-done
+# Lint everyone-group templates (recurses through the topic subfolders)
+echo -e "${BLUE}--- Everyone Commands ---${NC}"
+while IFS= read -r template; do
+    lint_template "$template"
+done < <(find "$PROJECT_ROOT/everyone" -name '*.gohtml' | sort)
 
 echo ""
 
-# Lint staff_utility templates
-echo -e "${BLUE}--- Staff Utility Commands ---${NC}"
-for template in "$PROJECT_ROOT"/staff_utility/*.gohtml; do
-    if [[ -f "$template" ]]; then
-        lint_template "$template"
-    fi
-done
+# Lint staff-group templates
+echo -e "${BLUE}--- Staff Commands ---${NC}"
+while IFS= read -r template; do
+    lint_template "$template"
+done < <(find "$PROJECT_ROOT/staff" -name '*.gohtml' | sort)
 
 echo ""
 

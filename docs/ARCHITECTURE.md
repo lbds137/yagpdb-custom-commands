@@ -359,7 +359,7 @@ cd tools/emulator
 go build -o bin/yagtest ./cmd/yagtest
 
 # Run a single template
-./bin/yagtest run ../../utility/db.gohtml
+./bin/yagtest run ../../everyone/services/db.gohtml
 
 # Run test suite
 ./bin/yagtest test testdata/command_tests.yaml
@@ -368,7 +368,7 @@ go build -o bin/yagtest ./cmd/yagtest
 #### Test Case Format
 ```yaml
 - name: "db add - Append to array"
-  template: "../../../utility/db.gohtml"
+  template: "../../../everyone/services/db.gohtml"
   context:
     args: ["add", "Directory:Exclude Categories", "New Category"]
 ```

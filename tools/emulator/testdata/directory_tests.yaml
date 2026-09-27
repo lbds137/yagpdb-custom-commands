@@ -1,5 +1,5 @@
 name: "Directory"
-description: "staff_utility/directory: the channel list, from .Guild.Channels"
+description: "staff/directory: the channel list, from .Guild.Channels"
 
 # Declared out of position order: .Guild.Channels is sorted by position, as YAGPDB's
 # state tracker sorts it. The run's channel (#directory, 99) is in the Info category.
@@ -24,7 +24,7 @@ setup_db:
 
 tests:
   - name: "directory - lists the channels by category"
-    template: "../../../staff_utility/directory.gohtml"
+    template: "../../../staff/directory.gohtml"
     snapshot: true
     context:
       # Clean returns dcmd.NewTemporaryResponse (moderation/commands.go ~805), which exec's

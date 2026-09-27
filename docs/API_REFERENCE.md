@@ -16,8 +16,8 @@ each line); the message and embed limits are Discord's
   Characters are counted over all of a command's responses together
   (`customcommands/customcommands.go`, `validateCCResponseLength`).
 - Custom commands per server: 100, or 250 on premium (`customcommands/customcommands.go`).
-- This command suite assumes premium. Two commands exceed the free limit: `utility/db`
-  (about 16,900) and `utility/gematria` (about 11,500).
+- This command suite assumes premium. Two commands exceed the free limit:
+  `everyone/services/db` (about 16,900) and `everyone/hebrew/gematria` (about 11,500).
 
 ### Other Key Limits
 
