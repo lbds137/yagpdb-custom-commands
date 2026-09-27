@@ -58,7 +58,6 @@ General-purpose commands for all users, in topic subfolders:
 - **`rand_color.gohtml`** - Generate random colors
 
 #### Knowledge (`everyone/knowledge/`)
-- **`kb.gohtml`** - Knowledge base access
 - **`define.gohtml`** - Glossary term lookup (links to thenighthouse.org)
 - **`rule.gohtml`** - Display specific rules
 

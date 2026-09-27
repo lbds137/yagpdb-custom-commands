@@ -2,15 +2,6 @@
 
 This document tracks potential enhancements for the YAGPDB custom commands project.
 
-## Planned retirements
-
-- `kb` (Lila 2026-09-27): dedupe with `-define` by moving the `Knowledge` dict's two
-  real entries ("The Seven Tenets", "The Seven Satanic Tenets"; per the 2026-01-03 dump) to
-  the website, which is then the single source, as with the rules. Trigger: the Night
-  House site session reports them live. Then retire `kb` to `retired/`, drop it from
-  deploy/panel.json, and Lila deletes it and the `Knowledge` dict in YAGPDB.
-  `db_get_embed` stays: `simple_db_lookup` still calls it.
-
 ## Free-tier compatibility (Lila 2026-09-27: the suite should work on free servers too)
 
 Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
@@ -195,6 +186,12 @@ gets a failing test first.
 
 ## Tooling defects
 
+- Fix next (found 2026-09-27): deploy/deploy.test.js pins the sha256 of three real
+  command files (define, rules, alefbet) as constants, so any edit to one of them fails
+  `make ci` until the constant is recomputed by hand (the kb retirement had to). The parity
+  test should compute the Python-normalized hash at test time (spawn python3 on the file)
+  and compare it with deploy.js's, keeping the point (JS/Python agree) without pinning
+  file contents.
 - Deferred (found 2026-09-27): `scripts/lint-all.sh` passes a positional file argument to
   `yagpdb_lint.py`, which only accepts `--dir`; every file it hands over "fails" as a
   result. Fix next time the script is touched.

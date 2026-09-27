@@ -22,6 +22,13 @@ deleted from the repo by accident in 75f9a9b on 2026-01-03. Restored here 2026-0
 byte-identical to the copies still live in the panel, which are being deleted from YAGPDB
 alongside this restoration.
 
+`kb.gohtml` (knowledge base lookup) moved here on 2026-09-27, deduped with `-define`: its
+two entries ("The Seven Tenets" and "The Seven Satanic Tenets") moved to the website
+glossary as "Seven Tenets" (https://thenighthouse.org/glossary/#seven-tenets); the site is
+the single source of truth, as with the rules. The owner is deleting the `kb` command and
+the `Knowledge` DB entry from YAGPDB. Its tests stay in
+`tools/emulator/testdata/command_tests.yaml`, pointed at `retired/kb.gohtml`.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
 `make changed-since-deploy` (all three scan only `everyone/` and `staff/`). `make lint`

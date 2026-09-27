@@ -53,7 +53,7 @@ execCC of `rule` per rule with 2 s sleeps ("one message").
 | Command | Improvement |
 |---|---|
 | `db` | Bug 3. The largest file (17 KB) and best tested (33 cases) |
-| `db_get_embed` | None; service for `kb` and `simple_db_lookup` |
+| `db_get_embed` | None; service for `simple_db_lookup` |
 | `simple_db_lookup` | Bug 2 |
 | `rule`, `rules`, `rule_edit` | Bug 1; `rules` has 0 tests |
 | `contrasts` | Bug 4 |

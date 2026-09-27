@@ -122,12 +122,12 @@ Centralized message formatting and delivery:
 
 #### Content Management
 - **Rule System**: Dynamic rule storage and retrieval
-- **Knowledge Base**: Searchable information repository
+- **Glossary**: `-define` links a term to the Night House website glossary
 - **Archival System**: Message preservation and organization
 
 #### Utility Services
 - **Text Processing**: Hebrew/Phoenician/Arabic conversion
-- **Mathematical Operations**: Gematria, color contrast, dice rolling
+- **Mathematical Operations**: Gematria, color contrast
 - **Discord Integration**: Timestamp parsing, avatar viewing, message linking
 
 ### 3. Presentation Layer
