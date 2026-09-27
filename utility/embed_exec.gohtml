@@ -44,10 +44,16 @@
     {{ $authorColor = $dbEmbedColor }}
 {{ end }}
 
-{{/* Discord allows 4096 characters of description, and 6000 for the title, description,
-  field names and values and author name together: cut the description to fit both */}}
+{{/* Discord allows 256 characters for the title, 4096 for the description, and 6000 for
+  the title, description, field names and values and author name together: cut the
+  title and description to fit all three */}}
+{{ $title := print (or .ExecData.Title "") }}
+{{ if gt (len (toRune $title)) 256 }}
+    {{ $kept := slice (split $title "") 0 255 }}
+    {{ $title = joinStr "" $kept "…" }}
+{{ end }}
 {{ $otherLen := add
-    (len (toRune (print (or .ExecData.Title ""))))
+    (len (toRune $title))
     (len (toRune (print (or $author.name ""))))
 }}
 {{- range .ExecData.Fields -}}
@@ -67,7 +73,7 @@
     {{ end }}
 {{ end }}
 {{ $embed := cembed
-    "title" .ExecData.Title
+    "title" $title
     "description" $description
     "fields" .ExecData.Fields
     "color" (or .ExecData.Color $authorColor)
