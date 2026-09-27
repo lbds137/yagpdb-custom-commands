@@ -58,6 +58,8 @@ def main() -> int:
 
     run(["git", "add", "-A"], cwd=repo)
     run(["git", "commit", "-q", "-m", "fixture"], cwd=repo)
+    # A new command not yet `git add`-ed still needs an id (a worker's tree is untracked).
+    write("everyone/general/untracked.gohtml", "untracked content\n")
 
     proc = run(
         ["python3", DEPLOY_PANEL_CHECK_PY, "--panel", "deploy/panel.json"],
@@ -72,6 +74,7 @@ def main() -> int:
         "everyone/general/dual.gohtml: mapped in commands but also listed as unmanaged",
         "everyone/general/missing.gohtml: unmanaged but does not exist in the working tree",
         "everyone/general/normal.gohtml: no 'main' id in panel.json",
+        "everyone/general/untracked.gohtml: no 'main' id in panel.json",
     ]
     for substr in expected_substrings:
         if substr not in proc.stderr:

@@ -8,7 +8,8 @@
   (an unmanaged file has no id and is never touched by the deploy tooling).
 
 The expected set of command files is derived from the tree every run (never a hardcoded
-count), via `git ls-files` against the working tree -- not `git ls-tree HEAD`, so an
+count), via `git ls-files` (tracked plus untracked, non-ignored) against the working tree -- not
+`git ls-tree HEAD`, so an
 uncommitted `git mv` (e.g. retiring a command) is picked up immediately rather than only
 after a commit.
 """
@@ -23,7 +24,8 @@ COMMAND_DIRS = ("everyone", "staff")
 
 def list_command_files():
     out = subprocess.run(
-        ["git", "ls-files"] + list(COMMAND_DIRS),
+        # --others: a new, not yet added command counts too (else a worker's tree passes)
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"] + list(COMMAND_DIRS),
         capture_output=True, text=True, check=True,
     ).stdout
     return {line for line in out.splitlines() if line.endswith(".gohtml")}
