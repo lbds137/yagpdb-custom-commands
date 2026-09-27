@@ -33,13 +33,19 @@ tests:
       sent_messages:
         - { embed_title: "Color Inspector", embed_contains: "`16711680`" }
 
-  - name: "hex_to_int: a bare hex code (ff0000, no #) also decodes to 16711680"
+  - name: "hex_to_int: a bare hex code (ff0000, no #) does not trigger it"
     template: "../../../everyone/color/hex_to_int.gohtml"
     context:
       message_content: "ff0000"
-    assertions:
-      sent_messages:
-        - { embed_title: "Color Inspector", embed_contains: "`16711680`" }
+    expected:
+      no_trigger: true
+
+  - name: "hex_to_int: an ordinary a-f word (decade) does not trigger it"
+    template: "../../../everyone/color/hex_to_int.gohtml"
+    context:
+      message_content: "decade"
+    expected:
+      no_trigger: true
 
   - name: "hex_to_int: the execCC path (.ExecData.Hex) that rand_color uses"
     template_source: |

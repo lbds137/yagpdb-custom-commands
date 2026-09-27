@@ -16,6 +16,18 @@ wants the flow — and they're still covered by the emulator's admission tests
 does the same with fuller dice syntax. Its tests stay in
 `tools/emulator/testdata/dice_roll_tests.yaml`.
 
+`message_link.gohtml` (expands a quoted Discord message link into an embed) moved here on
+2026-09-27: Discord's native message forwarding does almost exactly what it did, its live
+trigger type was already None, and its only remaining callers (`admit_user`, `archive`,
+`reject_user`) are already retired. Its tests stay in
+`tools/emulator/testdata/message_link_tests.yaml`.
+
+`agree.gohtml` (a guest accepts the rules) and `agree_clean.gohtml` (regex `.*` cleanup of
+off-format messages in the agreement channel) were the guest-era rules-agreement pair,
+deleted from the repo by accident in 75f9a9b on 2026-01-03. Restored here 2026-09-27,
+byte-identical to the copies still live in the panel, which are being deleted from YAGPDB
+alongside this restoration.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
 `make changed-since-deploy` (all three scan only `everyone/` and `staff/`). `make lint`
