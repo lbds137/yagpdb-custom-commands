@@ -97,10 +97,9 @@ COMMAND_DIRS := everyone staff
 # the deployed tag; harmless to keep once the deployed tag postdates the restructure.
 DEPLOY_DIRS := $(COMMAND_DIRS) utility staff_utility
 
-changed-since-deploy: ## List command files changed since the `deployed` tag (paste these)
+changed-since-deploy: ## List command files changed since the `deployed` tag (paste these; skips deploy/panel.json's unmanaged files)
 	@git rev-parse -q --verify deployed >/dev/null || (echo "No 'deployed' tag yet: run make mark-deployed after a paste" && exit 1)
-	@list="$$(git diff --name-status -M deployed -- $(DEPLOY_DIRS) | awk -f scripts/changed-since-deploy.awk)"; \
-	if [ -z "$$list" ]; then echo "Nothing to paste: no command changed since $$(git log -1 --format='%h %as' deployed)"; else echo "$$list"; fi
+	@python3 scripts/changed-since-deploy.py $(DEPLOY_DIRS)
 
 mark-deployed: ## Record that the current commit's commands are live in YAGPDB
 	@git tag -f deployed HEAD >/dev/null && echo "deployed → $$(git log -1 --format='%h %s' HEAD)"
@@ -114,4 +113,6 @@ test-deploy: ## Node parity tests for deploy.js + the panel.json/manifest checks
 	@echo "🧪 Running deploy tooling tests..."
 	@node --test deploy/deploy.test.js
 	@python3 scripts/deploy_panel_check.py
+	@python3 scripts/deploy_panel_check_test.py
 	@python3 scripts/deploy_manifest_test.py
+	@python3 scripts/test_changed_since_deploy.py

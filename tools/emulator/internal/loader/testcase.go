@@ -255,11 +255,16 @@ type ExpectedResult struct {
 
 // Assertions defines post-execution checks.
 type Assertions struct {
-	DBChecks     []DBCheck      `yaml:"db_checks"`
-	SentMessages []MessageCheck `yaml:"sent_messages"`
-	// EditedMessages check messages as editMessage left them
-	EditedMessages []MessageCheck `yaml:"edited_messages"`
-	RoleChanges    []RoleCheck    `yaml:"role_changes"`
+	DBChecks []DBCheck `yaml:"db_checks"`
+	// SentMessages are checked one by one, matching the nth (default: first) message in
+	// each check's channel (or any channel); absent skips the check, `[]` asserts the run
+	// sent no messages at all
+	SentMessages *[]MessageCheck `yaml:"sent_messages"`
+	// EditedMessages check messages as editMessage left them, one by one, matching the nth
+	// (default: first) edit in each check's channel (or any channel); absent skips the
+	// check, `[]` asserts the run edited no messages at all
+	EditedMessages *[]MessageCheck `yaml:"edited_messages"`
+	RoleChanges    []RoleCheck     `yaml:"role_changes"`
 	// NoRoleChanges asserts the run changed no roles (a give of a role the member has, say)
 	NoRoleChanges bool `yaml:"no_role_changes"`
 	// ResponsePings is exactly who the response (the template's output) notifies

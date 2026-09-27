@@ -11,6 +11,15 @@ import (
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/runtime"
 )
 
+// msgChecks turns a possibly-nil slice into the pointer sent_messages/its callers now use:
+// nil stays nil (no assertion), a non-nil slice (empty or not) becomes a checked pointer.
+func msgChecks(cs []MessageCheck) *[]MessageCheck {
+	if cs == nil {
+		return nil
+	}
+	return &cs
+}
+
 func TestSetupTemplatesRunFirstOnTheSameDatabase(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name, src string) {
@@ -26,7 +35,7 @@ func TestSetupTemplatesRunFirstOnTheSameDatabase(t *testing.T) {
 		TemplateSource: `{{(dbGet 0 "seeded").Value}}`,
 		SetupTemplates: []string{"seed.gohtml"},
 		Expected:       ExpectedResult{OutputEquals: str("yes")},
-		Assertions:     Assertions{SentMessages: []MessageCheck{{ContentEquals: str("from test")}}},
+		Assertions:     Assertions{SentMessages: &[]MessageCheck{{ContentEquals: str("from test")}}},
 	}
 	tc.applyDefaults()
 	r := NewRunner(RunnerConfig{BaseDir: dir})
@@ -328,7 +337,7 @@ func TestEmbedChecksMatchAnyEmbed(t *testing.T) {
 			[]string{`no embed titled "third"; titles found: ["first" "second"]`}},
 	}
 	for _, c := range cases {
-		tc := &TestCase{Name: c.name, TemplateSource: src, Assertions: Assertions{SentMessages: c.checks}}
+		tc := &TestCase{Name: c.name, TemplateSource: src, Assertions: Assertions{SentMessages: &c.checks}}
 		tc.applyDefaults()
 		res := NewRunner(RunnerConfig{}).RunTest(tc)
 		wantFailures := 0
@@ -389,7 +398,7 @@ func TestMessageAndOutputEquals(t *testing.T) {
 		}
 		tc := &TestCase{Name: c.name, TemplateSource: source,
 			Expected:   ExpectedResult{OutputEquals: c.output},
-			Assertions: Assertions{SentMessages: c.checks, EditedMessages: c.edits}}
+			Assertions: Assertions{SentMessages: msgChecks(c.checks), EditedMessages: msgChecks(c.edits)}}
 		tc.applyDefaults()
 		res := NewRunner(RunnerConfig{}).RunTest(tc)
 		want := c.failures
@@ -497,6 +506,62 @@ func TestDeletionsCheckFailsTheTest(t *testing.T) {
 	res := r.RunTest(tc)
 	if res.Error != nil || len(res.Failures) != 1 || !strings.Contains(res.Failures[0], "expected 0 deletions, got 1") {
 		t.Errorf("got %v, %q", res.Error, res.Failures)
+	}
+}
+
+// sent_messages: [] behaves like the other assertions' empty list: it asserts the run sent
+// no messages at all, while an absent sent_messages leaves sent messages unchecked.
+func TestSentMessagesEmptyListAssertsNone(t *testing.T) {
+	r := NewRunner(RunnerConfig{})
+
+	tc := &TestCase{Name: "none sent", TemplateSource: "nothing",
+		Assertions: Assertions{SentMessages: &[]MessageCheck{}}}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 0 {
+		t.Errorf("[] with nothing sent should pass: %v, %q", res.Error, res.Failures)
+	}
+
+	tc = &TestCase{Name: "one sent", TemplateSource: `{{sendMessage 9 "hi"}}`,
+		Assertions: Assertions{SentMessages: &[]MessageCheck{}}}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 1 ||
+		!strings.Contains(res.Failures[0], "expected 0 sent messages, got 1") {
+		t.Errorf("[] with a message sent should fail: %v, %q", res.Error, res.Failures)
+	}
+
+	tc = &TestCase{Name: "absent", TemplateSource: `{{sendMessage 9 "hi"}}`}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 0 {
+		t.Errorf("absent sent_messages should leave sent messages unchecked: %v, %q", res.Error, res.Failures)
+	}
+}
+
+// edited_messages: [] has the same blind spot sent_messages had, and the same fix: absent
+// leaves edits unchecked, [] asserts the run edited no messages at all.
+func TestEditedMessagesEmptyListAssertsNone(t *testing.T) {
+	r := NewRunner(RunnerConfig{})
+
+	tc := &TestCase{Name: "none edited", TemplateSource: "nothing",
+		Assertions: Assertions{EditedMessages: &[]MessageCheck{}}}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 0 {
+		t.Errorf("[] with nothing edited should pass: %v, %q", res.Error, res.Failures)
+	}
+
+	tc = &TestCase{Name: "one edited",
+		TemplateSource: `{{$id := sendMessageRetID 7 "d"}}{{editMessage 7 $id "e"}}`,
+		Assertions:     Assertions{EditedMessages: &[]MessageCheck{}}}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 1 ||
+		!strings.Contains(res.Failures[0], "expected 0 edited messages, got 1") {
+		t.Errorf("[] with a message edited should fail: %v, %q", res.Error, res.Failures)
+	}
+
+	tc = &TestCase{Name: "absent",
+		TemplateSource: `{{$id := sendMessageRetID 7 "d"}}{{editMessage 7 $id "e"}}`}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 0 {
+		t.Errorf("absent edited_messages should leave edits unchecked: %v, %q", res.Error, res.Failures)
 	}
 }
 
