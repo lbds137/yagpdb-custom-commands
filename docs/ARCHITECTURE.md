@@ -51,7 +51,7 @@ Core services are implemented as reusable custom commands:
 
 - **`embed_exec`**: Universal embed creation service
 - **`db`**: Database operations service
-- **`message_link`**: Message linking service, called by log_user (everyone/general/,
+- **`message_link`**: Message linking service, called by log_user (commands/plumbing/,
   unmanaged: never deployed, the live copy holds the real watched ID)
 
 ## Data Flow Architecture
@@ -360,7 +360,7 @@ cd tools/emulator
 go build -o bin/yagtest ./cmd/yagtest
 
 # Run a single template
-./bin/yagtest run ../../everyone/services/db.gohtml
+./bin/yagtest run ../../commands/db/db.gohtml
 
 # Run test suite
 ./bin/yagtest test testdata/command_tests.yaml
@@ -369,7 +369,7 @@ go build -o bin/yagtest ./cmd/yagtest
 #### Test Case Format
 ```yaml
 - name: "db add - Append to array"
-  template: "../../../everyone/services/db.gohtml"
+  template: "../../../commands/db/db.gohtml"
   context:
     args: ["add", "Directory:Exclude Categories", "New Category"]
 ```

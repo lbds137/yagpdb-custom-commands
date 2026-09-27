@@ -1,0 +1,58 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `channel_activity`
+  Group: `Staff Utility`
+  Dependencies: `channel_activity_pager`
+*/ -}}
+{{- /* audits how long each channel has gone quiet, from what channel_tracker records: the
+  entry point of the browse view. It cleans up the entries of deleted channels, then execCCs
+  channel_activity_pager (Commands dict key "channel_activity_pager") for the first page;
+  the pager's buttons do the rest in place. */ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $pager := toInt ($commandsDict.Get "channel_activity_pager") }}
+
+{{/* every channel that still exists (any type) */}}
+{{ $allChannelIDs := dict }}
+{{- range $channel := .Guild.Channels -}}
+  {{- $allChannelIDs.Set $channel.ID true -}}
+{{- end -}}
+
+{{/* tracked entries, oldest first; a second call only when the first came back full,
+  never a third (free-tier db_multiple cap) */}}
+{{ $entries := dbBottomEntries "Last Active" 100 0 }}
+{{ $entries2 := cslice }}
+{{- if eq (len $entries) 100 -}}
+  {{- $entries2 = dbBottomEntries "Last Active" 100 100 -}}
+{{- end -}}
+{{ $all := cslice }}
+{{ $all = $all.AppendSlice $entries }}
+{{ $all = $all.AppendSlice $entries2 }}
+
+{{/* a tracked entry for a channel that no longer exists at all sits at the oldest end
+  forever and eats the 200-entry window, so clean it up here, once per run rather than on
+  every click: at most 6 dbDel calls (free tier: 10 db_interactions - 2 dbGet -
+  2 dbBottomEntries = 6; dbDel counts one db_interactions call each, like
+  dbGet/dbBottomEntries, vendor customcommands/tmplextensions.go's tmplDBDel). A channel
+  that exists but is merely ineligible (excluded, voice, ...) is left alone: it may become
+  eligible later. */}}
+{{ $deletedCount := 0 }}
+{{ $maxDeletes := 6 }}
+{{- range $entry := $all -}}
+  {{- if not ($allChannelIDs.Get $entry.UserID) -}}
+    {{- if lt $deletedCount $maxDeletes -}}
+      {{- dbDel $entry.UserID "Last Active" -}}
+      {{- $deletedCount = add 1 $deletedCount -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* the first page: stale channels, oldest first. The pager runs after the cleanup above
+  and rereads the entries itself; nothing is printed here after the execCC */}}
+{{ execCC $pager .Channel.ID 0 (sdict "Bucket" "stale" "Page" 1) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

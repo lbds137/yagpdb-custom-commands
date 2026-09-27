@@ -17,20 +17,27 @@ This repository contains a comprehensive suite of custom commands for the YAGPDB
 
 ### Command Categories
 
-Top-level command folders mirror the YAGPDB control-panel groups (permission scopes):
+Every deployed command lives in one tree, `commands/<topic>/`, with a folder per topic
+(the planned slash-command roots); a folder mixes both panel groups:
 
-1. **`everyone/`** - The everyone group, in topic subfolders: `services/` (embed_exec, db,
-   db_get_embed, db_get_text, message_link), `hebrew/` (gematria, alefbet, atbash, pyramid, rand_hebrew),
-   `color/` (contrast, contrasts, hex_to_int, rand_color), `knowledge/` (define, rule),
-   `links/` (message_pointer, channel_link), `bump/` (bump_check,
-   bump_remind), `general/` (avatar_viewer, timestamp, hugemoji, ticket_clean, unhiatus,
-   channel_tracker).
-   `unhiatus` lives here on purpose: a staff member on hiatus has lost the staff roles the
-   staff group requires, so the everyone group is the only one it can run in.
-2. **`staff/`** - The staff group - administrative and moderation tools, flat (no
-   subfolders). `channel_activity_pager` is a Message Component trigger (`^ca:`), the
-   button handler `channel_activity` execCCs for its browse view; it finds the pager's CC
-   id in the `Commands` dict (key `channel_activity_pager`).
+- `bump/` (bump_check, bump_remind, bump_reset), `rules/` (rule, rules, rule_edit),
+  `gematria/` (gematria, gematria_bootstrap), `hebrew/` (alefbet, atbash, pyramid,
+  rand_hebrew), `color/` (contrast, contrasts, hex_to_int, rand_color), `db/` (db,
+  db_get_embed, db_get_text, simple_db_edit, simple_db_lookup), `members/` (hiatus,
+  unhiatus, inactivity, staff_roles, role_ping, batch_delrep), `channels/`
+  (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
+  message_pointer), `knowledge/` (define), `general/` (avatar_viewer, hugemoji,
+  timestamp), `plumbing/` (embed_exec, message_link, log_user, ticket_clean, bootstrap).
+- The YAGPDB control-panel group (the permission scope) is the header's `Group:` line:
+  `Utility` (everyone) or `Staff Utility` (staff). The linter requires it on every
+  command file, and the deploy tool reports a mismatch with the panel's selected group as
+  drift, like trigger and type.
+- `unhiatus` is in the `Utility` group on purpose: a staff member on hiatus has lost the
+  staff roles the `Staff Utility` group requires, so `Utility` is the only group it can
+  run in.
+- `channel_activity_pager` is a Message Component trigger (`^ca:`), the button handler
+  `channel_activity` execCCs for its browse view; it finds the pager's CC id in the
+  `Commands` dict (key `channel_activity_pager`).
 
 Retired commands (`retired/`) are kept for reference and never deployed.
 
@@ -60,7 +67,7 @@ Retired commands (`retired/`) are kept for reference and never deployed.
    - `embed_exec` - Universal embed creation service
    - `db` - Database operations interface
    - `message_link` - Message reference and linking service, called by log_user
-     (everyone/general/, unmanaged: never deployed, the live copy holds the real watched ID)
+     (commands/plumbing/, unmanaged: never deployed, the live copy holds the real watched ID)
    - `simple_db_edit` / `simple_db_lookup` - Database management utilities
 
 3. **Command Structure**

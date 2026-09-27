@@ -1,0 +1,125 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `rule_edit`
+  Group: `Staff Utility`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $args := parseArgs 2
+    (joinStr "\n"
+        "Usage: `[Rule Number]` `[Text]`"
+        "In order to __delete__ a rule, please use `(nil)` for the text."
+    )
+    (carg "string" "rule number")
+    (carg "string" "text")
+}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+{{ $ruleArg := $args.Get 0 }}
+{{ $isValid := and (reFind "\\A\\d+\\z" $ruleArg) (ne "0" $ruleArg) }}
+{{ if $isValid }}
+    {{ $ruleNumber := toInt $ruleArg }}
+    {{ $key := joinStr "" "Rule #" $ruleNumber }}
+    {{ $text := $args.Get 1 }}
+    {{ $isDelete := eq $text "(nil)" }}
+
+    {{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+    {{ $found := $rulesDict.HasKey $key }}
+    {{ $old := "" }}
+    {{ if $found }}
+        {{ $old = $rulesDict.Get $key }}
+    {{ end }}
+    {{ $oldIsString := eq "string" (printf "%T" $old) }}
+    {{/* "and" isn't short-circuiting in Go templates: eq $old $text would still run
+      (and error) on a non-comparable $old if inlined into one "and" condition */}}
+    {{ $isUnchanged := false }}
+    {{ if $oldIsString }}
+        {{ $isUnchanged = eq $old $text }}
+    {{ end }}
+
+    {{ $title := "" }}
+    {{ $description := "" }}
+    {{ $fields := cslice }}
+
+    {{ if $isDelete }}
+        {{ if $found }}
+            {{ $rulesDict.Del $key }}
+            {{ dbSet 0 "Rules" $rulesDict }}
+            {{ $title = joinStr "" $key " removed" }}
+            {{ if $oldIsString }}
+                {{ $description = $old }}
+            {{ else }}
+                {{/* cut the json first, then fence: fencing after a truncation drops
+                  the closing fence and breaks the embed's markdown */}}
+                {{ $oldJSON := json $old true }}
+                {{ $oldJSONMax := sub 4096 8 }}
+                {{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
+                    {{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
+                    {{ $oldJSON = joinStr "" $kept "…" }}
+                {{ end }}
+                {{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
+            {{ end }}
+        {{ else }}
+            {{ $title = joinStr "" $key " not found" }}
+            {{ $description = joinStr "" "⚠️ There is no rule #" $ruleNumber " to remove." }}
+        {{ end }}
+    {{ else if not $found }}
+        {{ $rulesDict.Set $key $text }}
+        {{ dbSet 0 "Rules" $rulesDict }}
+        {{ $title = joinStr "" $key " added" }}
+        {{ $description = $text }}
+    {{ else if $isUnchanged }}
+        {{ $title = joinStr "" $key " unchanged" }}
+        {{ $description = $text }}
+    {{ else }}
+        {{ $rulesDict.Set $key $text }}
+        {{ dbSet 0 "Rules" $rulesDict }}
+        {{ $title = joinStr "" $key " updated" }}
+        {{ $description = $text }}
+        {{ $was := $old }}
+        {{ if $oldIsString }}
+            {{ if gt (len (toRune $was)) 1024 }}
+                {{ $kept := slice (split $was "") 0 1023 }}
+                {{ $was = joinStr "" $kept "…" }}
+            {{ end }}
+        {{ else }}
+            {{/* cut the json first, then fence: fencing after a truncation drops
+              the closing fence and breaks the embed's markdown */}}
+            {{ $wasJSON := json $was true }}
+            {{ $wasJSONMax := sub 1024 8 }}
+            {{ if gt (len (toRune $wasJSON)) $wasJSONMax }}
+                {{ $kept := slice (split $wasJSON "") 0 (sub $wasJSONMax 1) }}
+                {{ $wasJSON = joinStr "" $kept "…" }}
+            {{ end }}
+            {{ $was = joinStr "" "```\n" $wasJSON "\n```" }}
+        {{ end }}
+        {{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
+    {{ end }}
+
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" $title
+        "Description" $description
+        "Fields" $fields
+    ) }}
+{{ else }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Invalid Rule Number Parameter"
+        "Description" "⚠️ You must provide an integer greater than zero!"
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
+    ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

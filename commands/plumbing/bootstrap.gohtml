@@ -1,0 +1,82 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `bootstrap`
+  Group: `Staff Utility`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $args := parseArgs 2 (joinStr "" "Usage: [`embed_exec` custom command ID] [`db` custom command ID] [staff role ID]")
+    (carg "int" "`embed_exec` custom command ID")
+    (carg "int" "`db` custom command ID")
+    (carg "string" "staff role ID")
+}}
+
+{{ $embed_exec := $args.Get 0 }}
+{{ $db := $args.Get 1 }}
+{{ $staffRoleID := $args.Get 2 }}
+{{ $yagpdbChannelID := toString .Channel.ID }}
+
+{{ $globalDict := or (dbGet 0 "Global").Value sdict }}
+{{ $commandsDict := or (dbGet 0 "Commands").Value sdict }}
+{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+{{ $rolesDict := or (dbGet 0 "Roles").Value sdict }}
+{{ $channelsDict := or (dbGet 0 "Channels").Value sdict }}
+{{ $adminDict := or (dbGet 0 "Admin").Value sdict }}
+{{ $knowledgeDict := or (dbGet 0 "Knowledge").Value sdict }}
+{{ $directoryDict := or (dbGet 0 "Directory").Value sdict }}
+{{ $inactivityDict := or (dbGet 0 "Inactivity Prune").Value sdict }}
+{{ $staffDict := or (dbGet 0 "Staff").Value sdict }}
+
+{{ if not ($globalDict.Get "Embed Color") }}
+    {{ $globalDict.Set "Embed Color" "16777214" }}
+{{ end }}
+
+{{ $globalDict.Set "Default Avatar" "https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png" }}
+
+{{ if not ($globalDict.Get "Delete Trigger Delay") }}
+    {{ $globalDict.Set "Delete Trigger Delay" "5" }}
+{{ end }}
+
+{{ if not ($globalDict.Get "Delete Response Delay") }}
+    {{ $globalDict.Set "Delete Response Delay" "5" }}
+{{ end }}
+
+{{ if not ($globalDict.Get "Command Prefix") }}
+    {{ $globalDict.Set "Command Prefix" "/" }}
+{{ end }}
+
+{{ if not ($globalDict.Get "Guild Premium Tier") }}
+    {{ $globalDict.Set "Guild Premium Tier" "0" }}
+{{ end }}
+
+{{- /* the default of 10 is YAGPDB premium's per-run execCC cap; a free (non-premium)
+    server should set Global "ExecCC Limit" to 1, free's own per-run cap */ -}}
+{{ if not ($globalDict.Get "ExecCC Limit") }}
+    {{ $globalDict.Set "ExecCC Limit" "10" }}
+{{ end }}
+
+{{ $commandsDict.Set "embed_exec" (str $embed_exec) }}
+{{ $commandsDict.Set "db" (str $db) }}
+
+{{ $rolesDict.Set "Staff" $staffRoleID }}
+
+{{ $channelsDict.Set "YAGPDB" $yagpdbChannelID }}
+
+{{ dbSet 0 "Global" $globalDict }}
+{{ dbSet 0 "Commands" $commandsDict }}
+{{ dbSet 0 "Rules" $rulesDict }}
+{{ dbSet 0 "Roles" $rolesDict }}
+{{ dbSet 0 "Channels" $channelsDict }}
+{{ dbSet 0 "Admin" $adminDict }}
+{{ dbSet 0 "Knowledge" $knowledgeDict }}
+{{ dbSet 0 "Directory" $directoryDict }}
+{{ dbSet 0 "Inactivity Prune" $inactivityDict }}
+{{ dbSet 0 "Staff" $staffDict }}
+
+{{ execCC $embed_exec .Channel.ID 0 (sdict
+    "Title" "Bootstrap Execution Complete"
+    "Description" "The bootstrapping process completed successfully!"
+) }}
+
+{{ deleteTrigger 5 }}

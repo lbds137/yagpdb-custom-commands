@@ -1,0 +1,214 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `avatar_viewer`
+  Group: `Utility`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $yagpdbUserID := 204255221017214977 }}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+{{ $validSizes := cslice "32" "64" "128" "256" "512" "1024" }}
+{{ $oldModActions := cslice "Muted" "Kicked" "Banned" "Unmuted" "Unbanned" }}
+{{- /* whois's fields (YAGPDB logs/plugin_bot.go); past names come in two forms */ -}}
+{{ $whoisFields := cslice
+    "ID" "Avatar" "Account Created" "Account Age" "Joined Server At"
+    "Join Server Age" "Status" "Roles" "5 last usernames" "5 last nicknames"
+    "Usernames" "Nicknames"
+}}
+
+{{- /* regex */ -}}
+{{ $baseURLRegex := "https://(ptb.|canary.)?discord(?:app)?.com/channels/" }}
+{{ $snowflakeRegex := "\\d{16,}" }}
+{{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
+{{ $modLogUserIDRegex := joinStr "" " \\*\\(ID " $snowflakeRegex "\\)\\*" }}
+{{ $fullURLRegex := joinStr "" $baseURLRegex $snowflakeRegex "/" $snowflakeRegex "/" $snowflakeRegex }}
+
+{{- /* a mod log entry starts "**<emoji><action>** " (YAGPDB moderation/modlog.go; the
+  action can be several words, or name a role); older entries bolded the name too */ -}}
+{{ $oldModActionRegex := joinStr "" "[^\\w]{1,}(" (joinStr "|" $oldModActions.StringSlice) ") " }}
+{{ $modActionRegex := joinStr "" "\\*\\*([^\\n]+?\\*\\* |" $oldModActionRegex ")" }}
+{{ $usernameRegex := "[^#]{1,}(\\*\\*)?(#\\d{4})?" }} {{- /* yes, it's annoying that there are stars in the middle */ -}}
+{{ $modActionLogRegex := joinStr "" $modActionRegex $usernameRegex $modLogUserIDRegex }}
+
+{{- /* default argument values */ -}}
+{{ $avatarArg := "" }}
+{{ $sizeArg := "" }}
+
+{{- /* default result values */ -}}
+{{ $entityID := "" }}
+{{ $user := "" }}
+{{ $member := "" }}
+{{ $defaultAvatarURL := $globalDict.Get "Default Avatar" }}
+{{ $avatarURL := "" }}
+{{ $messageLink := 0 }}
+{{ $size := "1024" }}
+{{ $color := 0 }}
+
+{{ if gt (len .CmdArgs) 0 }}
+    {{ $avatarArg = index .CmdArgs 0 }}
+    {{ if reFind $fullURLRegex $avatarArg }}
+        {{ $messageLink = 1 }}
+    {{ else if reFind $entityIDRegex $avatarArg }}
+        {{ $entityID = reFind $entityIDRegex $avatarArg }}
+    {{ else }}
+        {{ $entityID = .User.ID }}
+    {{ end }}
+
+    {{- /* use size argument if present */ -}}
+    {{ if eq (len .CmdArgs) 2 }}
+        {{ $sizeArg = index .CmdArgs 1 }}
+        {{ if in $validSizes $sizeArg }}
+            {{ $size = $sizeArg }}
+        {{ end }}
+    {{ end }}
+{{ else }}
+    {{ $entityID = .User.ID }}
+{{ end }}
+
+{{ $avatarOwnerID := $entityID }}
+{{ $avatarOwner := "(Unknown)" }}
+{{ $avatarOwnerNickname := "" }}
+{{ if $messageLink }}
+    {{ $messageLink = reFind $fullURLRegex $avatarArg }}
+    {{ $gcmString := reReplace $baseURLRegex $messageLink "" }}
+    {{ $gcmSlice := split $gcmString "/" }}
+
+    {{ $guildID := index $gcmSlice 0 }}
+    {{ $channelID := index $gcmSlice 1 }}
+    {{ $messageID := index $gcmSlice 2 }}
+
+    {{ $message := getMessage $channelID $messageID }}
+    {{ $guildCheck := eq .Guild.ID (toInt $guildID) }}
+    {{ if and $message $guildCheck }}
+        {{ $msgAuthor := $message.Author }}
+        {{- /* check whether message link points to a YAGPDB mod action log or `whois` command output */ -}}
+        {{ if eq $yagpdbUserID $msgAuthor.ID }}
+            {{ $embeds := $message.Embeds }}
+            {{ if $embeds }}
+                {{ $embed := index $embeds 0 }}
+                {{ $embedFields := $embed.Fields }}
+                {{- /* if the message has embed fields, it might be `whois` command output */ -}}
+                {{ if $embedFields }}
+                    {{ $fieldsDict := sdict }}
+                    {{ $matchesWhois := 1 }}
+                    {{ range $field := $embedFields }}
+                        {{ $fieldsDict.Set $field.Name $field.Value }}
+                        {{- /* check for an *exact* match of field names */ -}}
+                        {{ if not (in $whoisFields $field.Name) }}
+                            {{ $matchesWhois = 0 }}
+                        {{ end }}
+                    {{ end }}
+                    {{- /* we found `whois` command output, so let's grab the info */ -}}
+                    {{ if $matchesWhois }}
+                        {{ $avatarOwnerID = $fieldsDict.Get "ID" }}
+                        {{ $avatarOwner = $embed.Title }}
+                        {{ $avatarURL = joinStr "" $embed.Thumbnail.URL "?size=" $size }}
+                    {{ end }}
+                {{- /* mod action logs do not have embed fields; let's check those too */ -}}
+                {{ else }}
+                    {{ $embedDescription := $embed.Description }}
+                    {{- /* if present, we found a mod action log entry, so let's grab the info */ -}}
+                    {{ $modActionLog := reFind $modActionLogRegex $embedDescription }}
+                    {{ if $modActionLog }}
+                        {{ $usernameAndID := reReplace $modActionRegex $modActionLog "" }}
+                        {{ $usernameWithStars := reReplace $modLogUserIDRegex $usernameAndID "" }}
+
+                        {{ $idPart := reFind $modLogUserIDRegex $modActionLog }}
+                        {{ $avatarOwnerID = reFind $snowflakeRegex $idPart }}
+                        {{ $avatarOwner = reReplace "\\*\\*#" $usernameWithStars "#" }}
+                        {{ $avatarURL = joinStr "" $embed.Thumbnail.URL "?size=" $size }}
+                    {{ end }}
+                {{ end }}
+            {{ end }}
+        {{ else }}
+            {{ $authorUser := userArg $msgAuthor.ID }}
+            {{ $avatarOwnerID = $msgAuthor.ID }}
+            {{ $avatarOwner = or $authorUser.String (joinStr "" $msgAuthor.Username "#" $msgAuthor.Discriminator) }}
+            {{ $member = getMember $msgAuthor.ID }}
+
+            {{ $avatarURL = $msgAuthor.AvatarURL $size }}
+        {{ end }}
+    {{ end }}
+{{ else }}
+    {{ $user = userArg $entityID }}
+    {{ $member = getMember $entityID }}
+    {{ if $user }}
+        {{ $avatarURL = $user.AvatarURL $size }}
+        {{ $avatarOwner = $user.String }}
+    {{ else if eq $entityID (toString .Guild.ID) }}
+        {{ $avatarOwnerID = .Guild.ID }}
+        {{ $avatarOwner = .Guild.Name }}
+
+        {{ $gIconExtension := ".png" }}
+        {{ if ge $guildPremiumTier 1 }}
+            {{ $gIconExtension = ".gif" }}
+        {{ end }}
+        {{ $avatarURL = (joinStr ""
+            "https://cdn.discordapp.com/icons/"
+            (toString .Guild.ID) "/"
+            .Guild.Icon $gIconExtension
+            "?size=" $size
+        ) }}
+    {{ end }}
+{{ end }}
+
+{{ if $member }}
+    {{ if $member.Nick }}
+        {{ $avatarOwnerNickname = $member.Nick }}
+    {{ end }}
+    {{ $position := 0 }}
+    {{ $roles := $member.Roles }}
+    {{- range .Guild.Roles -}}
+        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+            {{- $position = .Position -}}
+            {{- $color = .Color -}}
+        {{- end -}}
+    {{- end -}}
+{{ end }}
+
+{{- /* a link found no one: the message is gone, or YAGPDB's but neither whois nor a mod log */ -}}
+{{ if and $messageLink (not $avatarOwnerID) }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "AuthorID" .User.ID
+        "ChannelID" .Channel.ID
+        "Title" "Avatar Viewer"
+        "Description" (print "⚠️ No avatar found in that message! Link someone's message, "
+            "or YAGPDB's `whois` output or mod log entry.")
+    ) }}
+{{ else }}
+    {{ $fields := cslice }}
+    {{ $fields = $fields.Append (sdict "name" "ID" "value" (toString $avatarOwnerID) "inline" false) }}
+    {{ $avatarOwnerTimestamp :=
+        div $avatarOwnerID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
+    }}
+    {{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $avatarOwnerTimestamp) "inline" false) }}
+    {{ $fields = $fields.Append (sdict "name" "Name" "value" $avatarOwner "inline" false) }}
+    {{ if $avatarOwnerNickname }}
+        {{ $fields = $fields.Append (sdict "name" "Nickname" "value" $avatarOwnerNickname "inline" false) }}
+    {{ end }}
+    {{ if $messageLink }}
+        {{ $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" $messageLink ")" }}
+        {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) }}
+    {{ end }}
+
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "AuthorID" .User.ID
+        "ChannelID" .Channel.ID
+        "Title" "Avatar Viewer"
+        "ImageURL" (or $avatarURL $defaultAvatarURL)
+        "Fields" $fields
+    ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

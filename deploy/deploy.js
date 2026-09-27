@@ -41,9 +41,11 @@
   function parseHeader(code) {
     const typeMatch = code.match(/Trigger type:\s*`([^`]*)`/);
     const triggerMatch = code.match(/\n\s*Trigger:\s*`([^`]*)`/);
+    const groupMatch = code.match(/\n\s*Group:\s*`([^`]*)`/);
     return {
       type: typeMatch ? typeMatch[1] : null,
       trigger: triggerMatch ? triggerMatch[1] : null,
+      group: groupMatch ? groupMatch[1] : null,
     };
   }
 
@@ -51,6 +53,30 @@
     const trimmed = (label || "").trim();
     if (trimmed.indexOf("Command") === 0) return "Command";
     return trimmed;
+  }
+
+  function panelGroupName(label) {
+    return (label || "").trim();
+  }
+
+  // Pure/unit-testable: the drift object run() reports, or null when nothing differs. A
+  // field is compared only when both the header and the panel have it.
+  function headerDrift(headerInfo, { panelType, panelTrigger, panelGroup }) {
+    const drift = {};
+    if (headerInfo.type !== null && panelType !== null && headerInfo.type !== panelType) {
+      drift.type = { header: headerInfo.type, panel: panelType };
+    }
+    if (
+      headerInfo.trigger !== null &&
+      panelTrigger !== null &&
+      headerInfo.trigger !== panelTrigger
+    ) {
+      drift.trigger = { header: headerInfo.trigger, panel: panelTrigger };
+    }
+    if (headerInfo.group !== null && panelGroup !== null && headerInfo.group !== panelGroup) {
+      drift.group = { header: headerInfo.group, panel: panelGroup };
+    }
+    return Object.keys(drift).length ? drift : null;
   }
 
   function sleep(ms) {
@@ -161,26 +187,21 @@
         const decision = decide({ liveSha, manifestSha, rawSha, dryRun });
 
         // Drift is report-only: compare the REPO header (from the raw fetch, not the live
-        // code) against the panel's live type/trigger fields. Never changes trigger/type.
-        const headerInfo = rawCode !== null ? parseHeader(rawCode) : { type: null, trigger: null };
+        // code) against the panel's live type/trigger/group fields. Never changes them.
+        const headerInfo =
+          rawCode !== null ? parseHeader(rawCode) : { type: null, trigger: null, group: null };
         const typeSelect = form.querySelector("select[name=trigger_type], select[name=type]");
         const triggerInput = form.querySelector("input[name=trigger], input[name=text_trigger]");
+        const groupSelect = form.querySelector("select[name=GroupID]");
         const panelType = typeSelect
           ? panelTypeName(typeSelect.options[typeSelect.selectedIndex].text)
           : null;
         const panelTrigger = triggerInput ? triggerInput.value : null;
-        const drift = {};
-        if (headerInfo.type !== null && panelType !== null && headerInfo.type !== panelType) {
-          drift.type = { header: headerInfo.type, panel: panelType };
-        }
-        if (
-          headerInfo.trigger !== null &&
-          panelTrigger !== null &&
-          headerInfo.trigger !== panelTrigger
-        ) {
-          drift.trigger = { header: headerInfo.trigger, panel: panelTrigger };
-        }
-        result.drift = Object.keys(drift).length ? drift : null;
+        // The selected option's text is the live group name (its value is the group id).
+        const panelGroup = groupSelect
+          ? panelGroupName(groupSelect.options[groupSelect.selectedIndex].text)
+          : null;
+        result.drift = headerDrift(headerInfo, { panelType, panelTrigger, panelGroup });
 
         if (decision !== "update") {
           result.status = decision;
@@ -233,6 +254,8 @@
     sha256hex,
     parseHeader,
     panelTypeName,
+    panelGroupName,
+    headerDrift,
     decide,
     classifyReadBack,
     run,

@@ -109,19 +109,11 @@ test_template() {
     fi
 }
 
-# Test everyone-group templates (recurses through the topic subfolders)
-echo -e "${BLUE}--- Everyone Commands ---${NC}"
+# Test every command (commands/<topic>/, both panel groups)
+echo -e "${BLUE}--- Commands ---${NC}"
 while IFS= read -r template; do
     test_template "$template"
-done < <(find "$PROJECT_ROOT/everyone" -name '*.gohtml' | sort)
-
-echo ""
-
-# Test staff-group templates
-echo -e "${BLUE}--- Staff Commands ---${NC}"
-while IFS= read -r template; do
-    test_template "$template"
-done < <(find "$PROJECT_ROOT/staff" -name '*.gohtml' | sort)
+done < <(find "$PROJECT_ROOT/commands" -name '*.gohtml' | sort)
 
 echo ""
 

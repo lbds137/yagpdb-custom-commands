@@ -100,18 +100,18 @@ Watch Options:
     -interval <dur>   How often to check for changes (default: 500ms)
 
 Examples:
-    yagtest run everyone/services/db.gohtml
-    yagtest run -args "get,Global" everyone/services/db.gohtml
-    yagtest run -message "#ff8800" everyone/color/hex_to_int.gohtml
-    yagtest run -db initial_db.json -context context.json everyone/services/db.gohtml
+    yagtest run commands/db/db.gohtml
+    yagtest run -args "get,Global" commands/db/db.gohtml
+    yagtest run -message "#ff8800" commands/color/hex_to_int.gohtml
+    yagtest run -db initial_db.json -context context.json commands/db/db.gohtml
     yagtest test testdata/simple_tests.yaml
     yagtest test testdata/db_tests.yaml testdata/pings_tests.yaml
     yagtest test testdata/
     yagtest test -strict -schema db_schema.yaml testdata/
-    yagtest watch -watch tools/emulator/testdata,everyone,staff testdata/
-    yagtest watch -watch tools/emulator/testdata,everyone,staff tools/emulator/testdata/db_tests.yaml \
+    yagtest watch -watch tools/emulator/testdata,commands testdata/
+    yagtest watch -watch tools/emulator/testdata,commands tools/emulator/testdata/db_tests.yaml \
         tools/emulator/testdata/pings_tests.yaml
-    yagtest check everyone/*/*.gohtml staff/*.gohtml
+    yagtest check commands/*/*.gohtml
 
 Note: Flags must come before the file/directory path.`)
 }

@@ -1,0 +1,53 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `batch_delrep`
+  Group: `Staff Utility`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+{{ $userIDs := reFindAll "\\d{16,}" .Message.Content }}
+{{ $count := len $userIDs }}
+{{ $result := "The following users have been purged from the Reputation leaderboard: " }}
+
+{{ if gt $count 0 }}
+  {{- $sliceCutoff := toInt (min $count 5) -}}
+  {{- range $userID := (slice $userIDs 0 $sliceCutoff) -}}
+      {{- $silent := exec "delrep" $userID -}}
+      {{- $result = joinStr "" $result "\n- <@" $userID ">" -}}
+  {{- end -}}
+
+  {{ if gt $count 5 }}
+      {{- $result = joinStr "\n\n" $result "The following users could not be purged due to custom command limits: " -}}
+      {{- range $ignoredUserID := (slice $userIDs 5) -}}
+          {{- $result = joinStr "" $result "\n- <@" $ignoredUserID ">" -}}
+      {{- end -}}
+  {{ end }}
+
+  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "Title" "Batch Reputation Deletion"
+    "Description" $result
+    "AuthorID" .Member.User.ID
+  ) }}
+{{ else }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+      "ChannelID" .Channel.ID
+      "Title" "Missing User IDs"
+      "Description" "⚠️ You must provide at least one user ID!"
+      "DeleteResponse" true
+      "DeleteDelay" $deleteResponseDelay
+    ) }}
+{{ end }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

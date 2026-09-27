@@ -1,0 +1,69 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `define`
+  Group: `Utility`
+  Dependencies: `embed_exec`
+  The slug this builds must match the-night-house's `src/lib/glossary.ts` `slugify`.
+*/ -}}
+
+{{ $args := parseArgs 0 "" (carg "string" "term") }}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+{{ $termRaw := "" }}
+{{ if $args.IsSet 0 }}
+    {{ $termRaw = $args.Get 0 }}
+{{ end }}
+{{ $term := trimSpace $termRaw }}
+
+{{ $title := "Glossary" }}
+{{ $description := "https://thenighthouse.org/glossary/" }}
+
+{{ if ne $term "" }}
+    {{ $title = joinStr "" "Glossary: " $term }}
+
+    {{/* Match the-night-house's slugify: NFD + strip combining marks in JS, done here as
+      lowercase then per-base-letter accent folding (Go template regex has no NFD) */}}
+    {{ $slug := lower $term }}
+    {{ $slug = reReplace "[àáâãäåā]" $slug "a" }}
+    {{ $slug = reReplace "[èéêëē]" $slug "e" }}
+    {{ $slug = reReplace "[ìíîïī]" $slug "i" }}
+    {{ $slug = reReplace "[òóôõöō]" $slug "o" }}
+    {{ $slug = reReplace "[ùúûūü]" $slug "u" }}
+    {{ $slug = reReplace "[ñ]" $slug "n" }}
+    {{ $slug = reReplace "[ç]" $slug "c" }}
+    {{ $slug = reReplace "[ýÿ]" $slug "y" }}
+    {{ $slug = reReplace "[^a-z0-9]+" $slug "-" }}
+    {{ $slug = reReplace "\\A-+|-+\\z" $slug "" }}
+
+    {{/* The retired kb command's two entries moved to the website glossary as one
+      combined entry, "Seven Tenets"; alias their old slugs to it. */}}
+    {{ $kbAliases := sdict
+        "the-seven-tenets" "seven-tenets"
+        "seven-satanic-tenets" "seven-tenets"
+        "the-seven-satanic-tenets" "seven-tenets"
+    }}
+    {{ if $kbAliases.Get $slug }}
+        {{ $slug = $kbAliases.Get $slug }}
+    {{ end }}
+
+    {{ if ne $slug "" }}
+        {{ $description = joinStr "" "https://thenighthouse.org/glossary/#" $slug }}
+    {{ end }}
+{{ end }}
+
+{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "Title" $title
+    "Description" $description
+) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

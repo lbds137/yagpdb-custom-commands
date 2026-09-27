@@ -13,10 +13,10 @@ make update-snapshots  # accept an intended change in snapshot output (also prun
 make prune-snapshots   # only remove the entries of renamed/deleted tests (make ci and CI
                        # fail while any are left; a plain make test warns)
 
-./bin/yagtest run -args "get,Global" -verbose everyone/services/db.gohtml
-./bin/yagtest run -message "#ff8800" everyone/color/hex_to_int.gohtml # whole message (Regex triggers need it)
-./bin/yagtest run -no-premium -strict everyone/services/db.gohtml   # free-server limits, fail on breach
-./bin/yagtest check everyone/*/*.gohtml staff/*.gohtml    # parse + static warnings
+./bin/yagtest run -args "get,Global" -verbose commands/db/db.gohtml
+./bin/yagtest run -message "#ff8800" commands/color/hex_to_int.gohtml # whole message (Regex triggers need it)
+./bin/yagtest run -no-premium -strict commands/db/db.gohtml   # free-server limits, fail on breach
+./bin/yagtest check commands/*/*.gohtml                   # parse + static warnings
 ./bin/yagtest test tools/emulator/testdata/db_tests.yaml tools/emulator/testdata/pings_tests.yaml  # several suites
 make test-templates                # smoke-run every command with no args on a bootstrapped DB (in make ci)
 ./scripts/find-missing-functions.sh
@@ -28,7 +28,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
 
 ```yaml
 - name: "Test description"            # unique within the file (snapshots are keyed by name)
-  template: "../../../everyone/general/example.gohtml"   # or template_source: |
+  template: "../../../commands/general/example.gohtml"   # or template_source: |
   strict: true                        # optional: fail on YAGPDB limits
   snapshot: true                      # optional: compare with __snapshots__/<file>.snap.yaml
   context:
@@ -71,8 +71,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # the test
   setup_db:
     - { user_id: 0, key: "Global", value: { Delete Trigger Delay: 5 } }
-  setup_templates: ["../../../staff/gematria_bootstrap.gohtml"]  # run first, same DB
-  command_map: { 1: "../../../everyone/services/embed_exec.gohtml" }  # execCC targets; a target's
+  setup_templates: ["../../../commands/gematria/gematria_bootstrap.gohtml"]  # run first, same DB
+  command_map: { 1: "../../../commands/plumbing/embed_exec.gohtml" }  # execCC targets; a target's
                                       # output is a sent message in its channel, as in YAGPDB
                                       # (a failed one: YAGPDB's error message, unless its
                                       # header turns Show errors off). Map the real command
@@ -215,7 +215,7 @@ under `messages:` in the run's channel and click it:
 
 ```yaml
 - name: "Next page"
-  template: "../../../staff/pager.gohtml"
+  template: "../../../commands/channels/pager.gohtml"
   context:
     messages: [{ id: 7, channel_id: 9, author_id: 1234567890, embeds: [{ title: "Page 1" }] }]
     channel: { id: 9 }

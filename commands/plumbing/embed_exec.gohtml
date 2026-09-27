@@ -1,0 +1,90 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `None`
+  Group: `Utility`
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $serverURL := or ($globalDict.Get "Server URL") "" }}
+{{ $dbEmbedColor := toInt ($globalDict.Get "Embed Color") }}
+{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+
+{{ $author := "" }}
+{{ $authorColor := 0 }}
+{{ $execAuthorValid := reFind "\\A\\d{16,}\\z" (toString .ExecData.AuthorID) }}
+{{ $execAuthorNotGuild := ne (toString .ExecData.AuthorID) (toString .Guild.ID) }}
+{{ if and $execAuthorValid $execAuthorNotGuild }}
+    {{ $member := getMember .ExecData.AuthorID }}
+    {{ $userFull := $member.User.String }}
+    {{ if $member.Nick }}
+        {{ $userFull = joinStr "" $member.Nick " (" $member.User.String ")" }}
+    {{ end }}
+    {{ $userLink := joinStr "" "https://discordapp.com/users/" $member.User.ID }}
+    {{ $author = sdict "name" $userFull "url" $userLink "icon_url" ($member.User.AvatarURL "128") }}
+    {{ $position := 0 }}
+    {{ $roles := $member.Roles }}
+    {{- range .Guild.Roles -}}
+        {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+            {{- $position = .Position -}}
+            {{- $authorColor = .Color -}}
+        {{- end -}}
+    {{- end -}}
+{{ else }}
+    {{ $gIconExtension := ".png" }}
+    {{ if ge (toInt $guildPremiumTier) 1 }}
+        {{ $gIconExtension = ".gif" }}
+    {{ end }}
+    {{ $gIcon := "" }}
+    {{ if .Guild.Icon }}
+        {{ $gIcon = (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
+    {{ else }}
+        {{ $gIcon = $globalDict.Get "Default Avatar" }}
+    {{ end }}
+    {{ $author = sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
+    {{ $authorColor = $dbEmbedColor }}
+{{ end }}
+
+{{/* Discord allows 256 characters for the title, 4096 for the description, and 6000 for
+  the title, description, field names and values and author name together: cut the
+  title and description to fit all three */}}
+{{ $title := print (or .ExecData.Title "") }}
+{{ if gt (len (toRune $title)) 256 }}
+    {{ $kept := slice (split $title "") 0 255 }}
+    {{ $title = joinStr "" $kept "…" }}
+{{ end }}
+{{ $otherLen := add
+    (len (toRune $title))
+    (len (toRune (print (or $author.name ""))))
+}}
+{{- range .ExecData.Fields -}}
+    {{- $otherLen = add $otherLen
+        (len (toRune (print (or .name ""))))
+        (len (toRune (print (or .value "")))) -}}
+{{- end -}}
+{{ $descriptionMaxLen := toInt (min 4096 (sub 6000 $otherLen)) }}
+{{ $description := .ExecData.Description }}
+{{ if $description }}
+    {{ if gt (len (toRune $description)) $descriptionMaxLen }}
+        {{ $description = "" }}
+        {{ if ge $descriptionMaxLen 1 }}
+            {{ $kept := slice (split .ExecData.Description "") 0 (sub $descriptionMaxLen 1) }}
+            {{ $description = joinStr "" $kept "…" }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+{{ $embed := cembed
+    "title" $title
+    "description" $description
+    "fields" .ExecData.Fields
+    "color" (or .ExecData.Color $authorColor)
+    "author" $author
+    "image" (sdict "url" .ExecData.ImageURL)
+    "thumbnail" (sdict "url" .ExecData.ThumbnailURL)
+}}
+
+{{ $targetChannel := or .ExecData.ChannelID .Channel.ID }}
+{{ $messageID := sendMessageRetID $targetChannel $embed }}
+{{ if .ExecData.DeleteResponse }}
+    {{ deleteMessage $targetChannel $messageID (or .ExecData.DeleteDelay $deleteResponseDelay) }}
+{{ end }}

@@ -37,11 +37,11 @@ setup_db:
     value: { YAGPDB: 900000000000000001 }
 
 command_map:
-  1: "../../../everyone/services/embed_exec.gohtml"
+  1: "../../../commands/plumbing/embed_exec.gohtml"
 
 tests:
   - name: "message_link: expands a quoted link"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
       exec_data:
@@ -56,7 +56,7 @@ tests:
     snapshot: true
 
   - name: "message_link: shows the author's nickname"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
       exec_data:
@@ -71,7 +71,7 @@ tests:
         - { channel_id: 123456789012345678, embed_contains: "Tea Guest (" }
 
   - name: "message_link: deleted message is ignored"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"
       exec_data:
@@ -90,7 +90,7 @@ tests:
   # code-block content is no longer ignored -- that's exactly what log_user relies on
   # (it does its own filtering before calling message_link).
   - name: "message_link: exec_data bypasses the code-block ignore filter"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "`https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001`"
       exec_data:
@@ -104,7 +104,7 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "quoted a message:\n``" }
 
   - name: "message_link: the linker left the server"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
       exec_data:
@@ -119,14 +119,14 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "linked a message" }
 
   - name: "message_link: execCC data without a link"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       exec_data: { ChannelID: 900000000000000003, DisableQuote: true }
     snapshot: true
 
   # The linked message has an embed: message_link carries its parts over as fields
   - name: "message_link: a quoted embed's parts become fields"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
       exec_data:
@@ -156,7 +156,7 @@ tests:
     snapshot: true
 
   - name: "message_link: a quoted embed's long description is cut to Discord's 1024"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
       exec_data:
@@ -176,7 +176,7 @@ tests:
       sent_messages: [{ embed_contains: 'a€…"' }]
 
   - name: "message_link: a quoted embed's description of exactly 1024 is kept"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
       exec_data:
@@ -196,7 +196,7 @@ tests:
 
   # Linking a Message Link re-sends its embed as it is (the embed read from the message)
   - name: "message_link: linking a Message Link re-sends its embed"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000006"
       exec_data:
@@ -224,7 +224,7 @@ tests:
   # all true, so neither the quote/author preamble nor the trigger deletion happens -- only
   # the embed is sent, and the trigger message is left alone.
   - name: "message_link: exec_data mirrors log_user (DisableAuthor/DisableQuote/KeepTrigger)"
-    template: "../../../everyone/services/message_link.gohtml"
+    template: "../../../commands/plumbing/message_link.gohtml"
     context:
       message_content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
       exec_data:

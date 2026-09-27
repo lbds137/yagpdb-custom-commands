@@ -1,6 +1,6 @@
 name: "channel_tracker + channel_activity (dead-channel audit)"
 description: >
-  channel_tracker (everyone/general, Regex `.*`) records a channel's last-active time on
+  channel_tracker (commands/channels, Regex `.*`) records a channel's last-active time on
   every message, since no template function can read a channel's last message. staff's
   channel_activity cleans up deleted channels' records and execCCs channel_activity_pager,
   which reads the records back into a browse view: a summary, one bucket (active / quiet /
@@ -34,12 +34,12 @@ setup_db:
   # the pager's CC id, as channel_activity finds it (bootstrap stores ids as strings)
   - { user_id: 0, key: "Commands", value: { channel_activity_pager: "42" } }
 
-command_map: { 42: "../../../staff/channel_activity_pager.gohtml" }
+command_map: { 42: "../../../commands/channels/channel_activity_pager.gohtml" }
 
 tests:
   # channel_tracker
   - name: "channel_tracker: normal channel records .Channel.ID with a numeric value"
-    template: "../../../everyone/general/channel_tracker.gohtml"
+    template: "../../../commands/channels/channel_tracker.gohtml"
     context:
       channel: { id: 11, name: "general" }
       message_content: "just chatting"
@@ -67,7 +67,7 @@ tests:
     # (no emulator function maps to it — only vendor's editChannelTopic uses it, and the
     # emulator doesn't implement editChannelTopic) and tmplGetThread's live-Discord-API
     # fallback for an undeclared thread (getThread itself isn't implemented at all).
-    template: "../../../everyone/general/channel_tracker.gohtml"
+    template: "../../../commands/channels/channel_tracker.gohtml"
     context:
       channel: { id: 30, name: "a-thread" }
       guild:
@@ -86,7 +86,7 @@ tests:
 
   # channel_activity
   - name: "channel_activity: entry path sends page 1 of Stale with the counts and buttons; ordering, exclusion, deleted-channel cleanup"
-    template: "../../../staff/channel_activity.gohtml"
+    template: "../../../commands/channels/channel_activity.gohtml"
     snapshot: true
     context:
       clock: 2026-01-01T00:00:00Z
@@ -113,7 +113,7 @@ tests:
         - { of: trigger, channel_id: 99, delay: 5s }
 
   - name: "channel_activity: nothing recorded yet"
-    template: "../../../staff/channel_activity.gohtml"
+    template: "../../../commands/channels/channel_activity.gohtml"
     context:
       guild: { channels: [] }
     assertions:
@@ -127,7 +127,7 @@ tests:
   # channel_activity_pager, clicked directly. The clicked message is the bot's earlier page
   # (a real click carries the page state in the button's custom ID, not in the message)
   - name: "channel_activity_pager: buckets by days quiet (quiet page: 7 and 29 days, oldest first)"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     snapshot: true
     context:
       clock: 2026-01-01T00:00:00Z # 1767225600
@@ -159,7 +159,7 @@ tests:
         - { kind: update, embed_contains: '**Quiet**, oldest first — page 1 of 1\n<#14> — <t:1764720000:R>\n<#12> — <t:1766620800:R>', components_contains: '"label": "Quiet (2)"' }
 
   - name: "channel_activity_pager: active page (under 7 days) and stale page (30 days and up)"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       guild:
@@ -178,7 +178,7 @@ tests:
         - { kind: update, embed_contains: '**Active**, oldest first — page 1 of 1\n<#16> — <t:1766620801:R>\n<#11> — <t:1766966400:R>', components_contains: '"label": "Stale (1)"' }
 
   - name: "channel_activity_pager: never-seen page lists untracked eligible channels with the caveat"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
@@ -194,7 +194,7 @@ tests:
           components_contains: '"label": "Never seen (1)"'
 
   - name: "channel_activity_pager: a click deletes nothing (the cleanup is channel_activity's)"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
@@ -210,7 +210,7 @@ tests:
 
   - name: "channel_activity_pager: CSV download is an ephemeral file reply (quoted name, never-seen row)"
     # the file's content is pinned by the snapshot (files:); YAML has no file assertion
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     snapshot: true
     context:
       clock: 2026-01-01T00:00:00Z
@@ -236,7 +236,7 @@ tests:
         - { kind: message, ephemeral: true, content_contains: "4 channels" }
 
   - name: "channel_activity_pager: page 1 of 2 (17 stale channels): prev disabled, next enabled"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     snapshot: true
     context:
       clock: 2026-01-01T00:00:00Z
@@ -290,7 +290,7 @@ tests:
           components_contains: "\"disabled\": false,\n      \"emoji\": {\n        \"name\": \"▶\"\n      },\n      \"custom_id\": \"templates-ca:stale:2\""
 
   - name: "channel_activity_pager: page 2 of 2: next disabled, prev enabled, the last two lines"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
@@ -311,7 +311,7 @@ tests:
     # call sites (one unconditional, one behind a full first page), so no code path can call
     # it a third time regardless of data; a third call would also exceed the free-tier
     # db_multiple cap (2) and error.
-    template: "../../../staff/channel_activity.gohtml"
+    template: "../../../commands/channels/channel_activity.gohtml"
     snapshot: true
     context:
       guild:
@@ -726,7 +726,7 @@ tests:
         - { channel_id: 99, embed_contains: "Only the oldest 200 tracked channels were checked" }
 
   - name: "channel_activity: second call ran (100-199 entries) and never seen is still counted"
-    template: "../../../staff/channel_activity.gohtml"
+    template: "../../../commands/channels/channel_activity.gohtml"
     snapshot: true
     context:
       guild:
@@ -1041,7 +1041,7 @@ tests:
           components_contains: "\"label\": \"Never seen (1)\",\n      \"style\": 2,\n      \"disabled\": false"
 
   - name: "channel_activity: deleted-channel cleanup deletes exactly 6 of 8 stale entries, oldest first"
-    template: "../../../staff/channel_activity.gohtml"
+    template: "../../../commands/channels/channel_activity.gohtml"
     context:
       guild:
         channels:
@@ -1070,7 +1070,7 @@ tests:
 
   # ExecData path (channel_activity's execCC): no interaction, so the page is a sent message
   - name: "channel_activity_pager: ExecData Bucket quiet is honoured (sent message, no interaction)"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       guild: *bucketGuild
@@ -1085,7 +1085,7 @@ tests:
           components_contains: "\"label\": \"Quiet (2)\",\n      \"style\": 1"
 
   - name: "channel_activity_pager: ExecData Page 2 is honoured"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       guild: *pagingGuild
@@ -1097,7 +1097,7 @@ tests:
           embed_contains: '**Stale**, oldest first — page 2 of 2\n<#500000016> — <t:1016:R>\n<#500000017> — <t:1017:R>'
 
   - name: "channel_activity_pager: ca:noop (the disabled page counter) rebuilds Stale page 1"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
@@ -1109,7 +1109,7 @@ tests:
         - { kind: update, embed_contains: '**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>' }
 
   - name: "channel_activity_pager: an unknown bucket (ca:bogus:1) falls back to Stale page 1"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
@@ -1121,7 +1121,7 @@ tests:
         - { kind: update, embed_contains: '**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>', components_contains: "\"label\": \"Stale (17)\",\n      \"style\": 1" }
 
   - name: "channel_activity_pager: a page past the end (ca:stale:99) clamps to the last page"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
@@ -1135,7 +1135,7 @@ tests:
           components_contains: "\"disabled\": true,\n      \"emoji\": {\n        \"name\": \"▶\"\n      },\n      \"custom_id\": \"templates-ca:stale:3\""
 
   - name: "channel_activity_pager: exactly 15 entries are one page (next disabled)"
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
@@ -1186,7 +1186,7 @@ tests:
     # (98,939 bytes with the header) fit and the 50th would pass 100,000. No snapshot: the
     # file would be 99 KB of x's. The names are longer than Discord allows; the emulator
     # doesn't validate that, and it keeps the fixture small.
-    template: "../../../staff/channel_activity_pager.gohtml"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
     context:
       clock: 2026-01-01T00:00:00Z
       messages: [{ id: 7, channel_id: 99, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]

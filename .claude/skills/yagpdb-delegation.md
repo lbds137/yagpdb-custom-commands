@@ -42,7 +42,7 @@ checks as separate plain commands, same four conditions.
 
 - Fidelity comes from YAGPDB's code: copy the vendor function, and build test fixtures
   (embeds, messages, errors) from what YAGPDB's code produces, never invented shapes.
-- A changed command file (`everyone/`, `staff/`) needs Lila to paste it into YAGPDB
+- A changed command file (`commands/<topic>/`) needs Lila to paste it into YAGPDB
   by hand; the driver reports the batch at the end of a round. A command fix gets a test
   that fails on the old command (red on HEAD). `retired/` isn't deployed, so its files
   never need a paste.
