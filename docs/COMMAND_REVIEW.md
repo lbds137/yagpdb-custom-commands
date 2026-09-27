@@ -12,9 +12,9 @@ zero-coverage commands, tests for the untested branches, and clamping ExecCC Lim
 All four shipped the same day (4dfa4cb, 63baa64, b84030f, b1c03d9 and the branch tests);
 the new tests found three staff_roles bugs, fixed in b1c03d9.
 
-**Open, her call:** hugemoji silently refuses a non-staff user's link to an NSFW channel
-from a non-NSFW one (no message; only the trigger is deleted). The branch tests snapshot
-that as it is; a short explanation would be the clearer-errors treatment.
+hugemoji used to refuse a non-staff user's link to an NSFW channel from a non-NSFW one in
+silence; she chose "explain it", so it now warns (without naming the channel), and input
+with no custom emoji at all gets an Invalid Argument error (both 2026-09-27).
 
 ## Bugs found (fixed 2026-09-27, each pinned by a test that failed on the old command)
 

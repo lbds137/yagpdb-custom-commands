@@ -309,7 +309,7 @@ tests:
         [{ embed_title: "Emoji Expander", embed_contains: "Click or tap here to view the message" }]
 
   # The linked message is in an NSFW channel, linked from a non-NSFW one: refused for a
-  # non-staff user (hugemoji.gohtml's $nsfwCheck), silently (no error, nothing to expand)
+  # non-staff user (hugemoji.gohtml's $nsfwCheck); the user is warned why nothing showed up
   - name: "hugemoji - A link to an NSFW channel from a non-NSFW channel is refused for a non-staff user"
     snapshot: true
     template: "../../../utility/hugemoji.gohtml"
@@ -324,6 +324,54 @@ tests:
           channel_id: 700000000000000003
           author_id: 222333444555666777
           content: "<:test:123456789012345678>"
+    assertions:
+      sent_messages:
+        [
+          {
+            content_contains: "⚠️ Warning: 1 linked message was skipped: emoji from an NSFW channel can only be expanded in an NSFW channel.",
+          },
+        ]
+
+  - name: "hugemoji - Two links refused for NSFW use plural grammar"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args:
+        [
+          "https://discord.com/channels/111222333444555666/700000000000000003/800000000000000002 https://discord.com/channels/111222333444555666/700000000000000003/800000000000000004",
+        ]
+      guild:
+        channels:
+          - { id: 999999999, name: "yagpdb" }
+          - { id: 700000000000000003, name: "nsfw-lounge", nsfw: true }
+      messages:
+        - id: 800000000000000002
+          channel_id: 700000000000000003
+          author_id: 222333444555666777
+          content: "<:test:123456789012345678>"
+        - id: 800000000000000004
+          channel_id: 700000000000000003
+          author_id: 222333444555666777
+          content: "<:test2:123456789012345679>"
+    assertions:
+      sent_messages:
+        [
+          {
+            content_contains: "⚠️ Warning: 2 linked messages were skipped: emoji from an NSFW channel can only be expanded in an NSFW channel.",
+          },
+        ]
+
+  - name: "hugemoji - Plain text with no custom emoji sends an Invalid Argument error"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args: ["hello there, no emoji here"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Invalid Argument",
+            embed_contains: "No custom emoji were found in the input or linked messages",
+          },
+        ]
 
   - name: "hugemoji - A link to an NSFW channel from a non-NSFW channel is allowed for staff"
     template: "../../../utility/hugemoji.gohtml"
