@@ -24,6 +24,12 @@ gets a failing test first.
   longer execCC's `rule` at all, so it no longer reads or clamps "ExecCC Limit"; it now
   packs its own embeds into as few messages as Discord's 10-embed / 6,000-character
   limits allow instead. contrasts and hugemoji are unaffected, and still clamp it.)
+- Deferred: `define` folds accents with a hand-written map (Latin-1 vowels, ñ, ç, ý/ÿ,
+  macron vowels), while the site's slugify strips every combining mark after NFD. A term
+  with any other mark (č, ş, ő, ą...) gets a hyphen where the site drops the mark, so its
+  anchor misses. Today's 67 terms are all covered (only Ásatrú and Santería are
+  accented, checked 2026-09-27). Promote when a glossary term with another accented
+  letter is added to the-night-house `src/content/glossary.md`: add its letter to the map.
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
