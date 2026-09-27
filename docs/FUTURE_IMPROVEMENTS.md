@@ -28,6 +28,12 @@ picks, then the minifier.
   6 of 10 free slash CCs (50 premium), 2 of 5 context-menu CCs (customcommands.go:950-964).
   Smaller wins not picked (fine as is for now): contrasts as one embed (also frees the
   free tier's 1 execCC), rand_hebrew / simple_db_lookup / bootstrap as slash.
+- Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
+  2026-09-27: slash commands are "a game changer"). Decide per command: slash only, or
+  both (a CC has ONE trigger type, so both = two panel commands, the slash one a thin shim
+  execCC-ing the other), and a free-tier top 10 (free servers get 10 slash CCs, premium
+  50; live panel lists Slash Command / User and Message Context Menu types, checked
+  2026-09-27).
 - Prerequisite: the emulator doesn't model interactions: Slash (.Options, .CmdArgs,
   subcommands), Component and Modal triggers (.CustomID, .Values, .IsButton/.IsMenu),
   context-menu (.TargetUser/.TargetMember/.Message), sendResponse/updateMessage/sendModal/
