@@ -1017,11 +1017,89 @@ tests:
       sent_messages: [{ content_equals: "hello everyone" }]
       response_pings: {}
 
-  - name: "rule_edit - Edit a rule"
-    snapshot: true
+  - name: "rule_edit - Add a new rule"
+    template: "../../../staff/rule_edit.gohtml"
+    context:
+      args: ["4", "New rule text."]
+    assertions:
+      sent_messages: [{ embed_title: "Rule #4 added", embed_contains: "New rule text." }]
+      db_checks: [{ user_id: 0, key: "Rules", value_contains: '"Rule #4":"New rule text."' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "rule_edit - Update a rule shows the old text in a Was field"
     template: "../../../staff/rule_edit.gohtml"
     context:
       args: ["1", "Updated rule text here."]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Rule #1 updated",
+            embed_contains: "Be respectful to all members.",
+          },
+        ]
+      db_checks: [{ user_id: 0, key: "Rules", value_contains: '"Rule #1":"Updated rule text here."' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "rule_edit - Setting the same text is a no-op"
+    template: "../../../staff/rule_edit.gohtml"
+    context:
+      args: ["1", "Be respectful to all members."]
+    assertions:
+      sent_messages: [{ embed_title: "Rule #1 unchanged" }]
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            {
+              "Rule #1": "Be respectful to all members.",
+              "Rule #2": "No spamming or flooding the chat.",
+              "Rule #3": "Keep discussions on topic.",
+            }
+      deletions: [{ of: "trigger" }]
+
+  - name: "rule_edit - Remove an existing rule"
+    template: "../../../staff/rule_edit.gohtml"
+    context:
+      args: ["2", "(nil)"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Rule #2 removed",
+            embed_contains: "No spamming or flooding the chat.",
+          },
+        ]
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            { "Rule #1": "Be respectful to all members.", "Rule #3": "Keep discussions on topic." }
+      deletions: [{ of: "trigger" }]
+
+  - name: "rule_edit - Removing a missing rule reports not found and leaves the DB unchanged"
+    template: "../../../staff/rule_edit.gohtml"
+    context:
+      args: ["9", "(nil)"]
+    assertions:
+      sent_messages: [{ embed_title: "Rule #9 not found" }]
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            {
+              "Rule #1": "Be respectful to all members.",
+              "Rule #2": "No spamming or flooding the chat.",
+              "Rule #3": "Keep discussions on topic.",
+            }
+      deletions: [{ of: "trigger" }]
+
+  - name: "rule_edit - Invalid rule number is rejected"
+    template: "../../../staff/rule_edit.gohtml"
+    context:
+      args: ["0", "Some text."]
+    assertions:
+      sent_messages: [{ embed_title: "Invalid Rule Number Parameter" }]
 
   - name: "simple_db_lookup - Lookup knowledge entry"
     snapshot: true
@@ -1036,11 +1114,160 @@ tests:
     assertions:
       sent_messages: [{ embed_contains: "123" }]
 
-  - name: "simple_db_edit - Edit knowledge entry"
-    snapshot: true
+  - name: "simple_db_edit - Update an existing Knowledge key shows the old text"
     template: "../../../staff/simple_db_edit.gohtml"
     context:
-      args: ["Knowledge", "FAQ", "Updated FAQ content"]
+      args: ["Knowledge", "Faq", "Updated FAQ content"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Knowledge › Faq updated",
+            embed_contains: "This is the FAQ content.",
+          },
+        ]
+      db_checks: [{ user_id: 0, key: "Knowledge", value_contains: '"Faq":"Updated FAQ content"' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - Add a new key"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Knowledge", "Notes", "Some new notes."]
+    assertions:
+      sent_messages: [{ embed_title: "Knowledge › Notes added", embed_contains: "Some new notes." }]
+      db_checks: [{ user_id: 0, key: "Knowledge", value_contains: '"Notes":"Some new notes."' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - An unknown category is refused and the DB stays unchanged"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Widgets", "Color", "Red"]
+    assertions:
+      sent_messages: [{ embed_title: "Unknown category", embed_contains: "new:Widgets" }]
+      db_checks: [{ user_id: 0, key: "Widgets", not_exists: true }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - new: creates a category that doesn't exist yet"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["new:Widgets", "Color", "Red"]
+    assertions:
+      sent_messages: [{ embed_title: "Widgets › Color added", embed_contains: "Red" }]
+      db_checks: [{ user_id: 0, key: "Widgets", value_equals: { Color: "Red" } }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - new: with nothing after it is refused"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["new:", "Color", "Red"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Missing category name",
+            embed_contains: "Give a category name after",
+          },
+        ]
+      db_checks: [{ user_id: 0, key: "Color", not_exists: true }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - new: with only whitespace after it is refused"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["new:   ", "Color", "Red"]
+    assertions:
+      sent_messages: [{ embed_title: "Missing category name" }]
+      db_checks: [{ user_id: 0, key: "Color", not_exists: true }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - new: on an existing category just proceeds"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["new:Knowledge", "Faq", "Prefixed update"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Knowledge › Faq updated",
+            embed_contains: "This is the FAQ content.",
+          },
+        ]
+      db_checks: [{ user_id: 0, key: "Knowledge", value_contains: '"Faq":"Prefixed update"' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - A key that gets title-cased shows Stored as"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Knowledge", "notes", "Some notes."]
+    assertions:
+      sent_messages: [{ embed_title: "Knowledge › Notes added", embed_contains: "Stored as" }]
+      db_checks: [{ user_id: 0, key: "Knowledge", value_contains: '"Notes":"Some notes."' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - Commands category key is not title-cased"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Commands", "embed_exec", "999"]
+    assertions:
+      sent_messages: [{ embed_title: "Commands › embed_exec updated" }]
+      db_checks: [{ user_id: 0, key: "Commands", value_contains: '"embed_exec":"999"' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - A non-dict category is refused"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Counter", "Anything", "Val"]
+    setup_db:
+      - { user_id: 0, key: "Counter", value: 5 }
+    assertions:
+      sent_messages: [{ embed_title: "Not a dictionary" }]
+      db_checks: [{ user_id: 0, key: "Counter", value_equals: 5 }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - Remove an existing key"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Knowledge", "Guidelines", "(nil)"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Knowledge › Guidelines removed",
+            embed_contains: "These are the guidelines.",
+          },
+        ]
+      db_checks: [{ user_id: 0, key: "Knowledge", value_equals: { Faq: "This is the FAQ content." } }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - Removing a missing key reports not found"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Knowledge", "Nonexistent", "(nil)"]
+    assertions:
+      sent_messages: [{ embed_title: "Knowledge › Nonexistent not found" }]
+      db_checks:
+        - user_id: 0
+          key: "Knowledge"
+          value_equals:
+            { Faq: "This is the FAQ content.", Guidelines: "These are the guidelines." }
+      deletions: [{ of: "trigger" }]
+
+  - name: "simple_db_edit - A long non-string old value's Was field ends with a closed fence"
+    template: "../../../staff/simple_db_edit.gohtml"
+    context:
+      args: ["Widgets", "Big", "New value"]
+    setup_db:
+      - user_id: 0
+        key: "Widgets"
+        value:
+          Big: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299]
+    assertions:
+      sent_messages:
+        - embed_title: "Widgets › Big updated"
+          embed_contains: '…\n```'
+      db_checks:
+        - { user_id: 0, key: "Widgets", value_contains: '"Big":"New value"' }
+      deletions: [{ of: "trigger" }]
 
   # `<op>:0` works on the global data (user 0), and only for a member with the Staff
   # role (Roles "Staff" = 111111111)
