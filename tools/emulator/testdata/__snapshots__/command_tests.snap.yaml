@@ -1061,8 +1061,12 @@ db remove - Remove with JSON from dict:
           value: '{"Rule #1":"Be respectful to all members.","Rule #2":"No spamming or flooding the chat.","Rule #3":"Keep discussions on topic."}'
 hugemoji - A link to an NSFW channel from a non-NSFW channel is refused for a non-staff user:
     output: ""
+    messages:
+        - channel_id: 123456789012345678
+          content: '⚠️ Warning: 1 linked message was skipped: emoji from an NSFW channel can only be expanded in an NSFW channel.'
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
+        - message 1100000000000000001 in channel 123456789012345678 after 10s
     db:
         - user_id: 0
           key: Admin
