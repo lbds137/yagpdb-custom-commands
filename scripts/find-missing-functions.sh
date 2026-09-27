@@ -77,7 +77,7 @@ TEMP_FILE=$(mktemp)
 trap 'rm -f "$TEMP_FILE"' EXIT
 
 # Find all function calls in templates
-grep -rohE '\{\{-?\s*[a-zA-Z_][a-zA-Z0-9_]*' "$PROJECT_ROOT"/utility/*.gohtml "$PROJECT_ROOT"/staff_utility/*.gohtml 2>/dev/null | \
+grep -rohE '\{\{-?\s*[a-zA-Z_][a-zA-Z0-9_]*' "$PROJECT_ROOT/everyone" "$PROJECT_ROOT/staff" 2>/dev/null | \
     sed 's/{{-\?[[:space:]]*//' | \
     grep -v '^\$' | \
     sort | uniq -c | sort -rn > "$TEMP_FILE"
@@ -134,7 +134,7 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
     for item in "${MISSING[@]}"; do
         func="${item%:*}"
         echo -e "\n${YELLOW}$func${NC}:"
-        grep -l "\\b$func\\b" "$PROJECT_ROOT"/utility/*.gohtml "$PROJECT_ROOT"/staff_utility/*.gohtml 2>/dev/null | \
+        grep -rl "\\b$func\\b" "$PROJECT_ROOT/everyone" "$PROJECT_ROOT/staff" 2>/dev/null | \
             sed "s|$PROJECT_ROOT/||" | sed 's/^/  /'
     done
 fi

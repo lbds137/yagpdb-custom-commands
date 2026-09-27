@@ -30,9 +30,57 @@ Most commands depend on two foundational utilities:
 
 ## Command Categories
 
-### 🛠️ Staff Utility (`staff_utility/`)
+Top-level folders mirror the YAGPDB control-panel groups (permission scopes): `everyone/`
+(topic subfolders) and `staff/` (flat).
 
-Administrative and moderation tools for server staff:
+### 🔧 Everyone (`everyone/`)
+
+General-purpose commands for all users, in topic subfolders:
+
+#### Services (`everyone/services/`)
+- **`embed_exec.gohtml`** - Universal embed creation and execution
+- **`db.gohtml`** - Advanced database operations interface
+- **`db_get_embed.gohtml`** - Retrieve database values as embeds
+- **`db_get_text.gohtml`** - Retrieve database values as text
+
+#### Hebrew (`everyone/hebrew/`)
+- **`gematria.gohtml`** - Advanced gematria calculator with tarot associations
+- **`alefbet.gohtml`** - Convert Phoenician/Arabic text to Hebrew with gematria calculation
+- **`atbash.gohtml`** - Atbash cipher implementation for Hebrew text
+- **`pyramid.gohtml`** - Create text pyramids
+- **`rand_hebrew.gohtml`** - Generate random Hebrew text
+
+#### Color (`everyone/color/`)
+- **`contrast.gohtml`** - Color contrast analysis
+- **`contrasts.gohtml`** - Multiple color contrast comparison
+- **`hex_to_int.gohtml`** - Hexadecimal to integer conversion
+- **`rand_color.gohtml`** - Generate random colors
+
+#### Knowledge (`everyone/knowledge/`)
+- **`kb.gohtml`** - Knowledge base access
+- **`define.gohtml`** - Glossary term lookup (links to thenighthouse.org)
+- **`rule.gohtml`** - Display specific rules
+
+#### Links (`everyone/links/`)
+- **`message_link.gohtml`** - Generate message links
+- **`message_pointer.gohtml`** - Message reference utility
+- **`channel_link.gohtml`** - Generate channel links
+
+#### Bump (`everyone/bump/`)
+- **`bump_check.gohtml`** - Check server bump status
+- **`bump_remind.gohtml`** - Server bump reminders
+
+#### General (`everyone/general/`)
+- **`avatar_viewer.gohtml`** - View user avatars
+- **`timestamp.gohtml`** - Parse Discord snowflake timestamps
+- **`hugemoji.gohtml`** - Display large emoji
+- **`ticket_clean.gohtml`** - Ticket cleanup utility
+- **`unhiatus.gohtml`** - Remove user hiatus status (stays in the everyone group on purpose:
+  a staff member on hiatus has lost the staff roles the staff group requires)
+
+### 🛠️ Staff (`staff/`)
+
+Administrative and moderation tools for server staff, flat (no subfolders):
 
 - **`batch_delrep.gohtml`** - Batch delete and reputation management
 - **`bootstrap.gohtml`** - Initial system setup and configuration
@@ -53,49 +101,6 @@ Administrative and moderation tools for server staff:
 - Comprehensive logging and audit trails
 - Integration with message linking and archiving
 - Error handling for blocked bots
-
-### 🔧 Utility (`utility/`)
-
-General-purpose utility commands for all users:
-
-#### Text and Language Tools
-- **`alefbet.gohtml`** - Convert Phoenician/Arabic text to Hebrew with gematria calculation
-- **`atbash.gohtml`** - Atbash cipher implementation for Hebrew text
-- **`gematria.gohtml`** - Advanced gematria calculator with tarot associations
-- **`rand_hebrew.gohtml`** - Generate random Hebrew text
-
-#### Discord Utilities
-- **`avatar_viewer.gohtml`** - View user avatars
-- **`channel_link.gohtml`** - Generate channel links
-- **`message_link.gohtml`** - Generate message links
-- **`message_pointer.gohtml`** - Message reference utility
-- **`hugemoji.gohtml`** - Display large emoji
-- **`timestamp.gohtml`** - Parse Discord snowflake timestamps
-
-#### Database and Configuration
-- **`db.gohtml`** - Advanced database operations interface
-- **`db_get_embed.gohtml`** - Retrieve database values as embeds
-- **`db_get_text.gohtml`** - Retrieve database values as text
-- **`embed_exec.gohtml`** - Universal embed creation and execution
-- **`simple_db_edit.gohtml`** - Simplified database editing
-
-#### Interactive and Fun
-- **`pyramid.gohtml`** - Create text pyramids
-- **`rand_color.gohtml`** - Generate random colors
-- **`contrast.gohtml`** - Color contrast analysis
-- **`contrasts.gohtml`** - Multiple color contrast comparison
-
-#### Server Management
-- **`bump_check.gohtml`** - Check server bump status
-- **`bump_remind.gohtml`** - Server bump reminders
-- **`rule.gohtml`** - Display specific rules
-- **`kb.gohtml`** - Knowledge base access
-- **`define.gohtml`** - Glossary term lookup (links to thenighthouse.org)
-- **`ticket_clean.gohtml`** - Ticket cleanup utility
-- **`unhiatus.gohtml`** - Remove user hiatus status
-
-#### Conversion and Calculation
-- **`hex_to_int.gohtml`** - Hexadecimal to integer conversion
 
 ### 📦 Retired (`retired/`)
 
@@ -260,10 +265,10 @@ make test          # all template tests (tools/emulator/testdata/), checked agai
 make watch         # rerun them whenever a command or test file changes
 make ci            # everything CI runs: Go vet + unit tests, template tests, linter, gofmt
 
-./bin/yagtest run utility/timestamp.gohtml                  # run one command
-./bin/yagtest run -args "get,Global" -verbose utility/db.gohtml
-./bin/yagtest run -no-premium -strict utility/db.gohtml     # fail where a free server would
-./bin/yagtest check utility/*.gohtml                        # parse only, plus static warnings
+./bin/yagtest run everyone/general/timestamp.gohtml         # run one command
+./bin/yagtest run -args "get,Global" -verbose everyone/services/db.gohtml
+./bin/yagtest run -no-premium -strict everyone/services/db.gohtml  # fail where a free server would
+./bin/yagtest check everyone/*/*.gohtml staff/*.gohtml      # parse only, plus static warnings
 ```
 
 The emulator runs templates on YAGPDB's own template engine and standard functions (copied
@@ -293,8 +298,8 @@ production. On top of that:
 ### Project Structure
 
 ```
-├── staff_utility/    # Staff/admin commands
-├── utility/          # General utility commands
+├── staff/            # Staff/admin commands (flat)
+├── everyone/         # General utility commands, in topic subfolders
 ├── retired/          # Commands no longer deployed
 ├── tools/emulator/   # Local testing emulator
 ├── docs/             # Documentation

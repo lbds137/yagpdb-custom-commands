@@ -47,7 +47,7 @@ prune-snapshots: build-emulator ## Remove only the snapshots of renamed or delet
 	@./bin/yagtest test -prune-snapshots $(YAGTEST_FLAGS) tools/emulator/testdata/
 
 watch: build-emulator ## Rerun template tests whenever a command or test changes
-	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,utility,staff_utility,docs/cookbook tools/emulator/testdata/
+	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,everyone,staff,docs/cookbook tools/emulator/testdata/
 
 # As on GitHub (which sets CI): a missing or stale snapshot fails instead of being written
 # or only warned about
@@ -91,12 +91,16 @@ ci-report: ## Generate lint report for CI
 	@echo "📊 Generating CI lint report..."
 	@./scripts/lint-report.py --latest --markdown
 # Deployment: commands are pasted into the YAGPDB control panel by hand
-COMMAND_DIRS := guests utility staff_utility
+COMMAND_DIRS := everyone staff
+# utility/staff_utility are the pre-restructure dir names, kept in the paste-list pathspec
+# below so a rename from utility/ -> everyone/... is still detected as a rename relative to
+# the deployed tag; harmless to keep once the deployed tag postdates the restructure.
+DEPLOY_DIRS := $(COMMAND_DIRS) utility staff_utility
 
 changed-since-deploy: ## List command files changed since the `deployed` tag (paste these)
 	@git rev-parse -q --verify deployed >/dev/null || (echo "No 'deployed' tag yet: run make mark-deployed after a paste" && exit 1)
-	@git diff --name-only --diff-filter=AM deployed -- $(COMMAND_DIRS) | grep '\.gohtml$$' || echo "Nothing to paste: no command changed since $$(git log -1 --format='%h %as' deployed)"
-	@git diff --name-only --diff-filter=D deployed -- $(COMMAND_DIRS) | grep '\.gohtml$$' | sed 's/^/deleted (remove from YAGPDB): /' || true
+	@list="$$(git diff --name-status -M deployed -- $(DEPLOY_DIRS) | awk -f scripts/changed-since-deploy.awk)"; \
+	if [ -z "$$list" ]; then echo "Nothing to paste: no command changed since $$(git log -1 --format='%h %as' deployed)"; else echo "$$list"; fi
 
 mark-deployed: ## Record that the current commit's commands are live in YAGPDB
 	@git tag -f deployed HEAD >/dev/null && echo "deployed → $$(git log -1 --format='%h %s' HEAD)"

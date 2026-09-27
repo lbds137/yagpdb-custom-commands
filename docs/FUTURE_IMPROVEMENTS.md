@@ -85,7 +85,7 @@ gets a failing test first.
   entry) serialize as the emulator's types, so their size differs from YAGPDB's. A value
   whose overflow past 100000 bytes is only whitespace is stored whole; YAGPDB stores it
   cut off, so reading it back fails. Deferred (2026-09-25): none of the 26 dbSet calls in
-  utility/ and staff_utility/ stores a Discord object, and the largest stored dict comes
+  everyone/ and staff/ stores a Discord object, and the largest stored dict comes
   from a 7.4 KB source. Promote when a command stores a Discord object or a value nears
   100000 bytes; the fix is storing the msgpack bytes and decoding them with a copy of
   YAGPDB's newDecoder, with the emulator's Discord types shaped like discordgo's.
@@ -182,7 +182,7 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 ## Completed Improvements
 
 - [x] admit_user, archive, guest, reject_user, screen_user and ticket_adduser_exec moved
-      from staff_utility/ to retired/: Discord's server join applications replaced guest
+      from staff/ to retired/: Discord's server join applications replaced guest
       screening, so the owner deleted them from YAGPDB. Kept, unmaintained, for anyone who
       wants the flow; still covered by admission_tests.yaml (2026-09-25)
 
@@ -197,7 +197,7 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
 
 - [x] The six suites that execCC embed_exec (admission, avatar_viewer, command,
       dice_roll, gematria, message_link) now map it to the real
-      `utility/embed_exec.gohtml` instead of the recording mock, so their snapshots show
+      `everyone/services/embed_exec.gohtml` instead of the recording mock, so their snapshots show
       the real embeds (the author line, the guild's "Embed Color", empty image and
       thumbnail) and DeleteResponse's deletions; none sends a description long enough to
       be cut (2026-09-25)

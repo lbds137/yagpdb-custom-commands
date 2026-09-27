@@ -34,11 +34,11 @@ setup_db:
       Roles: [111111111, 222222222]
 
 command_map:
-  123: "../../../utility/embed_exec.gohtml"
+  123: "../../../everyone/services/embed_exec.gohtml"
 
 tests:
   - name: "hiatus: holding none of the staff roles writes nothing and errors in the current channel"
-    template: "../../../staff_utility/hiatus.gohtml"
+    template: "../../../staff/hiatus.gohtml"
     context:
       user: { roles: [] }
     assertions:
@@ -49,7 +49,7 @@ tests:
         - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222] } }
 
   - name: "hiatus: a second hiatus for an already-hiatused user leaves the earlier record alone"
-    template: "../../../staff_utility/hiatus.gohtml"
+    template: "../../../staff/hiatus.gohtml"
     context:
       user: { roles: [] } # already on hiatus, so holds none of the staff roles now
     setup_db:
@@ -67,7 +67,7 @@ tests:
         - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
 
   - name: "hiatus: an unset Mod Log posts the record in the current channel instead"
-    template: "../../../staff_utility/hiatus.gohtml"
+    template: "../../../staff/hiatus.gohtml"
     context:
       user: { roles: [111111111] }
     setup_db:
@@ -82,7 +82,7 @@ tests:
         - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
 
   - name: "unhiatus: an unset Mod Log posts the record in the current channel instead"
-    template: "../../../utility/unhiatus.gohtml"
+    template: "../../../everyone/general/unhiatus.gohtml"
     context:
       user: { roles: [] } # on hiatus, so holds none of the staff roles right now
     setup_db:
