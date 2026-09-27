@@ -2,6 +2,24 @@
 
 This document tracks potential enhancements for the YAGPDB custom commands project.
 
+## Interactive UX (Lila 2026-09-27)
+
+Order: (1) UX audit, (2) emulator components, (3) channel_activity buttons + approved audit
+picks, then the minifier.
+- channel_activity (shipped 2026-09-27 as main 86, with channel_tracker main 85, a tracker
+  because templates can't read a channel's last message) is too long to scroll. DECIDED:
+  a browse view. Summary counts (active <7d / quiet 7-30d / stale 30d+ / never seen),
+  bucket buttons, 15 per page with prev/next, edited in place by a new Component-trigger
+  handler command (created DISABLED until deployed). State lives in the button's custom
+  ID (e.g. `ca:stale:2`); the handler rebuilds the page from it. Patterns from Tzurot's
+  .claude/rules/04-discord.md: browse, not dump; summary first; ephemeral for staff tools
+  where the trigger allows it; acknowledge within 3 s; last-page "next" disabled.
+- Next: a UX audit of every command against those patterns, a list for Lila to pick from.
+- Prerequisite: the emulator doesn't model components (buttons, menus, modals, Component
+  and Modal triggers, updateMessage, ephemeral responses). Build them from vendor
+  common/templates/context_interactions.go, general.go (complexMessage "buttons"/"menus")
+  and customcommands/bot.go CheckMatchComponent before any command uses them.
+
 ## Free-tier compatibility (Lila 2026-09-27: the suite should work on free servers too)
 
 Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
