@@ -7,7 +7,9 @@
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
-{{ $execCCLimit := toInt ($globalDict.Get "ExecCC Limit") }}
+{{/* the loop below is this run's only execCC fan-out (the no-rules branch is
+  mutually exclusive), so clamp straight to YAGPDB's 10-per-run premium cap */}}
+{{ $execCCLimit := toInt (min (toInt ($globalDict.Get "ExecCC Limit")) 10) }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}

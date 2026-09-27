@@ -8,7 +8,11 @@
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 {{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
-{{ $execCCLimit := toInt ($globalDict.Get "ExecCC Limit") }}
+{{/* the multi-word loop below is this run's only execCC fan-out: each iteration's
+  execCC $pyramid recurses into its OWN new context (a fresh call-counter), so its
+  nested gematria call doesn't count against this run; clamp straight to YAGPDB's
+  10-per-run premium cap */}}
+{{ $execCCLimit := toInt (min (toInt ($globalDict.Get "ExecCC Limit")) 10) }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}

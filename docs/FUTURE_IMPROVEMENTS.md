@@ -11,12 +11,11 @@ gets a failing test first.
   `db dump` skipped `Staff` and `Inactivity Prune` (it now lists every stored key with one
   `dbGetPattern`, so it dumps at most 100 keys per user), and contrasts dropped colors
   silently.
-- The Global "ExecCC Limit" setting (bootstrap default 10) is trusted as is: YAGPDB allows
-  10 execCC calls per run on premium (1 on a free server), counted together with
-  scheduleUniqueCC, so a setting above that makes rules, contrasts, hugemoji and pyramid
-  fail at the 11th call instead of skipping.
-  Harmless at the default; clamp it to 10 in those commands if the setting is ever
-  raised (read, not run).
+- Fixed 2026-09-27: the Global "ExecCC Limit" setting (bootstrap default 10) was trusted as
+  is, and YAGPDB allows 10 execCC calls per run on premium (1 on a free server), counted
+  together with scheduleUniqueCC, so a setting above that made rules, contrasts, hugemoji
+  and pyramid fail at the 11th call instead of skipping. Each now clamps its own read of
+  the setting to `min(setting, 10)` before using it.
 - Ruled out: gematria_bootstrap lists `Â`/`â` twice. The table is the Romanian letters
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste

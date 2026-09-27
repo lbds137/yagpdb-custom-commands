@@ -1,0 +1,102 @@
+name: "hiatus / unhiatus"
+description: "Staff hiatus record-keeping and its Mod Log fallback."
+
+defaults:
+  user:
+    id: 987654321098765432
+    username: "StaffMember"
+  channel:
+    id: 123456789012345678
+    name: "staff-chat"
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    roles:
+      - { id: 111111111, name: "Moderator" }
+      - { id: 222222222, name: "Helper" }
+    channels:
+      - { id: 999999999, name: "yagpdb" }
+      - { id: 888888888, name: "mod-log" }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Delete Trigger Delay: 5, Delete Response Delay: 10, Default Avatar: "https://example.com/a.png" }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "123" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 999999999, Mod Log: 888888888 }
+  - user_id: 0
+    key: "Staff"
+    value:
+      Roles: [111111111, 222222222]
+
+command_map:
+  123: "../../../utility/embed_exec.gohtml"
+
+tests:
+  - name: "hiatus: holding none of the staff roles writes nothing and errors in the current channel"
+    template: "../../../staff_utility/hiatus.gohtml"
+    context:
+      user: { roles: [] }
+    assertions:
+      no_role_changes: true
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Staff Hiatus Operation Failed" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222] } }
+
+  - name: "hiatus: a second hiatus for an already-hiatused user leaves the earlier record alone"
+    template: "../../../staff_utility/hiatus.gohtml"
+    context:
+      user: { roles: [] } # already on hiatus, so holds none of the staff roles now
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111] } # the earlier record
+    assertions:
+      no_role_changes: true
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Staff Hiatus Operation Failed" }
+      db_checks:
+        # the earlier record must survive untouched
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
+
+  - name: "hiatus: an unset Mod Log posts the record in the current channel instead"
+    template: "../../../staff_utility/hiatus.gohtml"
+    context:
+      user: { roles: [111111111] }
+    setup_db:
+      - user_id: 0
+        key: "Channels"
+        value: { YAGPDB: 999999999 } # no Mod Log
+    assertions:
+      role_changes: [{ user_id: 987654321098765432, role_id: 111111111, action: "remove" }]
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Staff Hiatus Record" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
+
+  - name: "unhiatus: an unset Mod Log posts the record in the current channel instead"
+    template: "../../../utility/unhiatus.gohtml"
+    context:
+      user: { roles: [] } # on hiatus, so holds none of the staff roles right now
+    setup_db:
+      - user_id: 0
+        key: "Channels"
+        value: { YAGPDB: 999999999 } # no Mod Log
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111] }
+    assertions:
+      role_changes: [{ user_id: 987654321098765432, role_id: 111111111, action: "add" }]
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Staff Unhiatus Record" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: {} } }

@@ -39,8 +39,12 @@
         {{ $description := (joinStr ""
             "👋 Staff member **" .User.String "** (ID: " .User.ID ") has elected to return from hiatus and resume staff duties."
         ) }}
+        {{ $modLogTarget := $modLogChannelID }}
+        {{ if not $modLogTarget }}
+            {{ $modLogTarget = .Channel.ID }}
+        {{ end }}
         {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-            "ChannelID" $modLogChannelID
+            "ChannelID" $modLogTarget
             "Title" $title
             "Description" $description
             "ThumbnailURL" (or $userAvatar $defaultAvatar)

@@ -75,6 +75,7 @@
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
 {{ $gematriaDict := (dbGet 0 "Gematria").Value }}
 {{ $sofitDict := $gematriaDict.Get "Final Letters" }}
@@ -91,6 +92,7 @@
 {{- $text := $args.Get 0 -}}
 
 {{- $atbashString := "" -}}
+{{- $hasMappedChar := false -}}
 {{- $words := reSplit "[[:space:]]+" $text }}
 {{- $spaces := reSplit "[^[:space:]]+" $text }}
 {{- range $i, $word := $words -}}
@@ -100,6 +102,7 @@
   {{- range $j, $char := $wordChars -}}
     {{- $atbashLetter := index $atbashDict $char -}}
     {{- if $atbashLetter -}}
+      {{- $hasMappedChar = true -}}
       {{- if and (gt $wordLength 1) (eq $j (sub $wordLength 1)) -}}
         {{- $sofitLetter := index $sofitDict $atbashLetter -}}
         {{- if $sofitLetter }}
@@ -114,12 +117,23 @@
   {{- $atbashString = joinStr (index $spaces $i) $atbashString $atbashWord -}}
 {{- end -}}
 
-{{ execCC $gematria $yagpdbChannelID 0 (sdict
-  "AuthorID" .User.ID
-  "ChannelID" .Channel.ID
-  "Title" "Atbash Ciphertext"
-  "Description" $atbashString
-  "Fields" (cslice (sdict "name" "Plaintext" "value" $text "inline" false))
-) }}
+{{ if $hasMappedChar }}
+  {{ execCC $gematria $yagpdbChannelID 0 (sdict
+    "AuthorID" .User.ID
+    "ChannelID" .Channel.ID
+    "Title" "Atbash Ciphertext"
+    "Description" $atbashString
+    "Fields" (cslice (sdict "name" "Plaintext" "value" $text "inline" false))
+  ) }}
+{{ else }}
+  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "ChannelID" .Channel.ID
+    "Title" "Invalid Argument"
+    "Description" (joinStr "" "⚠️ There was nothing to encipher: atbash supports Hebrew, "
+      "Paleo-Hebrew, Greek, Arabic, Latin, runes, and digits. Please try again.")
+    "DeleteResponse" true
+    "DeleteDelay" $deleteResponseDelay
+  ) }}
+{{ end }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
