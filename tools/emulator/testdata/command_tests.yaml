@@ -481,7 +481,7 @@ tests:
 
   - name: "kb - Knowledge base lookup"
     snapshot: true
-    template: "../../../everyone/knowledge/kb.gohtml"
+    template: "../../../retired/kb.gohtml"
     context:
       args: ["FAQ"]
 
@@ -625,6 +625,58 @@ tests:
           {
             embed_title: "Glossary: Ātman",
             embed_contains: "https://thenighthouse.org/glossary/#atman\"",
+          },
+        ]
+
+  - name: "define - Retired kb entry 'The Seven Tenets' aliases to the glossary's Seven Tenets"
+    template: "../../../everyone/knowledge/define.gohtml"
+    context:
+      args: ["The Seven Tenets"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: The Seven Tenets",
+            embed_contains: "https://thenighthouse.org/glossary/#seven-tenets\"",
+          },
+        ]
+
+  - name: "define - Retired kb entry 'Seven Satanic Tenets' aliases to the glossary's Seven Tenets"
+    template: "../../../everyone/knowledge/define.gohtml"
+    context:
+      args: ["Seven Satanic Tenets"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Seven Satanic Tenets",
+            embed_contains: "https://thenighthouse.org/glossary/#seven-tenets\"",
+          },
+        ]
+
+  - name: "define - Retired kb entry 'The Seven Satanic Tenets' aliases to the glossary's Seven Tenets"
+    template: "../../../everyone/knowledge/define.gohtml"
+    context:
+      args: ["The Seven Satanic Tenets"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: The Seven Satanic Tenets",
+            embed_contains: "https://thenighthouse.org/glossary/#seven-tenets\"",
+          },
+        ]
+
+  - name: "define - 'Seven Tenets' itself already works"
+    template: "../../../everyone/knowledge/define.gohtml"
+    context:
+      args: ["Seven Tenets"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Seven Tenets",
+            embed_contains: "https://thenighthouse.org/glossary/#seven-tenets\"",
           },
         ]
 

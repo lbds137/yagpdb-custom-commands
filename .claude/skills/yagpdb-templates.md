@@ -58,7 +58,6 @@ retired/         - Commands no longer deployed (see retired/README.md)
 | `Admin` | Administrative settings |
 | `Gematria` | Hebrew letter values |
 | `Rules` | Server rules |
-| `Knowledge` | KB articles |
 
 ### Service Commands
 
