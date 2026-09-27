@@ -34,14 +34,6 @@
   function panelTypeName(label) {
     const trimmed = (label || "").trim();
     if (trimmed.indexOf("Command") === 0) return "Command";
-    if (
-      trimmed === "Regex" ||
-      trimmed === "None" ||
-      trimmed === "Hourly interval" ||
-      trimmed === "Minute interval"
-    ) {
-      return trimmed;
-    }
     return trimmed;
   }
 
