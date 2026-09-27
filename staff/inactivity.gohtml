@@ -79,15 +79,7 @@
                 "UserID" 0
                 "Operation" "add"
                 "Key" $pruneCategory
-                "Value" (sdict "Previous Date" $nextDate)
-                "Title" (joinStr " " $pruneCategory $heading)
-            ) }}
-            {{ execCC $db $yagpdbChannelID 0 (sdict
-                "ChannelID" .Channel.ID
-                "UserID" 0
-                "Operation" "add"
-                "Key" $pruneCategory
-                "Value" (sdict "Next Date" $param)
+                "Value" (sdict "Previous Date" $nextDate "Next Date" $param)
                 "Title" (joinStr " " $pruneCategory $heading)
             ) }}
         {{ else }}

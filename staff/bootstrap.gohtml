@@ -49,7 +49,8 @@
     {{ $globalDict.Set "Guild Premium Tier" "0" }}
 {{ end }}
 
-{{- /* assuming YAGPDB premium */ -}}
+{{- /* the default of 10 is YAGPDB premium's per-run execCC cap; a free (non-premium)
+    server should set Global "ExecCC Limit" to 1, free's own per-run cap */ -}}
 {{ if not ($globalDict.Get "ExecCC Limit") }}
     {{ $globalDict.Set "ExecCC Limit" "10" }}
 {{ end }}
