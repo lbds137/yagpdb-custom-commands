@@ -406,6 +406,9 @@ func (tc *TestCase) validateNoTrigger() error {
 	if tc.Snapshot {
 		return fmt.Errorf("test %q: no_trigger can't be combined with snapshot: true (the template never runs)", tc.Name)
 	}
+	if tc.Context.ExecData != nil || tc.Context.Reaction != nil {
+		return fmt.Errorf("test %q: no_trigger can't be combined with an exec_data or reaction context (those bypass the header trigger check entirely)", tc.Name)
+	}
 	return nil
 }
 

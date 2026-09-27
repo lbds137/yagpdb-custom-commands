@@ -27,6 +27,7 @@ def normalize(text: str) -> str:
 def main() -> int:
     env = dict(os.environ)
     env["DEPLOY_MANIFEST_SKIP_ORIGIN_CHECK"] = "1"
+    env["DEPLOY_MANIFEST_SKIP_DIRTY_CHECK"] = "1"
     proc = subprocess.run(
         ["python3", "scripts/deploy-manifest.py", "main"],
         capture_output=True, text=True, env=env,

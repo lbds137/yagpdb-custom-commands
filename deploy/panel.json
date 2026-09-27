@@ -41,6 +41,7 @@
     "staff/hiatus.gohtml": {"main": 81},
     "everyone/general/unhiatus.gohtml": {"main": 82},
     "everyone/hebrew/alefbet.gohtml": {"main": 83, "lotv": 14},
-    "everyone/knowledge/define.gohtml": {"main": 84}
+    "everyone/knowledge/define.gohtml": {"main": 84},
+    "everyone/services/message_link.gohtml": {"main": 32, "lotv": 11}
   }
 }

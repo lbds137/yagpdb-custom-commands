@@ -40,7 +40,7 @@ def main() -> int:
             errors.append(f"{path}: mapped but under retired/")
             continue
         if path not in all_files:
-            errors.append(f"{path}: mapped but does not exist at HEAD")
+            errors.append(f"{path}: mapped but does not exist in the working tree")
 
     for path in sorted(all_files):
         ids = mapped.get(path)
