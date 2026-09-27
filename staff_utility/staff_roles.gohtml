@@ -12,17 +12,19 @@
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
-{{ $rolesDict := (dbGet 0 "Roles").Value }}
-{{ $staffRoleID := $rolesDict.Get "Staff" }}
+{{ $rolesDict := or (dbGet 0 "Roles").Value sdict }}
+{{ $staffRoleID := toString ($rolesDict.Get "Staff") }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
-{{ $staffDict := (dbGet 0 "Staff").Value }}
+{{ $staffDict := or (dbGet 0 "Staff").Value sdict }}
 
 {{ $trigger := .Message.Content }}
-{{ if not (reFind $staffRoleID $trigger) }}
-    {{ $trigger = joinStr " " $trigger $staffRoleID }}
+{{ if $staffRoleID }}
+    {{ if not (reFind $staffRoleID $trigger) }}
+        {{ $trigger = joinStr " " $trigger $staffRoleID }}
+    {{ end }}
 {{ end }}
 {{ $roleIDs := reFindAll "\\d{16,}" $trigger }}
 {{ $count := len $roleIDs }}
@@ -43,26 +45,41 @@
         {{- end -}}
     {{- end -}}
 
-    {{ $staffDict.Set "Roles" $validRoleIDs }}
-    {{ dbSet 0 "Staff" $staffDict }}
-    {{ $result := "The following roles have been designated as staff roles: " }}
-    {{- range $validRoleID := $validRoleIDs -}}
-        {{- $result = joinStr "" $result "\n- <@&" $validRoleID ">" -}}
-    {{- end -}}
+    {{ if gt (len $validRoleIDs) 0 }}
+        {{ $staffDict.Set "Roles" $validRoleIDs }}
+        {{ dbSet 0 "Staff" $staffDict }}
+        {{ $result := "The following roles have been designated as staff roles: " }}
+        {{- range $validRoleID := $validRoleIDs -}}
+            {{- $result = joinStr "" $result "\n- <@&" $validRoleID ">" -}}
+        {{- end -}}
 
-    {{ if gt (len $ignoredRoleIDs) 0 }}
-        {{- $result = joinStr "\n\n" $result "The following role IDs provided were invalid: " -}}
+        {{ if gt (len $ignoredRoleIDs) 0 }}
+            {{- $result = joinStr "\n\n" $result "The following role IDs provided were invalid: " -}}
+            {{- range $ignoredRoleID := $ignoredRoleIDs -}}
+                {{- $result = joinStr "" $result "\n- `" $ignoredRoleID "`" -}}
+            {{- end -}}
+        {{ end }}
+
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "Staff Roles Configuration"
+            "Description" $result
+            "AuthorID" .Member.User.ID
+        ) }}
+    {{ else }}
+        {{ $result := "⚠️ None of the provided role IDs were valid: " }}
         {{- range $ignoredRoleID := $ignoredRoleIDs -}}
             {{- $result = joinStr "" $result "\n- `" $ignoredRoleID "`" -}}
         {{- end -}}
-    {{ end }}
 
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" .Channel.ID
-        "Title" "Staff Roles Configuration"
-        "Description" $result
-        "AuthorID" .Member.User.ID
-    ) }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "Invalid Role IDs"
+            "Description" $result
+            "DeleteResponse" true
+            "DeleteDelay" $deleteResponseDelay
+        ) }}
+    {{ end }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID

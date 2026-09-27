@@ -11,11 +11,11 @@ gets a failing test first.
   `db dump` skipped `Staff` and `Inactivity Prune` (it now lists every stored key with one
   `dbGetPattern`, so it dumps at most 100 keys per user), and contrasts dropped colors
   silently.
-- staff_roles (found by its first tests, 2026-09-27; fix queued next): with no `Staff`
-  dictionary yet (a server that hasn't run bootstrap), line 21 reads nil, the Set is a
-  no-op and it stores `null`; with `Roles > Staff` unset, line 24's `reFind` gets nil and
-  the run fails ("invalid value; expected string"), so its "no role IDs" message can't
-  be reached. The tests seed `Staff: {}` and a staff role until then.
+- Fixed 2026-09-27, staff_roles' three data/crash bugs (found by its first tests): a
+  missing `Roles` or `Staff` dictionary now falls back to an empty sdict, house style;
+  an unset `Roles > Staff` is skipped instead of crashing `reFind` on nil; and when every
+  given role ID is invalid, the command sends an error embed instead of wiping the
+  configured staff roles with an empty list.
 - Fixed 2026-09-27: the Global "ExecCC Limit" setting (bootstrap default 10) was trusted as
   is, and YAGPDB allows 10 execCC calls per run on premium (1 on a free server), counted
   together with scheduleUniqueCC, so a setting above that made rules, contrasts, hugemoji
