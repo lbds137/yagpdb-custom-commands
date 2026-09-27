@@ -291,6 +291,75 @@ tests:
           },
         ]
 
+  - name: "hugemoji - Emoji taken from a linked message"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/700000000000000002/800000000000000001"]
+      guild:
+        channels:
+          - { id: 999999999, name: "yagpdb" }
+          - { id: 700000000000000002, name: "lounge" }
+      messages:
+        - id: 800000000000000001
+          channel_id: 700000000000000002
+          author_id: 222333444555666777
+          content: "<:test:123456789012345678>"
+    assertions:
+      sent_messages:
+        [{ embed_title: "Emoji Expander", embed_contains: "Click or tap here to view the message" }]
+
+  # The linked message is in an NSFW channel, linked from a non-NSFW one: refused for a
+  # non-staff user (hugemoji.gohtml's $nsfwCheck), silently (no error, nothing to expand)
+  - name: "hugemoji - A link to an NSFW channel from a non-NSFW channel is refused for a non-staff user"
+    snapshot: true
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/700000000000000003/800000000000000002"]
+      guild:
+        channels:
+          - { id: 999999999, name: "yagpdb" }
+          - { id: 700000000000000003, name: "nsfw-lounge", nsfw: true }
+      messages:
+        - id: 800000000000000002
+          channel_id: 700000000000000003
+          author_id: 222333444555666777
+          content: "<:test:123456789012345678>"
+
+  - name: "hugemoji - A link to an NSFW channel from a non-NSFW channel is allowed for staff"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args: ["https://discord.com/channels/111222333444555666/700000000000000003/800000000000000002"]
+      user: { roles: [111111111] }
+      guild:
+        channels:
+          - { id: 999999999, name: "yagpdb" }
+          - { id: 700000000000000003, name: "nsfw-lounge", nsfw: true }
+      messages:
+        - id: 800000000000000002
+          channel_id: 700000000000000003
+          author_id: 222333444555666777
+          content: "<:test:123456789012345678>"
+    assertions:
+      sent_messages:
+        [{ embed_title: "Emoji Expander", embed_contains: "Click or tap here to view the message" }]
+
+  - name: "hugemoji - Exactly one emoji over the limit uses singular grammar"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      # 11 distinct custom emoji; the default ExecCC Limit (10, shared Global) drops 1
+      args:
+        [
+          "<:e01:100000000000000001> <:e02:100000000000000002> <:e03:100000000000000003> <:e04:100000000000000004> <:e05:100000000000000005> <:e06:100000000000000006> <:e07:100000000000000007> <:e08:100000000000000008> <:e09:100000000000000009> <:e10:100000000000000010> <:e11:100000000000000011>",
+        ]
+    assertions:
+      sent_messages:
+        [
+          {
+            nth: 11,
+            content_contains: "⚠️ Warning: 1 emoji was not displayed because only 10 emojis can be expanded at a time.",
+          },
+        ]
+
   - name: "kb - Knowledge base lookup"
     snapshot: true
     template: "../../../utility/kb.gohtml"
@@ -338,12 +407,47 @@ tests:
         - { content_contains: "Skipping execCC call #11 due to having exceeded the limit of 10 calls!" }
         - { nth: 2, content_contains: "Skipping execCC call #12 due to having exceeded the limit of 10 calls!" }
 
+  # Several words: pyramid.gohtml execCC's its own template once per word (up to the limit),
+  # each a delayed (1s) call, so this run schedules them rather than running them (execCC's
+  # own doc: "They aren't run: test that command separately" - the single-word branch above,
+  # "pyramid - Simple text", is that separate test, run once per word when scheduled for real)
+  - name: "pyramid - Several words each schedule their own pyramid execCC"
+    template: "../../../utility/pyramid.gohtml"
+    context:
+      args: ["hi bye lo"]
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: # embed_exec/gematria kept so nested execCC still resolves; pyramid added for this test
+          embed_exec: "123"
+          gematria: "124"
+          pyramid: "131"
+    assertions:
+      scheduled_runs:
+        - { cc_id: 131, delay: 1s, exec_data_contains: '"Description":"hi"' }
+        - { cc_id: 131, delay: 1s, exec_data_contains: '"Description":"bye"' }
+        - { cc_id: 131, delay: 1s, exec_data_contains: '"Description":"lo"' }
+
   - name: "rand_hebrew - Generate random letters"
     snapshot: true
     template: "../../../utility/rand_hebrew.gohtml"
     context:
       args: ["5"]
       seed: 1 # the letters are random
+
+  - name: "rand_hebrew - NxM group mode"
+    snapshot: true
+    template: "../../../utility/rand_hebrew.gohtml"
+    context:
+      args: ["2x3"]
+      seed: 1 # the letters are random; sofit forms replace the last letter of each group
+
+  - name: "rand_hebrew - An invalid format is rejected"
+    template: "../../../utility/rand_hebrew.gohtml"
+    context:
+      args: ["abc"]
+    assertions:
+      sent_messages: [{ embed_title: "Invalid Argument" }]
 
   - name: "rule - View rule 1"
     snapshot: true
@@ -525,6 +629,123 @@ tests:
           Next Date: "September 1"
           Message Threshold: "10"
           Minute Threshold: "30"
+
+  - name: "inactivity - date action rotates the previous/next dates via the db execCC"
+    template: "../../../staff_utility/inactivity.gohtml"
+    context:
+      args: ["date", "October 1"]
+    setup_db:
+      - user_id: 0
+        key: "Inactivity Prune"
+        value:
+          Previous Date: "June 1"
+          Next Date: "September 1"
+          Message Threshold: "10"
+          Minute Threshold: "30"
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Previous Date":"September 1"' }
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Next Date":"October 1"' }
+
+  - name: "inactivity - date action without a parameter asks for one"
+    template: "../../../staff_utility/inactivity.gohtml"
+    context:
+      args: ["date"]
+    assertions:
+      sent_messages: [{ embed_title: "Missing Date Parameter" }]
+
+  - name: "inactivity - start action posts the opening announcement with placeholders filled in"
+    template: "../../../staff_utility/inactivity.gohtml"
+    context:
+      args: ["start"]
+    setup_db:
+      - user_id: 0
+        key: "Inactivity Prune"
+        value:
+          Previous Date: "June 1"
+          Next Date: "September 1"
+          Message Threshold: "10"
+          Minute Threshold: "30"
+          Opening Announcement: "Inactive members will be pruned on #{next_date} unless active since #{previous_date} (under #{message_threshold} messages / #{minute_threshold} minutes)."
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Inactivity Prune Opening Announcement",
+            embed_contains: "pruned on September 1 unless active since June 1 (under 10 messages / 30 minutes)",
+          },
+        ]
+      response_pings: { roles: [333333333] } # Member
+
+  - name: "inactivity - end action posts the closing announcement with placeholders filled in"
+    template: "../../../staff_utility/inactivity.gohtml"
+    context:
+      args: ["end"]
+    setup_db:
+      - user_id: 0
+        key: "Inactivity Prune"
+        value:
+          Previous Date: "June 1"
+          Next Date: "September 1"
+          Message Threshold: "10"
+          Minute Threshold: "30"
+          Closing Announcement: "The inactivity period that began #{previous_date} has ended; the next begins #{next_date}."
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Inactivity Prune Closing Announcement",
+            embed_contains: "began June 1 has ended; the next begins September 1",
+          },
+        ]
+      response_pings: { roles: [333333333] } # Member
+
+  - name: "inactivity - remind action pings the Inactive role"
+    template: "../../../staff_utility/inactivity.gohtml"
+    context:
+      args: ["remind"]
+      guild:
+        roles:
+          - { id: 111111111, name: "Staff" }
+          - { id: 222222222, name: "Guest" }
+          - { id: 333333333, name: "Member" }
+          - { id: 444444444, name: "Minor" }
+          - { id: 555555555, name: "Adult" }
+          - { id: 121212121, name: "Inactive" }
+    setup_db:
+      - user_id: 0
+        key: "Roles"
+        value:
+          Staff: 111111111
+          Guest: 222222222
+          Member: 333333333
+          Minor: 444444444
+          Adult: 555555555
+          Inactive: 121212121
+      - user_id: 0
+        key: "Inactivity Prune"
+        value:
+          Previous Date: "June 1"
+          Next Date: "September 1"
+          Message Threshold: "10"
+          Minute Threshold: "30"
+          Reminder: "You will be pruned on #{next_date} unless you send #{message_threshold} messages."
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Inactivity Prune Reminder",
+            embed_contains: "pruned on September 1 unless you send 10 messages",
+          },
+        ]
+      response_pings: { roles: [121212121] } # Inactive
+
+  - name: "inactivity - an invalid action is rejected"
+    template: "../../../staff_utility/inactivity.gohtml"
+    context:
+      args: ["bogus"]
+    assertions:
+      sent_messages: [{ embed_title: "Invalid Action Specified" }]
 
   - name: "role_ping - Ping a role"
     snapshot: true

@@ -69,3 +69,45 @@ tests:
     assertions:
       sent_messages:
         - { channel_id: 123456789012345678, has_embed: true, embed_contains: "couldn't post in <#900000000000000002>" }
+
+  # Mentioning the CURRENT channel (or one that doesn't exist) fails the "and $thereChannel
+  # $selfLinkCheck" gate, so channel_link falls into the else branch and shows this
+  # channel's own "Channel Details" (ID, Type, Topic) instead of linking anywhere
+  - name: "channel_link: mentioning the current channel shows its own Channel Details"
+    template: "../../../utility/channel_link.gohtml"
+    strict: true
+    command_map: { 1: "../../../utility/embed_exec.gohtml" }
+    context:
+      message_content: "<#123456789012345678>" # the trigger's own channel
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          embed_title: "Channel Details"
+          embed_contains: '"name": "ID"'
+        - channel_id: 123456789012345678
+          embed_contains: '"value": "123456789012345678"'
+        - channel_id: 123456789012345678
+          embed_contains: '"value": "Normal"'
+
+  # A channel mention for an ID that doesn't exist in the guild never resolves a target
+  # either, so it shows the same "Channel Details" about the CURRENT channel; here it's
+  # NSFW and has a topic, so both show up in the fields
+  - name: "channel_link: mentioning a channel that doesn't exist also shows the current channel's Channel Details"
+    template: "../../../utility/channel_link.gohtml"
+    strict: true
+    command_map: { 1: "../../../utility/embed_exec.gohtml" }
+    context:
+      message_content: "<#900000000000099999>" # not in guild.channels
+      guild:
+        channels:
+          - { id: 900000000000000001, name: "yagpdb" }
+          - { id: 123456789012345678, name: "general", nsfw: true, topic: "General chat" }
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          embed_title: "Channel Details"
+          embed_contains: '"value": "NSFW"'
+        - channel_id: 123456789012345678
+          embed_contains: '"name": "Topic"'
+        - channel_id: 123456789012345678
+          embed_contains: '"value": "General chat"'
