@@ -236,6 +236,25 @@ tests:
           { embed_title: "Contrast Ratios for `#000000`", nth: 2 },
         ]
 
+  - name: "contrasts - ExecCC Limit 1 uses singular grammar for the limit itself"
+    template: "../../../everyone/color/contrasts.gohtml"
+    context:
+      # 2 valid colors, limit 1: 1 dropped, and the limit itself is singular
+      args: ["#000000 #111111"]
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 1 }
+    assertions:
+      sent_messages:
+        [
+          {
+            content_contains: "⚠️ Warning: 1 color was not analyzed because only 1 color can be analyzed at a time.",
+            sent_after_seconds: 0,
+          },
+          { embed_title: "Contrast Ratios for `#000000`", nth: 2 },
+        ]
+
   - name: "contrasts - ExecCC Limit above 10 still clamps to YAGPDB's per-run cap"
     template: "../../../everyone/color/contrasts.gohtml"
     context:
@@ -289,6 +308,25 @@ tests:
         [
           {
             content_contains: "⚠️ Warning: 2 emojis were not displayed because only 10 emojis can be expanded at a time.",
+            sent_after_seconds: 0,
+          },
+          { embed_title: "Emoji Expander", nth: 2 },
+        ]
+
+  - name: "hugemoji - ExecCC Limit 1 uses singular grammar for the limit itself"
+    template: "../../../everyone/general/hugemoji.gohtml"
+    context:
+      # 2 distinct custom emoji, limit 1: 1 dropped, and the limit itself is singular
+      args: ["<:e01:100000000000000001> <:e02:100000000000000002>"]
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 1 }
+    assertions:
+      sent_messages:
+        [
+          {
+            content_contains: "⚠️ Warning: 1 emoji was not displayed because only 1 emoji can be expanded at a time.",
             sent_after_seconds: 0,
           },
           { embed_title: "Emoji Expander", nth: 2 },
@@ -628,8 +666,29 @@ tests:
       131: "../../../everyone/hebrew/pyramid.gohtml"
     assertions:
       sent_messages:
-        - { content_contains: "Skipping execCC call #11 due to having exceeded the limit of 10 calls!" }
-        - { nth: 2, content_contains: "Skipping execCC call #12 due to having exceeded the limit of 10 calls!" }
+        - { content_contains: "⚠️ Warning: 2 words were not processed because only 10 words can be processed at a time." }
+
+  - name: "pyramid - ExecCC Limit 1 schedules one word and warns about the rest"
+    template: "../../../everyone/hebrew/pyramid.gohtml"
+    context:
+      args: ["one two three"]
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 1 }
+      - user_id: 0
+        key: "Commands"
+        value: # embed_exec/gematria kept so nested execCC still resolves; pyramid added for this test
+          embed_exec: "123"
+          gematria: "124"
+          pyramid: "131"
+    command_map:
+      131: "../../../everyone/hebrew/pyramid.gohtml"
+    assertions:
+      scheduled_runs:
+        - { cc_id: 131, delay: 1s, exec_data_contains: '"Description":"one"' }
+      sent_messages:
+        - { content_contains: "⚠️ Warning: 2 words were not processed because only 1 word can be processed at a time." }
 
   # Several words: pyramid.gohtml execCC's its own template once per word (up to the limit),
   # each a delayed (1s) call, so this run schedules them rather than running them (execCC's
@@ -886,6 +945,9 @@ tests:
       db_checks:
         - { user_id: 0, key: "Inactivity Prune", value_contains: '"Previous Date":"September 1"' }
         - { user_id: 0, key: "Inactivity Prune", value_contains: '"Next Date":"October 1"' }
+      sent_messages:
+        - { nth: 1, embed_contains: 'Next Date\": \"October 1' }
+        - { nth: 1, embed_contains: 'Previous Date\": \"September 1' }
 
   - name: "inactivity - date action without a parameter asks for one"
     template: "../../../staff/inactivity.gohtml"
