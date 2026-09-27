@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -8,6 +9,20 @@ import (
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
 )
+
+// ErrTriggerMismatch is wrapped by the error SetTriggerMessage returns when msg doesn't
+// match the trigger, so a caller can detect a mismatch with errors.Is instead of matching
+// the message text.
+var ErrTriggerMismatch = errors.New("trigger mismatch")
+
+// triggerMismatchError carries SetTriggerMessage's existing message text while unwrapping
+// to ErrTriggerMismatch for structural detection.
+type triggerMismatchError struct {
+	msg string
+}
+
+func (e *triggerMismatchError) Error() string { return e.msg }
+func (e *triggerMismatchError) Unwrap() error { return ErrTriggerMismatch }
 
 // DefaultPrefix is YAGPDB's default command prefix.
 const DefaultPrefix = "-"
@@ -184,7 +199,7 @@ func matchRegexSplitArgs(pattern, msg string) (match bool, stripped string, args
 func (ctx *ExecutionContext) SetTriggerMessage(t Trigger, msg string) error {
 	match, stripped, cmdArgs := CheckMatch(ctx.Prefix, t, msg)
 	if !match {
-		return fmt.Errorf("the message %q doesn't match the %s trigger %q", msg, t.Type, t.Text)
+		return &triggerMismatchError{msg: fmt.Sprintf("the message %q doesn't match the %s trigger %q", msg, t.Type, t.Text)}
 	}
 
 	ctx.MessageContent = msg

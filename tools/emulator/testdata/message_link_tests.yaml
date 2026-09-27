@@ -41,7 +41,7 @@ command_map:
 
 tests:
   - name: "message_link: expands a quoted link"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
     assertions:
@@ -50,7 +50,7 @@ tests:
     snapshot: true
 
   - name: "message_link: shows the author's nickname"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
       member_nicks: { 500000000000000001: "Tea Guest" }
@@ -59,7 +59,7 @@ tests:
         - { channel_id: 123456789012345678, embed_contains: "Tea Guest (" }
 
   - name: "message_link: deleted message is ignored"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"
     expected:
@@ -67,13 +67,13 @@ tests:
     snapshot: true
 
   - name: "message_link: links in code are ignored"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "`https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001`"
     snapshot: true
 
   - name: "message_link: the linker left the server"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
       members: [500000000000000001]
@@ -82,14 +82,14 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "linked a message" }
 
   - name: "message_link: execCC data without a link"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       exec_data: { ChannelID: 900000000000000003, DisableQuote: true }
     snapshot: true
 
   # The linked message has an embed: message_link carries its parts over as fields
   - name: "message_link: a quoted embed's parts become fields"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
       messages:
@@ -113,7 +113,7 @@ tests:
     snapshot: true
 
   - name: "message_link: a quoted embed's long description is cut to Discord's 1024"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
       messages:
@@ -127,7 +127,7 @@ tests:
       sent_messages: [{ embed_contains: 'a€…"' }]
 
   - name: "message_link: a quoted embed's description of exactly 1024 is kept"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
       messages:
@@ -141,7 +141,7 @@ tests:
 
   # Linking a Message Link re-sends its embed as it is (the embed read from the message)
   - name: "message_link: linking a Message Link re-sends its embed"
-    template: "../../../everyone/links/message_link.gohtml"
+    template: "../../../retired/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000006"
       messages:

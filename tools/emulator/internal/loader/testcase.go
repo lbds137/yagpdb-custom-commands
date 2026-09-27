@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -245,6 +246,11 @@ type ExpectedResult struct {
 	OutputMatches   string  `yaml:"output_matches"`   // Regex match
 	ErrorContains   string  `yaml:"error_contains"`   // Expected error
 	WarningContains string  `yaml:"warning_contains"` // Expected diagnostic
+	// NoTrigger asserts the test's message_content does NOT match the template's header
+	// trigger: the test passes without executing the template, or fails if the message
+	// does match. It can't be combined with any other expected: field or with assertions:,
+	// since those need the template to have run.
+	NoTrigger bool `yaml:"no_trigger"`
 }
 
 // Assertions defines post-execution checks.
@@ -375,7 +381,32 @@ func LoadTestCase(filename string) (*TestCase, error) {
 	tc.applyDefaults()
 	tc.SourceFile = filename
 
+	if err := tc.validateNoTrigger(); err != nil {
+		return nil, fmt.Errorf("%s: %w", filename, err)
+	}
+
 	return &tc, nil
+}
+
+// validateNoTrigger rejects expected.no_trigger combined with any other expected: field or
+// with assertions:, since a no_trigger test passes or fails without ever running the
+// template, so nothing else could be checked.
+func (tc *TestCase) validateNoTrigger() error {
+	if !tc.Expected.NoTrigger {
+		return nil
+	}
+	e := tc.Expected
+	if e.OutputEquals != nil || e.OutputContains != "" || e.OutputMatches != "" ||
+		e.ErrorContains != "" || e.WarningContains != "" {
+		return fmt.Errorf("test %q: no_trigger can't be combined with another expected: field (the template never runs)", tc.Name)
+	}
+	if !reflect.DeepEqual(tc.Assertions, Assertions{}) {
+		return fmt.Errorf("test %q: no_trigger can't be combined with assertions: (the template never runs)", tc.Name)
+	}
+	if tc.Snapshot {
+		return fmt.Errorf("test %q: no_trigger can't be combined with snapshot: true (the template never runs)", tc.Name)
+	}
+	return nil
 }
 
 // LoadTestSuite loads a test suite from a YAML file.
@@ -407,6 +438,9 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 		if ts.Tests[i].Context.User.ID == runtime.BotUserID {
 			return nil, fmt.Errorf("%s: test %q: user.id %d is the bot's; YAGPDB runs no custom command for a bot's message",
 				filename, ts.Tests[i].Name, runtime.BotUserID)
+		}
+		if err := ts.Tests[i].validateNoTrigger(); err != nil {
+			return nil, fmt.Errorf("%s: %w", filename, err)
 		}
 	}
 

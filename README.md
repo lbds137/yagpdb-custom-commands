@@ -62,7 +62,6 @@ General-purpose commands for all users, in topic subfolders:
 - **`rule.gohtml`** - Display specific rules
 
 #### Links (`everyone/links/`)
-- **`message_link.gohtml`** - Generate message links
 - **`message_pointer.gohtml`** - Message reference utility
 - **`channel_link.gohtml`** - Generate channel links
 

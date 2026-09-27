@@ -3,6 +3,7 @@ package loader
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -97,8 +98,17 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 		result.Error = err
 		return result
 	}
-	if err := setTriggerMessage(tc, source, ctx); err != nil {
+	t, err := setTriggerMessage(tc, source, ctx)
+	if err != nil {
+		if tc.Expected.NoTrigger && errors.Is(err, runtime.ErrTriggerMismatch) {
+			result.Passed = true
+			return result
+		}
 		result.Error = err
+		return result
+	}
+	if tc.Expected.NoTrigger {
+		result.Error = fmt.Errorf("expected the message not to match the %s trigger %q, but it did", t.Type, t.Text)
 		return result
 	}
 
@@ -292,15 +302,17 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 // setTriggerMessage gives the command the message that triggered it: the test's
 // message_content, or its args after the trigger the template's header names. Commands
 // run by execCC or a reaction have no trigger, but message_content can set their .Message;
-// commands without a message trigger have neither.
-func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContext) error {
+// commands without a message trigger have neither. It also returns the trigger it resolved
+// (the zero Trigger for exec_data/reaction contexts, which have none), for callers that
+// want to describe it, such as a no_trigger assertion's failure message.
+func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContext) (runtime.Trigger, error) {
 	c := tc.Context
 	if c.ExecData != nil || c.Reaction != nil {
 		if len(c.Args) > 0 {
-			return fmt.Errorf("args need a message trigger, not exec_data or reaction")
+			return runtime.Trigger{}, fmt.Errorf("args need a message trigger, not exec_data or reaction")
 		}
 		ctx.MessageContent = c.MessageContent
-		return nil
+		return runtime.Trigger{}, nil
 	}
 	t, ok := runtime.ReadTrigger(source)
 	if !ok {
@@ -313,22 +325,22 @@ func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContex
 	}
 	if !t.MessageTriggered() {
 		if len(c.Args) > 0 || c.MessageContent != "" {
-			return fmt.Errorf("args and message_content need a message trigger; the template's is %q", t.Type)
+			return t, fmt.Errorf("args and message_content need a message trigger; the template's is %q", t.Type)
 		}
 		ctx.NoMessage, ctx.NoMember = t.Scheduled(), t.Scheduled()
-		return nil
+		return t, nil
 	}
 
 	msg := c.MessageContent
 	switch {
 	case msg != "" && len(c.Args) > 0:
-		return fmt.Errorf("give args or message_content, not both")
+		return t, fmt.Errorf("give args or message_content, not both")
 	case msg == "" && t.Type == "Regex":
-		return fmt.Errorf("a Regex trigger needs message_content (the whole message)")
+		return t, fmt.Errorf("a Regex trigger needs message_content (the whole message)")
 	case msg == "":
 		msg = runtime.TriggerMessage(ctx.Prefix, t, c.Args)
 	}
-	return ctx.SetTriggerMessage(t, msg)
+	return t, ctx.SetTriggerMessage(t, msg)
 }
 
 // runSetupTemplate runs a template the test lists under setup_templates, in the test's
