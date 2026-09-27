@@ -6,7 +6,8 @@ Nothing here is changed yet: each retire or fix waits on Lila's call. Retiring =
 
 **Lila's decisions (2026-09-27):** retire `dice_roll` (done, moved to `retired/`); keep
 `db_get_text`, `ticket_clean`, the bump trio and `inactivity` (prune cycles still run).
-Everything under "Keep" is approved to improve; the bugs below are fixed first.
+The bugs below are fixed; the improvements under "Keep, with improvements" still wait on
+her call.
 
 ## Bugs found (fixed 2026-09-27, each pinned by a test that failed on the old command)
 
