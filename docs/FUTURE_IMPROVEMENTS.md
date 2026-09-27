@@ -27,9 +27,11 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   differ). Only a typed nil pointer's field errors (exec.go:803-806, 863-865), and
   message_link already guards getMember for that. The eager-and hazard that is real:
   eq/lt on mismatched types (the simple_db_edit rewrite hit it and guards it).
-- To check: staff/directory.gohtml:98 calls `exec "Clean"` bare, while batch_delrep and
-  inactivity capture exec's result in `$silent`; if exec returns text, the interval run
-  may post it. Verify with the emulator's exec model before changing.
+- Ruled out (checked 2026-09-27, vendor code-reading): staff/directory.gohtml:98's bare
+  `exec "Clean"` can't post text. Clean returns a `*dcmd.TemporaryResponse`
+  (moderation/commands.go:810), which exec's type switch doesn't match, so exec returns ""
+  (commands/tmplexec.go:202-215). Its failures come back as errors that end the run, and
+  capturing the result in `$silent` wouldn't catch those either.
 
 ## Known command bugs
 
