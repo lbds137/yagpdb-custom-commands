@@ -279,7 +279,10 @@ gets a failing test first.
   (run scripts/gen-yagpdb-funcs.sh from the main checkout: worktrees have no vendor/); (3) new
   functions hasAnyPermissions/targetHasAnyPermissions (need a real permission model; the
   permission family is a stub today) and memberAbove/memberAboveRole (context_funcs.go
-  771-847, 1051-1087). Not modelled, record only: pin/pin-count limits, editChannel* 10-min
+  771-847, 1051-1087) — DEFERRED 2026-09-27, promote when a command calls any of
+  hasPermissions/targetHasPermissions/hasAnyPermissions/targetHasAnyPermissions/
+  getTargetPermissionsIn/memberAbove/memberAboveRole (`git grep` over everyone/ staff/
+  found none; the emulator never implemented hasPermissions either). Not modelled, record only: pin/pin-count limits, editChannel* 10-min
   cooldown, createThread/createForumPost raw errors, exec cooldown text, group
   RedirectErrorsChannel, nil ChannelOrThreadParent when the parent isn't in state.
 - Deferred (found 2026-09-27): `scripts/lint-all.sh` passes a positional file argument to
