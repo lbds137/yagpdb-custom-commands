@@ -30,6 +30,11 @@ read it at `/home/deck/Projects/yagpdb-custom-commands/vendor/yagpdb/`.
 
 ## Landmines
 
+- Dispatch with the session's working directory at the repo root. `vendor/yagpdb/` is
+  its own git repo (upstream YAGPDB), so a worktree dispatched while the shell sits
+  inside it is cut from upstream, and the worker stops at step 0. After reading vendor
+  source, `cd` back to the root before the Agent call.
+
 - Fidelity comes from YAGPDB's code: copy the vendor function, and build test fixtures
   (embeds, messages, errors) from what YAGPDB's code produces, never invented shapes.
 - A changed command file (`everyone/`, `staff/`) needs Lila to paste it into YAGPDB
