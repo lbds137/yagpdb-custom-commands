@@ -392,3 +392,54 @@ func validateTopLevelComponentsCustomIDs(rows []types.TopLevelComponent, used ma
 	}
 	return nil
 }
+
+// duplicateCustomID is the first custom ID two components of a message share, or "".
+// YAGPDB never checks this (validateTopLevelComponentsCustomIDs writes `used[id]` but
+// only reads it to number empty IDs, components.go:1102-1117), so a command with two
+// buttons on one ID builds fine and Discord refuses the message (COMPONENT_CUSTOM_ID_
+// DUPLICATED under 50035 Invalid Form Body). Link buttons carry no ID.
+func duplicateCustomID(rows []types.TopLevelComponent) string {
+	seen := make(map[string]bool)
+	for _, row := range rows {
+		r, ok := row.(*types.ActionsRow)
+		if !ok {
+			continue
+		}
+		for _, comp := range r.Components {
+			var id string
+			switch c := comp.(type) {
+			case *types.Button:
+				if c.Style == types.LinkButton {
+					continue
+				}
+				id = c.CustomID
+			case *types.SelectMenu:
+				id = c.CustomID
+			default:
+				continue
+			}
+			if id == "" {
+				continue
+			}
+			if seen[id] {
+				return id
+			}
+			seen[id] = true
+		}
+	}
+	return ""
+}
+
+// checkComponents is the Discord-side check every send, edit and interaction response
+// runs on its components: a repeated custom ID is refused (see duplicateCustomID).
+// refused reports that the call must not go through; err is the error to return, nil when
+// the refusal is only a warning (discordRefuses).
+func (ctx *ExecutionContext) checkComponents(fn string, rows []types.TopLevelComponent) (refused bool, err error) {
+	id := duplicateCustomID(rows)
+	if id == "" {
+		return false, nil
+	}
+	return true, ctx.discordRefuses(fn, errInvalidFormBody,
+		fmt.Sprintf("two components share the custom_id %q (COMPONENT_CUSTOM_ID_DUPLICATED); "+
+			"YAGPDB doesn't check this, so give every button and menu a distinct custom_id", id))
+}

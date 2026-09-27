@@ -20,6 +20,14 @@ picks, then the minifier.
   314-325): channel id, name, category, last message (ISO date), days quiet, bucket. Up
   to 200 tracked channels (2 dbBottomEntries), about 12 KB. Ephemeral if the click
   allows (it's an interaction). Format unconfirmed with Lila: propose CSV when building.
+  Shipped 2026-09-27 (channel_activity_pager, main 87): `ca:csv` replies ephemerally with
+  `channel_activity.txt` (YAGPDB forces .txt), rows dropped past the 100,000-byte cap.
+- Deferred (found 2026-09-27, building the CSV download): the emulator's YAML tests can't
+  assert an uploaded file's content (`file`/`filename` in complexMessage): only a snapshot
+  pins it (`files:` in the .snap.yaml). Add a `files_contains:` (or `files:` list with
+  `filename`/`content_contains`) check to sent_messages / interaction_responses, mirroring
+  `components_contains`. Trigger: the next command that uploads a file, or a CSV format
+  change that a snapshot diff would hide in noise.
 - UX audit done 2026-09-27 (all 39 commands, vendor c579722; most are fine as is). Lila
   approved ALL of these, build order: (1) channel_activity browse; (2) rules browse, same
   pager, jump-to-rule select, public rulebook posting kept; (3) `/edit` slash opening a

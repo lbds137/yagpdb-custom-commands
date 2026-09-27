@@ -193,7 +193,11 @@ Copy YAGPDB's code rather than rewriting it (fetch its source with `vendor/updat
 (`internal/runtime/components.go`, vendor common/templates/components.go): buttons pack 5
 to a row up to 5 rows, a string menu takes a row of its own, every custom ID gets the
 `templates-` prefix (numbered `templates-0`, `templates-1`... when empty; over 90 chars
-after the prefix is `custom id too long`), and a link button loses its ID. Sent and edited
+after the prefix is `custom id too long`), and a link button loses its ID. Two components
+on one custom ID build fine in YAGPDB (it never checks) but Discord refuses the message, so
+every send, edit, `sendResponse` and `updateMessage` refuses it too: a `[limit]` warning
+naming the ID (nothing sent), or with `strict`/inside `{{try}}` the error `HTTP 400 Bad
+Request, {"message": "Invalid Form Body", "code": 50035}`. Sent and edited
 messages carry them: assert with `components_contains: "templates-pg:2"` (a substring of
 any action row as JSON: custom_id, label, placeholder...), read them back with
 `(getMessage nil $id).Components` (rows of `.Components`, each with `.CustomID`, `.Label`,

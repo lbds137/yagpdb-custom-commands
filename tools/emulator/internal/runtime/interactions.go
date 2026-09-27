@@ -343,6 +343,9 @@ func (e *Engine) sendResponse(fn string, filterSpecialMentions, returnID bool,
 	if ok, err := e.ctx.checkSend(fn, content, embeds, notEmpty, false); !ok {
 		return "", err
 	}
+	if refused, err := e.ctx.checkComponents(fn, components); refused {
+		return "", err
+	}
 	if msgSend.HasFile {
 		e.ctx.RecordFileUpload(e.ctx.ChannelID, msgSend.Filename, msgSend.File)
 	}
@@ -404,6 +407,9 @@ func (e *Engine) updateMessage(fn string, filterSpecialMentions bool,
 	content, embeds, components := msgSend.Content, msgSend.Embeds, msgSend.Components
 	notEmpty := msgSend.HasFile || msgSend.HasOther || len(components) > 0
 	if ok, err := e.ctx.checkSend(fn, content, embeds, notEmpty, false); !ok {
+		return "", err
+	}
+	if refused, err := e.ctx.checkComponents(fn, components); refused {
 		return "", err
 	}
 	target := e.ctx.editComponentMessage(content, embeds, components)
