@@ -241,6 +241,12 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		ctx.ChannelOrder = append(ctx.ChannelOrder, ch.ID)
 		ctx.ChannelDetails[ch.ID] = types.CtxChannel{ID: ch.ID, Name: ch.Name, Type: ch.Type,
 			ParentID: ch.ParentID, Position: ch.Position, Topic: ch.Topic, NSFW: ch.NSFW}
+		if ch.BotCannotSend {
+			if ctx.ChannelsCannotSend == nil {
+				ctx.ChannelsCannotSend = map[int64]bool{}
+			}
+			ctx.ChannelsCannotSend[ch.ID] = true
+		}
 	}
 	if name, ok := ctx.Channels[ctx.ChannelID]; ok {
 		ctx.ChannelName = name // declared, the test's channel has its declared name

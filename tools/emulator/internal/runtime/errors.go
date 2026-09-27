@@ -51,4 +51,5 @@ var (
 	errEditOthers      = discordError{"403 Forbidden", 50005, "Cannot edit a message authored by another user"}
 	errEmptyMessage    = discordError{"400 Bad Request", 50006, "Cannot send an empty message"}
 	errInvalidFormBody = discordError{"400 Bad Request", 50035, "Invalid Form Body"}
+	errMissingPerms    = discordError{"403 Forbidden", 50013, "Missing Permissions"}
 )

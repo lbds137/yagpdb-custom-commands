@@ -32,6 +32,10 @@ gets a failing test first.
   error Discord gives first when a call has two problems (the emulator checks a
   reaction's emoji before its message, and an edit's target before its form body);
   promote if a command's catch tells those errors apart.
+- A `bot_cannot_send` channel refuses sends only: `editMessage` there still succeeds,
+  though YAGPDB's ChannelMessageEditComplex error would surface too (context_funcs.go
+  tmplEditMessage). Deferred (2026-09-27): channel_link edits only messages it just
+  posted; promote when a command edits in a channel it didn't just post to.
 - `editMessageNoEscape` runs editMessage's code, so its warnings name `editMessage`.
   Promote when a command uses editMessageNoEscape (none does today).
 - Left as is (2026-09-25): a test whose name starts with a newline can't be
@@ -463,6 +467,9 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       `parent_id`, `position`, `topic` and `nsfw` reach `.Channel`, getChannel and
       `.Guild.Channels`, and a name finds only text, voice, announcement and forum
       channels. directory and ticket_adduser_exec have their first tests (2026-09-25)
+- [x] A declared channel's `bot_cannot_send: true` makes a send there fail with Discord's
+      403 Missing Permissions (50013), nothing recorded; channel_link catches it and says
+      it couldn't post (it aborted with no message) (2026-09-27)
 - [x] A snapshot entry no test has any more (a renamed or deleted test) is listed after
       the results: a warning from `make test`, a failure in `make ci` and CI; `make
       prune-snapshots` removes only those, `make update-snapshots` rewrites too

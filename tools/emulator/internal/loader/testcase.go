@@ -199,6 +199,9 @@ type ChannelDef struct {
 	Position int    `yaml:"position"`  // .Guild.Channels is sorted by position
 	Topic    string `yaml:"topic"`
 	NSFW     bool   `yaml:"nsfw"`
+	// BotCannotSend makes a send to this channel fail as Discord refuses it (403 Missing
+	// Permissions), instead of being recorded
+	BotCannotSend bool `yaml:"bot_cannot_send"`
 }
 
 // GuildDef defines guild/server context.

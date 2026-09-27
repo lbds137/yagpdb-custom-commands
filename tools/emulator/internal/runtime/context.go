@@ -208,6 +208,10 @@ type ExecutionContext struct {
 	// ChannelOrder is the channels in YAGPDB's order (.Guild.Channels, name lookups):
 	// sorted by position as its state tracker sorts them (SortChannels)
 	ChannelOrder []int64
+	// ChannelsCannotSend are declared channels the bot lacks Send Messages permission in
+	// (a test's guild.channels bot_cannot_send): a send there fails as Discord's REST call
+	// would (403 Missing Permissions), nothing recorded
+	ChannelsCannotSend map[int64]bool
 
 	// Command ID mapping (for execCC)
 	CommandIDMap map[int64]string
