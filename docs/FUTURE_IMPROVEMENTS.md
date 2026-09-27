@@ -14,11 +14,27 @@ picks, then the minifier.
   ID (e.g. `ca:stale:2`); the handler rebuilds the page from it. Patterns from Tzurot's
   .claude/rules/04-discord.md: browse, not dump; summary first; ephemeral for staff tools
   where the trigger allows it; acknowledge within 3 s; last-page "next" disabled.
-- Next: a UX audit of every command against those patterns, a list for Lila to pick from.
-- Prerequisite: the emulator doesn't model components (buttons, menus, modals, Component
-  and Modal triggers, updateMessage, ephemeral responses). Build them from vendor
-  common/templates/context_interactions.go, general.go (complexMessage "buttons"/"menus")
-  and customcommands/bot.go CheckMatchComponent before any command uses them.
+- UX audit done 2026-09-27 (all 39 commands, vendor c579722; most are fine as is). Lila
+  approved ALL of these, build order: (1) channel_activity browse; (2) rules browse, same
+  pager, jump-to-rule select, public rulebook posting kept; (3) `/edit` slash opening a
+  modal for rule_edit and simple_db_edit, deletes behind a danger confirm button; (4) db
+  as a slash command with ephemeral replies via sendResponse (bypass embed_exec, which
+  always posts publicly with sendMessage), 7 subcommands; (5) user/message context-menu
+  entries for avatar_viewer and hugemoji (text triggers kept); (6) slash with role/user
+  pickers for staff_roles, inactivity (kick behind a confirm), role_ping.
+  Shared blocks: one pager handler (Component trigger `^pg:(\w+):(\w+):(\d+)$`, page logic
+  inside it; the slash command execCCs it for page 1, inheriting the Interaction,
+  tmplextensions.go:240-242), one confirm handler (`confirm:<action>:<id>`). Slot budget:
+  6 of 10 free slash CCs (50 premium), 2 of 5 context-menu CCs (customcommands.go:950-964).
+  Smaller wins not picked (fine as is for now): contrasts as one embed (also frees the
+  free tier's 1 execCC), rand_hebrew / simple_db_lookup / bootstrap as slash.
+- Prerequisite: the emulator doesn't model interactions: Slash (.Options, .CmdArgs,
+  subcommands), Component and Modal triggers (.CustomID, .Values, .IsButton/.IsMenu),
+  context-menu (.TargetUser/.TargetMember/.Message), sendResponse/updateMessage/sendModal/
+  ephemeralResponse, complexMessage buttons/menus, the 1-per-run interaction response.
+  Build them from vendor c579722 (customcommands/handle_slashcommand.go,
+  handle_component.go, handle_contextmenu.go; common/templates/context_interactions.go,
+  general.go) after the vendor port below.
 
 ## Free-tier compatibility (Lila 2026-09-27: the suite should work on free servers too)
 
