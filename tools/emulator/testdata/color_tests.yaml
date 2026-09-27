@@ -1,0 +1,58 @@
+name: "hex_to_int / rand_color (hex string <-> integer color conversion)"
+
+defaults:
+  guild:
+    channels:
+      - { id: 999999999, name: "yagpdb" }
+  channel:
+    id: 123456789012345678
+  user:
+    id: 500000000000000001
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Delete Trigger Delay: 5, Delete Response Delay: 10 }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "1", hex_to_int: "2" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 999999999 }
+
+command_map:
+  1: "../../../utility/embed_exec.gohtml"
+  2: "../../../utility/hex_to_int.gohtml"
+
+tests:
+  - name: "hex_to_int: a hashed hex code (#ff0000) decodes to 16711680"
+    template: "../../../utility/hex_to_int.gohtml"
+    context:
+      message_content: "#ff0000"
+    assertions:
+      sent_messages:
+        - { embed_title: "Color Inspector", embed_contains: "`16711680`" }
+
+  - name: "hex_to_int: a bare hex code (ff0000, no #) also decodes to 16711680"
+    template: "../../../utility/hex_to_int.gohtml"
+    context:
+      message_content: "ff0000"
+    assertions:
+      sent_messages:
+        - { embed_title: "Color Inspector", embed_contains: "`16711680`" }
+
+  - name: "hex_to_int: the execCC path (.ExecData.Hex) that rand_color uses"
+    template_source: |
+      {{ execCC 2 nil 0 (sdict "Hex" "00ff00" "Title" "Wrapped") }}
+    assertions:
+      sent_messages:
+        - { embed_title: "Wrapped", embed_contains: "`65280`" }
+
+  - name: "rand_color: a fixed seed makes the execCC to hex_to_int deterministic"
+    template: "../../../utility/rand_color.gohtml"
+    context:
+      seed: 1
+    assertions:
+      sent_messages:
+        - { embed_title: "Color Generator", embed_contains: "`3134232`" }
+        - { embed_contains: "#2fd318" }

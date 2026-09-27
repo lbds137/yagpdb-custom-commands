@@ -1,0 +1,55 @@
+name: "timestamp (decodes a Discord snowflake into its creation time)"
+description: >
+  Discord's epoch is 1420070400000ms (vendor/yagpdb/bot/util.go:27, snowflake.Epoch); a
+  snowflake's timestamp is (id >> 22) + epoch, i.e. (id div 4194304) + epoch, matching
+  timestamp.gohtml's own formula.
+
+defaults:
+  guild:
+    channels:
+      - { id: 999999999, name: "yagpdb" }
+  channel:
+    id: 123456789012345678
+  user:
+    id: 111111111111111111
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Delete Trigger Delay: 5 }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "1" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 999999999 }
+
+command_map:
+  1: "../../../utility/embed_exec.gohtml"
+
+tests:
+  - name: "timestamp: a known snowflake decodes to its known time"
+    template: "../../../utility/timestamp.gohtml"
+    context:
+      # 175928847299117063 is Discord's own documented example snowflake.
+      # (175928847299117063 // 4194304) + 1420070400000 = 1462015105796 ms
+      # = 2016-04-30T11:18:25.796Z, computed independently of the command's own code.
+      args: ["175928847299117063"]
+    assertions:
+      sent_messages:
+        - { embed_title: "Timestamp Parser", embed_contains: "175928847299117063" }
+        - { embed_contains: "2016-04-30 11:18:25.796 +0000 UTC" }
+
+  - name: "timestamp: no argument decodes the caller's own ID"
+    template: "../../../utility/timestamp.gohtml"
+    assertions:
+      sent_messages:
+        - { embed_title: "Timestamp Parser", embed_contains: "111111111111111111" }
+
+  - name: "timestamp: an invalid argument falls back to the caller's own ID (not an error)"
+    template: "../../../utility/timestamp.gohtml"
+    context:
+      args: ["notanumber"]
+    assertions:
+      sent_messages:
+        - { embed_title: "Timestamp Parser", embed_contains: "111111111111111111" }
