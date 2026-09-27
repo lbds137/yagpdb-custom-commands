@@ -257,7 +257,6 @@ Keys:
 Keys:
 - "embed_exec" (string): Custom command ID for embed service
 - "db" (string): Custom command ID for database service
-- "message_link" (string): Custom command ID for message linking
 - [command_name] (string): Custom command ID for specific commands
 ```
 

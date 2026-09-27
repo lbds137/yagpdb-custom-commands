@@ -51,7 +51,6 @@ Core services are implemented as reusable custom commands:
 
 - **`embed_exec`**: Universal embed creation service
 - **`db`**: Database operations service
-- **`message_link`**: Message linking service
 
 ## Data Flow Architecture
 

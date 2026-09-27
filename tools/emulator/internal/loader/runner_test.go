@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -92,6 +93,89 @@ func TestArgsFollowTheHeaderTrigger(t *testing.T) {
 		if res.Error != nil || res.Output != tt.out {
 			t.Errorf("%s: got %q, %v; want %q", tt.name, res.Output, res.Error, tt.out)
 		}
+	}
+}
+
+func TestNoTrigger(t *testing.T) {
+	header := func(kind, trigger string) string {
+		return "{{/*\n  Trigger type: `" + kind + "`\n  Trigger: `" + trigger + "`\n*/}}"
+	}
+	r := NewRunner(RunnerConfig{})
+
+	// A mismatch passes without running the template.
+	tc := &TestCase{
+		Name:           "no_trigger, mismatch",
+		TemplateSource: header("Regex", `\A#(\d|[A-F]|[a-f]){6}\z`) + `{{this is not valid Go template syntax`,
+		Context:        ContextDef{MessageContent: "ff0000"},
+		Expected:       ExpectedResult{NoTrigger: true},
+	}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); !res.Passed || res.Error != nil {
+		t.Errorf("mismatch: want a pass, got %v %v", res.Passed, res.Error)
+	}
+
+	// A match fails the test, naming the trigger it matched.
+	tc = &TestCase{
+		Name:           "no_trigger, match",
+		TemplateSource: header("Regex", `\A#(\d|[A-F]|[a-f]){6}\z`) + `{{"unused"}}`,
+		Context:        ContextDef{MessageContent: "#ff0000"},
+		Expected:       ExpectedResult{NoTrigger: true},
+	}
+	tc.applyDefaults()
+	res := r.RunTest(tc)
+	wantSubstr := "expected the message not to match the Regex trigger " +
+		fmt.Sprintf("%q", `\A#(\d|[A-F]|[a-f]){6}\z`) + ", but it did"
+	if res.Passed || res.Error == nil || !strings.Contains(res.Error.Error(), wantSubstr) {
+		t.Errorf("match: want %q, got %v %v", wantSubstr, res.Passed, res.Error)
+	}
+
+	// A non-mismatch setup error (args and message_content together) still fails as today,
+	// not converted into a no_trigger pass.
+	tc = &TestCase{
+		Name:           "no_trigger, unrelated setup error",
+		TemplateSource: header("Command", "kb") + `{{"unused"}}`,
+		Context:        ContextDef{Args: []string{"a"}, MessageContent: "-kb a"},
+		Expected:       ExpectedResult{NoTrigger: true},
+	}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Passed || res.Error == nil || !strings.Contains(res.Error.Error(), "not both") {
+		t.Errorf("unrelated setup error: want it to still fail as a setup error, got %v %v", res.Passed, res.Error)
+	}
+
+	// A Command-type header goes through the same CheckMatch/SetTriggerMessage path as
+	// Regex, so a non-matching message under a Command trigger passes the same way.
+	tc = &TestCase{
+		Name:           "no_trigger, Command header, non-matching message",
+		TemplateSource: header("Command", "kb") + `{{"unused"}}`,
+		Context:        ContextDef{MessageContent: "not the trigger at all"},
+		Expected:       ExpectedResult{NoTrigger: true},
+	}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); !res.Passed || res.Error != nil {
+		t.Errorf("Command header: want a pass, got %v %v", res.Passed, res.Error)
+	}
+
+	// no_trigger combined with another assertion is a load-time error, since nothing else
+	// can be checked when the template never runs.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "combo.yaml")
+	src := "tests:\n  - name: x\n    template_source: \"hi\"\n    context:\n      message_content: \"nope\"\n" +
+		"    expected:\n      no_trigger: true\n    assertions:\n      sent_messages: []\n"
+	if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadTestFile(path); err == nil || !strings.Contains(err.Error(), "no_trigger can't be combined") {
+		t.Errorf("no_trigger + assertions: want a load-time error naming the conflict, got %v", err)
+	}
+
+	snapPath := filepath.Join(dir, "snap.yaml")
+	snapSrc := "tests:\n  - name: x\n    snapshot: true\n    template_source: \"hi\"\n" +
+		"    context:\n      message_content: \"nope\"\n    expected:\n      no_trigger: true\n"
+	if err := os.WriteFile(snapPath, []byte(snapSrc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadTestFile(snapPath); err == nil || !strings.Contains(err.Error(), "snapshot: true") {
+		t.Errorf("no_trigger + snapshot: want a load-time error naming the conflict, got %v", err)
 	}
 }
 

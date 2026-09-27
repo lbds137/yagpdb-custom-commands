@@ -164,6 +164,18 @@ gets a failing test first.
   interaction's message with the clicker as author), nor is a join message's `ctx.Msg` (a
   blank message from the joining member, which an execCC from it would inherit).
 
+## Tooling defects
+
+- Deferred (found 2026-09-27): `scripts/lint-all.sh` passes a positional file argument to
+  `yagpdb_lint.py`, which only accepts `--dir`; every file it hands over "fails" as a
+  result. Fix next time the script is touched.
+- Deferred (found 2026-09-27): `scripts/save-lint-report.py` passes an absolute path to
+  `--dir` although its own header says `--dir .`, so `reports/latest_lint.txt` bakes in
+  machine-local paths; that report is also stale (it still has pre-restructure paths).
+- Deferred (found 2026-09-27): `tools/linter/main.go` doesn't build (unused vars
+  `fix`/`hasGlobalDict`/`hasCommandsDict`), isn't `gofmt`-clean, and nothing references it —
+  dead code, a candidate to delete (Lila's call).
+
 ## IDE Integration
 
 ### GoLand Plugin

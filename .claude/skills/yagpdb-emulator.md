@@ -79,6 +79,11 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     output_contains: "..."            # also output_equals ("" = no output), output_matches, error_contains
                                       # (with error_contains, the other checks still run)
     warning_contains: "..."
+    no_trigger: true                  # asserts message_content does NOT match the header trigger: the
+                                      # test passes without running the template, or fails (naming the
+                                      # trigger) if it does match. Rejected (a load-time error) combined
+                                      # with any other expected: field or with assertions:, since the
+                                      # template never runs
   assertions:
     db_checks: [{ user_id: 0, key: "K", value_equals: 1 }]   # or value_contains, not_exists
     sent_messages: [{ channel_id: 9, embed_title: "Title" }]  # or embed_contains: "`441`";
