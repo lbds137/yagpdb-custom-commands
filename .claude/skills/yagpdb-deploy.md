@@ -56,7 +56,9 @@ for its `Commands`-dict key. Only once that comes up empty is it safe to retire 
 - Deleting a command in the panel, or creating a new one -- list these for Lila instead of
   acting on them. Once she creates a new command in the panel, add its id to
   `deploy/panel.json` (both `main` and, if it exists there, `lotv`) so the next run picks
-  it up.
+  it up. Ask her to create it DISABLED (Enabled unticked) and to tick it only after the
+  deploy: a new command gets YAGPDB's placeholder response, which it posts on every trigger
+  (a `.*` command answered every message on the server until the deploy landed).
 - Changing a live command's trigger type or trigger text -- `drift` in the results is a report,
   never an instruction to the script to fix it.
 
