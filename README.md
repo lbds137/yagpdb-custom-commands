@@ -90,6 +90,7 @@ General-purpose utility commands for all users:
 - **`bump_remind.gohtml`** - Server bump reminders
 - **`rule.gohtml`** - Display specific rules
 - **`kb.gohtml`** - Knowledge base access
+- **`define.gohtml`** - Glossary term lookup (links to thenighthouse.org)
 - **`ticket_clean.gohtml`** - Ticket cleanup utility
 - **`unhiatus.gohtml`** - Remove user hiatus status
 
