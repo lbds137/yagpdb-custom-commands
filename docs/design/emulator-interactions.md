@@ -159,8 +159,10 @@ token); Components V2 (components.go:863-977; a command uses is_components_v2); 
 Label/checkbox/radio/select fields (handle_component.go:373-420; a modal needs more than
 text inputs); resolving menu `Values` beyond strings; the "restricted" reply (:142-159)
 and CmdRunsInChannel/ForUser (panel restrictions get modelled); option min/max/choice
-validation (Discord's job); autocomplete; DM interactions (:26-29); sendDM disabled for
-context menus (handle_contextmenu.go:118-120; copy the error if avatar_viewer DMs).
+validation (Discord's job); autocomplete; DM interactions (:26-29). (Corrected by unit 3:
+sendDM in a context menu is NOT an error — context menus get a nil member
+(handle_contextmenu.go:115-120) and tmplSendDM returns "" silently when c.MS is nil,
+common/templates/context_funcs.go:75; the emulator models that, with a warning.)
 
 ## (f) Units, in order
 
