@@ -87,8 +87,7 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 - FYI (Lila 2026-09-27, relayed by the Night House site session; a separate project she
   wants investigated first): she's considering Dyno Premium tickets instead of YAGPDB's
   for better UX. If it happens, everyone/general/ticket_clean (nags about the YAGPDB
-  `tickets open` syntax in #ticket-submission) and bump/ticket-related DB keys become
-  candidates for retirement. Nothing to do until she decides.
+  `tickets open` syntax in #ticket-submission) becomes a candidate for retirement. Nothing to do until she decides.
 
 ## Known command bugs
 
