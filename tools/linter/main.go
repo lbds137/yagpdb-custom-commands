@@ -303,8 +303,8 @@ func (r *PermissionCheckRule) Name() string { return "permission-check" }
 func (r *PermissionCheckRule) Check(filename string, lines []string) []LintResult {
 	var results []LintResult
 	
-	// Check if file is in staff_utility but doesn't check permissions
-	if strings.Contains(filename, "staff_utility/") {
+	// Check if file is in staff/ but doesn't check permissions
+	if strings.Contains("/"+filepath.ToSlash(filename), "/staff/") {
 		hasPermissionCheck := false
 		
 		for _, line := range lines {
@@ -494,11 +494,11 @@ func (r *DatabaseOperationRule) Check(filename string, lines []string) []LintRes
 	for i, line := range lines {
 		// Check for direct dbSet operations on user ID 0 without proper validation
 		if strings.Contains(line, "dbSet 0") {
-			// This should be in staff utilities or bootstrap
-			isStaffUtility := strings.Contains(filename, "staff_utility/")
+			// This should be in staff commands or bootstrap
+			isStaff := strings.Contains("/"+filepath.ToSlash(filename), "/staff/")
 			isBootstrap := strings.Contains(filename, "bootstrap.gohtml")
-			
-			if !isStaffUtility && !isBootstrap {
+
+			if !isStaff && !isBootstrap {
 				results = append(results, LintResult{
 					File:     filename,
 					Line:     i + 1,

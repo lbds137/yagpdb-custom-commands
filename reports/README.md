@@ -39,7 +39,7 @@ Each report contains:
 
 Example output:
 ```
-⚠️ utility/dice_roll.gohtml:38:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ everyone/general/dice_roll.gohtml:38:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
 📊 Summary: 0 errors, 50 warnings, 3 info
 ```
 

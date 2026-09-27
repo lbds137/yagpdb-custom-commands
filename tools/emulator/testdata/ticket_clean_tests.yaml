@@ -19,18 +19,18 @@ setup_db:
     value: { YAGPDB: 999999999 }
 
 command_map:
-  1: "../../../utility/embed_exec.gohtml"
+  1: "../../../everyone/services/embed_exec.gohtml"
 
 tests:
   - name: "ticket_clean: a correctly formatted ticket open command is left alone"
-    template: "../../../utility/ticket_clean.gohtml"
+    template: "../../../everyone/general/ticket_clean.gohtml"
     context:
       message_content: "-tickets open a valid reason"
     assertions:
       deletions: []
 
   - name: "ticket_clean: anything else gets the usage embed, and the trigger and response are deleted"
-    template: "../../../utility/ticket_clean.gohtml"
+    template: "../../../everyone/general/ticket_clean.gohtml"
     context:
       message_content: "-tickets nonsense"
     assertions:

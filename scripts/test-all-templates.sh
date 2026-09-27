@@ -109,23 +109,19 @@ test_template() {
     fi
 }
 
-# Test utility templates
-echo -e "${BLUE}--- Utility Commands ---${NC}"
-for template in "$PROJECT_ROOT"/utility/*.gohtml; do
-    if [[ -f "$template" ]]; then
-        test_template "$template"
-    fi
-done
+# Test everyone-group templates (recurses through the topic subfolders)
+echo -e "${BLUE}--- Everyone Commands ---${NC}"
+while IFS= read -r template; do
+    test_template "$template"
+done < <(find "$PROJECT_ROOT/everyone" -name '*.gohtml' | sort)
 
 echo ""
 
-# Test staff_utility templates
-echo -e "${BLUE}--- Staff Utility Commands ---${NC}"
-for template in "$PROJECT_ROOT"/staff_utility/*.gohtml; do
-    if [[ -f "$template" ]]; then
-        test_template "$template"
-    fi
-done
+# Test staff-group templates
+echo -e "${BLUE}--- Staff Commands ---${NC}"
+while IFS= read -r template; do
+    test_template "$template"
+done < <(find "$PROJECT_ROOT/staff" -name '*.gohtml' | sort)
 
 echo ""
 

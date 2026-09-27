@@ -18,6 +18,6 @@ does the same with fuller dice syntax. Its tests stay in
 
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
-`make changed-since-deploy` (all three scan only `staff_utility/` and `utility/`). `make lint`
+`make changed-since-deploy` (all three scan only `everyone/` and `staff/`). `make lint`
 still walks them, since `tools/linter/yagpdb_lint.py --dir .` recurses the whole repo except
 `tools/`, `vendor/` and `.git/` — its warnings are non-blocking either way.

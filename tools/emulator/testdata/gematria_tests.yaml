@@ -3,7 +3,7 @@ name: "Gematria, on the tables gematria_bootstrap builds"
 # The bootstrap runs before each test and stores the Gematria tables the way YAGPDB would
 # (nested ints come back as int64, which the tarot lookups depend on). embed_exec is a
 # recording mock, so the tests can check the fields gematria computes.
-setup_templates: ["../../../staff_utility/gematria_bootstrap.gohtml"]
+setup_templates: ["../../../staff/gematria_bootstrap.gohtml"]
 
 setup_db:
   - user_id: 0
@@ -17,7 +17,7 @@ setup_db:
     value: { YAGPDB: 900000000000000001 }
 
 command_map:
-  1: "../../../utility/embed_exec.gohtml"
+  1: "../../../everyone/services/embed_exec.gohtml"
 
 defaults:
   guild:
@@ -26,7 +26,7 @@ defaults:
 
 tests:
   - name: "gematria: a Hebrew word and its reduction"
-    template: "../../../utility/gematria.gohtml"
+    template: "../../../everyone/hebrew/gematria.gohtml"
     context:
       args: ["אמת"]
     assertions:
@@ -38,7 +38,7 @@ tests:
         - { embed_contains: "`XXI` - The Universe" }
 
   - name: "gematria: a single letter gets its tarot number"
-    template: "../../../utility/gematria.gohtml"
+    template: "../../../everyone/hebrew/gematria.gohtml"
     context:
       args: ["ת"]
     assertions:
@@ -50,7 +50,7 @@ tests:
         - { embed_contains: "`22`" }
 
   - name: "gematria: several words, with per-word and total values"
-    template: "../../../utility/gematria.gohtml"
+    template: "../../../everyone/hebrew/gematria.gohtml"
     context:
       args: ["hello world"]
     assertions:
