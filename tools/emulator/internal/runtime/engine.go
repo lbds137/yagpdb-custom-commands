@@ -380,6 +380,9 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 	if ok, err := e.ctx.checkSend(fn, content, embeds, notEmpty, false); !ok {
 		return "", err
 	}
+	if refused, err := e.ctx.checkComponents(fn, components); refused {
+		return "", err
+	}
 	if file != nil {
 		e.ctx.RecordFileUpload(channelID, file.Filename, file.File)
 	}
@@ -455,6 +458,9 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	}
 	notEmpty := change.HasOther || len(components) > 0
 	if ok, err := e.ctx.checkSend("editMessage", content, embeds, notEmpty, false); !ok {
+		return "", err
+	}
+	if refused, err := e.ctx.checkComponents("editMessage", components); refused {
 		return "", err
 	}
 	target.Content, target.Embeds = content, types.EmbedStructs(embeds)

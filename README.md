@@ -87,8 +87,11 @@ Administrative and moderation tools for server staff, flat (no subfolders):
 - **`batch_delrep.gohtml`** - Batch delete and reputation management
 - **`bootstrap.gohtml`** - Initial system setup and configuration
 - **`bump_reset.gohtml`** - Server bump reset functionality
-- **`channel_activity.gohtml`** - Dead-channel audit: each channel's last message, oldest
-  first, from what `channel_tracker` records
+- **`channel_activity.gohtml`** - Dead-channel audit from what `channel_tracker` records:
+  cleans up deleted channels' records, then opens the browse view (`channel_activity_pager`)
+- **`channel_activity_pager.gohtml`** - The audit's browse view (Message Component trigger
+  `^ca:`): a summary, one bucket (active / quiet / stale / never seen) per page of 15,
+  bucket and paging buttons that edit the page in place, and a CSV download (ephemeral)
 - **`directory.gohtml`** - User directory management
 - **`gematria_bootstrap.gohtml`** - Initialize gematria calculation system
 - **`hiatus.gohtml`** - User hiatus management

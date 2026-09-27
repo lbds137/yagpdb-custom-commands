@@ -270,8 +270,11 @@ func TestCustomRows(t *testing.T) {
 		"invalid component passed to send message builder")
 
 	ctx = newCtx(true, true)
-	src = `{{$row := cslice}}{{range seq 0 6}}{{$row = $row.Append (cbutton "label" (print "b" .))}}{{end}}` +
-		`{{$rows := cslice}}{{range seq 0 6}}{{$rows = $rows.Append $row}}{{end}}` +
+	// a fresh row of fresh buttons each time: reusing one row's pointers would leave every
+	// row with the same auto-numbered IDs, which the send refuses (TestDuplicateCustomIDRefused)
+	src = `{{$rows := cslice}}{{range seq 0 6}}{{$row := cslice}}` +
+		`{{range seq 0 6}}{{$row = $row.Append (cbutton "label" (print "b" .))}}{{end}}` +
+		`{{$rows = $rows.Append $row}}{{end}}` +
 		`{{sendMessage nil (complexMessage "components" $rows)}}`
 	if _, err := run(t, ctx, src); err != nil {
 		t.Fatal(err)
@@ -405,5 +408,60 @@ func TestComponentsJSONShape(t *testing.T) {
 	want := `{"components":[{"label":"Go","style":3,"disabled":false,"emoji":{"name":"🚀"},"custom_id":"templates-0","type":2}],"type":1}`
 	if string(data) != want {
 		t.Errorf("json = %s\n  want %s", data, want)
+	}
+}
+
+// Two components on one custom ID: YAGPDB builds the message (validateCustomID never
+// checks duplicates) and Discord refuses it with 50035; the emulator refuses it at every
+// send, edit and interaction response, as a warning (nothing sent) or, in strict mode and
+// inside try, the error.
+func TestDuplicateCustomIDRefused(t *testing.T) {
+	twoOnOne := `(complexMessage "buttons" (cslice (sdict "label" "a" "custom_id" "x") (sdict "label" "b" "custom_id" "x")))`
+	const want = `Discord refuses this (HTTP 400 Bad Request, {"message": "Invalid Form Body", "code": 50035}): two components share the custom_id "templates-x"`
+
+	// non-strict: a warning, and the message isn't sent
+	ctx := newCtx(false, true)
+	if _, err := run(t, ctx, `{{sendMessage nil `+twoOnOne+`}}`); err != nil {
+		t.Fatalf("non-strict: %v", err)
+	}
+	if len(ctx.SentMessages) != 0 {
+		t.Errorf("non-strict: sent %d messages, want none", len(ctx.SentMessages))
+	}
+	if w := kinds(ctx, KindLimit); len(w) != 1 || !strings.Contains(w[0], want) {
+		t.Errorf("non-strict warnings = %q, want one containing %q", w, want)
+	}
+
+	// strict: the Discord error, for sendMessage, editMessage, sendResponse and
+	// updateMessage; nothing with components goes out (the error post has none)
+	strictCases := map[string]string{
+		"sendMessage":   `{{sendMessage nil ` + twoOnOne + `}}`,
+		"editMessage":   `{{$id := sendMessageRetID nil "a"}}{{editMessage nil $id ` + twoOnOne + `}}`,
+		"sendResponse":  `{{sendResponse nil ` + twoOnOne + `}}`,
+		"updateMessage": `{{updateMessage ` + twoOnOne + `}}`,
+	}
+	for name, src := range strictCases {
+		ctx = componentCtx(t, Trigger{Type: "Component", Text: "^click"}, "click", DeferModeNone)
+		ctx.Strict = true
+		_, err := run(t, ctx, src)
+		wantErr := "error calling " + name + ": " + errInvalidFormBody.Error()
+		if err == nil || !strings.Contains(err.Error(), wantErr) {
+			t.Errorf("%s strict: err = %v, want %q", name, err, wantErr)
+		}
+		for _, m := range ctx.SentMessages {
+			if len(m.Components) > 0 {
+				t.Errorf("%s strict: a message with components was sent: %+v", name, m)
+			}
+		}
+		if len(ctx.EditedMessages) != 0 || len(ctx.InteractionResponses) != 0 {
+			t.Errorf("%s strict: edited %+v responses %+v", name, ctx.EditedMessages, ctx.InteractionResponses)
+		}
+	}
+
+	// distinct IDs, and a link button (which has none), pass
+	ctx = newCtx(true, true)
+	src := `{{sendMessage nil (complexMessage "buttons" (cslice (sdict "label" "a" "custom_id" "x")` +
+		` (sdict "label" "b" "custom_id" "y") (sdict "label" "c" "style" "link" "url" "https://x")))}}`
+	if _, err := run(t, ctx, src); err != nil || len(ctx.SentMessages) != 1 {
+		t.Errorf("distinct: err %v, sent %d", err, len(ctx.SentMessages))
 	}
 }

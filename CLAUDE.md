@@ -28,7 +28,9 @@ Top-level command folders mirror the YAGPDB control-panel groups (permission sco
    `unhiatus` lives here on purpose: a staff member on hiatus has lost the staff roles the
    staff group requires, so the everyone group is the only one it can run in.
 2. **`staff/`** - The staff group - administrative and moderation tools, flat (no
-   subfolders).
+   subfolders). `channel_activity_pager` is a Message Component trigger (`^ca:`), the
+   button handler `channel_activity` execCCs for its browse view; it finds the pager's CC
+   id in the `Commands` dict (key `channel_activity_pager`).
 
 Retired commands (`retired/`) are kept for reference and never deployed.
 

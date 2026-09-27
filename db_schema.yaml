@@ -9,6 +9,8 @@
 entries:
   # Server-wide configuration dictionaries (see staff/bootstrap.gohtml)
   - { user_id: 0, key: Global, type: dict }
+  # Commands: CC ids as strings, keyed by command name; bootstrap sets embed_exec and db,
+  # channel_activity reads channel_activity_pager (its browse-view handler)
   - { user_id: 0, key: Commands, type: dict }
   - { user_id: 0, key: Channels, type: dict }
   - { user_id: 0, key: Roles, type: dict }

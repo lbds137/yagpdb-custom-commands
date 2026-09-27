@@ -73,3 +73,22 @@ tests:
         - { channel_id: 123456789012345678, components_contains: "templates-pg:2" }
       edited_messages:
         - { channel_id: 123456789012345678, content_equals: "page 2", components_contains: "templates-pg:3" }
+
+  - name: "Two buttons on one custom ID: YAGPDB builds it, Discord refuses it (a warning, nothing sent)"
+    template_source: |
+      {{ sendMessage nil (complexMessage "buttons" (cslice
+        (sdict "label" "Prev" "custom_id" "pg:1") (sdict "label" "Stale" "custom_id" "pg:1"))) }}
+    expected:
+      warning_contains: 'sendMessage: Discord refuses this (HTTP 400 Bad Request, {"message": "Invalid Form Body", "code": 50035}): two components share the custom_id "templates-pg:1"'
+    assertions:
+      sent_messages: []
+
+  - name: "Two buttons on one custom ID: the error in strict mode"
+    strict: true
+    template_source: |
+      {{ sendMessage nil (complexMessage "buttons" (cslice
+        (sdict "label" "Prev" "custom_id" "pg:1") (sdict "label" "Stale" "custom_id" "pg:1"))) }}
+    expected:
+      error_contains: 'error calling sendMessage: HTTP 400 Bad Request, {"message": "Invalid Form Body", "code": 50035}'
+    assertions:
+      edited_messages: []

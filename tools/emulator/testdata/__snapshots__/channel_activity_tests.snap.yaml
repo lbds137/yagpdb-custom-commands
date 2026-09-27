@@ -1,4 +1,4 @@
-'channel_activity: 200-entry cap hit -> note appears, untracked section absent, no third call':
+'channel_activity: 200-entry cap hit -> note appears, Never seen shows ? and is disabled, no third call':
     output: ""
     messages:
         - channel_id: 99
@@ -6,19 +6,93 @@
             - |-
               {
                 "color": 3447003,
-                "description": "**Last message**\n<#600000001> — <t:2001:R>\n<#600000002> — <t:2002:R>\n<#600000003> — <t:2003:R>\n<#600000004> — <t:2004:R>\n<#600000005> — <t:2005:R>\n<#600000006> — <t:2006:R>\n<#600000007> — <t:2007:R>\n<#600000008> — <t:2008:R>\n<#600000009> — <t:2009:R>\n<#600000010> — <t:2010:R>\n<#600000011> — <t:2011:R>\n<#600000012> — <t:2012:R>\n<#600000013> — <t:2013:R>\n<#600000014> — <t:2014:R>\n<#600000015> — <t:2015:R>\n<#600000016> — <t:2016:R>\n<#600000017> — <t:2017:R>\n<#600000018> — <t:2018:R>\n<#600000019> — <t:2019:R>\n<#600000020> — <t:2020:R>\n<#600000021> — <t:2021:R>\n<#600000022> — <t:2022:R>\n<#600000023> — <t:2023:R>\n<#600000024> — <t:2024:R>\n<#600000025> — <t:2025:R>\n<#600000026> — <t:2026:R>\n<#600000027> — <t:2027:R>\n<#600000028> — <t:2028:R>\n<#600000029> — <t:2029:R>\n<#600000030> — <t:2030:R>\n<#600000031> — <t:2031:R>\n<#600000032> — <t:2032:R>\n<#600000033> — <t:2033:R>\n<#600000034> — <t:2034:R>\n<#600000035> — <t:2035:R>\n<#600000036> — <t:2036:R>\n<#600000037> — <t:2037:R>\n<#600000038> — <t:2038:R>\n<#600000039> — <t:2039:R>\n<#600000040> — <t:2040:R>\n<#600000041> — <t:2041:R>\n<#600000042> — <t:2042:R>\n<#600000043> — <t:2043:R>\n<#600000044> — <t:2044:R>\n<#600000045> — <t:2045:R>\n<#600000046> — <t:2046:R>\n<#600000047> — <t:2047:R>\n<#600000048> — <t:2048:R>\n<#600000049> — <t:2049:R>\n<#600000050> — <t:2050:R>\n<#600000051> — <t:2051:R>\n<#600000052> — <t:2052:R>\n<#600000053> — <t:2053:R>\n<#600000054> — <t:2054:R>\n<#600000055> — <t:2055:R>\n<#600000056> — <t:2056:R>\n<#600000057> — <t:2057:R>\n<#600000058> — <t:2058:R>\n<#600000059> — <t:2059:R>\n<#600000060> — <t:2060:R>\n<#600000061> — <t:2061:R>\n<#600000062> — <t:2062:R>\n<#600000063> — <t:2063:R>\n<#600000064> — <t:2064:R>\n<#600000065> — <t:2065:R>\n<#600000066> — <t:2066:R>\n<#600000067> — <t:2067:R>\n<#600000068> — <t:2068:R>\n<#600000069> — <t:2069:R>\n<#600000070> — <t:2070:R>\n<#600000071> — <t:2071:R>\n<#600000072> — <t:2072:R>\n<#600000073> — <t:2073:R>\n<#600000074> — <t:2074:R>\n<#600000075> — <t:2075:R>\n<#600000076> — <t:2076:R>\n<#600000077> — <t:2077:R>\n<#600000078> — <t:2078:R>\n<#600000079> — <t:2079:R>\n<#600000080> — <t:2080:R>\n<#600000081> — <t:2081:R>\n<#600000082> — <t:2082:R>\n<#600000083> — <t:2083:R>\n<#600000084> — <t:2084:R>\n<#600000085> — <t:2085:R>\n<#600000086> — <t:2086:R>\n<#600000087> — <t:2087:R>\n<#600000088> — <t:2088:R>\n<#600000089> — <t:2089:R>\n<#600000090> — <t:2090:R>\n<#600000091> — <t:2091:R>\n<#600000092> — <t:2092:R>\n<#600000093> — <t:2093:R>\n<#600000094> — <t:2094:R>\n<#600000095> — <t:2095:R>\n<#600000096> — <t:2096:R>\n<#600000097> — <t:2097:R>\n<#600000098> — <t:2098:R>\n<#600000099> — <t:2099:R>\n<#600000100> — <t:2100:R>\n<#600000101> — <t:2101:R>\n<#600000102> — <t:2102:R>\n<#600000103> — <t:2103:R>\n<#600000104> — <t:2104:R>\n<#600000105> — <t:2105:R>\n<#600000106> — <t:2106:R>\n<#600000107> — <t:2107:R>\n<#600000108> — <t:2108:R>\n<#600000109> — <t:2109:R>\n<#600000110> — <t:2110:R>\n<#600000111> — <t:2111:R>\n<#600000112> — <t:2112:R>\n<#600000113> — <t:2113:R>\n<#600000114> — <t:2114:R>\n<#600000115> — <t:2115:R>\n<#600000116> — <t:2116:R>\n<#600000117> — <t:2117:R>\n<#600000118> — <t:2118:R>\n<#600000119> — <t:2119:R>\n<#600000120> — <t:2120:R>\n<#600000121> — <t:2121:R>\n<#600000122> — <t:2122:R>\n<#600000123> — <t:2123:R>\n<#600000124> — <t:2124:R>\n<#600000125> — <t:2125:R>\n<#600000126> — <t:2126:R>\n<#600000127> — <t:2127:R>\n<#600000128> — <t:2128:R>\n<#600000129> — <t:2129:R>\n<#600000130> — <t:2130:R>\n<#600000131> — <t:2131:R>\n<#600000132> — <t:2132:R>\n<#600000133> — <t:2133:R>\n<#600000134> — <t:2134:R>\n<#600000135> — <t:2135:R>\n<#600000136> — <t:2136:R>\n<#600000137> — <t:2137:R>\n<#600000138> — <t:2138:R>\n<#600000139> — <t:2139:R>\n<#600000140> — <t:2140:R>\n<#600000141> — <t:2141:R>\n<#600000142> — <t:2142:R>\n<#600000143> — <t:2143:R>\n<#600000144> — <t:2144:R>\n<#600000145> — <t:2145:R>\n<#600000146> — <t:2146:R>\n<#600000147> — <t:2147:R>\n<#600000148> — <t:2148:R>\n<#600000149> — <t:2149:R>\n<#600000150> — <t:2150:R>\n<#600000151> — <t:2151:R>\n<#600000152> — <t:2152:R>\n<#600000153> — <t:2153:R>\n<#600000154> — <t:2154:R>\n<#600000155> — <t:2155:R>\n<#600000156> — <t:2156:R>",
+                "description": "200+ channels: 0 active · 0 quiet · 200 stale · ? never seen\n\n**Stale**, oldest first — page 1 of 14\n_Only the oldest 200 tracked channels were checked; untracked channels can't be listed._\n<#600000001> — <t:2001:R>\n<#600000002> — <t:2002:R>\n<#600000003> — <t:2003:R>\n<#600000004> — <t:2004:R>\n<#600000005> — <t:2005:R>\n<#600000006> — <t:2006:R>\n<#600000007> — <t:2007:R>\n<#600000008> — <t:2008:R>\n<#600000009> — <t:2009:R>\n<#600000010> — <t:2010:R>\n<#600000011> — <t:2011:R>\n<#600000012> — <t:2012:R>\n<#600000013> — <t:2013:R>\n<#600000014> — <t:2014:R>\n<#600000015> — <t:2015:R>",
                 "title": "Channel activity"
               }
-        - channel_id: 99
-          embeds:
+          components:
             - |-
               {
-                "color": 3447003,
-                "description": "<#600000157> — <t:2157:R>\n<#600000158> — <t:2158:R>\n<#600000159> — <t:2159:R>\n<#600000160> — <t:2160:R>\n<#600000161> — <t:2161:R>\n<#600000162> — <t:2162:R>\n<#600000163> — <t:2163:R>\n<#600000164> — <t:2164:R>\n<#600000165> — <t:2165:R>\n<#600000166> — <t:2166:R>\n<#600000167> — <t:2167:R>\n<#600000168> — <t:2168:R>\n<#600000169> — <t:2169:R>\n<#600000170> — <t:2170:R>\n<#600000171> — <t:2171:R>\n<#600000172> — <t:2172:R>\n<#600000173> — <t:2173:R>\n<#600000174> — <t:2174:R>\n<#600000175> — <t:2175:R>\n<#600000176> — <t:2176:R>\n<#600000177> — <t:2177:R>\n<#600000178> — <t:2178:R>\n<#600000179> — <t:2179:R>\n<#600000180> — <t:2180:R>\n<#600000181> — <t:2181:R>\n<#600000182> — <t:2182:R>\n<#600000183> — <t:2183:R>\n<#600000184> — <t:2184:R>\n<#600000185> — <t:2185:R>\n<#600000186> — <t:2186:R>\n<#600000187> — <t:2187:R>\n<#600000188> — <t:2188:R>\n<#600000189> — <t:2189:R>\n<#600000190> — <t:2190:R>\n<#600000191> — <t:2191:R>\n<#600000192> — <t:2192:R>\n<#600000193> — <t:2193:R>\n<#600000194> — <t:2194:R>\n<#600000195> — <t:2195:R>\n<#600000196> — <t:2196:R>\n<#600000197> — <t:2197:R>\n<#600000198> — <t:2198:R>\n<#600000199> — <t:2199:R>\n<#600000200> — <t:2200:R>\n\n_Only the oldest 200 tracked channels were checked; untracked channels can't be listed._"
+                "components": [
+                  {
+                    "label": "Active (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (200)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (?)",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/14",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
               }
     deletions:
         - trigger 234567890 in channel 99 after 5s
     db:
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity_pager":"42"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":[20],"Exclude Channels":[22,99]}'
@@ -625,7 +699,7 @@
         - user_id: 600000200
           key: Last Active
           value: "2200"
-'channel_activity: ordering, exclusion (channel + category), deleted-channel skip, untracked section':
+'channel_activity: entry path sends page 1 of Stale with the counts and buttons; ordering, exclusion, deleted-channel cleanup':
     output: ""
     messages:
         - channel_id: 99
@@ -633,12 +707,93 @@
             - |-
               {
                 "color": 3447003,
-                "description": "**Last message**\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>\n\n**No messages seen since tracking began**\n_Bot and webhook posts aren't seen, nor channels where YAGPDB can't send._\n<#14>",
+                "description": "3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>",
                 "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (2)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (1)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/1",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
               }
     deletions:
         - trigger 234567890 in channel 99 after 5s
     db:
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity_pager":"42"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":[20],"Exclude Channels":[22,99]}'
@@ -657,7 +812,7 @@
         - user_id: 22
           key: Last Active
           value: "3000"
-'channel_activity: second call ran (100-199 entries) and the untracked section still shows':
+'channel_activity: second call ran (100-199 entries) and never seen is still counted':
     output: ""
     messages:
         - channel_id: 99
@@ -665,12 +820,93 @@
             - |-
               {
                 "color": 3447003,
-                "description": "**Last message**\n<#700000001> — <t:3001:R>\n<#700000002> — <t:3002:R>\n<#700000003> — <t:3003:R>\n<#700000004> — <t:3004:R>\n<#700000005> — <t:3005:R>\n<#700000006> — <t:3006:R>\n<#700000007> — <t:3007:R>\n<#700000008> — <t:3008:R>\n<#700000009> — <t:3009:R>\n<#700000010> — <t:3010:R>\n<#700000011> — <t:3011:R>\n<#700000012> — <t:3012:R>\n<#700000013> — <t:3013:R>\n<#700000014> — <t:3014:R>\n<#700000015> — <t:3015:R>\n<#700000016> — <t:3016:R>\n<#700000017> — <t:3017:R>\n<#700000018> — <t:3018:R>\n<#700000019> — <t:3019:R>\n<#700000020> — <t:3020:R>\n<#700000021> — <t:3021:R>\n<#700000022> — <t:3022:R>\n<#700000023> — <t:3023:R>\n<#700000024> — <t:3024:R>\n<#700000025> — <t:3025:R>\n<#700000026> — <t:3026:R>\n<#700000027> — <t:3027:R>\n<#700000028> — <t:3028:R>\n<#700000029> — <t:3029:R>\n<#700000030> — <t:3030:R>\n<#700000031> — <t:3031:R>\n<#700000032> — <t:3032:R>\n<#700000033> — <t:3033:R>\n<#700000034> — <t:3034:R>\n<#700000035> — <t:3035:R>\n<#700000036> — <t:3036:R>\n<#700000037> — <t:3037:R>\n<#700000038> — <t:3038:R>\n<#700000039> — <t:3039:R>\n<#700000040> — <t:3040:R>\n<#700000041> — <t:3041:R>\n<#700000042> — <t:3042:R>\n<#700000043> — <t:3043:R>\n<#700000044> — <t:3044:R>\n<#700000045> — <t:3045:R>\n<#700000046> — <t:3046:R>\n<#700000047> — <t:3047:R>\n<#700000048> — <t:3048:R>\n<#700000049> — <t:3049:R>\n<#700000050> — <t:3050:R>\n<#700000051> — <t:3051:R>\n<#700000052> — <t:3052:R>\n<#700000053> — <t:3053:R>\n<#700000054> — <t:3054:R>\n<#700000055> — <t:3055:R>\n<#700000056> — <t:3056:R>\n<#700000057> — <t:3057:R>\n<#700000058> — <t:3058:R>\n<#700000059> — <t:3059:R>\n<#700000060> — <t:3060:R>\n<#700000061> — <t:3061:R>\n<#700000062> — <t:3062:R>\n<#700000063> — <t:3063:R>\n<#700000064> — <t:3064:R>\n<#700000065> — <t:3065:R>\n<#700000066> — <t:3066:R>\n<#700000067> — <t:3067:R>\n<#700000068> — <t:3068:R>\n<#700000069> — <t:3069:R>\n<#700000070> — <t:3070:R>\n<#700000071> — <t:3071:R>\n<#700000072> — <t:3072:R>\n<#700000073> — <t:3073:R>\n<#700000074> — <t:3074:R>\n<#700000075> — <t:3075:R>\n<#700000076> — <t:3076:R>\n<#700000077> — <t:3077:R>\n<#700000078> — <t:3078:R>\n<#700000079> — <t:3079:R>\n<#700000080> — <t:3080:R>\n<#700000081> — <t:3081:R>\n<#700000082> — <t:3082:R>\n<#700000083> — <t:3083:R>\n<#700000084> — <t:3084:R>\n<#700000085> — <t:3085:R>\n<#700000086> — <t:3086:R>\n<#700000087> — <t:3087:R>\n<#700000088> — <t:3088:R>\n<#700000089> — <t:3089:R>\n<#700000090> — <t:3090:R>\n<#700000091> — <t:3091:R>\n<#700000092> — <t:3092:R>\n<#700000093> — <t:3093:R>\n<#700000094> — <t:3094:R>\n<#700000095> — <t:3095:R>\n<#700000096> — <t:3096:R>\n<#700000097> — <t:3097:R>\n<#700000098> — <t:3098:R>\n<#700000099> — <t:3099:R>\n<#700000100> — <t:3100:R>\n<#700000101> — <t:3101:R>\n<#700000102> — <t:3102:R>\n<#700000103> — <t:3103:R>\n<#700000104> — <t:3104:R>\n<#700000105> — <t:3105:R>\n<#700000106> — <t:3106:R>\n<#700000107> — <t:3107:R>\n<#700000108> — <t:3108:R>\n<#700000109> — <t:3109:R>\n<#700000110> — <t:3110:R>\n<#700000111> — <t:3111:R>\n<#700000112> — <t:3112:R>\n<#700000113> — <t:3113:R>\n<#700000114> — <t:3114:R>\n<#700000115> — <t:3115:R>\n<#700000116> — <t:3116:R>\n<#700000117> — <t:3117:R>\n<#700000118> — <t:3118:R>\n<#700000119> — <t:3119:R>\n<#700000120> — <t:3120:R>\n<#700000121> — <t:3121:R>\n<#700000122> — <t:3122:R>\n<#700000123> — <t:3123:R>\n<#700000124> — <t:3124:R>\n<#700000125> — <t:3125:R>\n<#700000126> — <t:3126:R>\n<#700000127> — <t:3127:R>\n<#700000128> — <t:3128:R>\n<#700000129> — <t:3129:R>\n<#700000130> — <t:3130:R>\n<#700000131> — <t:3131:R>\n<#700000132> — <t:3132:R>\n<#700000133> — <t:3133:R>\n<#700000134> — <t:3134:R>\n<#700000135> — <t:3135:R>\n<#700000136> — <t:3136:R>\n<#700000137> — <t:3137:R>\n<#700000138> — <t:3138:R>\n<#700000139> — <t:3139:R>\n<#700000140> — <t:3140:R>\n<#700000141> — <t:3141:R>\n<#700000142> — <t:3142:R>\n<#700000143> — <t:3143:R>\n<#700000144> — <t:3144:R>\n<#700000145> — <t:3145:R>\n<#700000146> — <t:3146:R>\n<#700000147> — <t:3147:R>\n<#700000148> — <t:3148:R>\n<#700000149> — <t:3149:R>\n<#700000150> — <t:3150:R>\n\n**No messages seen since tracking began**\n_Bot and webhook posts aren't seen, nor channels where YAGPDB can't send._\n<#700000201>",
+                "description": "151 channels: 0 active · 0 quiet · 150 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 10\n<#700000001> — <t:3001:R>\n<#700000002> — <t:3002:R>\n<#700000003> — <t:3003:R>\n<#700000004> — <t:3004:R>\n<#700000005> — <t:3005:R>\n<#700000006> — <t:3006:R>\n<#700000007> — <t:3007:R>\n<#700000008> — <t:3008:R>\n<#700000009> — <t:3009:R>\n<#700000010> — <t:3010:R>\n<#700000011> — <t:3011:R>\n<#700000012> — <t:3012:R>\n<#700000013> — <t:3013:R>\n<#700000014> — <t:3014:R>\n<#700000015> — <t:3015:R>",
                 "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (150)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (1)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/10",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
               }
     deletions:
         - trigger 234567890 in channel 99 after 5s
     db:
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity_pager":"42"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":[20],"Exclude Channels":[22,99]}'
@@ -1127,3 +1363,480 @@
         - user_id: 700000150
           key: Last Active
           value: "3150"
+'channel_activity_pager: CSV download is an ephemeral file reply (quoted name, never-seen row)':
+    output: ""
+    messages:
+        - channel_id: 99
+          content: '4 channels: 1 active · 0 quiet · 1 stale · 2 never seen'
+          ephemeral: true
+    files:
+        - channel_id: 99
+          filename: channel_activity.txt
+          content: |-
+            channel_id,name,category,last_message_utc,days_quiet,bucket
+            11,"say ""hi"", ok",Info,2025-12-29T00:00:00Z,3,active
+            12,plain,Info,2025-12-02T00:00:00Z,30,stale
+            13,"line
+            break",Info,,,never
+            14,forum,,,,never
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: '4 channels: 1 active · 0 quiet · 1 stale · 2 never seen'
+    db:
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity_pager":"42"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[20],"Exclude Channels":[22,99]}'
+        - user_id: 0
+          key: Global
+          value: '{"Delete Trigger Delay":5,"Embed Color":3447003}'
+        - user_id: 11
+          key: Last Active
+          value: "1766966400"
+        - user_id: 12
+          key: Last Active
+          value: "1764633600"
+'channel_activity_pager: buckets by days quiet (quiet page: 7 and 29 days, oldest first)':
+    output: ""
+    edits:
+        - channel_id: 99
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "description": "5 channels: 2 active · 2 quiet · 1 stale · 0 never seen\n\n**Quiet**, oldest first — page 1 of 1\n<#14> — <t:1764720000:R>\n<#12> — <t:1766620800:R>",
+                "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (2)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (2)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (1)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:quiet:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/1",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:quiet:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    interaction_responses:
+        - kind: update
+          message_id: 7
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "description": "5 channels: 2 active · 2 quiet · 1 stale · 0 never seen\n\n**Quiet**, oldest first — page 1 of 1\n<#14> — <t:1764720000:R>\n<#12> — <t:1766620800:R>",
+                "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (2)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (2)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (1)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:quiet:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/1",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:quiet:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    db:
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity_pager":"42"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[20],"Exclude Channels":[22,99]}'
+        - user_id: 0
+          key: Global
+          value: '{"Delete Trigger Delay":5,"Embed Color":3447003}'
+        - user_id: 11
+          key: Last Active
+          value: "1766966400"
+        - user_id: 12
+          key: Last Active
+          value: "1766620800"
+        - user_id: 14
+          key: Last Active
+          value: "1764720000"
+        - user_id: 15
+          key: Last Active
+          value: "1764633600"
+        - user_id: 16
+          key: Last Active
+          value: "1766620801"
+'channel_activity_pager: page 1 of 2 (17 stale channels): prev disabled, next enabled':
+    output: ""
+    edits:
+        - channel_id: 99
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "description": "17 channels: 0 active · 0 quiet · 17 stale · 0 never seen\n\n**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>\n<#500000002> — <t:1002:R>\n<#500000003> — <t:1003:R>\n<#500000004> — <t:1004:R>\n<#500000005> — <t:1005:R>\n<#500000006> — <t:1006:R>\n<#500000007> — <t:1007:R>\n<#500000008> — <t:1008:R>\n<#500000009> — <t:1009:R>\n<#500000010> — <t:1010:R>\n<#500000011> — <t:1011:R>\n<#500000012> — <t:1012:R>\n<#500000013> — <t:1013:R>\n<#500000014> — <t:1014:R>\n<#500000015> — <t:1015:R>",
+                "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (17)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/2",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    interaction_responses:
+        - kind: update
+          message_id: 7
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "description": "17 channels: 0 active · 0 quiet · 17 stale · 0 never seen\n\n**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>\n<#500000002> — <t:1002:R>\n<#500000003> — <t:1003:R>\n<#500000004> — <t:1004:R>\n<#500000005> — <t:1005:R>\n<#500000006> — <t:1006:R>\n<#500000007> — <t:1007:R>\n<#500000008> — <t:1008:R>\n<#500000009> — <t:1009:R>\n<#500000010> — <t:1010:R>\n<#500000011> — <t:1011:R>\n<#500000012> — <t:1012:R>\n<#500000013> — <t:1013:R>\n<#500000014> — <t:1014:R>\n<#500000015> — <t:1015:R>",
+                "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (17)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/2",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    db:
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity_pager":"42"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[20],"Exclude Channels":[22,99]}'
+        - user_id: 0
+          key: Global
+          value: '{"Delete Trigger Delay":5,"Embed Color":3447003}'
+        - user_id: 500000001
+          key: Last Active
+          value: "1001"
+        - user_id: 500000002
+          key: Last Active
+          value: "1002"
+        - user_id: 500000003
+          key: Last Active
+          value: "1003"
+        - user_id: 500000004
+          key: Last Active
+          value: "1004"
+        - user_id: 500000005
+          key: Last Active
+          value: "1005"
+        - user_id: 500000006
+          key: Last Active
+          value: "1006"
+        - user_id: 500000007
+          key: Last Active
+          value: "1007"
+        - user_id: 500000008
+          key: Last Active
+          value: "1008"
+        - user_id: 500000009
+          key: Last Active
+          value: "1009"
+        - user_id: 500000010
+          key: Last Active
+          value: "1010"
+        - user_id: 500000011
+          key: Last Active
+          value: "1011"
+        - user_id: 500000012
+          key: Last Active
+          value: "1012"
+        - user_id: 500000013
+          key: Last Active
+          value: "1013"
+        - user_id: 500000014
+          key: Last Active
+          value: "1014"
+        - user_id: 500000015
+          key: Last Active
+          value: "1015"
+        - user_id: 500000016
+          key: Last Active
+          value: "1016"
+        - user_id: 500000017
+          key: Last Active
+          value: "1017"
