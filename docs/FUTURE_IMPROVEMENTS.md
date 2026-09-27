@@ -31,6 +31,12 @@ picks, then the minifier.
   ID (e.g. `ca:stale:2`); the handler rebuilds the page from it. Patterns from Tzurot's
   .claude/rules/04-discord.md: browse, not dump; summary first; ephemeral for staff tools
   where the trigger allows it; acknowledge within 3 s; last-page "next" disabled.
+- channel_activity polish (found live 2026-09-27, first run: 217 never seen, 0 tracked
+  eligible — the tracker had only seen Lila's own command in the excluded #yagpdb; a
+  deleted trigger message still counts): (1) open on the first non-empty bucket instead
+  of an empty Stale page; (2) show "tracking since <date>" (earliest Last Active
+  created_at, or a date stored by channel_tracker's first run) so "never seen" reads as
+  "not yet". Pager is at 9,913 of 10,000 chars: needs the minifier or a trim first.
 - Add to channel_activity's browse view (Lila 2026-09-27, relayed: "a download button to
   save channel stats"): a "Download" button whose handler replies with a CSV file
   (complexMessage "file"/"filename", text/plain, max 100,000 chars, vendor general.go:
