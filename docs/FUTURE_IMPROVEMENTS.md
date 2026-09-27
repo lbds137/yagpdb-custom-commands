@@ -318,8 +318,11 @@ gets a failing test first.
 
 ## Tooling defects
 
-- Proposed (2026-09-27, Lila asked whether the bootstrap's hand-set dicts are silly;
-  awaiting her pick): keep config in a few DB dicts (one dbGet each fits the free tier's
+- DECIDED (Lila 2026-09-27, both parts; part 1 after the channel_activity + db_get
+  deploys, part 2 with the slash work). Shape for part 1: a generated
+  staff/config_sync.gohtml (Hourly interval) with panel.json's ids baked in by the
+  manifest step, dbSet-ing the Commands dict each run (idempotent, self-healing); its own
+  id also lives in panel.json. Keep config in a few DB dicts (one dbGet each fits the free tier's
   10 DB calls per run), but stop typing IDs by hand. (1) The `Commands` dict comes from
   deploy/panel.json, which already holds every command's panel id: the deploy tool
   generates a one-shot config command (dbSet "Commands" …) from it after each deploy,
