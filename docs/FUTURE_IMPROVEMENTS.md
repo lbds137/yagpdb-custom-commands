@@ -38,6 +38,12 @@ gets a failing test first.
 ## Emulator Enhancements
 
 ### Remaining emulator gaps
+- Deferred, unverified: embed_exec cuts titles and descriptions by code point, and the
+  emulator's limit checks count code points too (limits.go, `utf8.RuneCountInString`). The
+  PR 7 review suggested that Discord may count characters outside the BMP (many emoji) as
+  two UTF-16 units. If so, an emoji-heavy title or description near the limit would still
+  be rejected, and the emulator couldn't show it. Promote on a live rejection of an
+  emoji-heavy embed, or on a Discord doc or source that settles how it counts.
 - Discord's error bodies are written as `{"message": "...", "code": N}` (errors.go
   discordError): the spacing is Discord's usual, not captured from a live response, and
   a 50035 Invalid Form Body body also lists the fields at fault, which the emulator's
