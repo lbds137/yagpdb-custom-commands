@@ -30,21 +30,35 @@
             {{ takeRoleID $userID $roleID }}
         {{ end }}
     {{- end -}}
-    {{ $hiatusDict.Set (toString $userID) $userHiatusSlice }}
-    {{ $staffDict.Set "Hiatus" $hiatusDict }}
-    {{ dbSet 0 "Staff" $staffDict }}
+    {{ if gt (len $userHiatusSlice) 0 }}
+        {{ $hiatusDict.Set (toString $userID) $userHiatusSlice }}
+        {{ $staffDict.Set "Hiatus" $hiatusDict }}
+        {{ dbSet 0 "Staff" $staffDict }}
 
-    {{ $userAvatar := .User.AvatarURL "128" }}
-    {{ $title := "Staff Hiatus Record" }}
-    {{ $description := (joinStr ""
-        "💤 Staff member **" .User.String "** (ID: " .User.ID ") has elected to take a hiatus from staff duties."
-    ) }}
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" $modLogChannelID
-        "Title" $title
-        "Description" $description
-        "ThumbnailURL" (or $userAvatar $defaultAvatar)
-    ) }}
+        {{ $userAvatar := .User.AvatarURL "128" }}
+        {{ $title := "Staff Hiatus Record" }}
+        {{ $description := (joinStr ""
+            "💤 Staff member **" .User.String "** (ID: " .User.ID ") has elected to take a hiatus from staff duties."
+        ) }}
+        {{ $modLogTarget := $modLogChannelID }}
+        {{ if not $modLogTarget }}
+            {{ $modLogTarget = .Channel.ID }}
+        {{ end }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" $modLogTarget
+            "Title" $title
+            "Description" $description
+            "ThumbnailURL" (or $userAvatar $defaultAvatar)
+        ) }}
+    {{ else }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "Staff Hiatus Operation Failed"
+            "Description" "⚠️ You don't hold any of the staff roles! (If you're already on hiatus, `unhiatus` restores it.)"
+            "DeleteResponse" true
+            "DeleteDelay" $deleteResponseDelay
+        ) }}
+    {{ end }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID

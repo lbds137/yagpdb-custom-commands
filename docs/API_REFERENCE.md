@@ -247,7 +247,8 @@ Keys:
 - "Command Prefix" (string): Server command prefix
 - "Guild Premium Tier" (string): Server nitro boost level
 - "ExecCC Limit" (string): How many `execCC` calls a command may make in one run (YAGPDB allows
-  10 `execCC` and `scheduleUniqueCC` calls per run together on premium, 1 on free)
+  10 `execCC` and `scheduleUniqueCC` calls per run together on premium, 1 on free; the
+  commands that read it cap it at 10)
 - "Server URL" (string): Server website URL
 ```
 
