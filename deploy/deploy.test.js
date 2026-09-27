@@ -36,8 +36,9 @@ function loadDeployJs() {
 // parity check: deploy.js's independent JS implementation must land on the same digests.
 const PARITY_CASES = [
   {
+    // Recomputed 2026-09-27 (retire-kb): define.gohtml gained the kb-alias sdict.
     path: "everyone/knowledge/define.gohtml",
-    sha256: "85858ab3abf3b803ee4af3d6ff85c0e114a905a0d92c09ddb0148bf312f95559",
+    sha256: "79d649eaead85457935e1cc1886555a64add4847453f5f6e3f7337cdf3a01a73",
   },
   {
     path: "staff/rules.gohtml",

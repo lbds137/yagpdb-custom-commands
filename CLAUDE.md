@@ -21,7 +21,7 @@ Top-level command folders mirror the YAGPDB control-panel groups (permission sco
 
 1. **`everyone/`** - The everyone group, in topic subfolders: `services/` (embed_exec, db,
    db_get_embed, db_get_text, message_link), `hebrew/` (gematria, alefbet, atbash, pyramid, rand_hebrew),
-   `color/` (contrast, contrasts, hex_to_int, rand_color), `knowledge/` (kb, define, rule),
+   `color/` (contrast, contrasts, hex_to_int, rand_color), `knowledge/` (define, rule),
    `links/` (message_pointer, channel_link), `bump/` (bump_check,
    bump_remind), `general/` (avatar_viewer, timestamp, hugemoji, ticket_clean, unhiatus).
    `unhiatus` lives here on purpose: a staff member on hiatus has lost the staff roles the
@@ -51,7 +51,7 @@ Retired commands (`retired/`) are kept for reference and never deployed.
      - `Roles` - Role ID storage and management
      - `Channels` - Channel ID configuration
      - `Admin` - Administrative settings and permissions
-     - Specialized dictionaries (e.g., `Gematria`, `Knowledge`, `Rules`)
+     - Specialized dictionaries (e.g., `Gematria`, `Rules`)
 
 2. **Service Commands**
    - `embed_exec` - Universal embed creation service

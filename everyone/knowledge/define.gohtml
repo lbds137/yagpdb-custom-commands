@@ -43,6 +43,17 @@
     {{ $slug = reReplace "[^a-z0-9]+" $slug "-" }}
     {{ $slug = reReplace "\\A-+|-+\\z" $slug "" }}
 
+    {{/* The retired kb command's two entries moved to the website glossary as one
+      combined entry, "Seven Tenets"; alias their old slugs to it. */}}
+    {{ $kbAliases := sdict
+        "the-seven-tenets" "seven-tenets"
+        "seven-satanic-tenets" "seven-tenets"
+        "the-seven-satanic-tenets" "seven-tenets"
+    }}
+    {{ if $kbAliases.Get $slug }}
+        {{ $slug = $kbAliases.Get $slug }}
+    {{ end }}
+
     {{ if ne $slug "" }}
         {{ $description = joinStr "" "https://thenighthouse.org/glossary/#" $slug }}
     {{ end }}
