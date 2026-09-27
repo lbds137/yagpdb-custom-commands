@@ -80,7 +80,6 @@ General-purpose utility commands for all users:
 - **`simple_db_edit.gohtml`** - Simplified database editing
 
 #### Interactive and Fun
-- **`dice_roll.gohtml`** - Dice rolling with customizable dice types
 - **`pyramid.gohtml`** - Create text pyramids
 - **`rand_color.gohtml`** - Generate random colors
 - **`contrast.gohtml`** - Color contrast analysis
@@ -219,7 +218,6 @@ The system expects these database categories to be available:
 
 ### Basic User Commands
 ```
-/dice_roll 2d6          # Roll two six-sided dice
 /timestamp 12345678901  # Parse Discord snowflake timestamp
 /gematria hello world   # Calculate gematria value
 ```

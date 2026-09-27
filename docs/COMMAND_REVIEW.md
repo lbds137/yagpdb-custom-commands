@@ -4,6 +4,10 @@ Every live command in `utility/` (26) and `staff_utility/` (13), with a recommen
 Nothing here is changed yet: each retire or fix waits on Lila's call. Retiring = move to
 `retired/` and remove it from YAGPDB. Line numbers are as of 9079236.
 
+**Lila's decisions (2026-09-27):** retire `dice_roll` (done, moved to `retired/`); keep
+`db_get_text`, `ticket_clean`, the bump trio and `inactivity` (prune cycles still run).
+Everything under "Keep" is approved to improve; the bugs below are fixed first.
+
 ## Bugs found (fix regardless of retire decisions)
 
 1. **Deleting a middle rule hides the last one.** `rule_edit N (nil)` removes `Rule #N`, but
