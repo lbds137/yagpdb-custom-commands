@@ -456,7 +456,7 @@ tests:
         [
           {
             embed_title: "Glossary: Chaos Magick",
-            embed_contains: "https://thenighthouse.org/glossary/#chaos-magick",
+            embed_contains: "https://thenighthouse.org/glossary/#chaos-magick\"",
           },
         ]
 
@@ -469,7 +469,7 @@ tests:
         [
           {
             embed_title: "Glossary: Right hand path",
-            embed_contains: "https://thenighthouse.org/glossary/#right-hand-path",
+            embed_contains: "https://thenighthouse.org/glossary/#right-hand-path\"",
           },
         ]
 
@@ -482,7 +482,7 @@ tests:
         [
           {
             embed_title: "Glossary: UPG",
-            embed_contains: "https://thenighthouse.org/glossary/#upg",
+            embed_contains: "https://thenighthouse.org/glossary/#upg\"",
           },
         ]
 
@@ -495,7 +495,7 @@ tests:
         [
           {
             embed_title: "Glossary: Clair-senses",
-            embed_contains: "https://thenighthouse.org/glossary/#clair-senses",
+            embed_contains: "https://thenighthouse.org/glossary/#clair-senses\"",
           },
         ]
 
@@ -508,7 +508,7 @@ tests:
         [
           {
             embed_title: "Glossary: Ásatrú",
-            embed_contains: "https://thenighthouse.org/glossary/#asatru",
+            embed_contains: "https://thenighthouse.org/glossary/#asatru\"",
           },
         ]
 
@@ -521,7 +521,7 @@ tests:
         [
           {
             embed_title: "Glossary: Santería",
-            embed_contains: "https://thenighthouse.org/glossary/#santeria",
+            embed_contains: "https://thenighthouse.org/glossary/#santeria\"",
           },
         ]
 
@@ -534,7 +534,7 @@ tests:
         [
           {
             embed_title: "Glossary: --Foo!!  Bar--",
-            embed_contains: "https://thenighthouse.org/glossary/#foo-bar",
+            embed_contains: "https://thenighthouse.org/glossary/#foo-bar\"",
           },
         ]
 
@@ -561,6 +561,32 @@ tests:
           {
             embed_title: "Glossary: !!!",
             embed_contains: "https://thenighthouse.org/glossary/\"",
+          },
+        ]
+
+  - name: "define - Unquoted multi-token args rejoin into one term"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["Chaos", "Magick"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Chaos Magick",
+            embed_contains: "https://thenighthouse.org/glossary/#chaos-magick\"",
+          },
+        ]
+
+  - name: "define - Macron vowel folds to its base letter"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["Ātman"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Ātman",
+            embed_contains: "https://thenighthouse.org/glossary/#atman\"",
           },
         ]
 
