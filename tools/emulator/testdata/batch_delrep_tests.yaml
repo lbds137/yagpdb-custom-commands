@@ -21,11 +21,11 @@ setup_db:
     value: { YAGPDB: 999999999 }
 
 command_map:
-  1: "../../../everyone/services/embed_exec.gohtml"
+  1: "../../../commands/plumbing/embed_exec.gohtml"
 
 tests:
   - name: "batch_delrep: IDs in the message become delrep exec calls"
-    template: "../../../staff/batch_delrep.gohtml"
+    template: "../../../commands/members/batch_delrep.gohtml"
     context:
       message_content: "-batch_delrep 100000000000000001 100000000000000002"
       exec_responses:
@@ -39,7 +39,7 @@ tests:
         - { embed_title: "Batch Reputation Deletion", embed_contains: "<@100000000000000001>" }
 
   - name: "batch_delrep: more than 5 IDs purges only the first 5, listing the rest as not purged"
-    template: "../../../staff/batch_delrep.gohtml"
+    template: "../../../commands/members/batch_delrep.gohtml"
     context:
       message_content: "-batch_delrep 100000000000000001 100000000000000002 100000000000000003 100000000000000004 100000000000000005 100000000000000006 100000000000000007"
       exec_responses:
@@ -61,7 +61,7 @@ tests:
         - embed_contains: "<@100000000000000007>"
 
   - name: "batch_delrep: no IDs at all shows the missing-IDs error and purges nothing"
-    template: "../../../staff/batch_delrep.gohtml"
+    template: "../../../commands/members/batch_delrep.gohtml"
     context:
       message_content: "-batch_delrep"
     assertions:

@@ -27,12 +27,33 @@ class LintResult:
 
 class Rule:
     """Base class for linting rules"""
-    
+
     def name(self) -> str:
         raise NotImplementedError
-    
+
     def check(self, filename: str, lines: List[str]) -> List[LintResult]:
         raise NotImplementedError
+
+
+# The YAGPDB control panel's command groups, as the header's `Group:` line names them
+PANEL_GROUPS = ("Utility", "Staff Utility")
+STAFF_GROUP = "Staff Utility"
+
+
+def is_command_file(filename: str) -> bool:
+    """A deployed command lives under commands/<topic>/; retired/ and docs/cookbook/ don't."""
+    return "commands" in Path(filename).parts
+
+
+def header_group(lines: List[str]) -> str:
+    """The header's `Group:` value ("" when the line is missing)."""
+    for line in lines:
+        match = re.search(r"Group:\s*`([^`]*)`", line)
+        if match:
+            return match.group(1)
+        if "*/ -}}" in line:
+            break
+    return ""
 
 
 class HeaderRule(Rule):
@@ -88,6 +109,22 @@ class HeaderRule(Rule):
                     severity="error"
                 ))
         
+        # A deployed command names its panel group (the deploy tool reports drift against it)
+        if is_command_file(filename):
+            group = header_group(header_lines)
+            if group not in PANEL_GROUPS:
+                results.append(LintResult(
+                    file=filename,
+                    line=header_end_line,
+                    column=1,
+                    rule="header-missing-group",
+                    message=(
+                        "Missing or unknown header field Group: (one of "
+                        + ", ".join(f"`{g}`" for g in PANEL_GROUPS) + ")"
+                    ),
+                    severity="error"
+                ))
+
         # Check for trigger specification (Trigger:, Interval:, or None trigger type)
         has_trigger = "Trigger:" in header_content
         has_interval = "Interval:" in header_content
@@ -212,15 +249,16 @@ class PermissionCheckRule(Rule):
         # This rule is now disabled but kept for potential future use.
         
         # Only check non-staff commands that might need conditional staff permissions
-        if "staff" not in Path(filename).parts:
+        if header_group(lines) != STAFF_GROUP:
             # Check for commands that do staff-specific operations without permission checks
             has_db_write_global = any("dbSet 0" in line for line in lines)
             has_permission_check = any(
-                "hasRoleID" in line or "permissionCheck" in line 
+                "hasRoleID" in line or "permissionCheck" in line
                 for line in lines
             )
-            
-            # If command writes to global database but isn't in staff/ and has no permission check
+
+            # If command writes to global database but isn't in the Staff Utility group and
+            # has no permission check
             if has_db_write_global and not has_permission_check:
                 # Find the first dbSet 0 line
                 db_write_line = 1
@@ -393,7 +431,7 @@ class DatabaseOperationRule(Rule):
             # Check for direct dbSet operations on user ID 0 without proper validation
             if "dbSet 0" in line:
                 # Staff commands and bootstrap are expected to write to global database
-                is_staff = "staff" in Path(filename).parts
+                is_staff = header_group(lines) == STAFF_GROUP
                 is_bootstrap = "bootstrap.gohtml" in filename
 
                 # Some everyone-group commands may legitimately need to write global data

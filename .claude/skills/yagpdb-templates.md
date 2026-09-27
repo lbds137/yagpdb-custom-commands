@@ -4,9 +4,10 @@
 
 ### File Structure
 ```
-staff/           - Admin/moderation tools (flat)
-everyone/        - General-purpose commands, in topic subfolders
-retired/         - Commands no longer deployed (see retired/README.md)
+commands/<topic>/ - Every deployed command, one folder per topic (bump, rules, gematria,
+                   hebrew, color, db, members, channels, knowledge, general, plumbing); the
+                   panel group is the header's `Group:` line (`Utility` / `Staff Utility`)
+retired/          - Commands no longer deployed (see retired/README.md)
 ```
 
 ### Common Patterns
@@ -63,7 +64,7 @@ retired/         - Commands no longer deployed (see retired/README.md)
 
 - **embed_exec** - Universal embed creation
 - **db** - Database operations (get/set/add/remove/delete/dump)
-- **message_link** - Message reference handling, called by log_user (everyone/general/,
+- **message_link** - Message reference handling, called by log_user (commands/plumbing/,
   unmanaged: never deployed, the live copy holds the real watched ID)
 
 ### Limits

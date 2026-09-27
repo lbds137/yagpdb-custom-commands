@@ -1,6 +1,7 @@
 # Command review (2026-09-27)
 
-Every live command in `everyone/` (26) and `staff/` (13), with a recommendation.
+Every live command in the `Utility` group (26) and the `Staff Utility` group (13), with a
+recommendation (at the time in `everyone/` and `staff/`; since moved to `commands/<topic>/`).
 Nothing here is changed yet: each retire or fix waits on Lila's call. Retiring = move to
 `retired/` and remove it from YAGPDB. Line numbers are as of 9079236.
 
@@ -61,7 +62,7 @@ execCC of `rule` per rule with 2 s sleeps ("one message").
 | `channel_link` | A failed send to the target channel (line 30) skips everything with no feedback; the same-channel "Channel Details" branch has no test |
 | `hugemoji` | No tests for emoji from a message link, the NSFW guard, or the limit warning |
 | `pyramid`, `rand_hebrew` | Multi-word fan-out / `NxM` mode untested |
-| `hiatus`, `unhiatus` | 0 tests between them; an unset `Channels > Mod Log` sends the log to channel 0 with no error. (`unhiatus` lives in `everyone/` on purpose: the user has no staff role while on hiatus) |
+| `hiatus`, `unhiatus` | 0 tests between them; an unset `Channels > Mod Log` sends the log to channel 0 with no error. (`unhiatus` is in the `Utility` group on purpose: the user has no staff role while on hiatus) |
 | `embed_exec` | Used by nearly every command, no direct test of its 4096/6000 truncation |
 | `hex_to_int`, `rand_color`, `timestamp`, `batch_delrep`, `staff_roles`, `bump_*` | 0 tests each |
 

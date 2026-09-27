@@ -43,7 +43,7 @@ python3 tools/linter/yagpdb_lint.py
 
 ```bash
 # Lint a specific directory
-python3 tools/linter/yagpdb_lint.py --dir ./staff
+python3 tools/linter/yagpdb_lint.py --dir ./commands/members
 
 # Verbose output (shows which files are being processed)
 python3 tools/linter/yagpdb_lint.py -v
@@ -157,10 +157,10 @@ lint-verbose:
 
 ```
 🔍 Running linter...
-Linting: everyone/general/dice_roll.gohtml
-Linting: staff/admit_user.gohtml
-❌ staff/admit_user.gohtml:1:1 [permission-missing] Staff utility command should include permission checks
-⚠️ everyone/general/dice_roll.gohtml:38:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+Linting: commands/general/dice_roll.gohtml
+Linting: commands/members/admit_user.gohtml
+❌ commands/members/admit_user.gohtml:1:1 [permission-missing] Staff utility command should include permission checks
+⚠️ commands/general/dice_roll.gohtml:38:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
 
 📊 Summary: 1 errors, 1 warnings
 ```

@@ -47,7 +47,7 @@ prune-snapshots: build-emulator ## Remove only the snapshots of renamed or delet
 	@./bin/yagtest test -prune-snapshots $(YAGTEST_FLAGS) tools/emulator/testdata/
 
 watch: build-emulator ## Rerun template tests whenever a command or test changes
-	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,everyone,staff,docs/cookbook tools/emulator/testdata/
+	@./bin/yagtest watch $(YAGTEST_FLAGS) -watch tools/emulator/testdata,commands,docs/cookbook tools/emulator/testdata/
 
 # As on GitHub (which sets CI): a missing or stale snapshot fails instead of being written
 # or only warned about
@@ -91,11 +91,12 @@ ci-report: ## Generate lint report for CI
 	@echo "📊 Generating CI lint report..."
 	@./scripts/lint-report.py --latest --markdown
 # Deployment: commands are pasted into the YAGPDB control panel by hand
-COMMAND_DIRS := everyone staff
-# utility/staff_utility are the pre-restructure dir names, kept in the paste-list pathspec
-# below so a rename from utility/ -> everyone/... is still detected as a rename relative to
-# the deployed tag; harmless to keep once the deployed tag postdates the restructure.
-DEPLOY_DIRS := $(COMMAND_DIRS) utility staff_utility
+COMMAND_DIRS := commands
+# everyone/staff (and utility/staff_utility before them) are the pre-restructure dir names,
+# kept in the paste-list pathspec below so a rename from everyone/... -> commands/... is
+# still detected as a rename relative to the deployed tag; harmless to keep once the
+# deployed tag postdates the restructure.
+DEPLOY_DIRS := $(COMMAND_DIRS) everyone staff utility staff_utility
 
 changed-since-deploy: ## List command files changed since the `deployed` tag (paste these; skips deploy/panel.json's unmanaged files)
 	@git rev-parse -q --verify deployed >/dev/null || (echo "No 'deployed' tag yet: run make mark-deployed after a paste" && exit 1)

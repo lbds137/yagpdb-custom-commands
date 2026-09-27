@@ -1,0 +1,19 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `bump_reset`
+  Group: `Staff Utility`
+  Dependencies: none
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+
+{{ $globalDict.Del "Last Bump" }}
+{{ dbSet 0 "Global" $globalDict }}
+
+{{ $messageID := sendMessageRetID .Channel.ID "`Last Bump` reset!" }}
+
+{{ deleteTrigger $deleteTriggerDelay }}
+{{ deleteMessage .Channel.ID $messageID $deleteResponseDelay }}

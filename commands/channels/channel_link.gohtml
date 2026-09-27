@@ -1,0 +1,143 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Attribution: `channel_link` is an independent reimplementation of the ChanLink bot by @Rose22
+  Trigger type: `Regex`
+  Trigger: `\A<#\d{16,}>\z`
+  Group: `Utility`
+  Dependencies: `embed_exec` 
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
+{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+{{ $trigger := .Message.Content }}
+{{ $hereChannelID := toString .Channel.ID }}
+{{ $thereChannelID := slice $trigger 2 (sub (len $trigger) 1) }}
+
+{{ $thereChannel := getChannelOrThread $thereChannelID }}
+{{ $selfLinkCheck := ne $hereChannelID $thereChannelID }}
+{{ if and $thereChannel $selfLinkCheck }}
+    {{ $thereMsgID := "" }}
+    {{ try }}
+        {{ $thereMsgID = sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
+    {{ catch }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" $.Channel.ID
+            "Title" "Channel Link Failed"
+            "Description" (joinStr ""
+                "⚠️ I couldn't post in <#" $thereChannelID ">. I probably don't have permission to send messages there."
+            )
+            "DeleteResponse" true
+            "DeleteDelay" $deleteResponseDelay
+        ) }}
+    {{ end }}
+    {{ if $thereMsgID }}
+        {{ $hereMsgID := sendMessageRetID .Channel.ID (complexMessage "content" "Loading...") }}
+
+        {{ $cLinkBaseUrl := "https://discord.com/channels" }}
+        {{ $thereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $thereChannelID "/" $thereMsgID }}
+        {{ $hereLink := joinStr "" $cLinkBaseUrl "/" .Guild.ID "/" $hereChannelID "/" $hereMsgID }}
+
+        {{ $hereText := "" }}
+        {{ $thereText := "" }}
+        {{ if hasRoleID $staffRoleID }}
+            {{ $hereText = joinStr ""
+                "A staff member has moved this conversation to **#" $thereChannel.Name "**. Please go there now.\n\n"
+                "🔗 [Click or tap here to move.](" $thereLink ")"
+            }}
+            {{ $thereText = joinStr ""
+                "A staff member has moved a conversation from **#" .Channel.Name "** to here.\n\n"
+                "🔗 [Click or tap here to return.](" $hereLink ")"
+            }}
+        {{ else }}
+            {{ $hereText = joinStr ""
+                "A server member has linked to **#" $thereChannel.Name "**.\n\n"
+                "🔗 [Click or tap here to move.](" $thereLink ")"
+            }}
+            {{ $thereText = joinStr ""
+                "A server member has linked from **#" .Channel.Name "** to here.\n\n"
+                "🔗 [Click or tap here to return.](" $hereLink ")"
+            }}
+        {{ end }}
+
+        {{ $title := "Channel Link" }}
+
+        {{ $userFull := .User.String }}
+        {{ if .Member.Nick }}
+            {{ $userFull = joinStr "" .Member.Nick " (" .User.String ")" }}
+        {{ end }}
+        {{ $userLink := joinStr "" "https://discordapp.com/users/" .User.ID }}
+        {{ $author := sdict "name" $userFull "url" $userLink "icon_url" (or (.User.AvatarURL "128") $defaultAvatar) }}
+        {{ $authorColor := 0 }}
+        {{ $position := 0 }}
+        {{ $roles := .Member.Roles }}
+        {{- range .Guild.Roles -}}
+            {{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+                {{- $position = .Position -}}
+                {{- $authorColor = .Color -}}
+            {{- end -}}
+        {{- end -}}
+        {{ if not $authorColor }}
+            {{ $authorColor = $embedColor }}
+        {{ end }}
+
+        {{ editMessage .Channel.ID $hereMsgID (complexMessageEdit
+            "content" ""
+            "embed" (cembed
+                "title" $title
+                "description" $hereText
+                "color" $authorColor
+                "author" $author
+            )
+        ) }}
+        {{ editMessage $thereChannelID $thereMsgID (complexMessageEdit
+            "content" ""
+            "embed" (cembed
+                "title" $title
+                "description" $thereText
+                "color" $authorColor
+                "author" $author
+            )
+        ) }}
+
+        {{ deleteTrigger $deleteTriggerDelay }}
+    {{ end }}
+{{ else }}
+    {{ $type := "Normal" }}
+    {{ if .Channel.NSFW }}
+        {{ $type = "NSFW" }}
+    {{ else if .Channel.IsThread }}
+        {{ $type = "Thread" }}
+    {{ end }}
+    {{ $topic := .Channel.Topic }}
+
+    {{ $fields := cslice }}
+    {{ $fields = $fields.Append (sdict "name" "ID" "value" $hereChannelID "inline" true) }}
+    {{ $fields = $fields.Append (sdict "name" "Type" "value" $type "inline" true) }}
+    {{ if $topic }}
+        {{ $fields = $fields.Append (sdict "name" "Topic" "value" $topic "inline" false) }}
+    {{ end }}
+    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "AuthorID" .User.ID
+        "ChannelID" $hereChannelID
+        "Title" "Channel Details"
+        "Description" (joinStr ""
+            "#️⃣ [" .Channel.Name "](" "https://discord.com/channels/" .Channel.GuildID "/" $hereChannelID "/" ")"
+        )
+        "Fields" $fields
+    ) }}
+
+    {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}

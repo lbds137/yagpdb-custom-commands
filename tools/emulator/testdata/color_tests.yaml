@@ -21,12 +21,12 @@ setup_db:
     value: { YAGPDB: 999999999 }
 
 command_map:
-  1: "../../../everyone/services/embed_exec.gohtml"
-  2: "../../../everyone/color/hex_to_int.gohtml"
+  1: "../../../commands/plumbing/embed_exec.gohtml"
+  2: "../../../commands/color/hex_to_int.gohtml"
 
 tests:
   - name: "hex_to_int: a hashed hex code (#ff0000) decodes to 16711680"
-    template: "../../../everyone/color/hex_to_int.gohtml"
+    template: "../../../commands/color/hex_to_int.gohtml"
     context:
       message_content: "#ff0000"
     assertions:
@@ -34,14 +34,14 @@ tests:
         - { embed_title: "Color Inspector", embed_contains: "`16711680`" }
 
   - name: "hex_to_int: a bare hex code (ff0000, no #) does not trigger it"
-    template: "../../../everyone/color/hex_to_int.gohtml"
+    template: "../../../commands/color/hex_to_int.gohtml"
     context:
       message_content: "ff0000"
     expected:
       no_trigger: true
 
   - name: "hex_to_int: an ordinary a-f word (decade) does not trigger it"
-    template: "../../../everyone/color/hex_to_int.gohtml"
+    template: "../../../commands/color/hex_to_int.gohtml"
     context:
       message_content: "decade"
     expected:
@@ -55,7 +55,7 @@ tests:
         - { embed_title: "Wrapped", embed_contains: "`65280`" }
 
   - name: "rand_color: a fixed seed makes the execCC to hex_to_int deterministic"
-    template: "../../../everyone/color/rand_color.gohtml"
+    template: "../../../commands/color/rand_color.gohtml"
     context:
       seed: 1
     assertions:

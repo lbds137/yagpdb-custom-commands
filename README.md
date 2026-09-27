@@ -30,78 +30,79 @@ Most commands depend on two foundational utilities:
 
 ## Command Categories
 
-Top-level folders mirror the YAGPDB control-panel groups (permission scopes): `everyone/`
-(topic subfolders) and `staff/` (flat).
+Every deployed command lives under `commands/<topic>/`, one folder per topic. The YAGPDB
+control-panel group (the permission scope) is not a folder any more: each file's header
+names it on a `Group:` line, `Utility` (everyone) or `Staff Utility` (staff), and a topic
+folder mixes both. Staff-group commands are marked below.
 
-### 🔧 Everyone (`everyone/`)
+#### Bump (`commands/bump/`)
+- **`bump_check.gohtml`** - Check server bump status
+- **`bump_remind.gohtml`** - Server bump reminders
+- **`bump_reset.gohtml`** (staff) - Server bump reset functionality
 
-General-purpose commands for all users, in topic subfolders:
+#### Rules (`commands/rules/`)
+- **`rule.gohtml`** - Display specific rules
+- **`rules.gohtml`** (staff) - Display all server rules
+- **`rule_edit.gohtml`** (staff) - Server rule editing interface
 
-#### Services (`everyone/services/`)
-- **`embed_exec.gohtml`** - Universal embed creation and execution
-- **`db.gohtml`** - Advanced database operations interface
-- **`db_get_embed.gohtml`** - Retrieve database values as embeds
-- **`db_get_text.gohtml`** - Retrieve database values as text
-- **`message_link.gohtml`** - Generate message links (called by log_user, everyone/general/,
-  unmanaged: never deployed, the live copy holds the real watched ID)
-
-#### Hebrew (`everyone/hebrew/`)
+#### Gematria (`commands/gematria/`)
 - **`gematria.gohtml`** - Advanced gematria calculator with tarot associations
+- **`gematria_bootstrap.gohtml`** (staff) - Initialize gematria calculation system
+
+#### Hebrew (`commands/hebrew/`)
 - **`alefbet.gohtml`** - Convert Phoenician/Arabic text to Hebrew with gematria calculation
 - **`atbash.gohtml`** - Atbash cipher implementation for Hebrew text
 - **`pyramid.gohtml`** - Create text pyramids
 - **`rand_hebrew.gohtml`** - Generate random Hebrew text
 
-#### Color (`everyone/color/`)
+#### Color (`commands/color/`)
 - **`contrast.gohtml`** - Color contrast analysis
 - **`contrasts.gohtml`** - Multiple color contrast comparison
 - **`hex_to_int.gohtml`** - Hexadecimal to integer conversion
 - **`rand_color.gohtml`** - Generate random colors
 
-#### Knowledge (`everyone/knowledge/`)
-- **`define.gohtml`** - Glossary term lookup (links to thenighthouse.org)
-- **`rule.gohtml`** - Display specific rules
+#### Database (`commands/db/`)
+- **`db.gohtml`** - Advanced database operations interface
+- **`db_get_embed.gohtml`** - Retrieve database values as embeds
+- **`db_get_text.gohtml`** - Retrieve database values as text
+- **`simple_db_edit.gohtml`** (staff) - Simple database editing
+- **`simple_db_lookup.gohtml`** (staff) - Simple database lookup
 
-#### Links (`everyone/links/`)
-- **`message_pointer.gohtml`** - Message reference utility
-- **`channel_link.gohtml`** - Generate channel links
+#### Members (`commands/members/`)
+- **`hiatus.gohtml`** (staff) - User hiatus management
+- **`unhiatus.gohtml`** - Remove user hiatus status (in the `Utility` group on purpose:
+  a staff member on hiatus has lost the staff roles the `Staff Utility` group requires)
+- **`inactivity.gohtml`** (staff) - Inactivity tracking and management
+- **`staff_roles.gohtml`** (staff) - Staff role management
+- **`role_ping.gohtml`** (staff) - Role-based ping management
+- **`batch_delrep.gohtml`** (staff) - Batch delete and reputation management
 
-#### Bump (`everyone/bump/`)
-- **`bump_check.gohtml`** - Check server bump status
-- **`bump_remind.gohtml`** - Server bump reminders
-
-#### General (`everyone/general/`)
-- **`avatar_viewer.gohtml`** - View user avatars
-- **`timestamp.gohtml`** - Parse Discord snowflake timestamps
-- **`hugemoji.gohtml`** - Display large emoji
-- **`ticket_clean.gohtml`** - Ticket cleanup utility
-- **`unhiatus.gohtml`** - Remove user hiatus status (stays in the everyone group on purpose:
-  a staff member on hiatus has lost the staff roles the staff group requires)
+#### Channels (`commands/channels/`)
+- **`channel_activity.gohtml`** (staff) - Dead-channel audit from what `channel_tracker`
+  records: cleans up deleted channels' records, then opens the browse view
+  (`channel_activity_pager`)
+- **`channel_activity_pager.gohtml`** (staff) - The audit's browse view (Message Component
+  trigger `^ca:`): a summary, one bucket (active / quiet / stale / never seen) per page of
+  15, bucket and paging buttons that edit the page in place, and a CSV download (ephemeral)
 - **`channel_tracker.gohtml`** - Records each channel's last-active time on every message
-  (Regex `.*`, no output), for staff's `channel_activity`
+  (Regex `.*`, no output), for `channel_activity`
+- **`directory.gohtml`** (staff) - User directory management
+- **`channel_link.gohtml`** - Generate channel links
+- **`message_pointer.gohtml`** - Message reference utility
 
-### 🛠️ Staff (`staff/`)
+#### Knowledge (`commands/knowledge/`)
+- **`define.gohtml`** - Glossary term lookup (links to thenighthouse.org)
 
-Administrative and moderation tools for server staff, flat (no subfolders):
+#### General (`commands/general/`)
+- **`avatar_viewer.gohtml`** - View user avatars
+- **`hugemoji.gohtml`** - Display large emoji
+- **`timestamp.gohtml`** - Parse Discord snowflake timestamps
 
-- **`batch_delrep.gohtml`** - Batch delete and reputation management
-- **`bootstrap.gohtml`** - Initial system setup and configuration
-- **`bump_reset.gohtml`** - Server bump reset functionality
-- **`channel_activity.gohtml`** - Dead-channel audit from what `channel_tracker` records:
-  cleans up deleted channels' records, then opens the browse view (`channel_activity_pager`)
-- **`channel_activity_pager.gohtml`** - The audit's browse view (Message Component trigger
-  `^ca:`): a summary, one bucket (active / quiet / stale / never seen) per page of 15,
-  bucket and paging buttons that edit the page in place, and a CSV download (ephemeral)
-- **`directory.gohtml`** - User directory management
-- **`gematria_bootstrap.gohtml`** - Initialize gematria calculation system
-- **`hiatus.gohtml`** - User hiatus management
-- **`inactivity.gohtml`** - Inactivity tracking and management
-- **`role_ping.gohtml`** - Role-based ping management
-- **`rule_edit.gohtml`** - Server rule editing interface
-- **`rules.gohtml`** - Display server rules
-- **`simple_db_edit.gohtml`** - Simplified database editing interface
-- **`simple_db_lookup.gohtml`** - Database lookup utility
-- **`staff_roles.gohtml`** - Staff role management
+#### Plumbing (`commands/plumbing/`)
+- **`embed_exec.gohtml`** - Universal embed creation and execution
+- **`message_link.gohtml`** - Generate message links (called by log_user, unmanaged: never
+  deployed, the live copy holds the real watched ID)- **`ticket_clean.gohtml`** - Ticket cleanup utility
+- **`bootstrap.gohtml`** (staff) - Initial system setup and configuration
 
 **Key Features:**
 - Advanced permission checking
@@ -281,10 +282,10 @@ make test          # all template tests (tools/emulator/testdata/), checked agai
 make watch         # rerun them whenever a command or test file changes
 make ci            # everything CI runs: Go vet + unit tests, template tests, linter, gofmt
 
-./bin/yagtest run everyone/general/timestamp.gohtml         # run one command
-./bin/yagtest run -args "get,Global" -verbose everyone/services/db.gohtml
-./bin/yagtest run -no-premium -strict everyone/services/db.gohtml  # fail where a free server would
-./bin/yagtest check everyone/*/*.gohtml staff/*.gohtml      # parse only, plus static warnings
+./bin/yagtest run commands/general/timestamp.gohtml         # run one command
+./bin/yagtest run -args "get,Global" -verbose commands/db/db.gohtml
+./bin/yagtest run -no-premium -strict commands/db/db.gohtml  # fail where a free server would
+./bin/yagtest check commands/*/*.gohtml                     # parse only, plus static warnings
 ```
 
 The emulator runs templates on YAGPDB's own template engine and standard functions (copied
@@ -314,8 +315,7 @@ production. On top of that:
 ### Project Structure
 
 ```
-├── staff/            # Staff/admin commands (flat)
-├── everyone/         # General utility commands, in topic subfolders
+├── commands/         # Every deployed command, one folder per topic (panel group in the header)
 ├── retired/          # Commands no longer deployed
 ├── tools/emulator/   # Local testing emulator
 ├── docs/             # Documentation

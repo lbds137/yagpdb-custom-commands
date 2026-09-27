@@ -2,7 +2,7 @@
 
 This document tracks potential enhancements for the YAGPDB custom commands project.
 
-## Command file layout: topic folders (DECIDED, Lila 2026-09-27; next unit)
+## Command file layout: topic folders (DECIDED, Lila 2026-09-27; SHIPPED the same day)
 
 Reverses the earlier "folders = panel groups" layout (new information: slash roots will
 be topics, and several topics span both groups). One top-level `commands/` tree with a

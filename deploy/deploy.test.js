@@ -58,11 +58,11 @@ function loadDeployJs() {
 // to any of these files never breaks this test on its own (only a real normalize/hash
 // disagreement would).
 const PARITY_FILES = [
-  "everyone/knowledge/define.gohtml",
-  "staff/rules.gohtml",
+  "commands/knowledge/define.gohtml",
+  "commands/rules/rules.gohtml",
   // Has Hebrew text -- exercises UTF-8 encoding parity, not just ASCII.
-  "everyone/hebrew/alefbet.gohtml",
-  "everyone/services/embed_exec.gohtml",
+  "commands/hebrew/alefbet.gohtml",
+  "commands/plumbing/embed_exec.gohtml",
 ];
 
 test("normalize/sha256hex match the Python manifest normalization for real command files", async () => {
@@ -124,6 +124,7 @@ test("parseHeader reads a Command header", () => {
     "  Author: Vladlena Costescu (@lbds137)",
     "  Trigger type: `Command`",
     "  Trigger: `rules`",
+    "  Group: `Staff Utility`",
     "  Dependencies: `embed_exec`",
     "*/ -}}",
   ].join("\n");
@@ -132,6 +133,87 @@ test("parseHeader reads a Command header", () => {
   const header = yagDeploy.parseHeader(code);
   assert.equal(header.type, "Command");
   assert.equal(header.trigger, "rules");
+  assert.equal(header.group, "Staff Utility");
+});
+
+test("parseHeader reads the Group line when it follows Trigger type (no Trigger line)", () => {
+  const yagDeploy = loadDeployJs();
+  const code = [
+    "{{- /*",
+    "  Author: Vladlena Costescu (@lbds137)",
+    "  Trigger type: `Hourly interval`",
+    "  Group: `Utility`",
+    "  Interval: `168`",
+    "*/ -}}",
+  ].join("\n");
+  const header = yagDeploy.parseHeader(code);
+  assert.equal(header.type, "Hourly interval");
+  assert.equal(header.trigger, null);
+  assert.equal(header.group, "Utility");
+});
+
+test("parseHeader reads every committed command's Group line as a known panel group", () => {
+  const yagDeploy = loadDeployJs();
+  const files = fs
+    .readdirSync(path.join(REPO_ROOT, "commands"), { withFileTypes: true, recursive: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".gohtml"))
+    .map((entry) => path.join(entry.parentPath, entry.name));
+  assert.ok(files.length > 0, "no command files found under commands/");
+  for (const file of files) {
+    const header = yagDeploy.parseHeader(fs.readFileSync(file, "utf8"));
+    assert.ok(
+      header.group === "Utility" || header.group === "Staff Utility",
+      `${path.relative(REPO_ROOT, file)}: Group is ${JSON.stringify(header.group)}`
+    );
+  }
+});
+
+test("headerDrift reports a group mismatch like a trigger/type one, and null when all match", () => {
+  const yagDeploy = loadDeployJs();
+  const header = { type: "Command", trigger: "rules", group: "Staff Utility" };
+  assert.equal(
+    yagDeploy.headerDrift(header, {
+      panelType: "Command",
+      panelTrigger: "rules",
+      panelGroup: "Staff Utility",
+    }),
+    null
+  );
+  // Drift objects come from the vm sandbox's Realm: compare fields, not deepEqual.
+  const drift = yagDeploy.headerDrift(header, {
+    panelType: "Command",
+    panelTrigger: "rules",
+    panelGroup: "Utility",
+  });
+  assert.equal(Object.keys(drift).join(","), "group");
+  assert.equal(drift.group.header, "Staff Utility");
+  assert.equal(drift.group.panel, "Utility");
+  // A header without a Group line (or a panel without the select) is not drift.
+  assert.equal(
+    yagDeploy.headerDrift(
+      { type: "Command", trigger: "rules", group: null },
+      { panelType: "Command", panelTrigger: "rules", panelGroup: "Utility" }
+    ),
+    null
+  );
+  assert.equal(
+    yagDeploy.headerDrift(header, { panelType: "Command", panelTrigger: "rules", panelGroup: null }),
+    null
+  );
+  // Type and trigger drift still report alongside group drift.
+  const all = yagDeploy.headerDrift(header, {
+    panelType: "Regex",
+    panelTrigger: "^rules$",
+    panelGroup: "Utility",
+  });
+  assert.equal(Object.keys(all).sort().join(","), "group,trigger,type");
+});
+
+test("panelGroupName trims the panel's option text", () => {
+  const yagDeploy = loadDeployJs();
+  assert.equal(yagDeploy.panelGroupName("Staff Utility"), "Staff Utility");
+  assert.equal(yagDeploy.panelGroupName("\n        Utility\n      "), "Utility");
+  assert.equal(yagDeploy.panelGroupName(null), "");
 });
 
 test("parseHeader reads a Regex header with backslashes", () => {

@@ -31,7 +31,7 @@ def main() -> int:
     run(["git", "config", "user.email", "test@example.invalid"], cwd=repo)
     run(["git", "config", "user.name", "Test"], cwd=repo)
 
-    os.makedirs(os.path.join(repo, "everyone", "general"))
+    os.makedirs(os.path.join(repo, "commands", "general"))
     os.makedirs(os.path.join(repo, "deploy"))
 
     def write(rel, content):
@@ -39,19 +39,19 @@ def main() -> int:
             f.write(content)
 
     # No "main" id in panel.json -> triggers the no-main-id branch.
-    write("everyone/general/normal.gohtml", "normal content\n")
+    write("commands/general/normal.gohtml", "normal content\n")
     # Mapped in "commands" AND listed as "unmanaged" -> triggers that branch.
-    write("everyone/general/dual.gohtml", "dual content\n")
+    write("commands/general/dual.gohtml", "dual content\n")
 
     panel = {
         "servers": ["main"],
         "commands": {
-            "everyone/general/dual.gohtml": {"main": "1"},
+            "commands/general/dual.gohtml": {"main": "1"},
         },
         "unmanaged": [
-            "everyone/general/dual.gohtml",
+            "commands/general/dual.gohtml",
             # Does not exist in the working tree -> triggers that branch.
-            "everyone/general/missing.gohtml",
+            "commands/general/missing.gohtml",
         ],
     }
     write("deploy/panel.json", json.dumps(panel))
@@ -59,7 +59,7 @@ def main() -> int:
     run(["git", "add", "-A"], cwd=repo)
     run(["git", "commit", "-q", "-m", "fixture"], cwd=repo)
     # A new command not yet `git add`-ed still needs an id (a worker's tree is untracked).
-    write("everyone/general/untracked.gohtml", "untracked content\n")
+    write("commands/general/untracked.gohtml", "untracked content\n")
 
     proc = run(
         ["python3", DEPLOY_PANEL_CHECK_PY, "--panel", "deploy/panel.json"],
@@ -71,10 +71,10 @@ def main() -> int:
         errors.append("check exited 0; expected a nonzero exit for the rigged panel.json")
 
     expected_substrings = [
-        "everyone/general/dual.gohtml: mapped in commands but also listed as unmanaged",
-        "everyone/general/missing.gohtml: unmanaged but does not exist in the working tree",
-        "everyone/general/normal.gohtml: no 'main' id in panel.json",
-        "everyone/general/untracked.gohtml: no 'main' id in panel.json",
+        "commands/general/dual.gohtml: mapped in commands but also listed as unmanaged",
+        "commands/general/missing.gohtml: unmanaged but does not exist in the working tree",
+        "commands/general/normal.gohtml: no 'main' id in panel.json",
+        "commands/general/untracked.gohtml: no 'main' id in panel.json",
     ]
     for substr in expected_substrings:
         if substr not in proc.stderr:

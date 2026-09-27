@@ -1,0 +1,235 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Component`
+  Trigger: `^ca:`
+  Group: `Staff Utility`
+  Dependencies: none (channel_activity execCCs this for the first page)
+*/ -}}
+{{- /* browse view for channel_activity: one page of one bucket of channels, by days since
+  their last message (active < 7, quiet 7-29, stale 30+, never seen). A button click
+  (custom ID ca:<bucket>:<page>) rebuilds that page in place, ca:csv replies with a CSV
+  file, and channel_activity execCCs this with ExecData (Bucket, Page) for the first page.
+  Defer mode stays None: under Update Message Response an updateMessage is refused
+  (Discord 40060) and the CSV reply would have to fill the deferral instead. */ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
+
+{{ $directoryDict := (dbGet 0 "Directory").Value }}
+{{ $excludeCategories := or ($directoryDict.Get "Exclude Categories") cslice }}
+{{ $excludeChannels := or ($directoryDict.Get "Exclude Channels") cslice }}
+{{ $ctypeTextDict := sdict "0" "GUILD_TEXT" "5" "GUILD_ANNOUNCEMENT" "15" "GUILD_FORUM" }}
+
+{{ $exclude := dict }}
+{{- range $cid := $excludeCategories -}}
+  {{- $exclude.Set (toInt $cid) true -}}
+{{- end -}}
+{{- range $cid := $excludeChannels -}}
+  {{- $exclude.Set (toInt $cid) true -}}
+{{- end -}}
+
+{{/* eligible channels (text-like type, not excluded, not in an excluded category), keyed
+  by ID with the channel itself; every channel's name, for the CSV's category column */}}
+{{ $eligible := dict }}
+{{ $names := dict }}
+{{- range $channel := .Guild.Channels -}}
+  {{- $names.Set $channel.ID $channel.Name -}}
+  {{- if $ctypeTextDict.HasKey (json $channel.Type) -}}
+    {{- if not ($exclude.Get $channel.ID) -}}
+      {{- if not ($exclude.Get $channel.ParentID) -}}
+        {{- $eligible.Set $channel.ID $channel -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* tracked entries, oldest first; a second call only when the first came back full,
+  never a third (free-tier db_multiple cap). Deleted and ineligible channels' entries are
+  skipped: channel_activity cleans the deleted ones up before it calls this */}}
+{{ $entries := dbBottomEntries "Last Active" 100 0 }}
+{{ $needSecond := eq (len $entries) 100 }}
+{{ $entries2 := cslice }}
+{{- if $needSecond -}}
+  {{- $entries2 = dbBottomEntries "Last Active" 100 100 -}}
+{{- end -}}
+{{ $capHit := and $needSecond (eq (len $entries2) 100) }}
+{{ $all := cslice }}
+{{ $all = $all.AppendSlice $entries }}
+{{ $all = $all.AppendSlice $entries2 }}
+
+{{/* bucket each tracked eligible channel; the lines of each bucket stay oldest first */}}
+{{ $now := currentTime.Unix }}
+{{ $lines := sdict "active" cslice "quiet" cslice "stale" cslice "never" cslice }}
+{{ $info := dict }}
+{{- range $entry := $all -}}
+  {{- if $eligible.Get $entry.UserID -}}
+    {{- $ts := toInt $entry.Value -}}
+    {{- $days := div (sub $now $ts) 86400 -}}
+    {{- $bucket := "stale" -}}
+    {{- if lt $days 7 -}}
+      {{- $bucket = "active" -}}
+    {{- else if lt $days 30 -}}
+      {{- $bucket = "quiet" -}}
+    {{- end -}}
+    {{- $info.Set $entry.UserID (sdict "ts" $ts "days" $days "bucket" $bucket) -}}
+    {{- $lines.Set $bucket (($lines.Get $bucket).Append
+      (printf "<#%d> — <t:%d:R>" $entry.UserID $ts)) -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* never-seen lines (untracked eligible channels, in guild order) and the CSV rows, one
+  per eligible channel, RFC 4180 quoting. Past the 200-entry cap "no entry" can't be told
+  from "past the cap", so untracked channels are neither listed nor written. The file stays
+  under YAGPDB's 100,000-byte cap for "file" (vendor general.go:314-316 errors above it):
+  rows past it are dropped and counted */}}
+{{ $csvHeader := "channel_id,name,category,last_message_utc,days_quiet,bucket" }}
+{{ $csv := cslice $csvHeader }}
+{{ $csvLen := len $csvHeader }}
+{{ $csvRows := 0 }}
+{{ $csvDropped := 0 }}
+{{- range $channel := .Guild.Channels -}}
+  {{- if $eligible.Get $channel.ID -}}
+    {{- $i := $info.Get $channel.ID -}}
+    {{- if or $i (not $capHit) -}}
+      {{- $fields := cslice -}}
+      {{- range $f := cslice $channel.Name (or ($names.Get $channel.ParentID) "") -}}
+        {{- if reFind "[,\"\r\n]" $f -}}
+          {{- $f = joinStr "" "\"" (reReplace "\"" $f "\"\"") "\"" -}}
+        {{- end -}}
+        {{- $fields = $fields.Append $f -}}
+      {{- end -}}
+      {{- $row := "" -}}
+      {{- if $i -}}
+        {{- $row = printf "%d,%s,%s,%s,%d,%s" $channel.ID (index $fields 0) (index $fields 1)
+          (formatTime (timestampToTime ($i.Get "ts")) "2006-01-02T15:04:05Z")
+          ($i.Get "days") ($i.Get "bucket") -}}
+      {{- else -}}
+        {{- $lines.Set "never" (($lines.Get "never").Append (printf "<#%d>" $channel.ID)) -}}
+        {{- $row = printf "%d,%s,%s,,,never" $channel.ID (index $fields 0) (index $fields 1) -}}
+      {{- end -}}
+      {{- if gt (add $csvLen 1 (len $row)) 100000 -}}
+        {{- $csvDropped = add 1 $csvDropped -}}
+      {{- else -}}
+        {{- $csv = $csv.Append $row -}}
+        {{- $csvLen = add $csvLen 1 (len $row) -}}
+        {{- $csvRows = add 1 $csvRows -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* what to show: a click carries it in the custom ID, channel_activity in ExecData */}}
+{{ $action := "" }}
+{{ $bucket := "stale" }}
+{{ $page := 1 }}
+{{- if .Interaction -}}
+  {{- $parts := split .CustomID ":" -}}
+  {{- $action = index $parts 1 -}}
+  {{- if ge (len $parts) 3 -}}
+    {{- $bucket = $action -}}
+    {{- $page = toInt (index $parts 2) -}}
+  {{- end -}}
+{{- else -}}
+  {{- $bucket = toString (or .ExecData.Bucket "stale") -}}
+  {{- $page = toInt (or .ExecData.Page 1) -}}
+{{- end -}}
+{{- if not ($lines.HasKey $bucket) -}}
+  {{- $bucket = "stale" -}}
+{{- end -}}
+
+{{ $nActive := len ($lines.Get "active") }}
+{{ $nQuiet := len ($lines.Get "quiet") }}
+{{ $nStale := len ($lines.Get "stale") }}
+{{ $nNever := len ($lines.Get "never") }}
+{{ $total := printf "%d" (add $nActive $nQuiet $nStale $nNever) }}
+{{ $neverCount := printf "%d" $nNever }}
+{{- if $capHit -}}
+  {{- $total = printf "%d+" (add $nActive $nQuiet $nStale) -}}
+  {{- $neverCount = "?" -}}
+{{- end -}}
+{{ $summary := printf "%s channels: %d active · %d quiet · %d stale · %s never seen"
+  $total $nActive $nQuiet $nStale $neverCount }}
+
+{{- if eq $action "csv" -}}
+  {{- $note := "" -}}
+  {{- if gt $csvDropped 0 -}}
+    {{- $note = printf " — CSV truncated at %d rows (%d left out: 100,000-character file cap)"
+      $csvRows $csvDropped -}}
+  {{- end -}}
+  {{- sendResponse nil (complexMessage
+    "content" (joinStr "" $summary $note)
+    "file" (joinStr "\n" $csv)
+    "filename" "channel_activity"
+    "ephemeral" true
+  ) -}}
+{{- else -}}
+  {{/* the page: 15 lines of the bucket, clamped to a real page */}}
+  {{ $list := $lines.Get $bucket }}
+  {{ $count := len $list }}
+  {{ $pages := div (add $count 14) 15 }}
+  {{- if lt $pages 1 -}}{{- $pages = 1 -}}{{- end -}}
+  {{- if lt $page 1 -}}{{- $page = 1 -}}{{- end -}}
+  {{- if gt $page $pages -}}{{- $page = $pages -}}{{- end -}}
+  {{ $start := mult (sub $page 1) 15 }}
+  {{ $end := add $start 15 }}
+  {{- if gt $end $count -}}{{- $end = $count -}}{{- end -}}
+
+  {{ $labels := sdict "active" "Active" "quiet" "Quiet" "stale" "Stale" "never" "Never seen" }}
+  {{ $order := "oldest first" }}
+  {{- if eq $bucket "never" -}}{{- $order = "in channel order" -}}{{- end -}}
+  {{ $desc := cslice $summary }}
+  {{- if eq (len $all) 0 -}}
+    {{- $desc = $desc.Append "_No activity has been recorded yet. Make sure channel_tracker is running._" -}}
+  {{- end -}}
+  {{- $desc = $desc.Append "" -}}
+  {{- $desc = $desc.Append (printf "**%s**, %s — page %d of %d"
+    ($labels.Get $bucket) $order $page $pages) -}}
+  {{- if eq $bucket "never" -}}
+    {{- $desc = $desc.Append
+      "_Bot and webhook posts aren't seen, nor channels where YAGPDB can't send._" -}}
+  {{- end -}}
+  {{- if $capHit -}}
+    {{- $desc = $desc.Append
+      "_Only the oldest 200 tracked channels were checked; untracked channels can't be listed._" -}}
+  {{- end -}}
+  {{- if eq $count 0 -}}
+    {{- $desc = $desc.Append "Nothing here." -}}
+  {{- else -}}
+    {{- $desc = $desc.AppendSlice (slice $list $start $end) -}}
+  {{- end -}}
+
+  {{/* row 1: the buckets (the shown one primary); row 2: paging and the CSV download */}}
+  {{ $row1 := cslice }}
+  {{- range $key := cslice "active" "quiet" "stale" "never" -}}
+    {{- $style := "secondary" -}}
+    {{- if eq $key $bucket -}}{{- $style = "primary" -}}{{- end -}}
+    {{- $n := printf "%d" (len ($lines.Get $key)) -}}
+    {{- $off := false -}}
+    {{- if eq $key "never" -}}
+      {{- $n = $neverCount -}}
+      {{- $off = $capHit -}}
+    {{- end -}}
+    {{/* the trailing ":b" keeps a bucket button's ID distinct from ◀'s ca:<bucket>:1 on
+      page 2 (Discord refuses a message whose components share a custom_id) */}}
+    {{- $row1 = $row1.Append (cbutton "label" (printf "%s (%s)" ($labels.Get $key) $n) "style" $style
+      "custom_id" (printf "ca:%s:1:b" $key) "disabled" $off) -}}
+  {{- end -}}
+  {{ $row2 := cslice
+    (cbutton "emoji" (sdict "name" "◀") "style" "secondary"
+      "custom_id" (printf "ca:%s:%d" $bucket (sub $page 1)) "disabled" (le $page 1))
+    (cbutton "label" (printf "Page %d/%d" $page $pages) "style" "secondary"
+      "custom_id" "ca:noop" "disabled" true)
+    (cbutton "emoji" (sdict "name" "▶") "style" "secondary"
+      "custom_id" (printf "ca:%s:%d" $bucket (add $page 1)) "disabled" (ge $page $pages))
+    (cbutton "emoji" (sdict "name" "⬇") "label" "CSV" "style" "secondary" "custom_id" "ca:csv")
+  }}
+  {{ $msg := complexMessage
+    "embed" (cembed "title" "Channel activity" "color" $embedColor "description" (joinStr "\n" $desc))
+    "components" (cslice $row1 $row2)
+  }}
+  {{- if .Interaction -}}
+    {{- updateMessage $msg -}}
+  {{- else -}}
+    {{- sendMessage nil $msg -}}
+  {{- end -}}
+{{- end -}}

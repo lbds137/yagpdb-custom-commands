@@ -2,7 +2,7 @@
 """Sanity-check deploy/panel.json against the command tree, run in `make ci`.
 
 - Every mapped path exists (tracked in the working tree) and isn't under retired/.
-- Every non-retired, non-unmanaged command file (everyone/**, staff/**) has a "main" id.
+- Every non-retired, non-unmanaged command file (commands/**) has a "main" id.
 - Ids are unique per server.
 - Every "unmanaged" path exists in the working tree and does NOT also appear in "commands"
   (an unmanaged file has no id and is never touched by the deploy tooling).
@@ -19,7 +19,7 @@ import subprocess
 import sys
 
 PANEL_JSON = "deploy/panel.json"
-COMMAND_DIRS = ("everyone", "staff")
+COMMAND_DIRS = ("commands",)
 
 
 def list_command_files():

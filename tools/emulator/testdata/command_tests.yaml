@@ -27,7 +27,7 @@ defaults:
 
 # The Gematria tables come from the real bootstrap (alefbet, atbash, pyramid and rand_hebrew
 # read them; gematria has its own suite)
-setup_templates: ["../../../staff/gematria_bootstrap.gohtml"]
+setup_templates: ["../../../commands/gematria/gematria_bootstrap.gohtml"]
 
 # Common database setup for all tests
 setup_db:
@@ -89,43 +89,43 @@ setup_db:
       Show NSFW: false
 
 command_map:
-  123: "../../../everyone/services/embed_exec.gohtml"
-  124: "../../../everyone/hebrew/gematria.gohtml"
-  125: "../../../everyone/services/message_link.gohtml"
-  126: "../../../everyone/services/db_get_embed.gohtml"
-  127: "../../../everyone/services/db_get_text.gohtml"
-  128: "../../../everyone/color/contrast.gohtml"
-  129: "../../../everyone/services/db.gohtml"
+  123: "../../../commands/plumbing/embed_exec.gohtml"
+  124: "../../../commands/gematria/gematria.gohtml"
+  125: "../../../commands/plumbing/message_link.gohtml"
+  126: "../../../commands/db/db_get_embed.gohtml"
+  127: "../../../commands/db/db_get_text.gohtml"
+  128: "../../../commands/color/contrast.gohtml"
+  129: "../../../commands/db/db.gohtml"
 
 tests:
   # ===== Utility Commands =====
 
   - name: "alefbet - Paleo-Hebrew to Hebrew"
     snapshot: true
-    template: "../../../everyone/hebrew/alefbet.gohtml"
+    template: "../../../commands/hebrew/alefbet.gohtml"
     context:
       args: ["𐤔𐤋𐤌"]
 
   - name: "alefbet - Rejects text that is already Hebrew"
     snapshot: true
-    template: "../../../everyone/hebrew/alefbet.gohtml"
+    template: "../../../commands/hebrew/alefbet.gohtml"
     context:
       args: ["שלום"]
 
   - name: "alefbet - Arabic to Hebrew"
     snapshot: true
-    template: "../../../everyone/hebrew/alefbet.gohtml"
+    template: "../../../commands/hebrew/alefbet.gohtml"
     context:
       args: ["سلام"]
 
   - name: "atbash - Basic cipher"
     snapshot: true
-    template: "../../../everyone/hebrew/atbash.gohtml"
+    template: "../../../commands/hebrew/atbash.gohtml"
     context:
       args: ["אבגד"]
 
   - name: "atbash - No mapped characters gets an error instead of an empty cipher"
-    template: "../../../everyone/hebrew/atbash.gohtml"
+    template: "../../../commands/hebrew/atbash.gohtml"
     context:
       args: ["!!! ???"]
     assertions:
@@ -133,19 +133,19 @@ tests:
 
   - name: "contrast - Valid hex color"
     snapshot: true
-    template: "../../../everyone/color/contrast.gohtml"
+    template: "../../../commands/color/contrast.gohtml"
     context:
       args: ["#FF5500"]
 
   - name: "contrast - Hex without hash"
     snapshot: true
-    template: "../../../everyone/color/contrast.gohtml"
+    template: "../../../commands/color/contrast.gohtml"
     context:
       args: ["00FF00"]
 
   - name: "contrast - Role ID"
     snapshot: true
-    template: "../../../everyone/color/contrast.gohtml"
+    template: "../../../commands/color/contrast.gohtml"
     context:
       args: ["876543210987654321"]
       guild:
@@ -153,7 +153,7 @@ tests:
           - { id: 876543210987654321, name: "Blurple", color: 5793266, position: 3 }
 
   - name: "contrast - White is the embed color once"
-    template: "../../../everyone/color/contrast.gohtml"
+    template: "../../../commands/color/contrast.gohtml"
     context:
       args: ["#ffffff"]
     assertions:
@@ -161,13 +161,13 @@ tests:
 
   - name: "contrasts - Multiple colors"
     snapshot: true
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       args: ["FF0000 00FF00 0000FF"]
 
   - name: "contrasts - Colors separated by a comma"
     snapshot: true
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       args: ["#ff0000,", "00ff00"]
     assertions:
@@ -176,7 +176,7 @@ tests:
         - { embed_title: "Contrast Ratios for `#00ff00`", nth: 2 }
 
   - name: "contrasts - Colors in a sentence"
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       args: ["#ff0000;#00ff00 and 0000ff."]
     assertions:
@@ -187,7 +187,7 @@ tests:
 
   - name: "contrasts - A role ID"
     snapshot: true
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       args: ["876543210987654321"]
       guild:
@@ -198,7 +198,7 @@ tests:
 
   - name: "contrasts - A role ID and a color"
     snapshot: true
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       args: ["876543210987654321", "#ff0000"]
       guild:
@@ -210,14 +210,14 @@ tests:
         - { embed_title: "Contrast Ratios for `#ff0000`", nth: 2 }
 
   - name: "contrasts - Only invalid words"
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       args: ["red", "12345678901234567"]
     assertions:
       sent_messages: [{ embed_title: "Invalid Argument" }]
 
   - name: "contrasts - Extra colors beyond the execCC limit get a warning"
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       # ExecCC Limit is 10 (shared Global); 11 valid colors drop 1
       args:
@@ -237,7 +237,7 @@ tests:
         ]
 
   - name: "contrasts - ExecCC Limit 1 uses singular grammar for the limit itself"
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       # 2 valid colors, limit 1: 1 dropped, and the limit itself is singular
       args: ["#000000 #111111"]
@@ -256,7 +256,7 @@ tests:
         ]
 
   - name: "contrasts - ExecCC Limit above 10 still clamps to YAGPDB's per-run cap"
-    template: "../../../everyone/color/contrasts.gohtml"
+    template: "../../../commands/color/contrasts.gohtml"
     context:
       # 12 valid colors; unclamped (limit 20) all 12 would be attempted and the 11th
       # execCC would hit YAGPDB's real 10-per-run cap and error out the whole command
@@ -280,18 +280,18 @@ tests:
 
   - name: "hugemoji - Discord custom emoji"
     snapshot: true
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args: ["<:test:123456789012345678>"]
 
   - name: "hugemoji - Animated emoji"
     snapshot: true
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args: ["<a:dance:987654321098765432>"]
 
   - name: "hugemoji - ExecCC Limit above 10 still clamps to YAGPDB's per-run cap"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       # 12 distinct custom emoji; unclamped (limit 20) all 12 would be attempted and the
       # 11th execCC would hit YAGPDB's real 10-per-run cap and error out the whole command
@@ -314,7 +314,7 @@ tests:
         ]
 
   - name: "hugemoji - ExecCC Limit 1 uses singular grammar for the limit itself"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       # 2 distinct custom emoji, limit 1: 1 dropped, and the limit itself is singular
       args: ["<:e01:100000000000000001> <:e02:100000000000000002>"]
@@ -333,7 +333,7 @@ tests:
         ]
 
   - name: "hugemoji - Emoji taken from a linked message"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/700000000000000002/800000000000000001"]
       guild:
@@ -353,7 +353,7 @@ tests:
   # non-staff user (hugemoji.gohtml's $nsfwCheck); the user is warned why nothing showed up
   - name: "hugemoji - A link to an NSFW channel from a non-NSFW channel is refused for a non-staff user"
     snapshot: true
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/700000000000000003/800000000000000002"]
       guild:
@@ -375,7 +375,7 @@ tests:
         ]
 
   - name: "hugemoji - Two links refused for NSFW use plural grammar"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args:
         [
@@ -406,7 +406,7 @@ tests:
   # A refused NSFW link alongside a directly-typed emoji that IS expanded: the NSFW
   # warning is computed and sent before the execCC loop fans out, so it lands first now
   - name: "hugemoji - An NSFW refusal alongside an expanded emoji: the warning goes first"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args:
         [
@@ -430,7 +430,7 @@ tests:
         - { embed_title: "Emoji Expander", nth: 2, sent_after_seconds: 0 }
 
   - name: "hugemoji - Plain text with no custom emoji sends an Invalid Argument error"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args: ["hello there, no emoji here"]
     assertions:
@@ -444,7 +444,7 @@ tests:
         ]
 
   - name: "hugemoji - A link to an NSFW channel from a non-NSFW channel is allowed for staff"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/700000000000000003/800000000000000002"]
       user: { roles: [111111111] }
@@ -462,7 +462,7 @@ tests:
         [{ embed_title: "Emoji Expander", embed_contains: "Click or tap here to view the message" }]
 
   - name: "hugemoji - Exactly one emoji over the limit uses singular grammar"
-    template: "../../../everyone/general/hugemoji.gohtml"
+    template: "../../../commands/general/hugemoji.gohtml"
     context:
       # 11 distinct custom emoji; the default ExecCC Limit (10, shared Global) drops 1
       args:
@@ -486,7 +486,7 @@ tests:
       args: ["FAQ"]
 
   - name: "define - Simple term slugifies to lowercase-hyphenated"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Chaos Magick"]
     assertions:
@@ -499,7 +499,7 @@ tests:
         ]
 
   - name: "define - Multi-word term with internal spaces"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Right hand path"]
     assertions:
@@ -512,7 +512,7 @@ tests:
         ]
 
   - name: "define - All-caps term lowercases in the slug"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["UPG"]
     assertions:
@@ -525,7 +525,7 @@ tests:
         ]
 
   - name: "define - Existing hyphen in the term is kept as one hyphen"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Clair-senses"]
     assertions:
@@ -538,7 +538,7 @@ tests:
         ]
 
   - name: "define - Accented letters fold to their base letter"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Ásatrú"]
     assertions:
@@ -551,7 +551,7 @@ tests:
         ]
 
   - name: "define - Another accented term folds correctly"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Santería"]
     assertions:
@@ -564,7 +564,7 @@ tests:
         ]
 
   - name: "define - Punctuation runs collapse and edges trim"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["  --Foo!!  Bar-- "]
     assertions:
@@ -577,7 +577,7 @@ tests:
         ]
 
   - name: "define - No argument links the bare glossary page"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: []
     assertions:
@@ -590,7 +590,7 @@ tests:
         ]
 
   - name: "define - All-punctuation term has no slug, so links the bare glossary page"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["!!!"]
     assertions:
@@ -603,7 +603,7 @@ tests:
         ]
 
   - name: "define - Unquoted multi-token args rejoin into one term"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Chaos", "Magick"]
     assertions:
@@ -616,7 +616,7 @@ tests:
         ]
 
   - name: "define - Macron vowel folds to its base letter"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Ātman"]
     assertions:
@@ -629,7 +629,7 @@ tests:
         ]
 
   - name: "define - Retired kb entry 'The Seven Tenets' aliases to the glossary's Seven Tenets"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["The Seven Tenets"]
     assertions:
@@ -642,7 +642,7 @@ tests:
         ]
 
   - name: "define - Retired kb entry 'Seven Satanic Tenets' aliases to the glossary's Seven Tenets"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Seven Satanic Tenets"]
     assertions:
@@ -655,7 +655,7 @@ tests:
         ]
 
   - name: "define - Retired kb entry 'The Seven Satanic Tenets' aliases to the glossary's Seven Tenets"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["The Seven Satanic Tenets"]
     assertions:
@@ -668,7 +668,7 @@ tests:
         ]
 
   - name: "define - 'Seven Tenets' itself already works"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["Seven Tenets"]
     assertions:
@@ -682,7 +682,7 @@ tests:
 
   - name: "message_pointer - Valid message link"
     snapshot: true
-    template: "../../../everyone/links/message_pointer.gohtml"
+    template: "../../../commands/channels/message_pointer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444"]
       messages:
@@ -693,12 +693,12 @@ tests:
 
   - name: "pyramid - Simple text"
     snapshot: true
-    template: "../../../everyone/hebrew/pyramid.gohtml"
+    template: "../../../commands/hebrew/pyramid.gohtml"
     context:
       args: ["hello"]
 
   - name: "pyramid - ExecCC Limit above 10 still clamps to YAGPDB's per-run cap"
-    template: "../../../everyone/hebrew/pyramid.gohtml"
+    template: "../../../commands/hebrew/pyramid.gohtml"
     context:
       # 12 words; unclamped (limit 20) all 12 would be attempted and the 11th execCC
       # (each recurses into pyramid's OWN nested run, but still counts against this run's
@@ -715,13 +715,13 @@ tests:
           gematria: "124"
           pyramid: "131"
     command_map:
-      131: "../../../everyone/hebrew/pyramid.gohtml"
+      131: "../../../commands/hebrew/pyramid.gohtml"
     assertions:
       sent_messages:
         - { content_contains: "⚠️ Warning: 2 words were not processed because only 10 words can be processed at a time." }
 
   - name: "pyramid - ExecCC Limit 1 schedules one word and warns about the rest"
-    template: "../../../everyone/hebrew/pyramid.gohtml"
+    template: "../../../commands/hebrew/pyramid.gohtml"
     context:
       args: ["one two three"]
     setup_db:
@@ -735,7 +735,7 @@ tests:
           gematria: "124"
           pyramid: "131"
     command_map:
-      131: "../../../everyone/hebrew/pyramid.gohtml"
+      131: "../../../commands/hebrew/pyramid.gohtml"
     assertions:
       scheduled_runs:
         - { cc_id: 131, delay: 1s, exec_data_contains: '"Description":"one"' }
@@ -747,7 +747,7 @@ tests:
   # own doc: "They aren't run: test that command separately" - the single-word branch above,
   # "pyramid - Simple text", is that separate test, run once per word when scheduled for real)
   - name: "pyramid - Several words each schedule their own pyramid execCC"
-    template: "../../../everyone/hebrew/pyramid.gohtml"
+    template: "../../../commands/hebrew/pyramid.gohtml"
     context:
       args: ["hi bye lo"]
     setup_db:
@@ -765,20 +765,20 @@ tests:
 
   - name: "rand_hebrew - Generate random letters"
     snapshot: true
-    template: "../../../everyone/hebrew/rand_hebrew.gohtml"
+    template: "../../../commands/hebrew/rand_hebrew.gohtml"
     context:
       args: ["5"]
       seed: 1 # the letters are random
 
   - name: "rand_hebrew - NxM group mode"
     snapshot: true
-    template: "../../../everyone/hebrew/rand_hebrew.gohtml"
+    template: "../../../commands/hebrew/rand_hebrew.gohtml"
     context:
       args: ["2x3"]
       seed: 1 # the letters are random; sofit forms replace the last letter of each group
 
   - name: "rand_hebrew - An invalid format is rejected"
-    template: "../../../everyone/hebrew/rand_hebrew.gohtml"
+    template: "../../../commands/hebrew/rand_hebrew.gohtml"
     context:
       args: ["abc"]
     assertions:
@@ -786,18 +786,18 @@ tests:
 
   - name: "rule - View rule 1"
     snapshot: true
-    template: "../../../everyone/knowledge/rule.gohtml"
+    template: "../../../commands/rules/rule.gohtml"
     context:
       args: ["1"]
 
   - name: "rule - View rule 2"
     snapshot: true
-    template: "../../../everyone/knowledge/rule.gohtml"
+    template: "../../../commands/rules/rule.gohtml"
     context:
       args: ["2"]
 
   - name: "rule - Reads a rule past a gap"
-    template: "../../../everyone/knowledge/rule.gohtml"
+    template: "../../../commands/rules/rule.gohtml"
     context:
       args: ["3"]
     setup_db:
@@ -811,7 +811,7 @@ tests:
 
   - name: "rules - Skips a gap without a lookup failure or counting it"
     snapshot: true
-    template: "../../../staff/rules.gohtml"
+    template: "../../../commands/rules/rules.gohtml"
     context:
       args: []
     setup_db:
@@ -829,7 +829,7 @@ tests:
 
   - name: "rules - Three rules pack into one message, in order"
     snapshot: true
-    template: "../../../staff/rules.gohtml"
+    template: "../../../commands/rules/rules.gohtml"
     context:
       args: []
     setup_db:
@@ -846,7 +846,7 @@ tests:
         - { embed_title: "Rule #3" }
 
   - name: "rules - No actual rules is treated as none configured"
-    template: "../../../staff/rules.gohtml"
+    template: "../../../commands/rules/rules.gohtml"
     context:
       args: []
     setup_db:
@@ -858,7 +858,7 @@ tests:
       sent_messages: [{ embed_title: "Rules Lookup Failed" }]
 
   - name: "rules - A skipped gap doesn't count toward the 10-embeds-per-message pack"
-    template: "../../../staff/rules.gohtml"
+    template: "../../../commands/rules/rules.gohtml"
     context:
       # rules 1-11, with #5 missing: 10 real rules. If the gap counted as an embed, rule
       # #11 would spill into a second message instead of packing into the first with #1-10
@@ -885,7 +885,7 @@ tests:
         - { embed_title: "Rule #11" }
 
   - name: "rules - 12 short rules pack into 2 messages (10 + 2)"
-    template: "../../../staff/rules.gohtml"
+    template: "../../../commands/rules/rules.gohtml"
     context:
       args: []
     setup_db:
@@ -915,7 +915,7 @@ tests:
         - { embed_title: "Rule #12", nth: 2 }
 
   - name: "rules - Embeds exceeding 6,000 characters together split before the limit"
-    template: "../../../staff/rules.gohtml"
+    template: "../../../commands/rules/rules.gohtml"
     context:
       args: []
     setup_db:
@@ -935,7 +935,7 @@ tests:
 
   - name: "bootstrap - Initialize with command IDs"
     snapshot: true
-    template: "../../../staff/bootstrap.gohtml"
+    template: "../../../commands/plumbing/bootstrap.gohtml"
     context:
       # embed_exec 123, db 130 (setup_db has 129, so bootstrap's write shows), the Staff
       # role; run in #yagpdb, which bootstrap records as the YAGPDB channel
@@ -944,7 +944,7 @@ tests:
 
   - name: "inactivity - Prune an inactive member"
     snapshot: true
-    template: "../../../staff/inactivity.gohtml"
+    template: "../../../commands/members/inactivity.gohtml"
     context:
       # prune checks the member's Active/Inactive roles; this one is Inactive only
       args: ["prune", "<@222333444555666777>"]
@@ -982,7 +982,7 @@ tests:
           Minute Threshold: "30"
 
   - name: "inactivity - date action rotates the previous/next dates via the db execCC"
-    template: "../../../staff/inactivity.gohtml"
+    template: "../../../commands/members/inactivity.gohtml"
     context:
       args: ["date", "October 1"]
     setup_db:
@@ -1002,14 +1002,14 @@ tests:
         - { nth: 1, embed_contains: 'Previous Date\": \"September 1' }
 
   - name: "inactivity - date action without a parameter asks for one"
-    template: "../../../staff/inactivity.gohtml"
+    template: "../../../commands/members/inactivity.gohtml"
     context:
       args: ["date"]
     assertions:
       sent_messages: [{ embed_title: "Missing Date Parameter" }]
 
   - name: "inactivity - start action posts the opening announcement with placeholders filled in"
-    template: "../../../staff/inactivity.gohtml"
+    template: "../../../commands/members/inactivity.gohtml"
     context:
       args: ["start"]
     setup_db:
@@ -1032,7 +1032,7 @@ tests:
       response_pings: { roles: [333333333] } # Member
 
   - name: "inactivity - end action posts the closing announcement with placeholders filled in"
-    template: "../../../staff/inactivity.gohtml"
+    template: "../../../commands/members/inactivity.gohtml"
     context:
       args: ["end"]
     setup_db:
@@ -1055,7 +1055,7 @@ tests:
       response_pings: { roles: [333333333] } # Member
 
   - name: "inactivity - remind action pings the Inactive role"
-    template: "../../../staff/inactivity.gohtml"
+    template: "../../../commands/members/inactivity.gohtml"
     context:
       args: ["remind"]
       guild:
@@ -1095,7 +1095,7 @@ tests:
       response_pings: { roles: [121212121] } # Inactive
 
   - name: "inactivity - an invalid action is rejected"
-    template: "../../../staff/inactivity.gohtml"
+    template: "../../../commands/members/inactivity.gohtml"
     context:
       args: ["bogus"]
     assertions:
@@ -1103,12 +1103,12 @@ tests:
 
   - name: "role_ping - Ping a role"
     snapshot: true
-    template: "../../../staff/role_ping.gohtml"
+    template: "../../../commands/members/role_ping.gohtml"
     context:
       args: ["Member:Important announcement!"]
 
   - name: "role_ping - A lowercase role name without a message"
-    template: "../../../staff/role_ping.gohtml"
+    template: "../../../commands/members/role_ping.gohtml"
     context:
       args: ["member"]
     assertions:
@@ -1116,7 +1116,7 @@ tests:
 
   - name: "role_ping - An unknown role sends only the error"
     snapshot: true
-    template: "../../../staff/role_ping.gohtml"
+    template: "../../../commands/members/role_ping.gohtml"
     context:
       args: ["Nope:hello everyone"]
     assertions:
@@ -1124,7 +1124,7 @@ tests:
 
   - name: "role_ping - (nil) sends the message without a ping"
     snapshot: true
-    template: "../../../staff/role_ping.gohtml"
+    template: "../../../commands/members/role_ping.gohtml"
     context:
       args: ["(nil):hello everyone"]
     assertions:
@@ -1132,7 +1132,7 @@ tests:
       response_pings: {}
 
   - name: "rule_edit - Add a new rule"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["4", "New rule text."]
     assertions:
@@ -1141,7 +1141,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Update a rule shows the old text in a Was field"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["1", "Updated rule text here."]
     assertions:
@@ -1156,7 +1156,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Setting the same text is a no-op"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["1", "Be respectful to all members."]
     assertions:
@@ -1173,7 +1173,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Remove an existing rule"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["2", "(nil)"]
     assertions:
@@ -1192,7 +1192,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Removing a missing rule reports not found and leaves the DB unchanged"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["9", "(nil)"]
     assertions:
@@ -1209,7 +1209,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Invalid rule number is rejected"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["0", "Some text."]
     assertions:
@@ -1217,7 +1217,7 @@ tests:
       deletions: [{ of: "message" }, { of: "trigger" }]
 
   - name: "rule_edit - A non-string old value's Was field is fenced json"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["5", "Updated rule text."]
     setup_db:
@@ -1233,7 +1233,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Removing a non-string rule shows fenced json"
-    template: "../../../staff/rule_edit.gohtml"
+    template: "../../../commands/rules/rule_edit.gohtml"
     context:
       args: ["5", "(nil)"]
     setup_db:
@@ -1251,19 +1251,19 @@ tests:
 
   - name: "simple_db_lookup - Lookup knowledge entry"
     snapshot: true
-    template: "../../../staff/simple_db_lookup.gohtml"
+    template: "../../../commands/db/simple_db_lookup.gohtml"
     context:
       args: ["Knowledge", "FAQ"]
 
   - name: "simple_db_lookup - Commands category keeps its lowercase key"
-    template: "../../../staff/simple_db_lookup.gohtml"
+    template: "../../../commands/db/simple_db_lookup.gohtml"
     context:
       args: ["Commands", "embed_exec"]
     assertions:
       sent_messages: [{ embed_contains: "123" }]
 
   - name: "simple_db_edit - Update an existing Knowledge key shows the old text"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Faq", "Updated FAQ content"]
     assertions:
@@ -1278,7 +1278,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Add a new key"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Notes", "Some new notes."]
     assertions:
@@ -1287,7 +1287,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - An unknown category is refused and the DB stays unchanged"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Widgets", "Color", "Red"]
     assertions:
@@ -1296,7 +1296,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: creates a category that doesn't exist yet"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["new:Widgets", "Color", "Red"]
     assertions:
@@ -1305,7 +1305,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: with nothing after it is refused"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["new:", "Color", "Red"]
     assertions:
@@ -1320,7 +1320,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: with only whitespace after it is refused"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["new:   ", "Color", "Red"]
     assertions:
@@ -1329,7 +1329,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: on an existing category just proceeds"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["new:Knowledge", "Faq", "Prefixed update"]
     assertions:
@@ -1344,7 +1344,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A key that gets title-cased shows Stored as"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "notes", "Some notes."]
     assertions:
@@ -1353,7 +1353,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Commands category key is not title-cased"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Commands", "embed_exec", "999"]
     assertions:
@@ -1362,7 +1362,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A non-dict category is refused"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Counter", "Anything", "Val"]
     setup_db:
@@ -1373,7 +1373,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Remove an existing key"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Guidelines", "(nil)"]
     assertions:
@@ -1388,7 +1388,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Removing a missing key reports not found"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Nonexistent", "(nil)"]
     assertions:
@@ -1401,7 +1401,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A long non-string old value's Was field ends with a closed fence"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Widgets", "Big", "New value"]
     setup_db:
@@ -1418,7 +1418,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Deleting an existing key by its lowercase form has no Stored as field"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "guidelines", "(nil)"]
     assertions:
@@ -1428,7 +1428,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A not-found delete of a lowercase-typed key has no Stored as field"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "nonexistent", "(nil)"]
     assertions:
@@ -1438,7 +1438,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A 1,100-rune lowercase key's Stored as value is capped at 1,024 runes ending an ellipsis"
-    template: "../../../staff/simple_db_edit.gohtml"
+    template: "../../../commands/db/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "val"]
     assertions:
@@ -1453,7 +1453,7 @@ tests:
 
   - name: "db dump - Dump all keys"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["dump:0"]
       user: { roles: [111111111] }
@@ -1461,14 +1461,14 @@ tests:
 
   - name: "db dump - Dump specific key"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["dump:0", "Global"]
       user: { roles: [111111111] }
       clock: 2026-01-02T03:04:05Z # the file name holds the time
 
   - name: "db dump - Includes keys the old hardcoded list missed"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["dump:0"]
       user: { roles: [111111111] }
@@ -1490,7 +1490,7 @@ tests:
 
   - name: "db dump - Doesn't re-fetch entries dbGetPattern already has"
     strict: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["dump:0"]
       user: { roles: [111111111] }
@@ -1629,7 +1629,7 @@ tests:
   # through the pointer
   - name: "db add - Append to array via nested key"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "Directory:Exclude Categories", "New Category"]
       user: { roles: [111111111] }
@@ -1638,7 +1638,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '"Archive","New Category"]' }]
 
   - name: "db add - JSON array appends to a stored array"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "Directory", "{\"Exclude Categories\": [\"Memes\"]}"]
       user: { roles: [111111111] }
@@ -1647,7 +1647,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '"Archive","Memes"]' }]
 
   - name: "db add - JSON merges into a nested dictionary"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "Nested:Inner", "{\"b\": 2}"]
       user: { roles: [111111111] }
@@ -1658,7 +1658,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Nested", value_equals: { Inner: { a: 1, b: 2 }, Other: 3 } }]
 
   - name: "db add - A missing key is not a success"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "Nothing", "x"]
       user: { roles: [111111111] }
@@ -1667,7 +1667,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Nothing", not_exists: true }]
 
   - name: "db add - A missing nested key is not a success"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "Global:Nothing", "x"]
       user: { roles: [111111111] }
@@ -1676,7 +1676,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 10 } }]
 
   - name: "db add - Text into a dictionary is refused"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "Global", "x"]
       user: { roles: [111111111] }
@@ -1686,7 +1686,7 @@ tests:
 
   - name: "db get - Read a nested array"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["get:0", "Directory:Exclude Categories"]
       user: { roles: [111111111] }
@@ -1695,7 +1695,7 @@ tests:
 
   - name: "db remove - Remove item from array via nested key"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["remove:0", "Directory:Exclude Categories", "Staff Only"]
       user: { roles: [111111111] }
@@ -1704,7 +1704,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '["Bot Commands","Archive"]' }]
 
   - name: "db remove - An item not in the array is not a success"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["remove:0", "Directory:Exclude Categories", "Nope"]
       user: { roles: [111111111] }
@@ -1713,7 +1713,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '["Staff Only","Bot Commands","Archive"]' }]
 
   - name: "db remove - A key not in the dictionary is not a success"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["remove:0", "Global", "{\"Nope\": \"\"}"]
       user: { roles: [111111111] }
@@ -1721,7 +1721,7 @@ tests:
       sent_messages: [{ embed_contains: "No value found!" }]
 
   - name: "db remove - JSON removes from a nested dictionary"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["remove:0", "Nested:Inner", "{\"a\": \"\"}"]
       user: { roles: [111111111] }
@@ -1733,7 +1733,7 @@ tests:
 
   - name: "db remove - Remove with JSON from dict"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["remove:0", "Global", "{\"Delete Trigger Delay\": \"\"}"]
       user: { roles: [111111111] }
@@ -1742,20 +1742,20 @@ tests:
 
   - name: "db keys - List dictionary keys"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["keys:0", "Global"]
       user: { roles: [111111111] }
 
   - name: "db delete - Delete a nested key"
     snapshot: true
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["delete:0", "Directory:Exclude Categories"]
       user: { roles: [111111111] }
 
   - name: "db get - A stored false is a value"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["get:0", "Directory:Show Empty"]
       user: { roles: [111111111] }
@@ -1763,7 +1763,7 @@ tests:
       sent_messages: [{ embed_contains: "Value successfully retrieved!" }]
 
   - name: "db get - A stored 0 is a value"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["get:0", "Counter"]
       user: { roles: [111111111] }
@@ -1773,7 +1773,7 @@ tests:
       sent_messages: [{ embed_contains: "Value successfully retrieved!" }]
 
   - name: "db get - A path through a missing key finds nothing"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["get:0", "Directory:Nope:Show Empty"]
       user: { roles: [111111111] }
@@ -1781,7 +1781,7 @@ tests:
       sent_messages: [{ embed_contains: "No value found!" }]
 
   - name: "db get - A path through a value that isn't a dictionary finds nothing"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["get:0", "Admin:Welcome Message:Deeper"]
       user: { roles: [111111111] }
@@ -1789,7 +1789,7 @@ tests:
       sent_messages: [{ embed_contains: "No value found!" }]
 
   - name: "db delete - A stored false is deleted"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["delete:0", "Directory:Show Empty"]
       user: { roles: [111111111] }
@@ -1801,7 +1801,7 @@ tests:
           value_equals: { Exclude Categories: ["Staff Only", "Bot Commands", "Archive"], Show NSFW: false }
 
   - name: "db delete - A stored 0 is deleted"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["delete:0", "Counter"]
       user: { roles: [111111111] }
@@ -1812,7 +1812,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Counter", not_exists: true }]
 
   - name: "db set - A path through a missing key is refused"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["set:0", "Global:Nope:Deeper", "{\"a\": 1}"]
       user: { roles: [111111111] }
@@ -1821,7 +1821,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 10 } }]
 
   - name: "db set - A nested key"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["set:0", "Global:New", "{\"a\": 1}"]
       user: { roles: [111111111] }
@@ -1830,14 +1830,14 @@ tests:
       db_checks: [{ user_id: 0, key: "Global", value_contains: '"New":{"a":1}' }]
 
   - name: "message_pointer - Not a link"
-    template: "../../../everyone/links/message_pointer.gohtml"
+    template: "../../../commands/channels/message_pointer.gohtml"
     context:
       args: ["hello"]
     assertions:
       sent_messages: [{ embed_title: "Invalid Message Link" }]
 
   - name: "message_pointer - A long comment is cut between characters"
-    template: "../../../everyone/links/message_pointer.gohtml"
+    template: "../../../commands/channels/message_pointer.gohtml"
     context:
       # 1025 characters, the last three 3 bytes long; the field holds 1023 and "…" (1024)
       args: ["https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa€€€"]
@@ -1847,7 +1847,7 @@ tests:
       sent_messages: [{ embed_contains: "a€…" }]
 
   - name: "message_pointer - A comment of exactly 1024 characters is kept whole"
-    template: "../../../everyone/links/message_pointer.gohtml"
+    template: "../../../commands/channels/message_pointer.gohtml"
     context:
       # 1024 characters: Discord's field-value limit, so nothing is cut
       args: ["https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa€€"]
@@ -1859,7 +1859,7 @@ tests:
   # "J" is stored as `db set` stores JSON: its nested dictionary and array are a plain map
   # and a plain slice (setup_db would make them an sdict and a cslice)
   - name: "db add - JSON merges into a nested dictionary made by db set"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "J:Inner", "{\"b\": 2}"]
       user: { roles: [111111111] }
@@ -1869,7 +1869,7 @@ tests:
       db_checks: [{ user_id: 0, key: "J", value_equals: { Inner: { a: 1, b: 2 }, arr: ["x"] } }]
 
   - name: "db get - A key in a nested dictionary made by db set"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["get:0", "J:Inner:a"]
       user: { roles: [111111111] }
@@ -1880,7 +1880,7 @@ tests:
         - { embed_contains: "Value successfully retrieved!" }
 
   - name: "db add - JSON array appends to an array made by db set"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["add:0", "J", "{\"arr\": [\"y\"]}"]
       user: { roles: [111111111] }
@@ -1890,7 +1890,7 @@ tests:
       db_checks: [{ user_id: 0, key: "J", value_equals: { Inner: { a: 1 }, arr: ["x", "y"] } }]
 
   - name: "db get - A stored empty text is a value"
-    template: "../../../everyone/services/db.gohtml"
+    template: "../../../commands/db/db.gohtml"
     context:
       args: ["get:0", "Empty"]
       user: { roles: [111111111] }
@@ -1907,7 +1907,7 @@ tests:
   # exercise dict 0, so they run as staff to keep testing traversal, not the access check)
 
   - name: "db_get_text - A stored false is a value"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Directory:Show Empty"]
       user: { roles: [111111111] }
@@ -1915,7 +1915,7 @@ tests:
       sent_messages: [{ content_contains: "### Directory > Show Empty\n\n```\nfalse\n```" }]
 
   - name: "db_get_text - A key in a nested dictionary made by db set"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "J:Inner:a"]
       user: { roles: [111111111] }
@@ -1924,7 +1924,7 @@ tests:
       sent_messages: [{ content_contains: "### J > Inner > a\n\n```\n1\n```" }]
 
   - name: "db_get_text - A key past a text value finds nothing"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Admin:Welcome Message:Deeper"]
       user: { roles: [111111111] }
@@ -1932,7 +1932,7 @@ tests:
       sent_messages: [{ content_equals: "### Admin > Welcome Message > Deeper\n\n(no result found)" }]
 
   - name: "db_get_text - A missing nested key keeps its title"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Nope:x"]
       user: { roles: [111111111] }
@@ -1940,7 +1940,7 @@ tests:
       sent_messages: [{ content_equals: "### Nope > x\n\n(no result found)" }]
 
   - name: "db_get_embed - A stored 0 is a value"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["0", "Nested:n"]
       user: { roles: [111111111] }
@@ -1950,7 +1950,7 @@ tests:
       sent_messages: [{ embed_contains: '"description": "```\n0\n```"' }]
 
   - name: "db_get_text - A key without a colon"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Admin"]
       user: { roles: [111111111] }
@@ -1958,7 +1958,7 @@ tests:
       sent_messages: [{ content_equals: "### Admin\n\n```\n{\n\t\"Welcome Message\": \"Welcome to the server!\"\n}\n```" }]
 
   - name: "db_get_text - A missing key without a colon"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Nope"]
       user: { roles: [111111111] }
@@ -1966,7 +1966,7 @@ tests:
       sent_messages: [{ content_equals: "### Nope\n\n(no result found)" }]
 
   - name: "db_get_text - A stored empty text is a value"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Empty"]
       user: { roles: [111111111] }
@@ -1976,7 +1976,7 @@ tests:
       sent_messages: [{ content_equals: "### Empty\n\n\"\"" }]
 
   - name: "db_get_embed - A key without a colon"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["0", "Admin"]
       user: { roles: [111111111] }
@@ -1984,7 +1984,7 @@ tests:
       sent_messages: [{ embed_title: "Admin", embed_contains: "Welcome to the server!" }]
 
   - name: "db_get_embed - A key in a nested dictionary made by db set"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["0", "J:Inner:a"]
       user: { roles: [111111111] }
@@ -1996,7 +1996,7 @@ tests:
   # Default test user (987654321098765432) has no Staff role unless given one.
 
   - name: "db_get_text - A member can't look up user 0 (Admin dict)"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Admin"]
     assertions:
@@ -2008,7 +2008,7 @@ tests:
         ]
 
   - name: "db_get_text - A member can't look up another member's entries"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["555555555", "Key"]
     assertions:
@@ -2020,7 +2020,7 @@ tests:
         ]
 
   - name: "db_get_text - A member looking up their own ID works"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["987654321098765432", "Profile"]
     setup_db:
@@ -2029,7 +2029,7 @@ tests:
       sent_messages: [{ content_equals: "### Profile\n\nhello" }]
 
   - name: "db_get_text - Staff can look up user 0 (Admin dict)"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["0", "Admin"]
       user: { roles: [111111111] }
@@ -2037,7 +2037,7 @@ tests:
       sent_messages: [{ content_contains: "Welcome to the server!" }]
 
   - name: "db_get_text - A member with one argument reads their own key"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       args: ["Profile"]
     setup_db:
@@ -2046,7 +2046,7 @@ tests:
       sent_messages: [{ content_equals: "### Profile\n\nhello" }]
 
   - name: "db_get_text - ExecData with a UserID stays trusted (no staff check)"
-    template: "../../../everyone/services/db_get_text.gohtml"
+    template: "../../../commands/db/db_get_text.gohtml"
     context:
       exec_data: { Key: "Profile", UserID: 987654321098765432 }
     setup_db:
@@ -2055,21 +2055,21 @@ tests:
       sent_messages: [{ content_equals: "### Profile\n\nhello" }]
 
   - name: "db_get_embed - A member can't look up user 0 (Admin dict)"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["0", "Admin"]
     assertions:
       sent_messages: [{ embed_title: "Access Denied", embed_contains: "Only staff can look up" }]
 
   - name: "db_get_embed - A member can't look up another member's entries"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["555555555", "Key"]
     assertions:
       sent_messages: [{ embed_title: "Access Denied", embed_contains: "Only staff can look up" }]
 
   - name: "db_get_embed - A member looking up their own ID works"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["987654321098765432", "Profile"]
     setup_db:
@@ -2078,7 +2078,7 @@ tests:
       sent_messages: [{ embed_title: "Profile", embed_contains: "hello" }]
 
   - name: "db_get_embed - Staff can look up user 0 (Admin dict)"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["0", "Admin"]
       user: { roles: [111111111] }
@@ -2086,7 +2086,7 @@ tests:
       sent_messages: [{ embed_title: "Admin", embed_contains: "Welcome to the server!" }]
 
   - name: "db_get_embed - A member with one argument reads their own key"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       args: ["Profile"]
     setup_db:
@@ -2095,7 +2095,7 @@ tests:
       sent_messages: [{ embed_title: "Profile", embed_contains: "hello" }]
 
   - name: "db_get_embed - ExecData with a UserID stays trusted (no staff check)"
-    template: "../../../everyone/services/db_get_embed.gohtml"
+    template: "../../../commands/db/db_get_embed.gohtml"
     context:
       exec_data: { Key: "Profile", UserID: 987654321098765432 }
     setup_db:
@@ -2104,7 +2104,7 @@ tests:
       sent_messages: [{ embed_title: "Profile", embed_contains: "hello" }]
 
   - name: "define - A 300-character term truncates the embed title and keeps the URL"
-    template: "../../../everyone/knowledge/define.gohtml"
+    template: "../../../commands/knowledge/define.gohtml"
     context:
       args: ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"]
     assertions:

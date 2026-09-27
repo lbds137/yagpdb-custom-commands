@@ -25,11 +25,11 @@ setup_db:
     value: { YAGPDB: 999999999 }
 
 command_map:
-  1: "../../../everyone/services/embed_exec.gohtml"
+  1: "../../../commands/plumbing/embed_exec.gohtml"
 
 tests:
   - name: "timestamp: a known snowflake decodes to its known time"
-    template: "../../../everyone/general/timestamp.gohtml"
+    template: "../../../commands/general/timestamp.gohtml"
     context:
       # 175928847299117063 is Discord's own documented example snowflake.
       # (175928847299117063 // 4194304) + 1420070400000 = 1462015105796 ms
@@ -41,13 +41,13 @@ tests:
         - { embed_contains: "2016-04-30 11:18:25.796 +0000 UTC" }
 
   - name: "timestamp: no argument decodes the caller's own ID"
-    template: "../../../everyone/general/timestamp.gohtml"
+    template: "../../../commands/general/timestamp.gohtml"
     assertions:
       sent_messages:
         - { embed_title: "Timestamp Parser", embed_contains: "111111111111111111" }
 
   - name: "timestamp: an invalid argument falls back to the caller's own ID (not an error)"
-    template: "../../../everyone/general/timestamp.gohtml"
+    template: "../../../commands/general/timestamp.gohtml"
     context:
       args: ["notanumber"]
     assertions:

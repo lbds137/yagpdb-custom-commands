@@ -295,6 +295,24 @@ func (r *ConfigLoadingRule) Check(filename string, lines []string) []LintResult 
 	return results
 }
 
+// staffGroup is the YAGPDB panel group the header's `Group:` line names for staff commands
+const staffGroup = "Staff Utility"
+
+var headerGroupRegex = regexp.MustCompile("Group:\\s*`([^`]*)`")
+
+// headerGroup returns the header's `Group:` value, or "" when the line is missing
+func headerGroup(lines []string) string {
+	for _, line := range lines {
+		if match := headerGroupRegex.FindStringSubmatch(line); match != nil {
+			return match[1]
+		}
+		if strings.Contains(line, "*/ -}}") {
+			break
+		}
+	}
+	return ""
+}
+
 // PermissionCheckRule checks for proper permission validation
 type PermissionCheckRule struct{}
 
@@ -303,8 +321,9 @@ func (r *PermissionCheckRule) Name() string { return "permission-check" }
 func (r *PermissionCheckRule) Check(filename string, lines []string) []LintResult {
 	var results []LintResult
 	
-	// Check if file is in staff/ but doesn't check permissions
-	if strings.Contains("/"+filepath.ToSlash(filename), "/staff/") {
+	// Check if the header puts the command in the Staff Utility group but it doesn't check
+	// permissions
+	if headerGroup(lines) == staffGroup {
 		hasPermissionCheck := false
 		
 		for _, line := range lines {
@@ -495,7 +514,7 @@ func (r *DatabaseOperationRule) Check(filename string, lines []string) []LintRes
 		// Check for direct dbSet operations on user ID 0 without proper validation
 		if strings.Contains(line, "dbSet 0") {
 			// This should be in staff commands or bootstrap
-			isStaff := strings.Contains("/"+filepath.ToSlash(filename), "/staff/")
+			isStaff := headerGroup(lines) == staffGroup
 			isBootstrap := strings.Contains(filename, "bootstrap.gohtml")
 
 			if !isStaff && !isBootstrap {

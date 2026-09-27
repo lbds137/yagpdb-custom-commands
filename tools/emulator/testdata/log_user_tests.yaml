@@ -20,7 +20,7 @@ command_map:
 
 tests:
   - name: "log_user: the watched placeholder ID fires one execCC with the expected ExecData"
-    template: "../../../everyone/general/log_user.gohtml"
+    template: "../../../commands/plumbing/log_user.gohtml"
     context:
       user: { id: 999999999999999999, username: "Watched" }
       message_content: "look at this"
@@ -39,7 +39,7 @@ tests:
           content_contains: "MessageContent=look at this"
 
   - name: "log_user: an ordinary user -> no exec"
-    template: "../../../everyone/general/log_user.gohtml"
+    template: "../../../commands/plumbing/log_user.gohtml"
     context:
       user: { id: 555555555555555555, username: "Ordinary" }
       message_content: "hello there"

@@ -32,21 +32,21 @@ def main() -> int:
     run(["git", "config", "user.email", "test@example.invalid"], cwd=repo)
     run(["git", "config", "user.name", "Test"], cwd=repo)
 
-    os.makedirs(os.path.join(repo, "everyone", "general"))
+    os.makedirs(os.path.join(repo, "commands", "general"))
     os.makedirs(os.path.join(repo, "deploy"))
 
     def write(rel, content):
         with open(os.path.join(repo, rel), "w", encoding="utf-8") as f:
             f.write(content)
 
-    write("everyone/general/normal_old.gohtml", "old normal content\n")
-    write("everyone/general/unmanaged_old.gohtml", "old unmanaged content\n")
+    write("commands/general/normal_old.gohtml", "old normal content\n")
+    write("commands/general/unmanaged_old.gohtml", "old unmanaged content\n")
     write(
         "deploy/panel.json",
         json.dumps({
             "unmanaged": [
-                "everyone/general/unmanaged_new.gohtml",
-                "everyone/general/unmanaged_old.gohtml",
+                "commands/general/unmanaged_new.gohtml",
+                "commands/general/unmanaged_old.gohtml",
             ]
         }),
     )
@@ -56,14 +56,14 @@ def main() -> int:
     run(["git", "tag", "deployed"], cwd=repo)
 
     # Normal add -> must be listed.
-    write("everyone/general/normal_new.gohtml", "new normal content\n")
+    write("commands/general/normal_new.gohtml", "new normal content\n")
     # Unmanaged add -> must be skipped, never listed.
-    write("everyone/general/unmanaged_new.gohtml", "new unmanaged content\n")
+    write("commands/general/unmanaged_new.gohtml", "new unmanaged content\n")
     # Normal pure rename (identical content) -> must print nothing.
-    run(["git", "mv", "everyone/general/normal_old.gohtml",
-         "everyone/general/normal_renamed.gohtml"], cwd=repo)
+    run(["git", "mv", "commands/general/normal_old.gohtml",
+         "commands/general/normal_renamed.gohtml"], cwd=repo)
     # Unmanaged delete -> must be skipped with the "never touch" wording.
-    os.remove(os.path.join(repo, "everyone", "general", "unmanaged_old.gohtml"))
+    os.remove(os.path.join(repo, "commands", "general", "unmanaged_old.gohtml"))
 
     # `git diff <deployed>` (no --cached) ignores untracked files entirely, so stage
     # everything -- this only affects the index, changed-since-deploy.py still diffs
@@ -71,7 +71,7 @@ def main() -> int:
     run(["git", "add", "-A"], cwd=repo)
 
     proc = run(
-        ["python3", CHANGED_SINCE_DEPLOY_PY, "everyone", "--panel", "deploy/panel.json"],
+        ["python3", CHANGED_SINCE_DEPLOY_PY, "commands", "--panel", "deploy/panel.json"],
         cwd=repo, check=False,
     )
     errors = []
@@ -80,18 +80,18 @@ def main() -> int:
 
     out_lines = proc.stdout.splitlines()
 
-    if "everyone/general/normal_new.gohtml" not in out_lines:
+    if "commands/general/normal_new.gohtml" not in out_lines:
         errors.append("normal add not listed")
-    if "everyone/general/unmanaged_new.gohtml" in out_lines:
+    if "commands/general/unmanaged_new.gohtml" in out_lines:
         errors.append("unmanaged add was listed (should be skipped)")
-    if ("skipped (unmanaged, never paste): everyone/general/unmanaged_new.gohtml"
+    if ("skipped (unmanaged, never paste): commands/general/unmanaged_new.gohtml"
             not in out_lines):
         errors.append("unmanaged add missing its skipped line")
     if any("normal_renamed" in line or "normal_old" in line for line in out_lines):
         errors.append("pure rename produced output (expected nothing)")
     if any("remove from YAGPDB" in line and "unmanaged_old" in line for line in out_lines):
         errors.append("unmanaged delete used the 'remove from YAGPDB' wording")
-    if ("skipped (unmanaged, never touch in YAGPDB): everyone/general/unmanaged_old.gohtml"
+    if ("skipped (unmanaged, never touch in YAGPDB): commands/general/unmanaged_old.gohtml"
             not in out_lines):
         errors.append("unmanaged delete missing its skipped line")
 

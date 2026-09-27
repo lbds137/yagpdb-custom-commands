@@ -7,7 +7,7 @@
 # Types: dict (sdict or dict), slice, string, number, bool, any.
 
 entries:
-  # Server-wide configuration dictionaries (see staff/bootstrap.gohtml)
+  # Server-wide configuration dictionaries (see commands/plumbing/bootstrap.gohtml)
   - { user_id: 0, key: Global, type: dict }
   # Commands: CC ids as strings, keyed by command name; bootstrap sets embed_exec and db,
   # channel_activity reads channel_activity_pager (its browse-view handler)

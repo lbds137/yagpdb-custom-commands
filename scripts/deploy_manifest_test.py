@@ -4,7 +4,7 @@
 Runs it for SERVER=main with the origin-check bypassed (this is a test escape hatch, not
 something the real deploy flow uses -- see deploy-manifest.py's own docstring and
 DEPLOY_MANIFEST_SKIP_ORIGIN_CHECK), and checks: valid JSON, the command count matches the
-number of non-retired command files with a "main" id in panel.json (39 as of 2026-09-27; see
+number of non-retired command files with a "main" id in panel.json (41 as of 2026-09-27; see
 the note in deploy/panel.json's history if this count ever needs re-deriving), and 2 of the
 shas match a direct hash computed here independently of deploy-manifest.py's own code.
 """
@@ -15,8 +15,8 @@ import subprocess
 import sys
 
 DIRECT_CHECK_FILES = [
-    "everyone/knowledge/define.gohtml",
-    "staff/rules.gohtml",
+    "commands/knowledge/define.gohtml",
+    "commands/rules/rules.gohtml",
 ]
 
 

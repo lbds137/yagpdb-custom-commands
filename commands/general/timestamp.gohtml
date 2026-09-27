@@ -1,0 +1,50 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `timestamp`
+  Group: `Utility`
+  Dependencies: `embed_exec`
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+
+{{ $commandsDict := (dbGet 0 "Commands").Value }}
+{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+{{ $channelsDict := (dbGet 0 "Channels").Value }}
+{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+{{- /* regex */ -}}
+{{ $snowflakeRegex := "\\d{16,}" }}
+{{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
+
+{{- /* default value */ -}}
+{{ $entityID := "" }}
+
+{{ if gt (len .CmdArgs) 0 }}
+    {{ $entityIDArg := index .CmdArgs 0 }}
+    {{ if reFind $entityIDRegex $entityIDArg }}
+        {{ $entityID = reFind $entityIDRegex $entityIDArg }}
+    {{ else }}
+        {{ $entityID = .User.ID }}
+    {{ end }}
+{{ else }}
+    {{ $entityID = .User.ID }}
+{{ end }}
+
+{{ $fields := cslice }}
+{{ $fields = $fields.Append (sdict "name" "ID" "value" (toString $entityID) "inline" false) }}
+{{ $timestamp :=
+    div $entityID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
+}}
+{{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $timestamp) "inline" false) }}
+
+{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+    "AuthorID" .User.ID
+    "ChannelID" .Channel.ID
+    "Title" "Timestamp Parser"
+    "Fields" $fields
+) }}
+
+{{ deleteTrigger $deleteTriggerDelay }}

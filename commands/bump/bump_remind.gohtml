@@ -1,0 +1,40 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Hourly interval`
+  Group: `Utility`
+  Interval: `12`
+  Dependencies: none
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $lastBumpTime := $globalDict.Get "Last Bump" }}
+
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $bumpRoleID := toInt ($rolesDict.Get "Bump") }}
+
+{{ $bumpCooldownMinutes := 120 }}
+{{ $now := currentTime }}
+{{ $reminderMessage := joinStr ""
+    "It's time to bump **" .Guild.Name "**! \n"
+    "To bump the server, use the `/bump` command in this channel. \n"
+    "**Then, __send a message__ with a :thumbsup: to confirm the bump.**"
+}}
+
+{{ if $lastBumpTime }}
+    {{ $minutesSinceBump := toInt ($now.Sub $lastBumpTime).Minutes }}
+    {{ if gt $minutesSinceBump $bumpCooldownMinutes }}
+        {{ sendMessage .Channel.ID $reminderMessage }}
+        {{ if $bumpRoleID }}
+            {{ mentionRoleID $bumpRoleID }}
+        {{ else }}
+            {{ sendMessage .Channel.ID (userArg .Guild.OwnerID).Mention }}
+        {{ end }}
+    {{ end }}
+{{ else }}
+    {{ sendMessage .Channel.ID $reminderMessage }}
+    {{ if $bumpRoleID }}
+        {{ mentionRoleID $bumpRoleID }}
+    {{ else }}
+        {{ sendMessage .Channel.ID (userArg .Guild.OwnerID).Mention }}
+    {{ end }}
+{{ end }}

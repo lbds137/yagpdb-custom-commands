@@ -27,13 +27,13 @@ setup_db:
     value: { YAGPDB: 900000000000000001 }
 
 command_map:
-  1: "../../../everyone/services/embed_exec.gohtml"
+  1: "../../../commands/plumbing/embed_exec.gohtml"
 
 tests:
   # whois's embed as YAGPDB builds it (logs/plugin_bot.go): title "<user> <nick>", eight
   # fields always, then past usernames and nicknames
   - name: "avatar_viewer: a whois message gives the looked-up user's avatar"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001", "256"]
       messages:
@@ -63,7 +63,7 @@ tests:
 
   # With name tracking off, whois says so in "Usernames" and "Nicknames" fields
   - name: "avatar_viewer: a whois message without name tracking"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
       messages:
@@ -92,7 +92,7 @@ tests:
   # A field that isn't whois's means it isn't a whois message: no avatar is found in it,
   # which gets an error (an empty ID field would make Discord refuse the whole embed)
   - name: "avatar_viewer: an embed with other fields isn't taken for whois"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"]
       messages:
@@ -110,7 +110,7 @@ tests:
     snapshot: true
 
   - name: "avatar_viewer: a link to a message that's gone"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"]
     strict: true
@@ -121,7 +121,7 @@ tests:
   # A mod log entry as YAGPDB writes it (moderation/modlog.go): "**<emoji><action>**
   # <user> *(ID <id>)*", then the reason
   - name: "avatar_viewer: a mod log entry gives the moderated user's avatar"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000002"]
       messages:
@@ -141,7 +141,7 @@ tests:
   # role, which can hold a "*"), an older entry with the name in bold too, and a name full
   # of digits (the ID is the one in "(ID ...)")
   - name: "avatar_viewer: a warning in the mod log"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000002"]
       messages:
@@ -154,7 +154,7 @@ tests:
       sent_messages: [{ embed_contains: '"value": "666666666666666666"' }]
 
   - name: "avatar_viewer: a role given in the mod log"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000002"]
       messages:
@@ -167,7 +167,7 @@ tests:
       sent_messages: [{ embed_contains: '"value": "new_mod"' }]
 
   - name: "avatar_viewer: an older mod log entry"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000002"]
       messages:
@@ -180,7 +180,7 @@ tests:
       sent_messages: [{ embed_contains: '"value": "Bad#1234"' }]
 
   - name: "avatar_viewer: a mod log name full of digits"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000002"]
       messages:
@@ -193,7 +193,7 @@ tests:
       sent_messages: [{ embed_contains: '"value": "666666666666666666"' }]
 
   - name: "avatar_viewer: an ordinary message gives its author's avatar"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["https://discord.com/channels/111222333444555666/900000000000000002/700000000000000003"]
       messages:
@@ -202,13 +202,13 @@ tests:
     snapshot: true
 
   - name: "avatar_viewer: a user ID"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     context:
       args: ["500000000000000001"]
     strict: true
     snapshot: true
 
   - name: "avatar_viewer: no argument shows your own"
-    template: "../../../everyone/general/avatar_viewer.gohtml"
+    template: "../../../commands/general/avatar_viewer.gohtml"
     strict: true
     snapshot: true
