@@ -258,6 +258,20 @@ gets a failing test first.
   emulator's internal/yagtemplate is that copy); new template functions
   `hasAnyPermissions`, `targetHasAnyPermissions`, `memberAbove`, `memberAboveRole`;
   components.go grew. Do this BEFORE the emulator components unit ("Interactive UX").
+  Analysis 2026-09-27 (read-only, c579722 line numbers) split the port into units after
+  the lib/template re-sync: (1) message builders: complexMessageEdit = complexMessage
+  (general.go:263, returns *MessageSend, error text "send message builder"), editMessage on
+  parseMessageInput (context_funcs.go:32-70, 457; accepts MessageSend, no null check, an
+  embed-only edit sends content "" — pin with a test), a repeated "embed" key replaces,
+  CtxMessage.Pinned (dstate interface.go:425); (2) small fixes: toInt/ToInt64 optional base
+  (general.go:1219/1240), .BotUser without a member (context.go:365), execCC/
+  scheduleUniqueCC also refuse Role-trigger CCs with the new error text
+  (tmplextensions.go:202-210, 309-317), regenerate runtime/yagpdb_funcs.go; (3) new
+  functions hasAnyPermissions/targetHasAnyPermissions (need a real permission model; the
+  permission family is a stub today) and memberAbove/memberAboveRole (context_funcs.go
+  771-847, 1051-1087). Not modelled, record only: pin/pin-count limits, editChannel* 10-min
+  cooldown, createThread/createForumPost raw errors, exec cooldown text, group
+  RedirectErrorsChannel, nil ChannelOrThreadParent when the parent isn't in state.
 - Deferred (found 2026-09-27): `scripts/lint-all.sh` passes a positional file argument to
   `yagpdb_lint.py`, which only accepts `--dir`; every file it hands over "fails" as a
   result. Fix next time the script is touched.
