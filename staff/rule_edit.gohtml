@@ -38,6 +38,13 @@
     {{ if $found }}
         {{ $old = $rulesDict.Get $key }}
     {{ end }}
+    {{ $oldIsString := eq "string" (printf "%T" $old) }}
+    {{/* "and" isn't short-circuiting in Go templates: eq $old $text would still run
+      (and error) on a non-comparable $old if inlined into one "and" condition */}}
+    {{ $isUnchanged := false }}
+    {{ if $oldIsString }}
+        {{ $isUnchanged = eq $old $text }}
+    {{ end }}
 
     {{ $title := "" }}
     {{ $description := "" }}
@@ -48,7 +55,19 @@
             {{ $rulesDict.Del $key }}
             {{ dbSet 0 "Rules" $rulesDict }}
             {{ $title = joinStr "" $key " removed" }}
-            {{ $description = $old }}
+            {{ if $oldIsString }}
+                {{ $description = $old }}
+            {{ else }}
+                {{/* cut the json first, then fence: fencing after a truncation drops
+                  the closing fence and breaks the embed's markdown */}}
+                {{ $oldJSON := json $old true }}
+                {{ $oldJSONMax := sub 4096 8 }}
+                {{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
+                    {{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
+                    {{ $oldJSON = joinStr "" $kept "…" }}
+                {{ end }}
+                {{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
+            {{ end }}
         {{ else }}
             {{ $title = joinStr "" $key " not found" }}
             {{ $description = joinStr "" "⚠️ There is no rule #" $ruleNumber " to remove." }}
@@ -58,7 +77,7 @@
         {{ dbSet 0 "Rules" $rulesDict }}
         {{ $title = joinStr "" $key " added" }}
         {{ $description = $text }}
-    {{ else if eq $old $text }}
+    {{ else if $isUnchanged }}
         {{ $title = joinStr "" $key " unchanged" }}
         {{ $description = $text }}
     {{ else }}
@@ -67,9 +86,21 @@
         {{ $title = joinStr "" $key " updated" }}
         {{ $description = $text }}
         {{ $was := $old }}
-        {{ if gt (len (toRune $was)) 1024 }}
-            {{ $kept := slice (split $was "") 0 1023 }}
-            {{ $was = joinStr "" $kept "…" }}
+        {{ if $oldIsString }}
+            {{ if gt (len (toRune $was)) 1024 }}
+                {{ $kept := slice (split $was "") 0 1023 }}
+                {{ $was = joinStr "" $kept "…" }}
+            {{ end }}
+        {{ else }}
+            {{/* cut the json first, then fence: fencing after a truncation drops
+              the closing fence and breaks the embed's markdown */}}
+            {{ $wasJSON := json $was true }}
+            {{ $wasJSONMax := sub 1024 8 }}
+            {{ if gt (len (toRune $wasJSON)) $wasJSONMax }}
+                {{ $kept := slice (split $wasJSON "") 0 (sub $wasJSONMax 1) }}
+                {{ $wasJSON = joinStr "" $kept "…" }}
+            {{ end }}
+            {{ $was = joinStr "" "```\n" $wasJSON "\n```" }}
         {{ end }}
         {{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
     {{ end }}

@@ -1100,6 +1100,40 @@ tests:
       args: ["0", "Some text."]
     assertions:
       sent_messages: [{ embed_title: "Invalid Rule Number Parameter" }]
+      deletions: [{ of: "message" }, { of: "trigger" }]
+
+  - name: "rule_edit - A non-string old value's Was field is fenced json"
+    template: "../../../staff/rule_edit.gohtml"
+    context:
+      args: ["5", "Updated rule text."]
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value:
+          "Rule #5": [1, 2, 3]
+    assertions:
+      sent_messages:
+        - embed_title: "Rule #5 updated"
+          embed_contains: '```\n[\n\t1,\n\t2,\n\t3\n]\n```'
+      db_checks: [{ user_id: 0, key: "Rules", value_contains: '"Rule #5":"Updated rule text."' }]
+      deletions: [{ of: "trigger" }]
+
+  - name: "rule_edit - Removing a non-string rule shows fenced json"
+    template: "../../../staff/rule_edit.gohtml"
+    context:
+      args: ["5", "(nil)"]
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value:
+          "Rule #5": [1, 2, 3]
+    assertions:
+      sent_messages:
+        - embed_title: "Rule #5 removed"
+          embed_contains: '```\n[\n\t1,\n\t2,\n\t3\n]\n```'
+      db_checks:
+        - { user_id: 0, key: "Rules", value_equals: {} }
+      deletions: [{ of: "trigger" }]
 
   - name: "simple_db_lookup - Lookup knowledge entry"
     snapshot: true
