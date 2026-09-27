@@ -447,6 +447,123 @@ tests:
     context:
       args: ["FAQ"]
 
+  - name: "define - Simple term slugifies to lowercase-hyphenated"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["Chaos Magick"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Chaos Magick",
+            embed_contains: "https://thenighthouse.org/glossary/#chaos-magick",
+          },
+        ]
+
+  - name: "define - Multi-word term with internal spaces"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["Right hand path"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Right hand path",
+            embed_contains: "https://thenighthouse.org/glossary/#right-hand-path",
+          },
+        ]
+
+  - name: "define - All-caps term lowercases in the slug"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["UPG"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: UPG",
+            embed_contains: "https://thenighthouse.org/glossary/#upg",
+          },
+        ]
+
+  - name: "define - Existing hyphen in the term is kept as one hyphen"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["Clair-senses"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Clair-senses",
+            embed_contains: "https://thenighthouse.org/glossary/#clair-senses",
+          },
+        ]
+
+  - name: "define - Accented letters fold to their base letter"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["Ásatrú"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Ásatrú",
+            embed_contains: "https://thenighthouse.org/glossary/#asatru",
+          },
+        ]
+
+  - name: "define - Another accented term folds correctly"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["Santería"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: Santería",
+            embed_contains: "https://thenighthouse.org/glossary/#santeria",
+          },
+        ]
+
+  - name: "define - Punctuation runs collapse and edges trim"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["  --Foo!!  Bar-- "]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: --Foo!!  Bar--",
+            embed_contains: "https://thenighthouse.org/glossary/#foo-bar",
+          },
+        ]
+
+  - name: "define - No argument links the bare glossary page"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: []
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary",
+            embed_contains: "https://thenighthouse.org/glossary/\"",
+          },
+        ]
+
+  - name: "define - All-punctuation term has no slug, so links the bare glossary page"
+    template: "../../../utility/define.gohtml"
+    context:
+      args: ["!!!"]
+    assertions:
+      sent_messages:
+        [
+          {
+            embed_title: "Glossary: !!!",
+            embed_contains: "https://thenighthouse.org/glossary/\"",
+          },
+        ]
+
   - name: "message_pointer - Valid message link"
     snapshot: true
     template: "../../../utility/message_pointer.gohtml"
