@@ -100,6 +100,12 @@
 
         {{ $label := joinStr " › " $category $key }}
 
+        {{ $storedAs := $key }}
+        {{ if gt (len (toRune $storedAs)) 1024 }}
+            {{ $kept := slice (split $storedAs "") 0 1023 }}
+            {{ $storedAs = joinStr "" $kept "…" }}
+        {{ end }}
+
         {{ if $isDelete }}
             {{ if $found }}
                 {{ $categoryDict.Del $key }}
@@ -127,9 +133,15 @@
             {{ dbSet 0 $category $categoryDict }}
             {{ $title = joinStr " " $label "added" }}
             {{ $description = $value }}
+            {{ if $storedKeyDiffers }}
+                {{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+            {{ end }}
         {{ else if $isUnchanged }}
             {{ $title = joinStr " " $label "unchanged" }}
             {{ $description = $value }}
+            {{ if $storedKeyDiffers }}
+                {{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+            {{ end }}
         {{ else }}
             {{ $categoryDict.Set $key $value }}
             {{ dbSet 0 $category $categoryDict }}
@@ -153,10 +165,9 @@
                 {{ $was = joinStr "" "```\n" $wasJSON "\n```" }}
             {{ end }}
             {{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
-        {{ end }}
-
-        {{ if $storedKeyDiffers }}
-            {{ $fields = $fields.Append (sdict "name" "Stored as" "value" $key) }}
+            {{ if $storedKeyDiffers }}
+                {{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+            {{ end }}
         {{ end }}
     {{ end }}
 {{ end }}
