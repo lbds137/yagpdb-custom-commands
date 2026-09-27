@@ -8,7 +8,7 @@ Nothing here is changed yet: each retire or fix waits on Lila's call. Retiring =
 `db_get_text`, `ticket_clean`, the bump trio and `inactivity` (prune cycles still run).
 Everything under "Keep" is approved to improve; the bugs below are fixed first.
 
-## Bugs found (fix regardless of retire decisions)
+## Bugs found (fixed 2026-09-27, each pinned by a test that failed on the old command)
 
 1. **Deleting a middle rule hides the last one.** `rule_edit N (nil)` removes `Rule #N`, but
    `rule` (line 20) and `rules` (line 26) bound rule numbers by `len $rulesDict`. With rules

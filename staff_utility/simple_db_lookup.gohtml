@@ -26,7 +26,10 @@
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $category := title ($args.Get 0) }}
-{{ $key := title ($args.Get 1) }}
+{{ $key := $args.Get 1 }}
+{{ if ne $category "Commands" }}
+    {{ $key = title $key }}
+{{ end }}
 {{ execCC $db_get_embed $yagpdbChannelID 0 (sdict
     "ChannelID" .Channel.ID
     "UserID" 0

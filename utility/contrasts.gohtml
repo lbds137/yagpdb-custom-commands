@@ -25,23 +25,30 @@
 }}
 
 {{/* each word (split on anything but # and hex digits) that is a color or a role ID, up
-  to the execCC limit */}}
+  to the execCC limit; extras beyond the limit are counted for the warning below */}}
+{{ $channelID := .Channel.ID }}
 {{ $chosenArg := cslice }}
+{{ $droppedCount := 0 }}
 {{- range $word := reSplit "[^#0-9A-Fa-f]+" ($args.Get 0) -}}
-  {{- if lt (len $chosenArg) $execCCLimit -}}
-    {{- if reFind $colorRegex $word -}}
+  {{- $isValid := false -}}
+  {{- if reFind $colorRegex $word -}}
+    {{- $isValid = true -}}
+  {{- else if reFind $discordIDRegex $word -}}
+    {{- if $.Guild.GetRole (toInt $word) -}}
+      {{- $isValid = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if $isValid -}}
+    {{- if lt (len $chosenArg) $execCCLimit -}}
       {{- $chosenArg = $chosenArg.Append $word -}}
-    {{- else if reFind $discordIDRegex $word -}}
-      {{- if $.Guild.GetRole (toInt $word) -}}
-        {{- $chosenArg = $chosenArg.Append $word -}}
-      {{- end -}}
+    {{- else -}}
+      {{- $droppedCount = add 1 $droppedCount -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
 {{ $validArgPresent := gt (len $chosenArg) 0 }}
 
 {{ if $validArgPresent }}
-  {{ $channelID := .Channel.ID }}
   {{- range $i, $curArg := $chosenArg -}}
     {{- execCC $contrast $yagpdbChannelID 0 (sdict
       "ChannelID" $channelID
@@ -59,3 +66,18 @@
 {{ end }}
 
 {{ deleteTrigger $deleteTriggerDelay }}
+
+{{ if gt $droppedCount 0 }}
+  {{- /* timing is notoriously unreliable with `execCC` so wait a while before sending the error message */ -}}
+  {{ sleep 10 }}
+  {{ $subjectAndVerb := "" }}
+  {{ if eq 1 $droppedCount }}
+    {{ $subjectAndVerb = "color was" }}
+  {{ else }}
+    {{ $subjectAndVerb = "colors were" }}
+  {{ end }}
+  {{ $errorMsgID := sendMessageRetID $channelID (joinStr " "
+    "⚠️ Warning:" $droppedCount $subjectAndVerb "not analyzed because only" $execCCLimit "colors can be analyzed at a time."
+  ) }}
+  {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
+{{ end }}
