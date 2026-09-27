@@ -23,38 +23,48 @@
     (carg "int" "ending rule")
 }}
 
-{{ $count := len $rulesDict }}
+{{ $maxRule := 0 }}
+{{- range $k, $v := $rulesDict -}}
+    {{- if reFind "\\ARule #(\\d+)\\z" $k -}}
+        {{- $ruleN := toInt (reReplace "\\ARule #" $k "") -}}
+        {{- if gt $ruleN $maxRule -}}
+            {{- $maxRule = $ruleN -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
 {{ $channelID := .Channel.ID }}
-{{ if gt $count 0 }}
+{{ if gt $maxRule 0 }}
     {{ $startingRule := 1 }}
     {{ if $args.IsSet 0 }}
         {{ $startArg := $args.Get 0 }}
-        {{ if and (ge $startArg 1) (le $startArg $count) }}
+        {{ if and (ge $startArg 1) (le $startArg $maxRule) }}
             {{ $startingRule = $startArg }}
         {{ end }}
     {{ end }}
-    {{ $endingRule := $count }}
+    {{ $endingRule := $maxRule }}
     {{ if $args.IsSet 1 }}
         {{ $endArg := $args.Get 1 }}
-        {{ if and (ge $endArg 1) (le $endArg $count) (ge $endArg $startingRule) }}
+        {{ if and (ge $endArg 1) (le $endArg $maxRule) (ge $endArg $startingRule) }}
             {{ $endingRule = $endArg }}
         {{ end }}
     {{ end }}
     {{ $execCCCount := 0 }}
     {{- range $i := seq (sub $startingRule 1) $endingRule -}}
         {{- $iHuman := add 1 $i -}}
-        {{- if lt $execCCCount $execCCLimit -}}
-            {{- execCC $rule $yagpdbChannelID 0 (sdict
-                "ChannelID" $channelID
-                "RuleNumber" $iHuman
-            ) -}}
-            {{- sleep 2 -}}
-        {{- else -}}
-            {{- sendMessage $channelID (joinStr ""
-                "Skipping execCC call #" (add 1 $execCCCount) " due to having exceeded the limit of " $execCCLimit " calls!"
-            ) -}}
+        {{- if $rulesDict.HasKey (joinStr "" "Rule #" $iHuman) -}}
+            {{- if lt $execCCCount $execCCLimit -}}
+                {{- execCC $rule $yagpdbChannelID 0 (sdict
+                    "ChannelID" $channelID
+                    "RuleNumber" $iHuman
+                ) -}}
+                {{- sleep 2 -}}
+            {{- else -}}
+                {{- sendMessage $channelID (joinStr ""
+                    "Skipping execCC call #" (add 1 $execCCCount) " due to having exceeded the limit of " $execCCLimit " calls!"
+                ) -}}
+            {{- end -}}
+            {{- $execCCCount = add 1 $execCCCount -}}
         {{- end -}}
-        {{- $execCCCount = add 1 $execCCCount -}}
     {{- end -}}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict

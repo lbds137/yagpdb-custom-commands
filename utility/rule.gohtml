@@ -17,19 +17,27 @@
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $min := 1 }}
-{{ $max := len $rulesDict }}
+{{ $max := 0 }}
+{{- range $k, $v := $rulesDict -}}
+    {{- if reFind "\\ARule #(\\d+)\\z" $k -}}
+        {{- $ruleN := toInt (reReplace "\\ARule #" $k "") -}}
+        {{- if gt $ruleN $max -}}
+            {{- $max = $ruleN -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
 
 {{ $args := parseArgs 1 (joinStr "" "Please enter a valid rule number (" $min "-" $max ").")
     (carg "int" "rule number to view")
 }}
- 
+
 {{ $n := or .ExecData.RuleNumber ($args.Get 0) }}
- 
-{{ if and (ge $n $min) (le $n $max) }}
+
+{{ if and (ge $n $min) ($rulesDict.HasKey (joinStr "" "Rule #" $n)) }}
     {{ $key := joinStr "" "Rule #" $n }}
     {{ $result := $rulesDict.Get $key }}
     {{ $title := $key }}
-    {{ if eq $max 1 }}
+    {{ if eq (len $rulesDict) 1 }}
         {{ $title = "Rules" }}
     {{ end }}
 

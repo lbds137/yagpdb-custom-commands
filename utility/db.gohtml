@@ -167,16 +167,25 @@
             {{ end }}
         {{ end }}
         {{ $dumpData := sdict }}
-        {{ $knownKeys := cslice "Global" "Commands" "Channels" "Roles" "Admin" "Gematria" "Knowledge" "Rules" "Directory" }}
         {{ if and $key (ne $key "all") }}
             {{/* Dump specific key only */}}
-            {{ $knownKeys = cslice $key }}
-        {{ end }}
-        {{ range $k := $knownKeys }}
-            {{ $entry := dbGet $dumpUserID $k }}
+            {{ $entry := dbGet $dumpUserID $key }}
             {{ if and $entry $entry.Value }}
-                {{ $dumpData.Set $k $entry.Value }}
+                {{ $dumpData.Set $key $entry.Value }}
             {{ end }}
+        {{ else }}
+            {{/* Build directly from dbGetPattern's own entries: each already carries its
+                Value, so re-fetching with dbGet would cost one more db_interactions call
+                per key (YAGPDB caps that at 10 free / 50 premium per run:
+                vendor/yagpdb/customcommands/tmplextensions.go:516), which a user with many
+                keys could exceed. Caps at 100 entries per call, YAGPDB's max
+                (tmplextensions.go tmplDBGetPattern). Keys are unique per user, and json
+                marshals the sdict key-sorted, so no dedupe or sort is needed here. */}}
+            {{- range $entry := dbGetPattern $dumpUserID "%" 100 0 -}}
+                {{- if $entry.Value -}}
+                    {{- $dumpData.Set $entry.Key $entry.Value -}}
+                {{- end -}}
+            {{- end -}}
         {{ end }}
         {{ $ptAction = "dumped" }}
         {{ $displayUserID = $dumpUserID }}

@@ -209,6 +209,25 @@ tests:
     assertions:
       sent_messages: [{ embed_title: "Invalid Argument" }]
 
+  - name: "contrasts - Extra colors beyond the execCC limit get a warning"
+    template: "../../../utility/contrasts.gohtml"
+    context:
+      # ExecCC Limit is 10 (shared Global); 11 valid colors drop 1
+      args:
+        [
+          "#000000 #111111 #222222 #333333 #444444 #555555 #666666 #777777 #888888 #999999 #aaaaaa",
+        ]
+    assertions:
+      sent_messages:
+        [
+          {
+            # the 11th message: 10 contrast embeds (contrast.gohtml sends to the trigger's
+            # own channel via ExecData.ChannelID), then the dropped-colors warning
+            nth: 11,
+            content_contains: "⚠️ Warning: 1 color was not analyzed because only 10 colors can be analyzed at a time.",
+          },
+        ]
+
   - name: "hugemoji - Discord custom emoji"
     snapshot: true
     template: "../../../utility/hugemoji.gohtml"
@@ -262,6 +281,87 @@ tests:
     template: "../../../utility/rule.gohtml"
     context:
       args: ["2"]
+
+  - name: "rule - Reads a rule past a gap"
+    template: "../../../utility/rule.gohtml"
+    context:
+      args: ["3"]
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: # Rule #2 removed, leaving a gap before the highest rule
+          "Rule #1": "Be respectful to all members."
+          "Rule #3": "Keep discussions on topic."
+    assertions:
+      sent_messages: [{ embed_title: "Rule #3" }]
+
+  - name: "rules - Skips a gap without a lookup failure or counting it"
+    template: "../../../staff_utility/rules.gohtml"
+    context:
+      args: []
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: # embed_exec kept so nested execCC still resolves; rule added for this test
+          embed_exec: "123"
+          rule: "130"
+      - user_id: 0
+        key: "Rules"
+        value: # Rule #2 removed, leaving a gap before the highest rule
+          "Rule #1": "Be respectful to all members."
+          "Rule #3": "Keep discussions on topic."
+    command_map:
+      130: "../../../utility/rule.gohtml"
+    assertions:
+      sent_messages:
+        - { embed_title: "Rule #1" }
+        - { embed_title: "Rule #3", nth: 2 }
+
+  - name: "rules - No actual rules is treated as none configured"
+    template: "../../../staff_utility/rules.gohtml"
+    context:
+      args: []
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: # holds a key, but none of them are "Rule #N"
+          "Some Other Key": "not a rule"
+    assertions:
+      sent_messages: [{ embed_title: "Rules Lookup Failed" }]
+
+  - name: "rules - A skipped gap doesn't count toward the execCC limit"
+    template: "../../../staff_utility/rules.gohtml"
+    context:
+      # rules 1-11, with #5 missing: 10 real rules, right at the ExecCC Limit (10, shared
+      # Global). If the gap counted toward the limit, rule #11 would be skipped with a
+      # "Skipping execCC call" message instead of executing
+      args: ["1", "11"]
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: # embed_exec kept so nested execCC still resolves; rule added for this test
+          embed_exec: "123"
+          rule: "130"
+      - user_id: 0
+        key: "Rules"
+        value:
+          "Rule #1": "One"
+          "Rule #2": "Two"
+          "Rule #3": "Three"
+          "Rule #4": "Four"
+          "Rule #6": "Six"
+          "Rule #7": "Seven"
+          "Rule #8": "Eight"
+          "Rule #9": "Nine"
+          "Rule #10": "Ten"
+          "Rule #11": "Eleven"
+    command_map:
+      130: "../../../utility/rule.gohtml"
+    assertions:
+      # the 10th real rule executed is #11 (1,2,3,4,6,7,8,9,10,11); a counter that also
+      # advances on the skipped #5 would hit the limit one rule early and this would be
+      # a "Skipping execCC call" message instead of the "Rule #11" embed
+      sent_messages: [{ nth: 10, embed_title: "Rule #11" }]
 
   # ===== Staff Utility Commands =====
 
@@ -355,6 +455,13 @@ tests:
     context:
       args: ["Knowledge", "FAQ"]
 
+  - name: "simple_db_lookup - Commands category keeps its lowercase key"
+    template: "../../../staff_utility/simple_db_lookup.gohtml"
+    context:
+      args: ["Commands", "embed_exec"]
+    assertions:
+      sent_messages: [{ embed_contains: "123" }]
+
   - name: "simple_db_edit - Edit knowledge entry"
     snapshot: true
     template: "../../../staff_utility/simple_db_edit.gohtml"
@@ -381,6 +488,162 @@ tests:
       args: ["dump:0", "Global"]
       user: { roles: [111111111] }
       clock: 2026-01-02T03:04:05Z # the file name holds the time
+
+  - name: "db dump - Includes keys the old hardcoded list missed"
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["dump:0"]
+      user: { roles: [111111111] }
+      clock: 2026-01-02T03:04:05Z # the file name holds the time
+    setup_db:
+      # Neither key was in the old hardcoded knownKeys list; dbGetPattern finds them
+      - user_id: 0
+        key: "Staff"
+        value:
+          Some Staff Setting: true
+      - user_id: 0
+        key: "Inactivity Prune"
+        value:
+          Previous Date: "June 1"
+    assertions:
+      # 9 keys in the shared setup_db + gematria_bootstrap, plus these 2 new ones; nth 2
+      # because the dump's file attachment is sent as its own message before the embed
+      sent_messages: [{ nth: 2, embed_contains: "Exported 11 entries to file" }]
+
+  - name: "db dump - Doesn't re-fetch entries dbGetPattern already has"
+    strict: true
+    template: "../../../utility/db.gohtml"
+    context:
+      args: ["dump:0"]
+      user: { roles: [111111111] }
+      clock: 2026-01-02T03:04:05Z # the file name holds the time
+    setup_db:
+      # 40 filler keys on top of the shared suite's 9: a per-key dbGet re-fetch (the old,
+      # wasteful approach) would push this run past the premium db_interactions cap of 50
+      # (vendor/yagpdb/customcommands/tmplextensions.go:516); these tests run premium by
+      # default (limits_tests.yaml is the one that sets `premium: false` explicitly)
+      - user_id: 0
+        key: "Filler01"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler02"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler03"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler04"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler05"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler06"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler07"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler08"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler09"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler10"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler11"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler12"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler13"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler14"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler15"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler16"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler17"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler18"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler19"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler20"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler21"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler22"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler23"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler24"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler25"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler26"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler27"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler28"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler29"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler30"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler31"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler32"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler33"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler34"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler35"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler36"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler37"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler38"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler39"
+        value: { v: true }
+      - user_id: 0
+        key: "Filler40"
+        value: { v: true }
+    assertions:
+      sent_messages: [{ nth: 2, embed_contains: "Exported" }]
 
   # ===== Database Add (Array Append) =====
 
