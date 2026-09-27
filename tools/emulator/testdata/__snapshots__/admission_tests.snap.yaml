@@ -168,12 +168,15 @@
     messages:
         - channel_id: 999999999
           content: added user 500000000000000001
+          sent_after_seconds: 1
         - channel_id: 999999999
           content: "\U0001F4AC **Introduction posted by <@500000000000000001>:**\n>>> Hi! I'm Guest, I like tea."
+          sent_after_seconds: 2
         - channel_id: 999999999
           content: |-
             ℹ️ **Reason for additional screening:**
             >>> Needs a second look
+          sent_after_seconds: 3
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     reactions:

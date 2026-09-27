@@ -487,6 +487,11 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       Context.Execute's timing is commented out; commands.CommandExecTimeout wraps only
       built-in commands). A run is bounded by its operation count, sleep's 60 seconds and
       25k of output (2026-09-25)
+- [x] A sent message records how far into the run's sleeps it went out (whole seconds, an
+      execCC child's messages counting its caller's sleeps too); a `sent_messages` check's
+      `sent_after_seconds: N` asserts it exactly, and a snapshot's message record carries it
+      only when it's nonzero. Pins today's sleeps: hugemoji's NSFW-refusal and limit
+      warnings, contrasts' dropped-colors warning, rules' per-rule messages (2026-09-27)
 - [x] exec and execAdmin record the command line as YAGPDB builds it (`execs:`,
       snapshots), so the kicks in guest, reject_user and inactivity are pinned; they
       were silent no-ops (2026-09-25)

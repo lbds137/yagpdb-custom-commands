@@ -232,6 +232,7 @@ tests:
             # own channel via ExecData.ChannelID), then the dropped-colors warning
             nth: 11,
             content_contains: "⚠️ Warning: 1 color was not analyzed because only 10 colors can be analyzed at a time.",
+            sent_after_seconds: 10,
           },
         ]
 
@@ -254,6 +255,7 @@ tests:
           {
             nth: 11,
             content_contains: "⚠️ Warning: 2 colors were not analyzed because only 10 colors can be analyzed at a time.",
+            sent_after_seconds: 10,
           },
         ]
 
@@ -288,6 +290,7 @@ tests:
           {
             nth: 11,
             content_contains: "⚠️ Warning: 2 emojis were not displayed because only 10 emojis can be expanded at a time.",
+            sent_after_seconds: 10,
           },
         ]
 
@@ -329,6 +332,7 @@ tests:
         [
           {
             content_contains: "⚠️ Warning: 1 linked message was skipped: emoji from an NSFW channel can only be expanded in an NSFW channel.",
+            sent_after_seconds: 0,
           },
         ]
 
@@ -357,8 +361,36 @@ tests:
         [
           {
             content_contains: "⚠️ Warning: 2 linked messages were skipped: emoji from an NSFW channel can only be expanded in an NSFW channel.",
+            sent_after_seconds: 0,
           },
         ]
+
+  # A refused NSFW link alongside a directly-typed emoji that IS expanded: foundAny is
+  # true, so the run sleeps 10 before the NSFW warning, unlike the refusal-only case above
+  - name: "hugemoji - An NSFW refusal alongside an expanded emoji still warns, but after the sleep"
+    template: "../../../utility/hugemoji.gohtml"
+    context:
+      args:
+        [
+          "<:test:123456789012345678> https://discord.com/channels/111222333444555666/700000000000000003/800000000000000002",
+        ]
+      guild:
+        channels:
+          - { id: 999999999, name: "yagpdb" }
+          - { id: 700000000000000003, name: "nsfw-lounge", nsfw: true }
+      messages:
+        - id: 800000000000000002
+          channel_id: 700000000000000003
+          author_id: 222333444555666777
+          content: "<:test2:123456789012345679>"
+    assertions:
+      sent_messages:
+        - { embed_title: "Emoji Expander", sent_after_seconds: 0 }
+        - {
+            nth: 2,
+            content_contains: "⚠️ Warning: 1 linked message was skipped: emoji from an NSFW channel can only be expanded in an NSFW channel.",
+            sent_after_seconds: 10,
+          }
 
   - name: "hugemoji - Plain text with no custom emoji sends an Invalid Argument error"
     template: "../../../utility/hugemoji.gohtml"
@@ -370,6 +402,7 @@ tests:
           {
             embed_title: "Invalid Argument",
             embed_contains: "No custom emoji were found in the input or linked messages",
+            sent_after_seconds: 0,
           },
         ]
 
@@ -405,6 +438,7 @@ tests:
           {
             nth: 11,
             content_contains: "⚠️ Warning: 1 emoji was not displayed because only 10 emojis can be expanded at a time.",
+            sent_after_seconds: 10,
           },
         ]
 
@@ -541,8 +575,9 @@ tests:
       130: "../../../utility/rule.gohtml"
     assertions:
       sent_messages:
-        - { embed_title: "Rule #1" }
-        - { embed_title: "Rule #3", nth: 2 }
+        # rules.gohtml sleeps 2 after each execCC, so rule N's message is at 2*(N-1)
+        - { embed_title: "Rule #1", sent_after_seconds: 0 }
+        - { embed_title: "Rule #3", nth: 2, sent_after_seconds: 2 }
 
   - name: "rules - No actual rules is treated as none configured"
     template: "../../../staff_utility/rules.gohtml"

@@ -334,6 +334,9 @@ type MessageCheck struct {
 	EmbedContains   string  `yaml:"embed_contains"` // substring of any of the message's embeds as JSON (title, fields, ...)
 	// Pings is exactly who the message notifies (edits notify no one)
 	Pings *PingsCheck `yaml:"pings"`
+	// SentAfterSeconds is exactly how many seconds into the run's sleeps the message was
+	// sent (whole seconds); unset checks nothing
+	SentAfterSeconds *int `yaml:"sent_after_seconds"`
 }
 
 // RoleCheck defines a role change assertion.

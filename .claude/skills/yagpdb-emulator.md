@@ -84,6 +84,8 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     sent_messages: [{ channel_id: 9, embed_title: "Title" }]  # or embed_contains: "`441`";
                                       # both match any of the message's embeds, not just the first
                                       # nth: 2 = the second message there (default: the first)
+                                      # sent_after_seconds: 10 = exactly this many whole seconds
+                                      # of sleep had elapsed in the run when it was sent
     edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits (as edited); "" = empty
     role_changes: [{ user_id: 1, role_id: 111, action: "add" }]  # delay: 90s for a scheduled one
     no_role_changes: true             # give/take of a role they have/lack, or a non-member, change nothing

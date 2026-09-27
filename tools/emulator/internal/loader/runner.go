@@ -535,6 +535,12 @@ func (r *Runner) checkMessages(messages []runtime.SentMessage, checks []MessageC
 			}
 		}
 
+		if check.SentAfterSeconds != nil && found.SentAfterSeconds != *check.SentAfterSeconds {
+			failures = append(failures,
+				fmt.Sprintf("message check %d: sent_after_seconds mismatch:\n  expected: %d\n  got:      %d",
+					i, *check.SentAfterSeconds, found.SentAfterSeconds))
+		}
+
 		if f := checkPings(found.Pings, check.Pings); f != "" {
 			failures = append(failures, fmt.Sprintf("message check %d: %s", i, f))
 		}

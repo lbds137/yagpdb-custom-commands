@@ -23,6 +23,9 @@ type SentMessage struct {
 	Content   string
 	Embeds    []interface{}
 	Pings     Pings // who the message notifies
+	// SentAfterSeconds is how far the run's clock had moved on from sleep when this
+	// message was recorded (whole seconds); 0 for a message an edit produced.
+	SentAfterSeconds int
 }
 
 // RoleChange represents a role change that occurred during template execution.
@@ -464,11 +467,12 @@ func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, 
 	*ctx.sentMessageIDs()++
 	id := firstSentMessageID + *ctx.sentIDs
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{
-		ID:        id,
-		ChannelID: channelID,
-		Content:   content,
-		Embeds:    embeds,
-		Pings:     pings,
+		ID:               id,
+		ChannelID:        channelID,
+		Content:          content,
+		Embeds:           embeds,
+		Pings:            pings,
+		SentAfterSeconds: int(ctx.timeSlept.Seconds()),
 	})
 	msg := types.CtxMessage{
 		ID:        id,
