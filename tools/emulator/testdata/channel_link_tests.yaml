@@ -55,3 +55,17 @@ tests:
       edited_messages:
         - { channel_id: 900000000000000002, embed_contains: "A staff member has moved a conversation from **#general**" }
         - { channel_id: 123456789012345678, embed_contains: "A staff member has moved this conversation" }
+
+  - name: "channel_link: the target channel refuses the message, so it says so instead of aborting"
+    template: "../../../utility/channel_link.gohtml"
+    strict: true
+    command_map: { 1: "../../../utility/embed_exec.gohtml" }
+    context:
+      message_content: "<#900000000000000002>"
+      guild:
+        channels:
+          - { id: 900000000000000001, name: "yagpdb" }
+          - { id: 900000000000000002, name: "introduction", bot_cannot_send: true }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, has_embed: true, embed_contains: "couldn't post in <#900000000000000002>" }

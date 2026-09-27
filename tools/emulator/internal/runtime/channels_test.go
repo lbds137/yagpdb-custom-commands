@@ -285,3 +285,43 @@ func TestChannelIsForum(t *testing.T) {
 		t.Errorf("got %q, %v", out, err)
 	}
 }
+
+// A channel a test marks ChannelsCannotSend (guild.channels bot_cannot_send) fails a send
+// as Discord's REST call would (403 Missing Permissions), with nothing recorded; YAGPDB's
+// tmplSendMessage has no permission pre-check, so this is the send's own error
+func TestSendToChannelWithoutPermission(t *testing.T) {
+	// -strict returns the error even outside {{try}} (a failed run still posts its own
+	// error message, as YAGPDB's show_errors does; that isn't the refused send itself)
+	ctx := channelCtx()
+	ctx.ChannelsCannotSend = map[int64]bool{42: true}
+	out, err := run(t, ctx, `{{sendMessage 42 "a"}}`)
+	if err == nil || !strings.Contains(err.Error(), `"code": 50013`) {
+		t.Errorf("got %q, %v; want the 50013 Missing Permissions error", out, err)
+	}
+
+	// Outside strict mode, {{try}} gets the error and {{catch}} runs; sendMessageNoEscape
+	// and sendMessageRetID share the send path, and a permitted channel still sends
+	ctx = channelCtx()
+	ctx.ChannelsCannotSend = map[int64]bool{42: true}
+	ctx.Strict = false
+	out, err = run(t, ctx, `{{try}}{{sendMessageRetID 42 "a"}}after{{catch}}caught: {{.Error}}{{end}}{{sendMessageNoEscape nil "b"}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "caught: "+errMissingPerms.Error()) || strings.Contains(out, "after") {
+		t.Errorf("want the catch to get Discord's refusal: %q", out)
+	}
+	if len(ctx.SentMessages) != 1 || ctx.SentMessages[0].ChannelID != ctx.ChannelID {
+		t.Errorf("only the permitted channel's message is recorded: %+v", ctx.SentMessages)
+	}
+
+	// Outside {{try}} and -strict, YAGPDB's own errors are warnings and the run goes on;
+	// checkSend and discordRefuses share that convention (limits.go), so this does too
+	ctx = channelCtx()
+	ctx.ChannelsCannotSend = map[int64]bool{42: true}
+	ctx.Strict = false
+	out, err = run(t, ctx, `before{{sendMessage 42 "a"}}after`)
+	if err != nil || out != "beforeafter" || len(ctx.SentMessages) != 0 {
+		t.Errorf("got %q, %v, %+v; want the run to continue with nothing sent", out, err, ctx.SentMessages)
+	}
+}

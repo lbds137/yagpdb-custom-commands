@@ -314,6 +314,13 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 		allowed = noEscape()
 	}
 
+	// context_funcs.go's tmplSendMessage has no permission pre-check: the error below is
+	// what ChannelMessageSendComplex itself would return
+	if e.ctx.ChannelsCannotSend[channelID] {
+		return "", e.ctx.discordRefuses(fn, errMissingPerms,
+			fmt.Sprintf("the bot lacks permission to send messages in channel %d", channelID))
+	}
+
 	if ok, err := e.ctx.checkSend(fn, content, embeds, file != nil || hasOther, false); !ok {
 		return "", err
 	}

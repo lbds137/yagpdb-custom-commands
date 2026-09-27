@@ -10,6 +10,7 @@
 {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
 {{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $deleteResponseDelay := toInt ($globalDict.Get "Delete Response Delay") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -27,7 +28,20 @@
 {{ $thereChannel := getChannelOrThread $thereChannelID }}
 {{ $selfLinkCheck := ne $hereChannelID $thereChannelID }}
 {{ if and $thereChannel $selfLinkCheck }}
-    {{ $thereMsgID := sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
+    {{ $thereMsgID := "" }}
+    {{ try }}
+        {{ $thereMsgID = sendMessageRetID $thereChannelID (complexMessage "content" "Loading...") }}
+    {{ catch }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" $.Channel.ID
+            "Title" "Channel Link Failed"
+            "Description" (joinStr ""
+                "⚠️ I couldn't post in <#" $thereChannelID ">. I probably don't have permission to send messages there."
+            )
+            "DeleteResponse" true
+            "DeleteDelay" $deleteResponseDelay
+        ) }}
+    {{ end }}
     {{ if $thereMsgID }}
         {{ $hereMsgID := sendMessageRetID .Channel.ID (complexMessage "content" "Loading...") }}
 

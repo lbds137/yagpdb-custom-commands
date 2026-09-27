@@ -143,6 +143,7 @@ func TestDiscordErrorText(t *testing.T) {
 		errEditOthers:      `HTTP 403 Forbidden, {"message": "Cannot edit a message authored by another user", "code": 50005}`,
 		errEmptyMessage:    `HTTP 400 Bad Request, {"message": "Cannot send an empty message", "code": 50006}`,
 		errInvalidFormBody: `HTTP 400 Bad Request, {"message": "Invalid Form Body", "code": 50035}`,
+		errMissingPerms:    `HTTP 403 Forbidden, {"message": "Missing Permissions", "code": 50013}`,
 	} {
 		if err.Error() != want {
 			t.Errorf("got %s, want %s", err.Error(), want)
