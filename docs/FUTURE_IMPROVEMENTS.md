@@ -2,6 +2,23 @@
 
 This document tracks potential enhancements for the YAGPDB custom commands project.
 
+## Command file layout: topic folders (DECIDED, Lila 2026-09-27; next unit)
+
+Reverses the earlier "folders = panel groups" layout (new information: slash roots will
+be topics, and several topics span both groups). One top-level `commands/` tree with a
+folder per topic, groups mixed: bump/ (bump_check, bump_remind, bump_reset), rules/
+(rule, rules, rule_edit), gematria/ (gematria, gematria_bootstrap), hebrew/ (alefbet,
+atbash, pyramid, rand_hebrew), color/, db/ (db, db_get_embed, db_get_text,
+simple_db_edit, simple_db_lookup), members/ (hiatus, unhiatus, inactivity, staff_roles,
+role_ping…), channels/ (channel_activity + pager, channel_tracker, directory,
+channel_link, message_pointer), plumbing/ (embed_exec, message_link, log_user,
+ticket_clean, bootstrap)… — final placement of the rest decided in the unit's spec, with
+folders matching the planned slash roots. The panel group moves into each header as a
+`Group:` line, checked by CI and reported as drift by the deploy tool like the trigger.
+Everything that names paths moves with it: panel.json, test YAML template:/command_map
+paths, snapshots' keys if path-based, Makefile/scripts (COMMAND_DIRS), deploy manifest,
+README, CLAUDE.md, skills, docs. Tell the Night House site session when it lands.
+
 ## Interactive UX (Lila 2026-09-27)
 
 Order: (1) UX audit, (2) emulator components, (3) channel_activity buttons + approved audit
