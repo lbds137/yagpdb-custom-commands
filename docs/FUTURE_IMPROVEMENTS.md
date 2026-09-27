@@ -116,6 +116,15 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- OPEN, access control (found 2026-09-27 by the Night House site session, confirmed by
+  code-reading): everyone/services/db_get_embed.gohtml:29-37 (and db_get_text, same
+  shape) takes any all-digit first argument as the target user ID with no staff check,
+  and both run for every member (Utility group). So `/db_get_embed 0 Admin` shows the
+  server-wide Admin dict (also Staff, "Inactivity Prune", Roles, Channels…: every config
+  dict is user_id 0, db_schema.yaml), and any member can read another member's per-user
+  entries. db.gohtml gates the same path behind hasRoleID. Fix: only staff may pass a
+  user ID other than their own (copy db.gohtml's check); the ExecData service path stays
+  as is. Live sensitivity of those dicts not yet checked. Severity is Lila's call.
 - Fixed 2026-09-27, from the command review (`docs/COMMAND_REVIEW.md`, "Bugs found"): a
   deleted middle rule hid the last rule, simple_db_lookup couldn't read `Commands`,
   `db dump` skipped `Staff` and `Inactivity Prune` (it now lists every stored key with one
