@@ -416,6 +416,9 @@ type CtxMessage struct {
 	EditedTimestamp Timestamp // "" until edited
 	Attachments     []interface{}
 	Embeds          []*MessageEmbed // as discordgo.Message holds them
+	// Components are the message's action rows (discordgo.Message.Components,
+	// lib/discordgo/message.go:122): *ActionsRow of *Button and *SelectMenu
+	Components []TopLevelComponent
 	// Pinned is dstate.MessageState's (lib/dstate/interface.go:425): the emulator doesn't
 	// model pins, so it is always false
 	Pinned bool
@@ -466,9 +469,13 @@ type MessageSend struct {
 	File     string // attached file contents, if any
 	Filename string // with YAGPDB's forced .txt extension
 	HasFile  bool
-	// HasOther is set by keys that make a message non-empty without content, embeds or a
-	// file: buttons, menus, components, a sticker or a forward (not otherwise modelled).
+	// HasOther is set by keys that make a message non-empty without content, embeds,
+	// components or a file: a sticker or a forward (not otherwise modelled).
 	HasOther bool
+	// Components are the action rows "buttons", "menus" and "components" built
+	// (discordgo.MessageSend.Components). Nil and empty differ for an edit, as for
+	// Embeds: nil keeps the message's components, empty clears them.
+	Components []TopLevelComponent
 	// AllowedMentions says which mentions in Content ping; complexMessage allows users
 	AllowedMentions AllowedMentions
 	// ReplyTo is complexMessage's "reply": the ID of the message this replies to, in the

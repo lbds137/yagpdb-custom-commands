@@ -119,6 +119,9 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"complexMessage":     e.complexMessage,
 		"complexMessageEdit": e.complexMessage, // both CreateComplexMessage (context.go:113-114)
 		"sendTemplate":       e.sendTemplate,
+		// Message component builders (context.go:101-104)
+		"cbutton": CreateButton,
+		"cmenu":   CreateSelectMenu,
 
 		// Control flow
 		"execCC":                  e.execCC,
@@ -175,7 +178,7 @@ func (e *Engine) Execute(source string) (string, error) {
 		// ChannelMessageSend's error is discarded (bot.go), so a message Discord would
 		// reject (over 2000 runes, on top of out's own cap) is silently never posted
 		if ok, _ := e.ctx.checkSend("show_errors message", msg, nil, false, true); ok {
-			e.ctx.RecordSentMessage(errChannel, msg, nil, Pings{})
+			e.ctx.RecordSentMessage(errChannel, msg, nil, nil, Pings{})
 		}
 		e.ctx.ResponsePings = Pings{}
 	} else if e.ctx.delResponse && e.ctx.delResponseDelay < 1 {
@@ -334,6 +337,7 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 	}
 	content, embeds, hasOther := msgSend.Content, msgSend.Embeds, msgSend.HasOther
 	allowed, replyTo := msgSend.AllowedMentions, msgSend.ReplyTo
+	components := msgSend.Components
 	var file *types.MessageSend
 	if msgSend.HasFile {
 		file = msgSend
@@ -350,13 +354,15 @@ func (e *Engine) send(fn string, filterSpecialMentions bool, args ...interface{}
 			fmt.Sprintf("the bot lacks permission to send messages in channel %d", channelID))
 	}
 
-	if ok, err := e.ctx.checkSend(fn, content, embeds, file != nil || hasOther, false); !ok {
+	notEmpty := file != nil || hasOther || len(components) > 0
+	if ok, err := e.ctx.checkSend(fn, content, embeds, notEmpty, false); !ok {
 		return "", err
 	}
 	if file != nil {
 		e.ctx.RecordFileUpload(channelID, file.Filename, file.File)
 	}
-	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embeds, e.ctx.pings(content, allowed, channelID, replyTo))
+	pings := e.ctx.pings(content, allowed, channelID, replyTo)
+	e.lastMessageID = e.ctx.RecordSentMessage(channelID, content, embeds, components, pings)
 	return "", nil
 }
 
@@ -385,7 +391,7 @@ func (e *Engine) sendDM(msg interface{}) (string, error) {
 	if ok, _ := e.ctx.checkSend("sendDM", content, nil, true, true); !ok {
 		return "", nil
 	}
-	e.ctx.RecordSentMessage(0, content, nil, Pings{}) // 0 = DM; a DM pings no one
+	e.ctx.RecordSentMessage(0, content, nil, nil, Pings{}) // 0 = DM; a DM pings no one
 	return "", nil
 }
 
@@ -396,7 +402,8 @@ func (e *Engine) sendDM(msg interface{}) (string, error) {
 // As tmplEditMessage (context_funcs.go:440-470) it takes any message input
 // (parseMessageInput) and edits with msgSend.ToMessageEdit(), which always sets the
 // content (lib/discordgo/message.go:683-690): an edit without content clears the old
-// text. Embeds are sent only when non-nil (MessageEdit.MarshalJSON), so nil keeps them.
+// text. Embeds and components are sent only when non-nil (MessageEdit.MarshalJSON), so
+// nil keeps them; an empty "components" slice clears the message's buttons and menus.
 func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	channelID := e.channelArg(channel) // ChannelArgNoDM
 	if channelID == 0 {
@@ -420,12 +427,19 @@ func (e *Engine) editMessage(channel, msgID, msg interface{}) (string, error) {
 	if change.Embeds != nil {
 		embeds = change.Embeds
 	}
-	if ok, err := e.ctx.checkSend("editMessage", content, embeds, change.HasOther, false); !ok {
+	components := target.Components
+	if change.Components != nil {
+		components = change.Components
+	}
+	notEmpty := change.HasOther || len(components) > 0
+	if ok, err := e.ctx.checkSend("editMessage", content, embeds, notEmpty, false); !ok {
 		return "", err
 	}
 	target.Content, target.Embeds = content, types.EmbedStructs(embeds)
+	target.Components = components
 	target.EditedTimestamp = types.NewTimestamp(e.ctx.Now()) // Discord sets it on every edit
-	edited := SentMessage{ID: id, ChannelID: channelID, Content: content, Embeds: embeds}
+	edited := SentMessage{ID: id, ChannelID: channelID, Content: content, Embeds: embeds,
+		Components: components}
 	e.ctx.EditedMessages = append(e.ctx.EditedMessages, edited)
 	return "", nil
 }
@@ -445,6 +459,7 @@ func (e *Engine) getMessage(channel, msgID interface{}) *types.CtxMessage {
 	fetched := *known
 	fetched.Attachments = append([]interface{}(nil), known.Attachments...)
 	fetched.Embeds = types.EmbedStructs(types.EmbedMaps(known.Embeds)) // new embeds, not shared ones
+	fetched.Components = types.CloneComponents(known.Components)
 	return &fetched
 }
 
@@ -639,7 +654,9 @@ func builderPairs(values ...interface{}) (keys []string, vals []interface{}, err
 // complexMessage is YAGPDB's CreateComplexMessage (common/templates/general.go:263), which
 // complexMessageEdit is too (context.go:113-114): known keys are case-insensitive and read
 // in order, an unknown key is an error, "embed" takes one embed or a slice of up to 10 and
-// replaces any earlier "embed", and a file gets a .txt name.
+// replaces any earlier "embed", and a file gets a .txt name. "buttons" (up to 40),
+// "menus" (up to 5) and "components" (built ones, flat or as rows) become action rows
+// (components.go), and every button and menu ends with a valid templates- custom ID.
 func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error) {
 	if len(args) < 1 {
 		return &types.MessageSend{}, nil
@@ -695,7 +712,89 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 			if r := []rune(filename); len(r) > 64 {
 				filename = string(r[:64])
 			}
-		case "components", "buttons", "menus", "forward", "sticker":
+		case "components": // general.go:352-373
+			if val == nil {
+				continue
+			}
+			v, _ := indirect(reflect.ValueOf(val))
+			if v.Kind() == reflect.Slice {
+				msg.Components, err = distributeComponentsIntoActionsRows(v)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				var component types.InteractiveComponent
+				switch comp := val.(type) {
+				case *types.SelectMenu:
+					component = comp
+				case *types.Button:
+					component = comp
+				default:
+					return nil, errors.New("invalid component passed to send message builder")
+				}
+				msg.Components = append(msg.Components,
+					&types.ActionsRow{Components: []types.InteractiveComponent{component}})
+			}
+		case "buttons": // general.go:379-408
+			if val == nil {
+				continue
+			}
+			v, _ := indirect(reflect.ValueOf(val))
+			if v.Kind() == reflect.Slice {
+				buttons := []*types.Button{}
+				const maxButtons = 40 // Discord limitation
+				for i := 0; i < v.Len() && i < maxButtons; i++ {
+					button, err := CreateButton(v.Index(i).Interface())
+					if err != nil {
+						return nil, err
+					}
+					buttons = append(buttons, button)
+				}
+				comps, err := distributeComponentsIntoActionsRows(reflect.ValueOf(buttons))
+				if err != nil {
+					return nil, err
+				}
+				msg.Components = append(msg.Components, comps...)
+			} else {
+				button, err := CreateButton(val)
+				if err != nil {
+					return nil, err
+				}
+				if button.Style == types.LinkButton {
+					button.CustomID = ""
+				}
+				msg.Components = append(msg.Components,
+					&types.ActionsRow{Components: []types.InteractiveComponent{button}})
+			}
+		case "menus": // general.go:409-435
+			if val == nil {
+				continue
+			}
+			v, _ := indirect(reflect.ValueOf(val))
+			if v.Kind() == reflect.Slice {
+				menus := []*types.SelectMenu{}
+				const maxMenus = 5 // Discord limitation
+				for i := 0; i < v.Len() && i < maxMenus; i++ {
+					menu, err := CreateSelectMenu(v.Index(i).Interface())
+					if err != nil {
+						return nil, err
+					}
+					menus = append(menus, menu)
+				}
+				comps, err := distributeComponentsIntoActionsRows(reflect.ValueOf(menus))
+				if err != nil {
+					return nil, err
+				}
+				msg.Components = append(msg.Components, comps...)
+			} else {
+				menu, err := CreateSelectMenu(val)
+				if err != nil {
+					return nil, err
+				}
+				msg.Components = append(msg.Components,
+					&types.ActionsRow{Components: []types.InteractiveComponent{menu}})
+			}
+		case "forward", "sticker":
 			// Not modelled, but they count as message content for Discord
 			if val != nil {
 				msg.HasOther = true
@@ -730,6 +829,14 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 	if msg.HasFile {
 		msg.Filename = filename + ".txt"
 	}
+
+	if len(msg.Components) > 0 { // general.go:502-507
+		err := validateTopLevelComponentsCustomIDs(msg.Components, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return msg, nil
 }
 
@@ -885,7 +992,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 	// child failed with show_errors on (Execute has posted the error message instead)
 	out, err := childEngine.Execute(string(templateContent))
 	if out != "" && (err == nil || !ReadErrorSettings(string(templateContent)).ShowErrors) {
-		id := childCtx.RecordSentMessage(channelID, out, nil, childCtx.ResponsePings)
+		id := childCtx.RecordSentMessage(channelID, out, nil, nil, childCtx.ResponsePings)
 		childCtx.recordResponseSent(channelID, id) // a deleteResponse delay under 1 left out ""
 	}
 

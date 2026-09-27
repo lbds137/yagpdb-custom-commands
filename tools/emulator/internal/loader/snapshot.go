@@ -29,11 +29,14 @@ type Snapshot struct {
 	DB          []SnapshotEntry   `yaml:"db,omitempty"`
 }
 
-// SnapshotMessage is a sent message. Embeds are stored as indented JSON, one entry per embed.
+// SnapshotMessage is a sent message. Embeds are stored as indented JSON, one entry per
+// embed, and components likewise, one entry per action row (Discord's shape: type,
+// style, custom_id ...).
 type SnapshotMessage struct {
-	ChannelID int64      `yaml:"channel_id"`
-	Content   snapText   `yaml:"content,omitempty"`
-	Embeds    []snapText `yaml:"embeds,omitempty"`
+	ChannelID  int64      `yaml:"channel_id"`
+	Content    snapText   `yaml:"content,omitempty"`
+	Embeds     []snapText `yaml:"embeds,omitempty"`
+	Components []snapText `yaml:"components,omitempty"`
 	// SentAfterSeconds is omitted when zero, so an existing snapshot of a message sent
 	// before any sleep stays unchanged.
 	SentAfterSeconds int `yaml:"sent_after_seconds,omitempty"`
@@ -102,6 +105,9 @@ func snapshotMessages(messages []runtime.SentMessage) []SnapshotMessage {
 		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: snapText(msg.Content), SentAfterSeconds: msg.SentAfterSeconds}
 		for _, e := range msg.Embeds {
 			sm.Embeds = append(sm.Embeds, snapText(readableJSON(e)))
+		}
+		for _, c := range msg.Components {
+			sm.Components = append(sm.Components, snapText(readableJSON(c)))
 		}
 		out = append(out, sm)
 	}

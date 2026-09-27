@@ -253,3 +253,37 @@ func TestStaleSnapshotsPastAnUnreadableFile(t *testing.T) {
 		}
 	}
 }
+
+// A snapshot holds a message's action rows in Discord's shape, one entry per row
+func TestSnapshotHoldsComponents(t *testing.T) {
+	dir := t.TempDir()
+	src := `{{sendMessage nil (complexMessage "buttons" (sdict "label" "Next" "custom_id" "pg:2") ` +
+		`"menus" (sdict "type" "user"))}}`
+
+	r := NewRunner(RunnerConfig{BaseDir: dir})
+	res := r.RunTest(snapshotTest(dir, src))
+	if !res.Passed || !res.SnapshotWritten {
+		t.Fatalf("first run should pass and write: %+v", res)
+	}
+	path := filepath.Join(dir, "__snapshots__", "suite.snap.yaml")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"components:", `"custom_id": "templates-pg:2"`, `"style": 1`, `"type": 5`} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("snapshot missing %q:\n%s", want, data)
+		}
+	}
+	snaps, err := readSnapshots(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msgs := snaps["greets"].Messages
+	if len(msgs) != 1 || len(msgs[0].Components) != 2 {
+		t.Fatalf("want one message with two rows: %+v", msgs)
+	}
+	if res := r.RunTest(snapshotTest(dir, src)); !res.Passed {
+		t.Errorf("second run should match the snapshot: %+v", res)
+	}
+}

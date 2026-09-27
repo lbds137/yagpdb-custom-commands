@@ -22,7 +22,10 @@ type SentMessage struct {
 	ChannelID int64
 	Content   string
 	Embeds    []interface{}
-	Pings     Pings // who the message notifies
+	// Components are the message's action rows of buttons and menus, as complexMessage
+	// built them (custom IDs prefixed and numbered)
+	Components []types.TopLevelComponent
+	Pings      Pings // who the message notifies
 	// SentAfterSeconds is how far the run's clock had moved on from sleep when this
 	// message was recorded (whole seconds); 0 for a message an edit produced.
 	SentAfterSeconds int
@@ -479,9 +482,10 @@ func (ctx *ExecutionContext) HasRole(roleID int64) bool {
 }
 
 // RecordSentMessage records a message sent during execution. Messages the bot sends to a
-// channel can be fetched with getMessage, as on Discord, with all their embeds; it returns
-// their ID.
-func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embeds []interface{}, pings Pings) int64 {
+// channel can be fetched with getMessage, as on Discord, with all their embeds and
+// components; it returns their ID.
+func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, embeds []interface{},
+	components []types.TopLevelComponent, pings Pings) int64 {
 	*ctx.sentMessageIDs()++
 	id := firstSentMessageID + *ctx.sentIDs
 	ctx.SentMessages = append(ctx.SentMessages, SentMessage{
@@ -489,16 +493,18 @@ func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, 
 		ChannelID:        channelID,
 		Content:          content,
 		Embeds:           embeds,
+		Components:       components,
 		Pings:            pings,
 		SentAfterSeconds: int(ctx.timeSlept.Seconds()),
 	})
 	msg := types.CtxMessage{
-		ID:        id,
-		ChannelID: channelID,
-		GuildID:   ctx.GuildID,
-		Author:    botUser,
-		Content:   content,
-		Timestamp: types.NewTimestamp(ctx.Now()),
+		ID:         id,
+		ChannelID:  channelID,
+		GuildID:    ctx.GuildID,
+		Author:     botUser,
+		Content:    content,
+		Components: components,
+		Timestamp:  types.NewTimestamp(ctx.Now()),
 	}
 	msg.Embeds = types.EmbedStructs(embeds)
 	if channelID != 0 { // a DM isn't in the server's channels
