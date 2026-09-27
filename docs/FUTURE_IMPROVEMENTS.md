@@ -43,6 +43,15 @@ picks, then the minifier.
   trigger type, so both would be two panel commands). Also pick a free-tier top 10 (free servers get 10 slash CCs, premium
   50; live panel lists Slash Command / User and Message Context Menu types, checked
   2026-09-27).
+  Group related commands into one slash command with subcommands where they belong
+  together (Lila 2026-09-27), e.g. `/hebrew gematria|atbash|alefbet|pyramid|random`,
+  `/color contrast|contrasts|random|hex`, staff tools under a few roots. Constraints:
+  YAGPDB supports ONE level of subcommands (handle_slashcommand.go:125-140; no
+  subcommand groups), up to 10 per command free / 25 premium (customcommands.go:
+  958-963); a slash CC is one template, so a root either holds all its subcommands'
+  logic (10k/20k-char cap) or dispatches each subcommand to the existing command by
+  execCC (one execCC per run on free: fine, a run is one subcommand). Grouping also
+  saves slash slots (10 free), so it helps the free-tier top 10.
 - Prerequisite: the emulator doesn't model interactions: Slash (.Options, .CmdArgs,
   subcommands), Component and Modal triggers (.CustomID, .Values, .IsButton/.IsMenu),
   context-menu (.TargetUser/.TargetMember/.Message), sendResponse/updateMessage/sendModal/
