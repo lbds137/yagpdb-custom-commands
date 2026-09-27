@@ -1,0 +1,171 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Command`
+  Trigger: `channel_activity`
+  Dependencies: none
+*/ -}}
+{{- /* audits how long each channel has gone quiet, from what channel_tracker records */ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
+{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
+
+{{ $directoryDict := (dbGet 0 "Directory").Value }}
+{{ $excludeCategories := or ($directoryDict.Get "Exclude Categories") cslice }}
+{{ $excludeChannels := or ($directoryDict.Get "Exclude Channels") cslice }}
+
+{{- $ctypeTextDict := sdict
+  "0" "GUILD_TEXT"
+  "5" "GUILD_ANNOUNCEMENT"
+  "15" "GUILD_FORUM" -}}
+
+{{ $exclude := dict }}
+{{- range $cid := $excludeCategories -}}
+  {{- $exclude.Set (toInt $cid) true -}}
+{{- end -}}
+{{- range $cid := $excludeChannels -}}
+  {{- $exclude.Set (toInt $cid) true -}}
+{{- end -}}
+
+{{/* every channel that still exists (any type), and the eligible subset of it: text-like
+  type, not excluded and not in an excluded category */}}
+{{ $allChannelIDs := dict }}
+{{ $eligible := dict }}
+{{- range $channel := .Guild.Channels -}}
+  {{- $allChannelIDs.Set $channel.ID true -}}
+  {{- if $ctypeTextDict.HasKey (json $channel.Type) -}}
+    {{- if not ($exclude.Get $channel.ID) -}}
+      {{- if not ($exclude.Get $channel.ParentID) -}}
+        {{- $eligible.Set $channel.ID true -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* tracked entries, oldest first; a second call only when the first came back full,
+  never a third (free-tier db_multiple cap) */}}
+{{ $entries := dbBottomEntries "Last Active" 100 0 }}
+{{ $needSecond := eq (len $entries) 100 }}
+{{ $entries2 := cslice }}
+{{- if $needSecond -}}
+  {{- $entries2 = dbBottomEntries "Last Active" 100 100 -}}
+{{- end -}}
+{{ $capHit := and $needSecond (eq (len $entries2) 100) }}
+
+{{/* a tracked entry for a channel that no longer exists at all sits at the oldest end
+  forever and eats the 200-entry window, so clean it up here: at most 6 dbDel calls (free
+  tier: 10 db_interactions - 2 dbGet - 2 dbBottomEntries = 6; dbDel counts one
+  db_interactions call each, like dbGet/dbBottomEntries, vendor
+  customcommands/tmplextensions.go's tmplDBDel). A channel that exists but is merely
+  ineligible (excluded, voice, ...) is left alone: it may become eligible later. */}}
+{{ $deletedCount := 0 }}
+{{ $maxDeletes := 6 }}
+
+{{ $tracked := dict }}
+{{ $lines1 := cslice }}
+{{- range $entry := $entries -}}
+  {{- $tracked.Set $entry.UserID true -}}
+  {{- if $eligible.Get $entry.UserID -}}
+    {{- $lines1 = $lines1.Append (joinStr "" "<#" (toString $entry.UserID) "> — <t:" (toString (toInt $entry.Value)) ":R>") -}}
+  {{- else if not ($allChannelIDs.Get $entry.UserID) -}}
+    {{- if lt $deletedCount $maxDeletes -}}
+      {{- dbDel $entry.UserID "Last Active" -}}
+      {{- $deletedCount = add 1 $deletedCount -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- range $entry := $entries2 -}}
+  {{- $tracked.Set $entry.UserID true -}}
+  {{- if $eligible.Get $entry.UserID -}}
+    {{- $lines1 = $lines1.Append (joinStr "" "<#" (toString $entry.UserID) "> — <t:" (toString (toInt $entry.Value)) ":R>") -}}
+  {{- else if not ($allChannelIDs.Get $entry.UserID) -}}
+    {{- if lt $deletedCount $maxDeletes -}}
+      {{- dbDel $entry.UserID "Last Active" -}}
+      {{- $deletedCount = add 1 $deletedCount -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* untracked eligible channels, in guild order; skipped entirely when the 200-entry cap
+  means "no entry" can't be told apart from "past the cap" */}}
+{{ $lines2 := cslice }}
+{{- if not $capHit -}}
+  {{- range $channel := .Guild.Channels -}}
+    {{- if $eligible.Get $channel.ID -}}
+      {{- if not ($tracked.Get $channel.ID) -}}
+        {{- $lines2 = $lines2.Append (joinStr "" "<#" (toString $channel.ID) ">") -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* assemble the description lines: only the sections that have something to say */}}
+{{ $allLines := cslice }}
+{{- if gt (len $lines1) 0 -}}
+  {{- $allLines = $allLines.Append "**Last message**" -}}
+  {{- range $line := $lines1 -}}
+    {{- $allLines = $allLines.Append $line -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $capHit -}}
+  {{- if gt (len $lines2) 0 -}}
+    {{- if gt (len $allLines) 0 -}}
+      {{- $allLines = $allLines.Append "" -}}
+    {{- end -}}
+    {{- $allLines = $allLines.Append "**No messages seen since tracking began**" -}}
+    {{- $allLines = $allLines.Append "_Bot and webhook posts aren't seen, nor channels where YAGPDB can't send._" -}}
+    {{- range $line := $lines2 -}}
+      {{- $allLines = $allLines.Append $line -}}
+    {{- end -}}
+  {{- end -}}
+{{- else -}}
+  {{- if gt (len $allLines) 0 -}}
+    {{- $allLines = $allLines.Append "" -}}
+  {{- end -}}
+  {{- $allLines = $allLines.Append "_Only the oldest 200 tracked channels were checked; untracked channels can't be listed._" -}}
+{{- end -}}
+
+{{ $channelID := .Channel.ID }}
+{{- if eq (len $allLines) 0 -}}
+  {{- sendMessage $channelID (cembed
+    "title" "Channel activity"
+    "color" $embedColor
+    "description" "No activity has been recorded yet. Make sure channel_tracker is running."
+  ) -}}
+{{- else -}}
+  {{/* pack lines into as few embeds as needed, each description under 4,096 characters,
+    split only on line boundaries */}}
+  {{ $chunks := cslice }}
+  {{ $curLines := cslice }}
+  {{ $curLen := 0 }}
+  {{- range $line := $allLines -}}
+    {{- $lineLen := len (toRune $line) -}}
+    {{- $sepLen := 1 -}}
+    {{- if eq (len $curLines) 0 -}}
+      {{- $sepLen = 0 -}}
+    {{- end -}}
+    {{- if gt (add $curLen $sepLen $lineLen) 4096 -}}
+      {{- $chunks = $chunks.Append (joinStr "\n" $curLines) -}}
+      {{- $curLines = cslice -}}
+      {{- $curLen = 0 -}}
+      {{- $sepLen = 0 -}}
+    {{- end -}}
+    {{- $curLines = $curLines.Append $line -}}
+    {{- $curLen = add $curLen $sepLen $lineLen -}}
+  {{- end -}}
+  {{- if gt (len $curLines) 0 -}}
+    {{- $chunks = $chunks.Append (joinStr "\n" $curLines) -}}
+  {{- end -}}
+
+  {{- $i := 0 -}}
+  {{- range $chunk := $chunks -}}
+    {{- if eq $i 0 -}}
+      {{- sendMessage $channelID (cembed "title" "Channel activity" "color" $embedColor "description" $chunk) -}}
+    {{- else -}}
+      {{- sendMessage $channelID (cembed "color" $embedColor "description" $chunk) -}}
+    {{- end -}}
+    {{- $i = add 1 $i -}}
+  {{- end -}}
+{{- end -}}
+
+{{ deleteTrigger $deleteTriggerDelay }}

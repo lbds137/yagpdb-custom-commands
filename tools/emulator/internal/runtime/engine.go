@@ -535,20 +535,31 @@ func (e *Engine) getTargetPermissionsIn(userID, channelID interface{}) int64 {
 
 // Channel functions
 
-// getChannel is YAGPDB's tmplGetChannel: nil for a channel that isn't there. A channel
-// assumed to exist (no channels declared) has no name.
-func (e *Engine) getChannel(channel interface{}) *types.CtxChannel {
+// getChannel is YAGPDB's tmplGetChannel: nil (no error) for an unresolvable channel; a
+// resolved thread errors "channel not in state" instead, since GS.GetChannel (channels
+// only) never finds it (vendor common/templates/context_funcs.go). A channel assumed to
+// exist (no channels declared) has no name.
+func (e *Engine) getChannel(channel interface{}) (*types.CtxChannel, error) {
 	id := e.channelArg(channel)
 	if id == 0 {
-		return nil
+		return nil, nil // vendor: don't send an error, a nil output means invalid/unknown
+	}
+	if _, ok := e.ctx.Threads[id]; ok {
+		return nil, errors.New("channel not in state")
 	}
 	c := e.ctx.channelState(id)
-	return &c
+	return &c, nil
 }
 
-func (e *Engine) getChannelOrThread(channelID interface{}) *types.CtxChannel {
-	// Same as getChannel - threads are just channels in Discord's API
-	return e.getChannel(channelID)
+// getChannelOrThread is YAGPDB's tmplGetChannelOrThread: like getChannel, but
+// GS.GetChannelOrThread also finds a resolved thread, so it never errors for one.
+func (e *Engine) getChannelOrThread(channel interface{}) (*types.CtxChannel, error) {
+	id := e.channelArg(channel)
+	if id == 0 {
+		return nil, nil
+	}
+	c := e.ctx.channelState(id)
+	return &c, nil
 }
 
 // Embed/message building
@@ -922,12 +933,16 @@ func (e *Engine) channelArg(channel interface{}) int64 {
 	default:
 		return 0
 	}
-	// GetChannelOrThread: the channel must exist
-	if len(e.ctx.Channels) > 0 {
-		if _, ok := e.ctx.Channels[id]; !ok {
-			return 0
+	// GetChannelOrThread: the channel must exist, among either declared channels or
+	// declared threads (baseChannelArg resolves both, vendor context_funcs.go)
+	if len(e.ctx.Channels) > 0 || len(e.ctx.Threads) > 0 {
+		if _, ok := e.ctx.Channels[id]; ok {
+			return id
 		}
-		return id
+		if _, ok := e.ctx.Threads[id]; ok {
+			return id
+		}
+		return 0
 	}
 	if id != 0 && id != e.ctx.ChannelID && !e.mockChannels[id] {
 		if e.mockChannels == nil {
@@ -986,7 +1001,7 @@ func (e *Engine) parseArgs(numRequired int, failedMessage string, argDefs ...*fu
 			return nil
 		},
 		Channel: func(id int64) interface{} {
-			if c := e.getChannel(id); c != nil { // not a typed nil in the interface
+			if c, _ := e.getChannel(id); c != nil { // not a typed nil in the interface
 				return c
 			}
 			return nil

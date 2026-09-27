@@ -710,3 +710,28 @@ func TestTestChannelTakesItsDeclaredName(t *testing.T) {
 		t.Errorf("got %q, %v", res.Output, res.Error)
 	}
 }
+
+// A declared thread (type 10/11/12) never reaches .Guild.Channels, as
+// dstate.GuildSet.Channels holds no thread state (vendor common/templates/context_funcs.go's
+// baseChannelArg, GS.GetChannel); its own .Channel details still resolve, since a run's
+// triggering channel is looked up directly (channelState), not through .Guild.Channels.
+// getChannel specifically errors for it ("channel not in state", GS.GetChannel finding
+// nothing), while getChannelOrThread (GS.GetChannelOrThread, checks Threads too) resolves
+// it like any other channel. Exercises the loader's own channel-building loop (runner.go),
+// not a hand-built ExecutionContext.
+func TestDeclaredThreadStaysOutOfGuildState(t *testing.T) {
+	tc := &TestCase{Name: "n", TemplateSource: `{{.Channel.IsThread}} {{.Channel.ParentID}} ` +
+		`{{range .Guild.Channels}}{{.ID}},{{end}} ` +
+		`{{try}}{{getChannel 30}}{{catch}}caught: {{.Error}}{{end}} ` +
+		`{{(getChannelOrThread 30).ID}}`}
+	tc.Context.Channel = ChannelDef{ID: 30, Name: "a-thread"}
+	tc.Context.Guild.Channels = []ChannelDef{
+		{ID: 11, Name: "general", Type: 0},
+		{ID: 30, Name: "a-thread", Type: 11, ParentID: 11},
+	}
+	tc.applyDefaults()
+	want := "true 11 11, caught: channel not in state 30"
+	if res := NewRunner(RunnerConfig{}).RunTest(tc); res.Error != nil || res.Output != want {
+		t.Errorf("got %q, %v; want %q", res.Output, res.Error, want)
+	}
+}

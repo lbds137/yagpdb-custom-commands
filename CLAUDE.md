@@ -23,7 +23,8 @@ Top-level command folders mirror the YAGPDB control-panel groups (permission sco
    db_get_embed, db_get_text, message_link), `hebrew/` (gematria, alefbet, atbash, pyramid, rand_hebrew),
    `color/` (contrast, contrasts, hex_to_int, rand_color), `knowledge/` (define, rule),
    `links/` (message_pointer, channel_link), `bump/` (bump_check,
-   bump_remind), `general/` (avatar_viewer, timestamp, hugemoji, ticket_clean, unhiatus).
+   bump_remind), `general/` (avatar_viewer, timestamp, hugemoji, ticket_clean, unhiatus,
+   channel_tracker).
    `unhiatus` lives here on purpose: a staff member on hiatus has lost the staff roles the
    staff group requires, so the everyone group is the only one it can run in.
 2. **`staff/`** - The staff group - administrative and moderation tools, flat (no

@@ -19,3 +19,6 @@ entries:
   - { user_id: 0, key: Staff, type: dict }
   - { user_id: 0, key: "Inactivity Prune", type: dict }
   - { user_id: 0, key: Gematria, type: dict }
+
+  # channel_tracker.gohtml: Unix-seconds timestamp, keyed by channel id (any user_id)
+  - { key: "Last Active", type: number }

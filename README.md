@@ -77,6 +77,8 @@ General-purpose commands for all users, in topic subfolders:
 - **`ticket_clean.gohtml`** - Ticket cleanup utility
 - **`unhiatus.gohtml`** - Remove user hiatus status (stays in the everyone group on purpose:
   a staff member on hiatus has lost the staff roles the staff group requires)
+- **`channel_tracker.gohtml`** - Records each channel's last-active time on every message
+  (Regex `.*`, no output), for staff's `channel_activity`
 
 ### 🛠️ Staff (`staff/`)
 
@@ -85,6 +87,8 @@ Administrative and moderation tools for server staff, flat (no subfolders):
 - **`batch_delrep.gohtml`** - Batch delete and reputation management
 - **`bootstrap.gohtml`** - Initial system setup and configuration
 - **`bump_reset.gohtml`** - Server bump reset functionality
+- **`channel_activity.gohtml`** - Dead-channel audit: each channel's last message, oldest
+  first, from what `channel_tracker` records
 - **`directory.gohtml`** - User directory management
 - **`gematria_bootstrap.gohtml`** - Initialize gematria calculation system
 - **`hiatus.gohtml`** - User hiatus management
