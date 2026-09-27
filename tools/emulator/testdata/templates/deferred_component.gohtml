@@ -1,0 +1,9 @@
+{{/*
+  Test handler (not a real command): deferred as an ephemeral "thinking...", which its
+  output then fills.
+
+  Trigger type: `Message Component`
+  Trigger: `^slow:`
+  Defer mode: `Ephemeral Message Response`
+*/}}
+{{- if .Interaction.Deferred }}Deferred, then done: {{ .StrippedID }}{{ end }}

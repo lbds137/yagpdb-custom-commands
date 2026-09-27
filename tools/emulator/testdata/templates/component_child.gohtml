@@ -1,0 +1,2 @@
+{{- /* execCC child of a component run: it inherits .Interaction and responds itself */ -}}
+{{ sendResponse nil (printf "child responded (RespondedTo was %v, Cmd %v)" .Interaction.RespondedTo .Cmd) }}

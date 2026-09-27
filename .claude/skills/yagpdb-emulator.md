@@ -58,6 +58,11 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # with exec_data/reaction it is only .Message (no arguments)
     reaction: { emoji: "🎮", message_id: 5, added: true }   # reaction-triggered run; its .Message is
                                       # the messages entry with that id in the run's channel
+    interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }  # a button click on
+                                      # messages entry 7 (in the run's channel) for a `Message
+                                      # Component` trigger; component: string_menu (or user_menu,
+                                      # role_menu, mentionable_menu, channel_menu) with values: ["3"]
+                                      # for a menu. See Button and menu clicks
     # an interval/cron header: no .Message, .User or .Member; a None command keeps a message
     # a header line  Case sensitive: `true`  makes the trigger case-sensitive (default: not);
     # Show errors: `false` and Redirect errors: `<channel ID>` set how a failed run's error
@@ -95,6 +100,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # at all (like execs/deletions/scheduled_runs/reactions)
                                       # components_contains: "templates-pg:2" = substring of any
                                       # of the message's action rows as JSON (see Buttons and menus)
+                                      # ephemeral: true = an interaction response only the clicker sees
     edited_messages: [{ channel_id: 9, content_equals: "x" }] # edits (as edited); "" = empty
                                       # content; same absent/[] rule as sent_messages: absent =
                                       # unchecked, [] = assert the run edited no messages at all
@@ -123,6 +129,10 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # exactly the runs execCC with a delay / scheduleUniqueCC left, in the order scheduled
     # (a replaced one moves last; [] for none). They aren't run: test that command separately
     # (its exec_data there is a plain map; the real run gets an *sdict)
+    interaction_responses: [{ kind: update, embed_contains: "Page 2" }, { kind: followup, ephemeral: true }]
+    # exactly the run's answers to its interaction, in order ([] for none): kind =
+    # message|followup|deferred_edit|update, ephemeral, and content_contains/embed_title/
+    # embed_contains/components_contains as sent_messages has them (see Button and menu clicks)
 ```
 
 ## Project Structure
@@ -136,7 +146,8 @@ tools/emulator/
 │   ├── yagstd/           # `package templates` (YAGPDB's name, so %T prints *templates.SDict),
 │   │                     # imported as yagstd: standard functions, sdict/dict/cslice, regex, sort, copied
 │   ├── runtime/          # engine.go (Discord/database mocks, Execute), context.go, limits.go
-│   │                     # (YAGPDB call counters), loopcheck.go, hints.go
+│   │                     # (YAGPDB call counters), components.go, interactions.go (clicks,
+│   │                     # sendResponse/updateMessage), trigger.go (header), loopcheck.go, hints.go
 │   ├── funcs/            # database functions, parseArgs, conversion helpers for the mocks
 │   ├── loader/           # YAML tests, runner, snapshots
 │   ├── schema/           # db_schema.yaml checks
@@ -188,8 +199,62 @@ any action row as JSON: custom_id, label, placeholder...), read them back with
 `(getMessage nil $id).Components` (rows of `.Components`, each with `.CustomID`, `.Label`,
 `.URL`, `.Options`), and snapshots list them under `components:` in Discord's shape. A
 `complexMessageEdit` without a components key keeps a message's rows; `"components"
-cslice` clears them. Interactions (clicking them, sendResponse, updateMessage) aren't
-modelled yet: docs/design/emulator-interactions.md.
+cslice` clears them.
+
+## Button and menu clicks
+
+A click runs a command whose header says `Trigger type: \`Message Component\`` (or
+`Component`), with `Trigger:` a regex matched against the custom ID after YAGPDB's
+`templates-` prefix is stripped (`(?m)`, `(?i)` unless `Case sensitive: \`true\``;
+vendor customcommands/handle_component.go). To test one, declare the clicked message
+under `messages:` in the run's channel and click it:
+
+```yaml
+- name: "Next page"
+  template: "../../../staff/pager.gohtml"
+  context:
+    messages: [{ id: 7, channel_id: 9, author_id: 1234567890, embeds: [{ title: "Page 1" }] }]
+    channel: { id: 9 }
+    interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+  assertions:
+    edited_messages: [{ channel_id: 9, embed_contains: "Page 2", components_contains: "pg:stale:3" }]
+    interaction_responses: [{ kind: update, embed_contains: "Page 2" }]
+```
+
+The run sees the handler's keys: `.Interaction` (`.ID`, `.Token`, `.RespondedTo`,
+`.Deferred`, `.Message`, `.Member`), `.InteractionData` (`.CustomID` with the prefix,
+`.ComponentType`, `.Values`), `.CustomID` (stripped), `.Cmd`/`.CmdArgs`/`.StrippedID`/
+`.StrippedMsg` from the regex match (the ID after the match, split on spaces), `.IsButton`
+or `.IsMenu` + `.MenuType` (`string`/`user`/`role`/`mentionable`/`channel`) + `.Values`
+(`component: string_menu`, `values: [...]`), and `.Message` = the clicked message with
+the clicker as `.Author`/`.Member` (getMessage of it still shows the bot). `.User`/
+`.Member` are the clicker. A non-matching custom ID is a `no_trigger` case, like a
+message. `interaction:` can't combine with args, message_content, reaction or exec_data.
+
+An interaction takes ONE response (vendor context_interactions.go): `updateMessage`
+(edits the clicked message in place: content, embeds AND components are replaced, so a
+plain string clears the buttons), `sendResponse nil msg` (a new message; `complexMessage
+"ephemeral" true` makes it private), or the template's printed output (private with
+`ephemeralResponse`). A second `updateMessage`/response is YAGPDB's `cannot respond to an
+interaction > 1 time; consider using a followup`; a `sendResponse` after the response
+is a followup instead (`sendResponseRetID` returns its ID). Without an interaction:
+`updateMessage` errors `no interaction data in context; consider editMessage or
+editResponse`, `sendResponse` `invalid interaction token`, `ephemeralResponse` is a
+no-op. A header `Defer mode: \`Message Response\`` / `\`Ephemeral Message Response\`` /
+`\`Update Message Response\`` (the panel's labels; default `None`) answers the click
+before the run, and the printed output then edits that deferred response
+(`deferred_edit`: a new message, ephemeral for the ephemeral mode, or the clicked
+message's content under Update, keeping its embeds and buttons); `updateMessage` after a
+deferral is Discord's 40060 (a warning, or an error with `-strict`/inside `{{try}}`).
+Warnings tell you when a run never answers ("The application did not respond") or a
+deferred run prints nothing. An execCC child inherits `.Interaction` (not the other
+keys): its `sendResponse` takes the response and the caller's output becomes a
+followup, always, where YAGPDB's concurrent child would race (docs/FUTURE_IMPROVEMENTS.md).
+Responses land in `sent_messages` (`ephemeral: true` to assert it) or, for an update,
+`edited_messages`; snapshots list `interaction_responses:` and mark ephemeral messages.
+Not modelled yet: sendModal/cmodal (unit 4), editResponse/getResponse/
+deleteInteractionResponse, slash commands and context menus (unit 3):
+docs/design/emulator-interactions.md.
 
 ## When to Use This Skill
 

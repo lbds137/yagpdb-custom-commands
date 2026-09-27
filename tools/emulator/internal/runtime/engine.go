@@ -96,6 +96,16 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"deleteMessageReaction":     e.deleteMessageReaction,
 		"deleteAllMessageReactions": e.deleteAllMessageReactions,
 
+		// Interaction responses (context_interactions.go:17-30; sendModal, editResponse,
+		// getResponse and deleteInteractionResponse aren't modelled yet)
+		"sendResponse":              e.sendResponseFunc("sendResponse", true, false),
+		"sendResponseNoEscape":      e.sendResponseFunc("sendResponseNoEscape", false, false),
+		"sendResponseNoEscapeRetID": e.sendResponseFunc("sendResponseNoEscapeRetID", false, true),
+		"sendResponseRetID":         e.sendResponseFunc("sendResponseRetID", true, true),
+		"updateMessage":             e.updateMessageFunc("updateMessage", true),
+		"updateMessageNoEscape":     e.updateMessageFunc("updateMessageNoEscape", false),
+		"ephemeralResponse":         e.ephemeralResponse,
+
 		// Role functions
 		"setRoles": e.setRoles,
 
@@ -155,11 +165,23 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 func (e *Engine) Execute(source string) (string, error) {
 	out, err := e.execute(source)
 	settings := ReadErrorSettings(source)
-	if e.ctx.ExecCCDepth == 0 && strings.TrimSpace(out) != "" && (err == nil || !settings.ShowErrors) &&
-		!(e.ctx.delResponse && e.ctx.delResponseDelay < 1) {
-		// The response is sent (a deleteResponse delay under 1 sends none; a failed run's
-		// output still holds it here). An execCC child's is recorded by execCC, which
-		// knows its message.
+	// The response is sent (a deleteResponse delay under 1 sends none; a failed run's
+	// output still holds it here; with show_errors the output goes out with the error
+	// message instead, interaction or not: bot.go:773-780)
+	responds := strings.TrimSpace(out) != "" && (err == nil || !settings.ShowErrors) &&
+		!(e.ctx.delResponse && e.ctx.delResponseDelay < 1)
+	switch {
+	case e.ctx.Interaction != nil:
+		// With an interaction the output answers it (SendResponse, context.go:603-611),
+		// for an execCC child too, whose interaction is its caller's
+		if responds {
+			e.ctx.respondWithOutput(out)
+		}
+		if e.ctx.ExecCCDepth == 0 {
+			e.ctx.warnUnanswered()
+		}
+	case e.ctx.ExecCCDepth == 0 && responds:
+		// An execCC child's is recorded by execCC, which knows its message.
 		e.ctx.recordResponseSent(e.ctx.ChannelID, 0)
 	}
 	if err == nil {
@@ -269,11 +291,11 @@ func (e *Engine) sendMessageNoEscape(args ...interface{}) (string, error) {
 	return e.send("sendMessageNoEscape", false, args...)
 }
 
-// parseMessageInput is YAGPDB's (context_funcs.go:32-70): what the send and edit functions
-// make of their message argument. An embed read back from a message is a *MessageEmbed
-// (discordgo's), cembed's result a types.Embed. YAGPDB's *InteractionResponseData and
-// *ComponentBuilder cases aren't here: the emulator has neither type (no interactions, no
-// componentBuilder), so such a value can't reach this.
+// parseMessageInput is YAGPDB's (context_funcs.go:32-70): what the send, edit and
+// interaction response functions make of their message argument. An embed read back from
+// a message is a *MessageEmbed (discordgo's), cembed's result a types.Embed. YAGPDB's
+// *InteractionResponseData and *ComponentBuilder cases aren't here: the emulator has
+// neither type (no cmodal yet, no componentBuilder), so such a value can't reach this.
 func parseMessageInput(msg interface{}) *types.MessageSend {
 	msgSend := &types.MessageSend{AllowedMentions: usersOnly()}
 
@@ -820,7 +842,12 @@ func (e *Engine) complexMessage(args ...interface{}) (*types.MessageSend, error)
 				continue
 			}
 			msg.ComponentsV2 = true
-		case "silent", "ephemeral", "suppress_embeds":
+		case "ephemeral": // general.go:374-378
+			if val == nil || val == false {
+				continue
+			}
+			msg.Ephemeral = true
+		case "silent", "suppress_embeds":
 			// Accepted; the emulator doesn't model these
 		default:
 			return nil, fmt.Errorf(`invalid key "%s" passed to send message builder.`, key)
@@ -982,6 +1009,14 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 	childCtx.InheritedMessage = &inherited
 	childCtx.inheritedFromReaction = e.ctx.Reaction != nil || e.ctx.inheritedFromReaction
 	childCtx.NoMember = e.ctx.NoMember // the child's context has the caller's (nil) member
+	// ... and the same Interaction pointer (tmplextensions.go:240-243), so whichever of
+	// the two responds first takes the interaction's one response and the other's output
+	// is a followup. DIVERGENCE: YAGPDB runs the child in a goroutine (:249), so a caller
+	// that both execCCs and prints races the child for that response; the emulator runs
+	// the child inline, so the child's sendResponse always wins and the caller's output
+	// is always the followup. Commands shouldn't mix the two (docs/FUTURE_IMPROVEMENTS.md).
+	childCtx.Interaction = e.ctx.Interaction
+	childCtx.deferMode = e.ctx.deferMode
 
 	// Execute child template
 	childEngine := NewEngine(childCtx)
@@ -989,9 +1024,10 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		return "", fmt.Errorf("execCC %d (%s): %w", commandID, filepath.Base(templatePath), err)
 	}
 	// The output is the child's response, sent to its channel with its pings, unless the
-	// child failed with show_errors on (Execute has posted the error message instead)
+	// child failed with show_errors on (Execute has posted the error message instead).
+	// With an interaction, Execute has already routed it as an interaction response.
 	out, err := childEngine.Execute(string(templateContent))
-	if out != "" && (err == nil || !ReadErrorSettings(string(templateContent)).ShowErrors) {
+	if out != "" && childCtx.Interaction == nil && (err == nil || !ReadErrorSettings(string(templateContent)).ShowErrors) {
 		id := childCtx.RecordSentMessage(channelID, out, nil, nil, childCtx.ResponsePings)
 		childCtx.recordResponseSent(channelID, id) // a deleteResponse delay under 1 left out ""
 	}
@@ -999,6 +1035,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 	// Propagate side effects back to parent
 	e.ctx.SentMessages = append(e.ctx.SentMessages, childCtx.SentMessages...)
 	e.ctx.EditedMessages = append(e.ctx.EditedMessages, childCtx.EditedMessages...)
+	e.ctx.InteractionResponses = append(e.ctx.InteractionResponses, childCtx.InteractionResponses...)
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.Deletions = append(e.ctx.Deletions, childCtx.Deletions...)
 	e.ctx.Reactions = append(e.ctx.Reactions, childCtx.Reactions...)

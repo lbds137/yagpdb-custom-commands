@@ -1,0 +1,396 @@
+name: "Component interactions: a button or menu click on a Message Component trigger"
+
+# The clicked message is the bot's (a pager it sent earlier); the test user clicks it
+defaults:
+  channel:
+    id: 123456789012345678
+  messages:
+    - id: 7
+      channel_id: 123456789012345678
+      author_id: 1234567890
+      content: ""
+      embeds: [{ title: "Channels", description: "Page 1 of 3 (stale)" }]
+
+tests:
+  - name: "Pager click: updateMessage edits the message in place (update response)"
+    template: "templates/pager_component.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      sent_messages: []
+      edited_messages:
+        - channel_id: 123456789012345678
+          embed_contains: "Page 2 of 3 (stale)"
+          components_contains: '"custom_id": "templates-pg:stale:3"'
+      interaction_responses:
+        - { kind: update, ephemeral: false, embed_contains: "Page 2 of 3", components_contains: "templates-pg:stale:1" }
+
+  - name: "The clicked message: .Message has the clicker as author, getMessage the bot; a getMessage after the update sees it"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^pg:`
+      */}}
+      {{- .Message.ID }} by {{ .Message.Author.ID }} (member {{ .Message.Member.User.ID }}); fetched: by {{ (getMessage nil .Message.ID).Author.ID }}
+      {{- updateMessage "Page 2" }}
+      {{- " after: " }}{{ (getMessage nil 7).Content }}|{{ len (getMessage nil 7).Embeds }}
+    context:
+      user: { id: 42 }
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    expected:
+      # The interaction is answered by updateMessage, so the printed text is a followup
+      output_equals: "7 by 42 (member 42); fetched: by 1234567890 after: Page 2|0"
+    assertions:
+      interaction_responses:
+        - { kind: update, content_contains: "Page 2" }
+        - { kind: followup, content_contains: "7 by 42" }
+
+  - name: "Printed output with ephemeralResponse becomes an ephemeral reply (message response)"
+    snapshot: true
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^info:(\w+)$`
+      */}}
+      {{- ephemeralResponse }}Only you see this, {{ .User.Username }}: {{ .CustomID }} ({{ if .IsButton }}button{{ end }})
+    context:
+      interaction: { type: component, custom_id: "info:stale", message_id: 7 }
+    expected:
+      output_equals: "Only you see this, TestUser: info:stale (button)"
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, content_contains: "Only you see this", ephemeral: true }
+      edited_messages: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "info:stale" }
+
+  - name: "A second response is the vendor error (sendResponse, then updateMessage)"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^twice$`
+      */}}
+      {{- sendResponse nil "first" }}
+      {{- updateMessage "second" }}
+    context:
+      interaction: { type: component, custom_id: "twice", message_id: 7 }
+    expected:
+      error_contains: "cannot respond to an interaction > 1 time; consider using a followup"
+    assertions:
+      interaction_responses:
+        - { kind: message, content_contains: "first" }
+
+  - name: "A sendResponse after the response is a followup, not an error; RetID returns its ID"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^twice$`
+      */}}
+      {{- sendResponse nil (complexMessage "content" "first" "ephemeral" true) }}
+      {{- $id := sendResponseRetID .Interaction.Token (cembed "title" "Second") }}
+      {{- if $id }}followup sent{{ end }}
+    context:
+      interaction: { type: component, custom_id: "twice", message_id: 7 }
+    expected:
+      output_equals: "followup sent"
+    assertions:
+      sent_messages:
+        - { nth: 1, content_equals: "first", ephemeral: true }
+        - { nth: 2, embed_title: "Second", ephemeral: false }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "first" }
+        - { kind: followup, ephemeral: false, embed_title: "Second" }
+        - { kind: followup, content_contains: "followup sent" }
+
+  - name: "Defer mode Ephemeral Message Response: the output edits the deferred response"
+    template: "templates/deferred_component.gohtml"
+    context:
+      interaction: { type: component, custom_id: "slow:export", message_id: 7 }
+    expected:
+      output_equals: "Deferred, then done: export"
+    assertions:
+      sent_messages:
+        - { content_contains: "Deferred, then done", ephemeral: true }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "export" }
+
+  - name: "Defer mode Update Message Response: the output edits the clicked message's content, keeping its embed"
+    template: "templates/deferred_update_component.gohtml"
+    context:
+      interaction: { type: component, custom_id: "ack:1", message_id: 7 }
+    expected:
+      output_equals: "Acknowledged ack:1"
+    assertions:
+      sent_messages: []
+      edited_messages:
+        - { channel_id: 123456789012345678, content_equals: "Acknowledged ack:1", embed_title: "Channels" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: false, content_contains: "Acknowledged" }
+
+  - name: "A deferred run that prints nothing warns; updateMessage after a deferral is Discord's 40060"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^slow:`
+        Defer mode: `Message Response`
+      */}}
+      {{- updateMessage "too late" }}
+    context:
+      interaction: { type: component, custom_id: "slow:1", message_id: 7 }
+    expected:
+      output_equals: ""
+      warning_contains: "printed nothing"
+    assertions:
+      edited_messages: []
+      interaction_responses: []
+
+  - name: "updateMessage after a deferral: the 40060 warning names the defer mode"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^slow:`
+        Defer mode: `Update Message Response`
+      */}}
+      {{- updateMessage "too late" }}later
+    context:
+      interaction: { type: component, custom_id: "slow:1", message_id: 7 }
+    expected:
+      output_equals: "later"
+      warning_contains: 'Interaction has already been acknowledged", "code": 40060}): the interaction was deferred (Defer mode: `Update Message Response`)'
+    assertions:
+      edited_messages:
+        - { content_equals: "later", embed_title: "Channels" }
+      interaction_responses:
+        - { kind: deferred_edit, content_contains: "later" }
+
+  - name: "updateMessage after a deferral is an error with -strict, and inside try"
+    strict: true
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^slow:`
+        Defer mode: `Message Response`
+      */}}
+      {{- try }}{{ updateMessage "too late" }}{{ catch }}caught: {{ .Error }}{{ end }}
+    context:
+      interaction: { type: component, custom_id: "slow:1", message_id: 7 }
+    expected:
+      output_contains: 'caught: HTTP 400 Bad Request, {"message": "Interaction has already been acknowledged", "code": 40060}'
+    assertions:
+      edited_messages: []
+      interaction_responses:
+        - { kind: deferred_edit, content_contains: "caught" }
+
+  - name: "updateMessage after a deferral is the run's error with -strict (outside try)"
+    strict: true
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^slow:`
+        Defer mode: `Message Response`
+        Show errors: `false`
+      */}}
+      {{- updateMessage "too late" }}
+    context:
+      interaction: { type: component, custom_id: "slow:1", message_id: 7 }
+    expected:
+      error_contains: 'error calling updateMessage: HTTP 400 Bad Request, {"message": "Interaction has already been acknowledged", "code": 40060}'
+    assertions:
+      edited_messages: []
+      interaction_responses: []
+
+  - name: "A token of another interaction warns and sends nothing (not modelled)"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^pg:`
+      */}}
+      {{- sendResponse "aW50ZXJhY3Rpb246MTpmb3JlaWdu" "elsewhere" }}
+      {{- try }}{{ sendResponse "garbage" "x" }}{{ catch }}{{ .Error }}{{ end }}
+    context:
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    expected:
+      output_equals: "invalid interaction token"
+      warning_contains: "sendResponse: the token isn't this run's interaction's; a followup to another interaction isn't modelled, so nothing was sent"
+    assertions:
+      sent_messages:
+        - { nth: 1, content_equals: "invalid interaction token" }
+      interaction_responses:
+        - { kind: message, content_contains: "invalid interaction token" }
+
+  - name: "An execCC child of a component run reads .Message: the clicked message, clicker as author"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^pg:`
+      */}}
+      {{- execCC 201 nil 0 nil }}
+    command_map:
+      201: "templates/component_child_message.gohtml"
+    context:
+      user: { id: 42 }
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    assertions:
+      interaction_responses:
+        # the child has no handler keys: .IsButton is unset (printf shows <nil>)
+        - { kind: message, content_contains: "message 7 by 42, embed Channels, IsButton <nil>" }
+
+  - name: "sendResponseNoEscape lets a role ping; sendResponse filters it"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^pg:`
+      */}}
+      {{- sendResponse nil "hey <@&111>" }}
+      {{- sendResponseNoEscape nil "hey <@&111>" }}
+    context:
+      guild: { roles: [{ id: 111, name: "Staff" }] }
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    assertions:
+      sent_messages:
+        - { nth: 1, content_contains: "<@&111>", pings: {} }
+        - { nth: 2, content_contains: "<@&111>", pings: { roles: [111] } }
+
+  - name: "deleteResponse on an interaction response records the deletion"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^pg:`
+      */}}
+      {{- deleteResponse 5 }}Gone soon
+    context:
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    expected:
+      output_equals: "Gone soon"
+    assertions:
+      deletions:
+        - { of: response, channel_id: 123456789012345678, delay: 5s }
+      interaction_responses:
+        - { kind: message, content_contains: "Gone soon" }
+
+  - name: "A run that never responds warns (Discord: The application did not respond)"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^quiet$`
+      */}}
+      {{- dbSet 0 "clicked" 1 }}
+    context:
+      interaction: { type: component, custom_id: "quiet", message_id: 7 }
+    expected:
+      warning_contains: "The application did not respond"
+    assertions:
+      db_checks: [{ user_id: 0, key: "clicked", value_equals: 1 }]
+      interaction_responses: []
+
+  - name: "An execCC child inherits the interaction: its sendResponse is the response, the caller's output a followup"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^pg:(\w+):(\d+)$`
+      */}}
+      {{- execCC 200 nil 0 nil }}
+      {{- "caller done: " }}{{ .Interaction.RespondedTo }}
+    command_map:
+      200: "templates/component_child.gohtml"
+    context:
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    expected:
+      output_equals: "caller done: true"
+    assertions:
+      sent_messages:
+        # the child has .Interaction but not the handler's other keys (.Cmd is unset)
+        - { nth: 1, content_contains: "child responded (RespondedTo was false, Cmd <nil>)" }
+        - { nth: 2, content_contains: "caller done" }
+      interaction_responses:
+        - { kind: message, content_contains: "child responded" }
+        - { kind: followup, content_contains: "caller done: true" }
+
+  - name: "A custom ID that doesn't match the trigger doesn't run the command"
+    template: "templates/pager_component.gohtml"
+    context:
+      interaction: { type: component, custom_id: "confirm:delete:7", message_id: 7 }
+    expected:
+      no_trigger: true
+
+  - name: "The templates- prefix is stripped before matching (a test may give it)"
+    template_source: |
+      {{/*
+        Trigger type: `Component`
+        Trigger: `^pg:(\w+):(\d+)$`
+        Case sensitive: `true`
+      */}}
+      {{- .CustomID }} / {{ .InteractionData.CustomID }} / {{ .Cmd }} / {{ len .CmdArgs }} / {{ .StrippedID }}
+    context:
+      interaction: { type: component, custom_id: "templates-pg:active:1", message_id: 7 }
+    expected:
+      output_equals: "pg:active:1 / templates-pg:active:1 / pg:active:1 / 0 /"
+
+  - name: "Case sensitive: a differently-cased ID doesn't match"
+    template_source: |
+      {{/*
+        Trigger type: `Component`
+        Trigger: `^pg:`
+        Case sensitive: `true`
+      */}}
+      {{- .CustomID }}
+    context:
+      interaction: { type: component, custom_id: "PG:active:1", message_id: 7 }
+    expected:
+      no_trigger: true
+
+  - name: "updateMessage without an interaction is the vendor error"
+    template_source: |
+      {{ updateMessage "x" }}
+    expected:
+      error_contains: "no interaction data in context; consider editMessage or editResponse"
+
+  - name: "sendResponse without an interaction is an invalid token; ephemeralResponse is a no-op"
+    template_source: |
+      {{ ephemeralResponse }}{{ try }}{{ sendResponse nil "x" }}{{ catch }}{{ .Error }}{{ end }}
+    expected:
+      output_equals: "invalid interaction token"
+    assertions:
+      sent_messages: []
+
+  - name: "A menu click exposes .Values and .MenuType; the arguments after the match are .CmdArgs"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^bucket`
+      */}}
+      {{- .MenuType }}: {{ range .Values }}[{{ . }}]{{ end }} menu={{ .IsMenu }} button={{ .IsButton }} args={{ .CmdArgs }} stripped={{ .StrippedMsg }}
+    context:
+      interaction: { type: component, custom_id: "bucket a b", message_id: 7, component: string_menu, values: ["stale", "quiet"] }
+    expected:
+      output_equals: "string: [stale][quiet] menu=true button=<no value> args=[a b] stripped= a b"
+
+  - name: "A user menu's .MenuType is user"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^who$`
+      */}}
+      {{- .MenuType }} {{ index .Values 0 }}
+    context:
+      interaction: { type: component, custom_id: "who", message_id: 7, component: user_menu, values: ["42"] }
+    expected:
+      output_equals: "user 42"
+
+  - name: "A plain-string updateMessage replaces content, embeds and buttons (the response data has no omitempty)"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^pg:`
+      */}}
+      {{- updateMessage "Closed." }}
+    context:
+      interaction: { type: component, custom_id: "pg:stale:2", message_id: 7 }
+    assertions:
+      edited_messages:
+        - { channel_id: 123456789012345678, content_equals: "Closed.", has_embed: false }
+      interaction_responses:
+        - { kind: update, content_contains: "Closed." }

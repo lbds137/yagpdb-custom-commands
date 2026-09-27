@@ -44,6 +44,7 @@ var (
 	headerCase        = regexp.MustCompile("(?i:Case sensitive): `([^`]*)`")
 	headerShowErrors  = regexp.MustCompile("(?i:Show errors): `([^`]*)`")
 	headerRedirect    = regexp.MustCompile("(?i:Redirect errors): `([^`]*)`")
+	headerDeferMode   = regexp.MustCompile("(?i:Defer mode): `([^`]*)`")
 )
 
 // headerComment is the template's leading {{/* ... */}} comment, or "" without one.
@@ -106,7 +107,56 @@ func ValidateHeader(source string) error {
 			return fmt.Errorf("header Redirect errors: `%s` isn't a channel ID", v)
 		}
 	}
+	if v, ok := headerValue(headerDeferMode, source); ok {
+		if _, known := parseDeferMode(v); !known {
+			return fmt.Errorf("header Defer mode: `%s` isn't one of the panel's: %s", v,
+				strings.Join(deferModeLabels[:], ", "))
+		}
+	}
 	return nil
+}
+
+// DeferMode is the control panel's "Interaction defer mode" (customcommands.go:135-140):
+// what YAGPDB answers an interaction with before the command runs.
+type DeferMode int
+
+// Defer modes, with the panel's labels (customcommands-editcmd.html:322-347).
+const (
+	DeferModeNone      DeferMode = iota // no deferral: the run must respond itself
+	DeferModeMessage                    // "thinking...", which the output then fills
+	DeferModeEphemeral                  // the same, visible to the clicker only
+	DeferModeUpdate                     // acknowledges the click; the output edits the message
+)
+
+var deferModeLabels = [...]string{"None", "Message Response", "Ephemeral Message Response",
+	"Update Message Response"}
+
+func (m DeferMode) String() string {
+	if int(m) < len(deferModeLabels) {
+		return deferModeLabels[m]
+	}
+	return fmt.Sprintf("DeferMode(%d)", int(m))
+}
+
+// parseDeferMode reads a panel label (any case); known is false for anything else.
+func parseDeferMode(label string) (mode DeferMode, known bool) {
+	for i, l := range deferModeLabels {
+		if strings.EqualFold(strings.TrimSpace(label), l) {
+			return DeferMode(i), true
+		}
+	}
+	return DeferModeNone, false
+}
+
+// ReadDeferMode reads a command's defer mode from its header ("Defer mode: `Ephemeral
+// Message Response`"; default None). See ValidateHeader for a bad value.
+func ReadDeferMode(source string) DeferMode {
+	if v, ok := headerValue(headerDeferMode, source); ok {
+		if mode, known := parseDeferMode(v); known {
+			return mode
+		}
+	}
+	return DeferModeNone
 }
 
 // ReadTrigger reads a command's trigger from its header comment ("Trigger type: `Command`",
@@ -145,6 +195,32 @@ func (t Trigger) MessageTriggered() bool {
 // panel's "Role Change" option; YAGPDB's CommandTriggerRole). No message starts such a run.
 func (t Trigger) RoleTriggered() bool {
 	return t.Type == "Role Change"
+}
+
+// ComponentTriggered reports whether the trigger runs the command on a button or menu
+// click (the control panel's "Message Component"; YAGPDB's CommandTriggerComponent, whose
+// triggerStrings name "Component" is accepted too). A click on a component whose custom
+// ID matches the trigger regex starts such a run.
+func (t Trigger) ComponentTriggered() bool {
+	return strings.EqualFold(t.Type, "Message Component") || strings.EqualFold(t.Type, "Component")
+}
+
+// CheckMatchComponent is YAGPDB's customcommands.CheckMatchComponent
+// (handle_component.go:321-335): the trigger is a regex, (?m) and (?i) unless
+// case-sensitive, matched anywhere in the custom ID with its templates- prefix already
+// stripped; the ID after the match is the stripped ID, split into the arguments.
+func CheckMatchComponent(t Trigger, cID string) (match bool, stripped string, args []string) {
+	if !t.ComponentTriggered() {
+		return false, "", nil
+	}
+
+	cmdMatch := "(?m)"
+	if !t.CaseSensitive {
+		cmdMatch += "(?i)"
+	}
+	cmdMatch += t.Text
+
+	return matchRegexSplitArgs(cmdMatch, cID)
 }
 
 // disallowedExecCCType is YAGPDB's triggerStrings name for a trigger type execCC and

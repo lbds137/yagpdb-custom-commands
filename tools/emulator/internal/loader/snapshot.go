@@ -26,7 +26,9 @@ type Snapshot struct {
 	Deletions   []string          `yaml:"deletions,omitempty"`
 	Reactions   []string          `yaml:"reactions,omitempty"`
 	Execs       []string          `yaml:"execs,omitempty"`
-	DB          []SnapshotEntry   `yaml:"db,omitempty"`
+	// InteractionResponses are the run's answers to its interaction, in order
+	InteractionResponses []SnapshotResponse `yaml:"interaction_responses,omitempty"`
+	DB                   []SnapshotEntry    `yaml:"db,omitempty"`
 }
 
 // SnapshotMessage is a sent message. Embeds are stored as indented JSON, one entry per
@@ -40,6 +42,20 @@ type SnapshotMessage struct {
 	// SentAfterSeconds is omitted when zero, so an existing snapshot of a message sent
 	// before any sleep stays unchanged.
 	SentAfterSeconds int `yaml:"sent_after_seconds,omitempty"`
+	// Ephemeral is an interaction response only the clicker sees
+	Ephemeral bool `yaml:"ephemeral,omitempty"`
+}
+
+// SnapshotResponse is an interaction response: its kind (message, followup,
+// deferred_edit, update) and the message it sent or edited.
+type SnapshotResponse struct {
+	Kind      string   `yaml:"kind"`
+	Ephemeral bool     `yaml:"ephemeral,omitempty"`
+	MessageID int64    `yaml:"message_id"`
+	Content   snapText `yaml:"content,omitempty"`
+	// Embeds and Components as SnapshotMessage's
+	Embeds     []snapText `yaml:"embeds,omitempty"`
+	Components []snapText `yaml:"components,omitempty"`
 }
 
 // SnapshotFile is a file attached to a sent message (complexMessage's "file").
@@ -86,6 +102,16 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 	for _, x := range ctx.Execs {
 		snap.Execs = append(snap.Execs, x.String())
 	}
+	for _, r := range ctx.InteractionResponses {
+		sr := SnapshotResponse{Kind: r.Kind, Ephemeral: r.Ephemeral, MessageID: r.MessageID, Content: snapText(r.Content)}
+		for _, e := range r.Embeds {
+			sr.Embeds = append(sr.Embeds, snapText(readableJSON(e)))
+		}
+		for _, c := range r.Components {
+			sr.Components = append(sr.Components, snapText(readableJSON(c)))
+		}
+		snap.InteractionResponses = append(snap.InteractionResponses, sr)
+	}
 	entries := db.GetAll()
 	sort.Slice(entries, func(i, j int) bool {
 		if entries[i].UserID != entries[j].UserID {
@@ -102,7 +128,8 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 func snapshotMessages(messages []runtime.SentMessage) []SnapshotMessage {
 	var out []SnapshotMessage
 	for _, msg := range messages {
-		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: snapText(msg.Content), SentAfterSeconds: msg.SentAfterSeconds}
+		sm := SnapshotMessage{ChannelID: msg.ChannelID, Content: snapText(msg.Content),
+			SentAfterSeconds: msg.SentAfterSeconds, Ephemeral: msg.Ephemeral}
 		for _, e := range msg.Embeds {
 			sm.Embeds = append(sm.Embeds, snapText(readableJSON(e)))
 		}

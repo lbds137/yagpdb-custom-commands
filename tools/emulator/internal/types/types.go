@@ -422,6 +422,9 @@ type CtxMessage struct {
 	// Pinned is dstate.MessageState's (lib/dstate/interface.go:425): the emulator doesn't
 	// model pins, so it is always false
 	Pinned bool
+	// Member is discordgo.Message.Member: nil, except on a component run's .Message, where
+	// the handler sets it to the clicker (customcommands/handle_component.go:311-313)
+	Member *CtxMember
 }
 
 // Link is discordgo's Message.Link. A value receiver, so it works on the mocks' values and
@@ -484,6 +487,9 @@ type MessageSend struct {
 	// ComponentsV2 is the is_components_v2 flag (MessageFlagsIsComponentsV2), with which
 	// parseMessageInput keeps nil embeds
 	ComponentsV2 bool
+	// Ephemeral is complexMessage's "ephemeral" key (MessageFlagsEphemeral, general.go:
+	// 374-378): only an interaction response (sendResponse) reads it
+	Ephemeral bool
 }
 
 // AllowedMentions stands in for discordgo.AllowedMentions: Parse holds "users", "roles"

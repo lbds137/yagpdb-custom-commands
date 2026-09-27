@@ -46,6 +46,9 @@ IMPLEMENTED=(
     "sendMessage" "sendMessageRetID" "sendDM" "editMessage" "editMessageNoEscape" "getMessage" "deleteMessage"
     "deleteTrigger" "deleteResponse" "addReactions" "addMessageReactions"
     "deleteAllMessageReactions"
+    # Discord - Interaction responses
+    "sendResponse" "sendResponseNoEscape" "sendResponseRetID" "sendResponseNoEscapeRetID"
+    "updateMessage" "updateMessageNoEscape" "ephemeralResponse"
     # Mentions
     "mentionRoleID" "mentionRole" "mentionEveryone" "mentionHere"
     # Discord - Roles

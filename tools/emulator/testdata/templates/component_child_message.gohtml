@@ -1,0 +1,2 @@
+{{- /* execCC child of a component run: .Message is the clicked message by the clicker */ -}}
+{{ sendResponse nil (printf "message %d by %d, embed %s, IsButton %v" .Message.ID .Message.Author.ID (index .Message.Embeds 0).Title .IsButton) }}

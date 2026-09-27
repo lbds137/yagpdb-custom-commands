@@ -29,6 +29,8 @@ type SentMessage struct {
 	// SentAfterSeconds is how far the run's clock had moved on from sleep when this
 	// message was recorded (whole seconds); 0 for a message an edit produced.
 	SentAfterSeconds int
+	// Ephemeral is set on an interaction response only the clicker sees
+	Ephemeral bool
 }
 
 // RoleChange represents a role change that occurred during template execution.
@@ -129,6 +131,20 @@ type ExecutionContext struct {
 	Reaction      *types.CtxReaction
 	ReactionAdded bool
 
+	// Interaction is the interaction the run answers (YAGPDB's CurrentFrame.Interaction):
+	// a button or menu click; nil for every other run. One pointer is shared with execCC
+	// children, as YAGPDB shares it (tmplextensions.go:240-243), so a child's response
+	// counts as the interaction's
+	Interaction *types.CustomCommandInteraction
+	// Component is the click's data as the Component handler exposes it (.CustomID, .Cmd,
+	// .CmdArgs...); nil for an execCC child, which only inherits .Interaction
+	Component *ComponentTrigger
+	// deferMode is the command's header Defer mode, applied before the run
+	deferMode DeferMode
+	// ephemeralResponse is ephemeralResponse's flag (CurrentFrame.EphemeralResponse): the
+	// output's response is visible to the clicker only
+	ephemeralResponse bool
+
 	// Premium mode
 	IsPremium bool
 
@@ -158,6 +174,10 @@ type ExecutionContext struct {
 	Deletions []Deletion
 	// Reactions are the reactions the run added and removed, in order
 	Reactions []ReactionChange
+	// InteractionResponses are the run's answers to its interaction, in order: the
+	// response, followups, an edit of a deferred response, an update of the component's
+	// message (see InteractionResponse)
+	InteractionResponses []InteractionResponse
 	// Execs are the bot commands the run executed with exec and execAdmin, in order
 	Execs []Exec
 	// ExecResponses declares what exec/execAdmin return for a given command line (the
@@ -460,6 +480,15 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		data["ReactionMessage"] = ctx.reactedMessage(message)
 		data["Message"] = data["ReactionMessage"]
 	}
+	if ctx.Interaction != nil {
+		// tmplRunCC passes the pointer to a child (tmplextensions.go:242); the handler's
+		// other keys are the handler's alone
+		data["Interaction"] = ctx.Interaction
+	}
+	if ctx.Component != nil {
+		ctx.Component.setData(data)
+		data["Message"] = ctx.componentMessage()
+	}
 	// Only a message trigger sets the arguments; YAGPDB leaves them unset otherwise
 	if ctx.triggered {
 		data["Args"] = ctx.Args
@@ -686,6 +715,9 @@ func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
 		reacted := ctx.reactedMessage(message)
 		reacted.Author = message.Author
 		return reacted
+	case ctx.Component != nil:
+		// the component's message with the clicker as author (handle_component.go:311-316)
+		return ctx.componentMessage()
 	case ctx.NoMessage:
 		return types.CtxMessage{ChannelID: ctx.ChannelID, GuildID: ctx.GuildID, Author: botUser}
 	}
