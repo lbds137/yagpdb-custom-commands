@@ -123,7 +123,7 @@ Centralized message formatting and delivery:
 
 #### Content Management
 - **Rule System**: Dynamic rule storage and retrieval
-- **Glossary**: `-define` links a term to the Night House website glossary
+- **Glossary**: `/define` (the server's text prefix is `/`) links a term to the Night House website glossary
 - **Archival System**: Message preservation and organization
 
 #### Utility Services

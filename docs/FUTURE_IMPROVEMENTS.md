@@ -29,9 +29,12 @@ picks, then the minifier.
   Smaller wins not picked (fine as is for now): contrasts as one embed (also frees the
   free tier's 1 execCC), rand_hebrew / simple_db_lookup / bootstrap as slash.
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
-  2026-09-27: slash commands are "a game changer"). Decide per command: slash only, or
-  both (a CC has ONE trigger type, so both = two panel commands, the slash one a thin shim
-  execCC-ing the other), and a free-tier top 10 (free servers get 10 slash CCs, premium
+  2026-09-27: slash commands are "a game changer"). The main server's text prefix is
+  already `/` (members type `/gematria` as text), so a real slash CC of the same name
+  replaces the fake one without changing what people type. First test a throwaway command:
+  what a raw "/name args" text send does once a real slash command "name" exists (Discord
+  client behavior, unverified). Keeping both would need two panel commands (a CC has ONE
+  trigger type). Also pick a free-tier top 10 (free servers get 10 slash CCs, premium
   50; live panel lists Slash Command / User and Message Context Menu types, checked
   2026-09-27).
 - Prerequisite: the emulator doesn't model interactions: Slash (.Options, .CmdArgs,
