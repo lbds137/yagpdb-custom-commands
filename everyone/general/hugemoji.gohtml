@@ -93,8 +93,12 @@
   {{ else }}
     {{ $subjectAndVerb = "emojis were" }}
   {{ end }}
+  {{ $limitNoun := "emojis" }}
+  {{ if eq 1 $execCCLimit }}
+    {{ $limitNoun = "emoji" }}
+  {{ end }}
   {{ $errorMsgID := sendMessageRetID $channelID (joinStr " "
-    "⚠️ Warning:" $emojiIgnoredCount $subjectAndVerb "not displayed because only" $execCCLimit "emojis can be expanded at a time."
+    "⚠️ Warning:" $emojiIgnoredCount $subjectAndVerb "not displayed because only" $execCCLimit $limitNoun "can be expanded at a time."
   ) }}
   {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
 {{ end }}

@@ -35,6 +35,7 @@
 {{ $prevLine := "" }}
 {{ $words := reSplit "[[:space:]]+" $text }}
 {{- if gt (len $words) 1 -}}
+  {{- $skippedCount := 0 -}}
   {{- range $i, $word := $words -}}
     {{- if lt $i $execCCLimit -}}
       {{- execCC $pyramid $yagpdbChannelID 1 (sdict
@@ -43,10 +44,27 @@
         "Description" $word
       ) -}}
     {{- else -}}
-      {{- sendMessage $channelID (joinStr ""
-        "Skipping execCC call #" (add 1 $i) " due to having exceeded the limit of " $execCCLimit " calls!"
-      ) -}}
+      {{- $skippedCount = add 1 $skippedCount -}}
     {{- end -}}
+  {{- end -}}
+  {{/* the skipped-words warning doesn't depend on the execCC loop above having run (they're
+    scheduled, not run now), so one summary is sent after the loop rather than one message
+    per skipped word (matches hugemoji's/contrasts's single-warning pattern) */}}
+  {{- if gt $skippedCount 0 -}}
+    {{- $subjectAndVerb := "" -}}
+    {{- if eq 1 $skippedCount -}}
+      {{- $subjectAndVerb = "word was" -}}
+    {{- else -}}
+      {{- $subjectAndVerb = "words were" -}}
+    {{- end -}}
+    {{- $limitNoun := "words" -}}
+    {{- if eq 1 $execCCLimit -}}
+      {{- $limitNoun = "word" -}}
+    {{- end -}}
+    {{- $skipWarningMsgID := sendMessageRetID $channelID (joinStr " "
+      "⚠️ Warning:" $skippedCount $subjectAndVerb "not processed because only" $execCCLimit $limitNoun "can be processed at a time."
+    ) -}}
+    {{- deleteMessage $channelID $skipWarningMsgID $deleteResponseDelay -}}
   {{- end -}}
 {{- else -}}
   {{- range $i, $letter := split (index $words 0) "" -}}

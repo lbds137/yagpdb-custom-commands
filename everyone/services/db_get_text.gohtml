@@ -2,17 +2,11 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Command`
   Trigger: `db_get_text`
-  Dependencies: `embed_exec`
+  Dependencies: none
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
-
-{{ $commandsDict := (dbGet 0 "Commands").Value }}
-{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
-
-{{ $channelsDict := (dbGet 0 "Channels").Value }}
-{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{ $plainMapType := "map[string]interface {}" }}
 {{ $stringType := "string" }}

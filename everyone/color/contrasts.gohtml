@@ -61,8 +61,12 @@
     {{ else }}
       {{ $subjectAndVerb = "colors were" }}
     {{ end }}
+    {{ $limitNoun := "colors" }}
+    {{ if eq 1 $execCCLimit }}
+      {{ $limitNoun = "color" }}
+    {{ end }}
     {{ $errorMsgID := sendMessageRetID $channelID (joinStr " "
-      "⚠️ Warning:" $droppedCount $subjectAndVerb "not analyzed because only" $execCCLimit "colors can be analyzed at a time."
+      "⚠️ Warning:" $droppedCount $subjectAndVerb "not analyzed because only" $execCCLimit $limitNoun "can be analyzed at a time."
     ) }}
     {{ deleteMessage $channelID $errorMsgID $deleteResponseDelay }}
   {{ end }}

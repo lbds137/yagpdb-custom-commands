@@ -212,6 +212,15 @@ The system expects these database categories to be available:
 - `Admin` - Administrative settings
 - `Gematria` - Gematria calculation data (for Hebrew text commands)
 
+### 4. Free (non-premium) servers
+
+`bootstrap.gohtml` defaults Global `ExecCC Limit` to `10`, YAGPDB premium's per-run `execCC`
+cap. A free (non-premium) server should set Global `ExecCC Limit` to `1`, free's own per-run
+cap, or commands that fan out via `execCC` (like `pyramid`, `contrasts` and `hugemoji`) will
+error out instead of warning and skipping the overflow. `db` (17,538 characters) and
+`gematria` (11,514 characters) also exceed free's 10,000-character command size limit for
+now; a minified build is planned.
+
 ## Security Considerations
 
 - **Permission Validation**: Staff commands verify role permissions before execution
