@@ -6,8 +6,9 @@ Nothing here is changed yet: each retire or fix waits on Lila's call. Retiring =
 
 **Lila's decisions (2026-09-27):** retire `dice_roll` (done, moved to `retired/`); keep
 `db_get_text`, `ticket_clean`, the bump trio and `inactivity` (prune cycles still run).
-The bugs below are fixed; the improvements under "Keep, with improvements" still wait on
-her call.
+The bugs below are fixed. Later the same day she approved all four improvement groups:
+clearer errors (atbash, channel_link, hiatus/unhiatus Mod Log), first tests for the
+zero-coverage commands, tests for the untested branches, and clamping ExecCC Limit to 10.
 
 ## Bugs found (fixed 2026-09-27, each pinned by a test that failed on the old command)
 
