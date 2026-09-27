@@ -2,14 +2,17 @@
 """Sanity-check deploy/panel.json against the command tree, run in `make ci`.
 
 - Every mapped path exists (tracked in the working tree) and isn't under retired/.
-- Every non-retired command file (everyone/**, staff/**) has a "main" id.
+- Every non-retired, non-unmanaged command file (everyone/**, staff/**) has a "main" id.
 - Ids are unique per server.
+- Every "unmanaged" path exists in the working tree and does NOT also appear in "commands"
+  (an unmanaged file has no id and is never touched by the deploy tooling).
 
 The expected set of command files is derived from the tree every run (never a hardcoded
 count), via `git ls-files` against the working tree -- not `git ls-tree HEAD`, so an
 uncommitted `git mv` (e.g. retiring a command) is picked up immediately rather than only
 after a commit.
 """
+import argparse
 import json
 import subprocess
 import sys
@@ -27,12 +30,17 @@ def list_command_files():
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--panel", default=PANEL_JSON, help="path to panel.json to check")
+    args = parser.parse_args()
+
     errors = []
 
-    with open(PANEL_JSON, encoding="utf-8") as f:
+    with open(args.panel, encoding="utf-8") as f:
         panel = json.load(f)
 
     mapped = panel["commands"]
+    unmanaged = set(panel.get("unmanaged", []))
     all_files = list_command_files()
 
     for path in mapped:
@@ -41,8 +49,14 @@ def main() -> int:
             continue
         if path not in all_files:
             errors.append(f"{path}: mapped but does not exist in the working tree")
+        if path in unmanaged:
+            errors.append(f"{path}: mapped in commands but also listed as unmanaged")
 
-    for path in sorted(all_files):
+    for path in unmanaged:
+        if path not in all_files:
+            errors.append(f"{path}: unmanaged but does not exist in the working tree")
+
+    for path in sorted(all_files - unmanaged):
         ids = mapped.get(path)
         if ids is None or "main" not in ids:
             errors.append(f"{path}: no 'main' id in panel.json")
@@ -67,7 +81,10 @@ def main() -> int:
             print(f"  - {e}", file=sys.stderr)
         return 1
 
-    print(f"panel.json check OK: {len(mapped)} mapped commands, {len(all_files)} command files")
+    print(
+        f"panel.json check OK: {len(mapped)} mapped commands, {len(all_files)} command "
+        f"files, {len(unmanaged)} unmanaged"
+    )
     return 0
 
 

@@ -42,7 +42,8 @@ General-purpose commands for all users, in topic subfolders:
 - **`db.gohtml`** - Advanced database operations interface
 - **`db_get_embed.gohtml`** - Retrieve database values as embeds
 - **`db_get_text.gohtml`** - Retrieve database values as text
-- **`message_link.gohtml`** - Generate message links (called by log_user, panel-only, not in this repo)
+- **`message_link.gohtml`** - Generate message links (called by log_user, everyone/general/,
+  unmanaged: never deployed, the live copy holds the real watched ID)
 
 #### Hebrew (`everyone/hebrew/`)
 - **`gematria.gohtml`** - Advanced gematria calculator with tarot associations

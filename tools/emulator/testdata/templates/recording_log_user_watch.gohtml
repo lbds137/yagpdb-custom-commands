@@ -1,0 +1,11 @@
+{{- /* Mock message_link that records the ExecData keys log_user passes it */ -}}
+{{ $d := .ExecData }}
+{{ $line := print
+  "ChannelID=" $d.ChannelID
+  " DisableAuthor=" $d.DisableAuthor
+  " DisableQuote=" $d.DisableQuote
+  " KeepTrigger=" $d.KeepTrigger
+  " MessageLink=" $d.MessageLink
+  " MessageContent=" $d.Message.Content
+}}
+{{ sendMessage $d.ChannelID $line }}
