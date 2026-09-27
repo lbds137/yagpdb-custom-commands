@@ -42,7 +42,7 @@ execCC of `rule` per rule with 2 s sleeps ("one message").
 
 | Command | Why | Recommendation |
 |---|---|---|
-| `dice_roll` | YAGPDB's built-in `-roll 2d6` does the same and more (`vendor/yagpdb/stdcommands/roll/roll.go:15-28`, RPG dice syntax) | Retire |
+| `dice_roll` | YAGPDB's built-in `/roll 2d6` (text prefix `/`) does the same and more (`vendor/yagpdb/stdcommands/roll/roll.go:15-28`, RPG dice syntax) | Retire |
 | `db_get_text` | `db_get_embed` with plain-text output; no command calls it; carries a dead `$embed_exec` (line 12) | Retire unless you use it by hand |
 | `ticket_clean` | Regex `.*` that deletes any non-`tickets open` message in its channel; only useful if the ticket channel is still live (its sibling `ticket_adduser_exec` is retired) | Retire if tickets are gone |
 | bump trio (`bump_check`, `bump_remind`, `bump_reset`) | Only useful while the server bumps on Disboard; `bump_check` fires on any 👍 in its channel | Retire all three if bumping stopped; otherwise keep |
