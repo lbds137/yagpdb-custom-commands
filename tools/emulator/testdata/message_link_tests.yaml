@@ -41,57 +41,100 @@ command_map:
 
 tests:
   - name: "message_link: expands a quoted link"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      exec_data:
+        Message:
+          Content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
     assertions:
       sent_messages:
         - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "quoted a message:\nlook" }
     snapshot: true
 
   - name: "message_link: shows the author's nickname"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
       member_nicks: { 500000000000000001: "Tea Guest" }
     assertions:
       sent_messages:
         - { channel_id: 123456789012345678, embed_contains: "Tea Guest (" }
 
   - name: "message_link: deleted message is ignored"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000099"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
     expected:
       output_equals: ""
     snapshot: true
 
-  - name: "message_link: links in code are ignored"
-    template: "../../../retired/message_link.gohtml"
+  # Renamed 2026-09-27 (was "links in code are ignored"): the old regex-trigger ignore
+  # filter (prefix/code-block detection) only applies without exec_data. log_user always
+  # calls with exec_data.Message set, so $execDataCheck is true unconditionally and this
+  # code-block content is no longer ignored -- that's exactly what log_user relies on
+  # (it does its own filtering before calling message_link).
+  - name: "message_link: exec_data bypasses the code-block ignore filter"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "`https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001`"
-    snapshot: true
+      exec_data:
+        Message:
+          Content: "`https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001`"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "quoted a message:\n``" }
 
   - name: "message_link: the linker left the server"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
       members: [500000000000000001]
     assertions:
       sent_messages:
         - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "linked a message" }
 
   - name: "message_link: execCC data without a link"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       exec_data: { ChannelID: 900000000000000003, DisableQuote: true }
     snapshot: true
 
   # The linked message has an embed: message_link carries its parts over as fields
   - name: "message_link: a quoted embed's parts become fields"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
       messages:
         - id: 700000000000000005
           channel_id: 900000000000000002
@@ -113,9 +156,15 @@ tests:
     snapshot: true
 
   - name: "message_link: a quoted embed's long description is cut to Discord's 1024"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
       messages:
         # 1025 characters, the last three 3 bytes long: the field holds 1023 and "…"
         - id: 700000000000000005
@@ -127,9 +176,15 @@ tests:
       sent_messages: [{ embed_contains: 'a€…"' }]
 
   - name: "message_link: a quoted embed's description of exactly 1024 is kept"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000005"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
       messages:
         - id: 700000000000000005
           channel_id: 900000000000000002
@@ -141,9 +196,15 @@ tests:
 
   # Linking a Message Link re-sends its embed as it is (the embed read from the message)
   - name: "message_link: linking a Message Link re-sends its embed"
-    template: "../../../retired/message_link.gohtml"
+    template: "../../../everyone/services/message_link.gohtml"
     context:
       message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000006"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000006"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
       messages:
         - id: 700000000000000006
           channel_id: 900000000000000002
@@ -158,3 +219,24 @@ tests:
         - channel_id: 123456789012345678
           embed_title: "Message Link"
           embed_contains: '"description": "the original quote"'
+
+  # Mirrors exactly how log_user calls message_link: DisableAuthor/DisableQuote/KeepTrigger
+  # all true, so neither the quote/author preamble nor the trigger deletion happens -- only
+  # the embed is sent, and the trigger message is left alone.
+  - name: "message_link: exec_data mirrors log_user (DisableAuthor/DisableQuote/KeepTrigger)"
+    template: "../../../everyone/services/message_link.gohtml"
+    context:
+      message_content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      exec_data:
+        Message:
+          Content: "look https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
+        DisableAuthor: true
+        DisableQuote: true
+        KeepTrigger: true
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Message Link", content_equals: "" }
+      deletions: []

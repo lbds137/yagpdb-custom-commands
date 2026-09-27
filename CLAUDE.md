@@ -20,7 +20,7 @@ This repository contains a comprehensive suite of custom commands for the YAGPDB
 Top-level command folders mirror the YAGPDB control-panel groups (permission scopes):
 
 1. **`everyone/`** - The everyone group, in topic subfolders: `services/` (embed_exec, db,
-   db_get_embed, db_get_text), `hebrew/` (gematria, alefbet, atbash, pyramid, rand_hebrew),
+   db_get_embed, db_get_text, message_link), `hebrew/` (gematria, alefbet, atbash, pyramid, rand_hebrew),
    `color/` (contrast, contrasts, hex_to_int, rand_color), `knowledge/` (kb, define, rule),
    `links/` (message_pointer, channel_link), `bump/` (bump_check,
    bump_remind), `general/` (avatar_viewer, timestamp, hugemoji, ticket_clean, unhiatus).
@@ -56,6 +56,7 @@ Retired commands (`retired/`) are kept for reference and never deployed.
 2. **Service Commands**
    - `embed_exec` - Universal embed creation service
    - `db` - Database operations interface
+   - `message_link` - Message reference and linking service, called by log_user (panel-only, not in this repo)
    - `simple_db_edit` / `simple_db_lookup` - Database management utilities
 
 3. **Command Structure**

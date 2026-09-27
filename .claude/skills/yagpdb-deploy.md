@@ -38,6 +38,13 @@ CLAUDE.md) stays as the fallback when Claude-in-Chrome isn't available.
    as often as on a failed one. Success/failure is decided solely by the read-back hash.
 9. If `SERVER=main` and everything came back clean, `make mark-deployed`.
 
+## Before retiring or deleting a command
+
+Check the live panel for callers first: it can have commands the repo doesn't (panel-only
+commands like `log_user`, or test commands). Do a read-only pass over the panel tab, the same
+tab procedure this skill already uses, searching live command code for the command's name and
+for its `Commands`-dict key. Only once that comes up empty is it safe to retire or delete.
+
 ## Out of scope for this script (stay manual)
 
 - Deleting a command in the panel, or creating a new one -- list these for Lila instead of

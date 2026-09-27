@@ -177,6 +177,29 @@ func TestNoTrigger(t *testing.T) {
 	if _, err := LoadTestFile(snapPath); err == nil || !strings.Contains(err.Error(), "snapshot: true") {
 		t.Errorf("no_trigger + snapshot: want a load-time error naming the conflict, got %v", err)
 	}
+
+	// no_trigger combined with an exec_data context is also a load-time error: exec_data
+	// bypasses the header trigger check entirely, so no_trigger would never check anything.
+	execDataPath := filepath.Join(dir, "exec_data.yaml")
+	execDataSrc := "tests:\n  - name: x\n    template_source: \"hi\"\n    context:\n      exec_data: { Foo: 1 }\n" +
+		"    expected:\n      no_trigger: true\n"
+	if err := os.WriteFile(execDataPath, []byte(execDataSrc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadTestFile(execDataPath); err == nil || !strings.Contains(err.Error(), "no_trigger can't be combined") {
+		t.Errorf("no_trigger + exec_data: want a load-time error naming the conflict, got %v", err)
+	}
+
+	// Same for a reaction context.
+	reactionPath := filepath.Join(dir, "reaction.yaml")
+	reactionSrc := "tests:\n  - name: x\n    template_source: \"hi\"\n    context:\n      reaction: { emoji: \"👍\" }\n" +
+		"    expected:\n      no_trigger: true\n"
+	if err := os.WriteFile(reactionPath, []byte(reactionSrc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadTestFile(reactionPath); err == nil || !strings.Contains(err.Error(), "no_trigger can't be combined") {
+		t.Errorf("no_trigger + reaction: want a load-time error naming the conflict, got %v", err)
+	}
 }
 
 func TestSuiteDefaultPrefix(t *testing.T) {

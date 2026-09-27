@@ -11,7 +11,10 @@ Refuses (exit 1, message on stderr) if HEAD is not contained in any origin/*
 branch (raw.githubusercontent.com URLs for it would 404), unless
 DEPLOY_MANIFEST_SKIP_ORIGIN_CHECK=1 is set in the environment (test-only
 escape hatch, documented here and in the test suite that uses it) -- or if
-any mapped file differs between the working tree and HEAD.
+any mapped file differs between the working tree and HEAD, unless
+DEPLOY_MANIFEST_SKIP_DIRTY_CHECK=1 (also test-only: it then hashes the working tree
+instead of HEAD, so `make ci` can run it mid-edit, including for a command not yet
+committed).
 """
 import hashlib
 import json
@@ -69,6 +72,7 @@ def main() -> int:
         return 1
 
     skip_origin_check = os.environ.get("DEPLOY_MANIFEST_SKIP_ORIGIN_CHECK") == "1"
+    skip_dirty_check = os.environ.get("DEPLOY_MANIFEST_SKIP_DIRTY_CHECK") == "1"
     if not skip_origin_check and not head_on_origin():
         print(
             "refusing: HEAD is not contained in any origin/* branch "
@@ -89,13 +93,19 @@ def main() -> int:
         if server not in ids:
             print(f"warning: {path} has no id for server {server}", file=sys.stderr)
             continue
-        if not working_tree_matches_head(path):
+        if not skip_dirty_check and not working_tree_matches_head(path):
             print(
                 f"refusing: {path} differs between the working tree and HEAD",
                 file=sys.stderr,
             )
             return 1
-        content = run("git", "show", f"HEAD:{path}").decode("utf-8")
+        if skip_dirty_check:
+            # Test mode: hash the working tree, so a command added or edited mid-change
+            # (not yet at HEAD) still gets a manifest entry.
+            with open(path, encoding="utf-8") as f:
+                content = f.read()
+        else:
+            content = run("git", "show", f"HEAD:{path}").decode("utf-8")
         normalized = normalize(content)
         digest = sha256_hex(normalized)
         raw = f"https://raw.githubusercontent.com/{REPO}/{head_sha}/{path}"
