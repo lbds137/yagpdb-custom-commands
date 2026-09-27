@@ -195,12 +195,15 @@ gets a failing test first.
 
 ## Tooling defects
 
-- Fix next (found 2026-09-27): deploy/deploy.test.js pins the sha256 of three real
-  command files (define, rules, alefbet) as constants, so any edit to one of them fails
-  `make ci` until the constant is recomputed by hand (the kb retirement had to). The parity
-  test should compute the Python-normalized hash at test time (spawn python3 on the file)
-  and compare it with deploy.js's, keeping the point (JS/Python agree) without pinning
-  file contents.
+- Shipped (8aa3b70): deploy/deploy.test.js no longer pins the sha256 of real command
+  files; the parity test computes the Python-normalized hash at test time (spawnSync
+  python3) and compares it with deploy.js's.
+- Fix next (found 2026-09-27): `vendor/yagpdb` is 193 upstream commits behind (vendored
+  0cf2ec5, 2025-12-18; upstream c579722, 2026-09-27). Upstream adds template functions
+  `hasAnyPermissions`, `targetHasAnyPermissions`, `memberAbove`, `memberAboveRole` that the
+  emulator doesn't know. Refresh with `vendor/update-yagpdb.sh`, then diff
+  `common/templates`, `lib/template` and `customcommands` for behavior the emulator copies
+  and port what changed.
 - Deferred (found 2026-09-27): `scripts/lint-all.sh` passes a positional file argument to
   `yagpdb_lint.py`, which only accepts `--dir`; every file it hands over "fails" as a
   result. Fix next time the script is touched.
