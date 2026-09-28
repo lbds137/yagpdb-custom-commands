@@ -1,0 +1,9 @@
+{{- /* execCC child of a slash or context menu run: it inherits .Interaction and the caller's
+   message (blank for a slash run and a user menu; the clicked one for a message menu), and
+   none of the handler's own keys (tmplextensions.go:235-245) */ -}}
+{{- $member := "no member" }}{{ if .Message.Member }}{{ $member = print "member " .Message.Member.User.ID }}{{ end }}
+{{- $slash := false }}{{ if .IsSlashCommand }}{{ $slash = true }}{{ end }}
+{{- $options := false }}{{ if .Options }}{{ $options = true }}{{ end }}
+{{- $cmdargs := false }}{{ if .CmdArgs }}{{ $cmdargs = true }}{{ end }}
+{{- sendResponse nil (printf "child sees message %d by %d, %s (RespondedTo was %v; slash %v, options %v, cmdargs %v)"
+	.Message.ID .Message.Author.ID $member .Interaction.RespondedTo $slash $options $cmdargs) }}

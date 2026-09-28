@@ -1,0 +1,158 @@
+name: "Slash commands: a Slash Command trigger with typed options and subcommands"
+
+# The invoker is user 42; user 5 is another member, 6 has left, channel 9 and role 111
+# are declared so channel and role options can name them
+defaults:
+  user: { id: 42, roles: [111] }
+  channel: { id: 123456789012345678 }
+  members: [42, 5]
+  member_nicks: { 5: "Fiver" }
+  guild:
+    roles: [{ id: 111, name: "Staff", position: 2 }]
+    channels: [{ id: 9, name: "staff-log" }]
+
+tests:
+  - name: "Every option type: .Options by name, .Args with the name first, .CmdArgs in definition order"
+    template: "templates/slash_probe.gohtml"
+    snapshot: true
+    context:
+      interaction:
+        type: slash
+        options: { text: "hello", flavor: "mint", count: 3, level: 2, ratio: 0.5, weight: 2,
+                   loud: true, who: 5, where: 9, rank: 111, whom: 111 }
+    expected:
+      output_equals: |
+        probe/probe sub="" args=12 cmdargs=11 first=probe
+        string=hello int64=3 float64=0.5 bool=true
+        who=ptr 5 MockUser where=9 staff-log rank=111 Staff whom=111 *types.CtxRole flavor=mint level=int64 weight=float64
+        message: id=0 author=42 member=42 channel=123456789012345678
+        data: probe type=1 options=11 slash=true user=42
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, content_contains: "cmdargs=11" }
+
+  - name: "Absent optional options are skipped in .CmdArgs and unset in .Options; a mentionable that isn't a role is a user"
+    template: "templates/slash_probe.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { text: "x", count: -1, ratio: 2, loud: false, who: 42, where: 123456789012345678,
+                   rank: 111, whom: 5 }
+    expected:
+      output_contains: "args=9 cmdargs=8 first=probe"
+    assertions:
+      sent_messages:
+        - content_contains: "whom=5 *types.DiscordUser"
+
+  - name: "A subcommand: .SubCommand, its own options, an optional integer given; the ephemeral deferral is filled by the output"
+    template: "templates/slash_subcommands.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: set, options: { key: "Global", value: "v", ttl: 60 } }
+    expected:
+      output_equals: "deferred kv set: Global v 60 (3 options, ttl 60)"
+    assertions:
+      sent_messages:
+        - { content_contains: "kv set", ephemeral: true }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Global v 60" }
+
+  - name: "Another subcommand of the same command, its optional option absent"
+    template: "templates/slash_subcommands.gohtml"
+    context:
+      interaction: { type: slash, subcommand: get, options: { key: "Global" } }
+    expected:
+      output_equals: "deferred kv get: Global (1 options)"
+
+  - name: "An execCC child of a slash run inherits the interaction and the blank message (ID 0, by the invoker)"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `delegate`
+      */}}
+      {{- execCC 2 nil 0 nil }}
+    command_map: { 2: "templates/application_command_child.gohtml" }
+    context:
+      interaction: { type: slash }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - { kind: message, content_contains: "child sees message 0 by 42, member 42 (RespondedTo was false; slash false, options false, cmdargs false)" }
+
+  - name: "Option names are matched in any case, as the handler lowercases what Discord sends; .Interaction.DataCommand is the command data"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `probe`
+        Slash option: `who user! a member`
+        Slash option: `text string the text`
+      */}}
+      {{- .Options.who.ID }} {{ .Options.text }} {{ len .CmdArgs }} {{ .Interaction.DataCommand.Name }} {{ len .Interaction.DataCommand.Options }} {{ .InteractionData.Name }}
+    context:
+      interaction: { type: slash, options: { WHO: 5, Text: "hi" } }
+    expected:
+      output_equals: "5 hi 2 probe 2 probe"
+
+  - name: "A user option naming a non-member is still a user (Discord resolves any user); getMember of them is nil"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `probe`
+        Slash option: `who user! a user`
+      */}}
+      {{- printf "%T" .Options.who }} {{ .Options.who.ID }} {{ if getMember .Options.who.ID }}member{{ else }}not a member{{ end }}
+    context:
+      interaction: { type: slash, options: { who: 6 } }
+    expected:
+      output_equals: "*types.DiscordUser 6 not a member"
+
+  - name: "ephemeralResponse makes the printed reply private; sendResponse is the response, the output a followup"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `whoami`
+        Slash option: `verbose boolean say more`
+      */}}
+      {{- sendResponse nil (complexMessage "content" (print "You are " .User.Username) "ephemeral" true) }}
+      {{- ephemeralResponse }}{{ if .Options.verbose }}in {{ .Channel.Name }} as <@{{ .User.ID }}>{{ end }}
+    context:
+      interaction: { type: slash, options: { verbose: true } }
+    expected:
+      output_equals: "in test-channel as <@42>"
+    assertions:
+      sent_messages:
+        - { nth: 1, content_contains: "You are TestUser", ephemeral: true }
+        - { nth: 2, content_contains: "as <@42>", ephemeral: true }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "You are" }
+        - { kind: followup, ephemeral: true, content_contains: "as <@42>" }
+
+  - name: "A slash run has no message to update: updateMessage is refused, the printed reply still responds"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `nope`
+      */}}
+      {{- updateMessage "edit?" }}replied instead
+    context:
+      interaction: { type: slash }
+    expected:
+      output_equals: "replied instead"
+      warning_contains: "no message to update"
+    assertions:
+      edited_messages: []
+      interaction_responses:
+        - { kind: message, content_contains: "replied instead" }
+
+  - name: "The name is matched in any case (the panel stores it lowercase); a command with no options has an empty .CmdArgs"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `ping`
+      */}}
+      {{- .Cmd }} {{ len .CmdArgs }} {{ .Options }}
+    context:
+      interaction: { type: slash, options: {} }
+    expected:
+      output_equals: "ping 0 map[]"

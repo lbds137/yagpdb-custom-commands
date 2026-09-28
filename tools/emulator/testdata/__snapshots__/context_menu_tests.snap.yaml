@@ -1,0 +1,18 @@
+'Message menu: .Message is the message used on, its author the target; sendDM sends nothing':
+    output: 'message "Quote Message": message 7 "quote me" by 5 (member, joined 2026-09-27T00:00:00.000000+00:00), asked by 42'
+    messages:
+        - channel_id: 123456789012345678
+          content: 'message "Quote Message": message 7 "quote me" by 5 (member, joined 2026-09-27T00:00:00.000000+00:00), asked by 42'
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          content: 'message "Quote Message": message 7 "quote me" by 5 (member, joined 2026-09-27T00:00:00.000000+00:00), asked by 42'
+'User menu: .TargetUser and .TargetMember are the target, .Author the invoker; no .User, .Member or .Message':
+    output: 'user "View avatar": target 5 MockUser (5, joined 2026-09-27T00:00:00.000000+00:00), by 42 true 5 type=2 bot=1234567890'
+    messages:
+        - channel_id: 123456789012345678
+          content: 'user "View avatar": target 5 MockUser (5, joined 2026-09-27T00:00:00.000000+00:00), by 42 true 5 type=2 bot=1234567890'
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          content: 'user "View avatar": target 5 MockUser (5, joined 2026-09-27T00:00:00.000000+00:00), by 42 true 5 type=2 bot=1234567890'

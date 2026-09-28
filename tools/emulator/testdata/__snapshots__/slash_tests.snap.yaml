@@ -1,0 +1,35 @@
+'A subcommand: .SubCommand, its own options, an optional integer given; the ephemeral deferral is filled by the output':
+    output: 'deferred kv set: Global v 60 (3 options, ttl 60)'
+    messages:
+        - channel_id: 123456789012345678
+          content: 'deferred kv set: Global v 60 (3 options, ttl 60)'
+          ephemeral: true
+    interaction_responses:
+        - kind: deferred_edit
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: 'deferred kv set: Global v 60 (3 options, ttl 60)'
+'Every option type: .Options by name, .Args with the name first, .CmdArgs in definition order':
+    output: |-
+        probe/probe sub="" args=12 cmdargs=11 first=probe
+        string=hello int64=3 float64=0.5 bool=true
+        who=ptr 5 MockUser where=9 staff-log rank=111 Staff whom=111 *types.CtxRole flavor=mint level=int64 weight=float64
+        message: id=0 author=42 member=42 channel=123456789012345678
+        data: probe type=1 options=11 slash=true user=42
+    messages:
+        - channel_id: 123456789012345678
+          content: |-
+            probe/probe sub="" args=12 cmdargs=11 first=probe
+            string=hello int64=3 float64=0.5 bool=true
+            who=ptr 5 MockUser where=9 staff-log rank=111 Staff whom=111 *types.CtxRole flavor=mint level=int64 weight=float64
+            message: id=0 author=42 member=42 channel=123456789012345678
+            data: probe type=1 options=11 slash=true user=42
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          content: |-
+            probe/probe sub="" args=12 cmdargs=11 first=probe
+            string=hello int64=3 float64=0.5 bool=true
+            who=ptr 5 MockUser where=9 staff-log rank=111 Staff whom=111 *types.CtxRole flavor=mint level=int64 weight=float64
+            message: id=0 author=42 member=42 channel=123456789012345678
+            data: probe type=1 options=11 slash=true user=42

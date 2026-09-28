@@ -81,7 +81,8 @@ type ContextDef struct {
 	Seed     *TestSeed    `yaml:"seed"`
 	Reaction *ReactionDef `yaml:"reaction"` // Makes this a reaction-triggered run
 	// Interaction makes this a run answering an interaction: a click on a button or menu
-	// of a message in messages: (a Message Component trigger)
+	// of a message in messages: (a Message Component trigger), a slash command (a Slash
+	// Command trigger) or a context menu entry (a User/Message Context Menu trigger)
 	Interaction *InteractionDef `yaml:"interaction"`
 	Messages    []MessageDef    `yaml:"messages"` // Messages getMessage can find
 	// MessageContent is the whole triggering message, trigger included (instead of args);
@@ -184,19 +185,32 @@ type ReactionDef struct {
 	Added     *bool  `yaml:"added"`      // false for a removed reaction (default true)
 }
 
-// InteractionDef describes the interaction that triggered a command. Only a component
-// click (type: component) is modelled; modal, slash and context-menu interactions are
-// units 3 and 4 of docs/design/emulator-interactions.md.
+// InteractionDef describes the interaction that triggered a command, by type: a
+// component click (component), a slash command invocation (slash), a use of a user
+// context menu entry (user_menu) or of a message context menu entry (message_menu).
+// Modals are unit 4 of docs/design/emulator-interactions.md.
 type InteractionDef struct {
-	Type string `yaml:"type"` // "component"
+	Type string `yaml:"type"` // "component", "slash", "user_menu" or "message_menu"
 	// CustomID is the clicked component's custom ID as the command wrote it (the
 	// templates- prefix YAGPDB adds is implied; giving it is fine too)
-	CustomID  string   `yaml:"custom_id"`
-	MessageID int64    `yaml:"message_id"` // the message clicked, in messages: (in the run's channel)
-	Values    []string `yaml:"values"`     // a menu's chosen values (.Values)
+	CustomID string `yaml:"custom_id"`
+	// MessageID is the message clicked (component) or the message the entry was used on
+	// (message_menu), in messages: (in the run's channel)
+	MessageID int64    `yaml:"message_id"`
+	Values    []string `yaml:"values"` // a menu's chosen values (.Values)
 	// Component is the clicked component's kind: button (the default), string_menu,
 	// user_menu, role_menu, mentionable_menu or channel_menu
 	Component string `yaml:"component"`
+	// Subcommand is the slash subcommand chosen (a Slash subcommand header line), when
+	// the command has them
+	Subcommand string `yaml:"subcommand"`
+	// Options are the slash options given, by name, typed by their header line: a string,
+	// a whole number (integer), a number, true/false (boolean), or an ID (user, channel:
+	// the run's or a guild.channels entry, role: a guild.roles entry, mentionable: a role
+	// else a user); a required one can't be left out
+	Options map[string]interface{} `yaml:"options"`
+	// Target is the user the user context menu entry was used on (.TargetUser)
+	Target int64 `yaml:"target"`
 }
 
 // componentKinds are InteractionDef.Component's values and their component types.
@@ -210,27 +224,79 @@ var componentKinds = map[string]types.ComponentType{
 	"channel_menu":     types.ChannelSelectMenuComponent,
 }
 
-// validate rejects an interaction the emulator can't run.
+// validate rejects an interaction the emulator can't run: an unmodelled type, a field
+// another type takes, or a missing one.
 func (d *InteractionDef) validate() error {
 	switch d.Type {
 	case "component":
-	case "modal", "slash", "user_menu", "message_menu":
-		return fmt.Errorf("interaction type %q isn't modelled yet (docs/design/emulator-interactions.md units 3-4); only component is", d.Type)
+		if err := d.onlyFields("component", "custom_id, message_id, values, component"); err != nil {
+			return err
+		}
+		kind, ok := componentKinds[d.Component]
+		if !ok {
+			return fmt.Errorf("interaction component %q isn't button, string_menu, user_menu, role_menu, mentionable_menu or channel_menu", d.Component)
+		}
+		if d.CustomID == "" {
+			return fmt.Errorf("interaction needs the custom_id clicked")
+		}
+		if d.MessageID == 0 {
+			return fmt.Errorf("interaction needs the message_id clicked (a messages: entry)")
+		}
+		if kind == types.ButtonComponent && len(d.Values) > 0 {
+			return fmt.Errorf("interaction values need a menu component (component: string_menu ...); a button has none")
+		}
+	case "slash":
+		if err := d.onlyFields("slash", "subcommand, options"); err != nil {
+			return err
+		}
+		for name, v := range d.Options {
+			switch v.(type) {
+			case string, int, int64, float64, bool:
+			default:
+				return fmt.Errorf("interaction option %q: write a string, a number, true/false or an ID, not %T", name, v)
+			}
+		}
+	case "user_menu":
+		if err := d.onlyFields("user_menu", "target"); err != nil {
+			return err
+		}
+		if d.Target == 0 {
+			return fmt.Errorf("interaction needs the target user's ID (target:)")
+		}
+	case "message_menu":
+		if err := d.onlyFields("message_menu", "message_id"); err != nil {
+			return err
+		}
+		if d.MessageID == 0 {
+			return fmt.Errorf("interaction needs the message_id the entry was used on (a messages: entry)")
+		}
+	case "modal":
+		return fmt.Errorf("interaction type %q isn't modelled yet (docs/design/emulator-interactions.md unit 4)", d.Type)
 	default:
-		return fmt.Errorf("interaction type %q: write type: component", d.Type)
+		return fmt.Errorf("interaction type %q: write type: component, slash, user_menu or message_menu", d.Type)
 	}
-	kind, ok := componentKinds[d.Component]
-	if !ok {
-		return fmt.Errorf("interaction component %q isn't button, string_menu, user_menu, role_menu, mentionable_menu or channel_menu", d.Component)
+	return nil
+}
+
+// onlyFields rejects a field of another interaction type, so a typo can't quietly
+// weaken a test; allowed lists the type's own for the message.
+func (d *InteractionDef) onlyFields(typ, allowed string) error {
+	set := map[string]bool{
+		"custom_id":  d.CustomID != "",
+		"message_id": d.MessageID != 0,
+		"values":     len(d.Values) > 0,
+		"component":  d.Component != "",
+		"subcommand": d.Subcommand != "",
+		"options":    d.Options != nil,
+		"target":     d.Target != 0,
 	}
-	if d.CustomID == "" {
-		return fmt.Errorf("interaction needs the custom_id clicked")
+	for _, f := range strings.Split(allowed, ", ") {
+		delete(set, f)
 	}
-	if d.MessageID == 0 {
-		return fmt.Errorf("interaction needs the message_id clicked (a messages: entry)")
-	}
-	if kind == types.ButtonComponent && len(d.Values) > 0 {
-		return fmt.Errorf("interaction values need a menu component (component: string_menu ...); a button has none")
+	for _, f := range []string{"custom_id", "message_id", "values", "component", "subcommand", "options", "target"} {
+		if set[f] {
+			return fmt.Errorf("interaction %s isn't a type: %s field (it takes %s)", f, typ, allowed)
+		}
 	}
 	return nil
 }
@@ -239,6 +305,16 @@ func (d *InteractionDef) validate() error {
 func (d *InteractionDef) click() runtime.ComponentClick {
 	return runtime.ComponentClick{CustomID: d.CustomID, MessageID: d.MessageID,
 		ComponentType: componentKinds[d.Component], Values: d.Values}
+}
+
+// slash is the invocation as the runtime takes it.
+func (d *InteractionDef) slash() runtime.SlashInvocation {
+	return runtime.SlashInvocation{Subcommand: d.Subcommand, Options: d.Options}
+}
+
+// contextMenuTarget is the target as the runtime takes it.
+func (d *InteractionDef) contextMenuTarget() runtime.ContextMenuTarget {
+	return runtime.ContextMenuTarget{UserID: d.Target, MessageID: d.MessageID}
 }
 
 // UserDef defines user context.

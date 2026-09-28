@@ -139,6 +139,13 @@ type ExecutionContext struct {
 	// Component is the click's data as the Component handler exposes it (.CustomID, .Cmd,
 	// .CmdArgs...); nil for an execCC child, which only inherits .Interaction
 	Component *ComponentTrigger
+	// Slash is a slash command invocation's data as its handler exposes it (.Options,
+	// .SubCommand, .CmdArgs...); nil for an execCC child, as Component
+	Slash *SlashTrigger
+	// ContextMenu is a context menu use's data as its handler exposes it (.TargetUser,
+	// .TargetMember, .Author...); nil for an execCC child, as Component. Such a run has
+	// NoMember (the handler passes a nil member)
+	ContextMenu *ContextMenuTrigger
 	// deferMode is the command's header Defer mode, applied before the run
 	deferMode DeferMode
 	// ephemeralResponse is ephemeralResponse's flag (CurrentFrame.EphemeralResponse): the
@@ -489,6 +496,18 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		ctx.Component.setData(data)
 		data["Message"] = ctx.componentMessage()
 	}
+	if ctx.Slash != nil || ctx.ContextMenu != nil {
+		// the handlers' .InteractionData is the interaction's DataCommand pointer
+		// (handle_slashcommand.go:121, handle_contextmenu.go:132)
+		data["InteractionData"] = ctx.Interaction.DataCommand
+	}
+	if ctx.Slash != nil {
+		ctx.Slash.setData(data)
+		data["Message"] = ctx.slashMessage()
+	}
+	if ctx.ContextMenu != nil {
+		ctx.ContextMenu.setData(data)
+	}
 	// Only a message trigger sets the arguments; YAGPDB leaves them unset otherwise
 	if ctx.triggered {
 		data["Args"] = ctx.Args
@@ -718,10 +737,26 @@ func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
 	case ctx.Component != nil:
 		// the component's message with the clicker as author (handle_component.go:311-316)
 		return ctx.componentMessage()
+	case ctx.Slash != nil:
+		// the blank message the slash handler builds (handle_slashcommand.go:166-173)
+		return ctx.slashMessage()
+	case ctx.ContextMenu != nil && ctx.ContextMenu.Message != nil:
+		// the clicked message (handle_contextmenu.go:145-148)
+		return *ctx.ContextMenu.Message
 	case ctx.NoMessage:
-		return types.CtxMessage{ChannelID: ctx.ChannelID, GuildID: ctx.GuildID, Author: botUser}
+		// the fake message Context.Execute builds (context.go:427-445): the bot as author
+		// and as member
+		return types.CtxMessage{ChannelID: ctx.ChannelID, GuildID: ctx.GuildID, Author: botUser,
+			Member: ctx.botMember()}
 	}
 	return message
+}
+
+// botMember is the bot as a member of the server (bot.GetMember(gs.ID, BotUser.ID)).
+func (ctx *ExecutionContext) botMember() *types.CtxMember {
+	m := ctx.member(BotUserID)
+	m.User = botUser
+	return &m
 }
 
 // channelNamed is the ID of the first channel, in position order, with that name (any

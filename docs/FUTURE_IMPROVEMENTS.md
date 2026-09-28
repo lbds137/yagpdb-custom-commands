@@ -103,9 +103,19 @@ picks, then the minifier.
   with the vendor errors and the one-response rule, the output routed as response /
   followup / deferred edit, `context.interaction: { type: component }` and the
   `interaction_responses:` assertion (tools/emulator/internal/runtime/interactions.go;
-  the skill has a click recipe). Units 3-4 (slash + context menus, modals) are next,
-  from vendor c579722 (customcommands/handle_slashcommand.go, handle_contextmenu.go;
-  common/templates/context_interactions.go sendModal, general.go).
+  the skill has a click recipe). Unit 3 (slash commands + context menus) shipped
+  2026-09-27: `Trigger type: \`Slash Command\`` with `Slash subcommand:` / `Slash
+  option:` header lines validated as the panel validates its rows (customcommands.go:
+  610-741 texts), typed options resolved from the test's users/channels/roles as
+  discordgo decodes them, the handler's keys (.Options/.SubCommand/.Args/.CmdArgs with
+  absent optionals skipped, blank .Message), `User Context Menu` / `Message Context
+  Menu` triggers with .TargetUser/.TargetMember/.Author/.CommandType and no .User/
+  .Member (sendDM sends nothing, as YAGPDB's does without a member), `context.interaction`
+  types slash / user_menu / message_menu (tools/emulator/internal/runtime/slash.go). Not
+  captured from Discord (INF): its refusal of `updateMessage` on a slash/context-menu
+  interaction, which the emulator stands in for with a 50035 "Invalid Form Body"
+  warning. Unit 4 (modals) is next, from vendor c579722 (common/templates/
+  context_interactions.go sendModal, general.go, handle_component.go:337-437).
 - Deferred (unit 2 review, 2026-09-27): `.Interaction.MessageComponentData` (discordgo's
   method on the embedded Interaction, lib/discordgo/interactions.go:271) isn't modelled:
   a YAGPDB template can call it, the emulator's `.Interaction` has no such method (use

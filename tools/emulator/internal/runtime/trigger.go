@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
+	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/types"
 )
 
 // ErrTriggerMismatch is wrapped by the error SetTriggerMessage returns when msg doesn't
@@ -113,6 +114,25 @@ func ValidateHeader(source string) error {
 				strings.Join(deferModeLabels[:], ", "))
 		}
 	}
+	// A slash command's or context menu entry's rows and name, as the panel validates
+	// them (slash.go); the option rows belong to a slash command only
+	t, ok := ReadTrigger(source)
+	switch {
+	case ok && t.SlashTriggered():
+		if _, err := ReadSlashCommand(source); err != nil {
+			return fmt.Errorf("header: %w", err)
+		}
+	case ok && t.IsContextMenu():
+		if err := validateContextMenuHeader(source, t); err != nil {
+			return fmt.Errorf("header: %w", err)
+		}
+		fallthrough
+	default:
+		header := headerComment(source)
+		if headerSlashOption.MatchString(header) || headerSlashSubcommand.MatchString(header) {
+			return fmt.Errorf("header: Slash option and Slash subcommand lines need a Slash Command trigger")
+		}
+	}
 	return nil
 }
 
@@ -203,6 +223,40 @@ func (t Trigger) RoleTriggered() bool {
 // ID matches the trigger regex starts such a run.
 func (t Trigger) ComponentTriggered() bool {
 	return strings.EqualFold(t.Type, "Message Component") || strings.EqualFold(t.Type, "Component")
+}
+
+// SlashTriggered reports whether the trigger runs the command on a slash command
+// (the control panel's "Slash Command"; YAGPDB's CommandTriggerSlash). The trigger text
+// is the command's name, matched case-insensitively (handle_slashcommand.go:78).
+func (t Trigger) SlashTriggered() bool {
+	return strings.EqualFold(t.Type, "Slash Command")
+}
+
+// ContextMenuTriggered reports whether the trigger runs the command from a context menu
+// (the control panel's "User Context Menu" / "Message Context Menu"; YAGPDB's
+// CommandTriggerUserContextMenu / CommandTriggerMessageContextMenu), and which. The
+// trigger text is the menu entry's name, matched trimmed and case-insensitively
+// (handle_contextmenu.go:82).
+func (t Trigger) ContextMenuTriggered() (types.ApplicationCommandType, bool) {
+	switch {
+	case strings.EqualFold(t.Type, "User Context Menu"):
+		return types.UserApplicationCommand, true
+	case strings.EqualFold(t.Type, "Message Context Menu"):
+		return types.MessageApplicationCommand, true
+	}
+	return 0, false
+}
+
+// IsContextMenu is ContextMenuTriggered without the kind.
+func (t Trigger) IsContextMenu() bool {
+	_, ok := t.ContextMenuTriggered()
+	return ok
+}
+
+// InteractionTriggered reports whether an interaction (a click, a slash command or a
+// context menu entry) starts such a run, so a test must give context.interaction.
+func (t Trigger) InteractionTriggered() bool {
+	return t.ComponentTriggered() || t.SlashTriggered() || t.IsContextMenu()
 }
 
 // CheckMatchComponent is YAGPDB's customcommands.CheckMatchComponent
