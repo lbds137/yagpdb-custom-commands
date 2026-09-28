@@ -254,11 +254,11 @@ Keys:
 
 #### Commands Dictionary
 ```gohtml
+Written hourly by config_sync (generated from deploy/panel.json by `make config-sync`):
+one key per managed command, merged into the dict (keys it doesn't know stay).
 Keys:
-- "embed_exec" (string): Custom command ID for embed service
-- "db" (string): Custom command ID for database service
-- "message_link" (string): Custom command ID for message linking
-- [command_name] (string): Custom command ID for specific commands
+- [command file basename] (string): the command's custom command ID on this server,
+  e.g. "embed_exec", "db", "message_link", "channel_activity_pager"; readers `toInt` it
 ```
 
 #### Roles Dictionary

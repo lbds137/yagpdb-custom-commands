@@ -212,10 +212,8 @@ class ConfigLoadingRule(Rule):
         
         # Check if file uses embed_exec but doesn't load it properly
         uses_embed_exec = any("execCC $embed_exec" in line for line in lines)
-        is_bootstrap = "bootstrap.gohtml" in filename
-        
-        # Bootstrap is special - it gets embed_exec ID from user args and stores it in DB
-        if uses_embed_exec and not has_embed_exec and not is_bootstrap:
+
+        if uses_embed_exec and not has_embed_exec:
             # Find the first execCC $embed_exec line
             exec_line = 1
             for i, line in enumerate(lines):

@@ -3,22 +3,27 @@
   Trigger type: `Command`
   Trigger: `bootstrap`
   Group: `Staff Utility`
-  Dependencies: `embed_exec`
+  Dependencies: none
+
+  The Commands dict (command IDs) is config_sync's: it fills it from deploy/panel.json.
 */ -}}
 
-{{ $args := parseArgs 2 (joinStr "" "Usage: [`embed_exec` custom command ID] [`db` custom command ID] [staff role ID]")
-    (carg "int" "`embed_exec` custom command ID")
-    (carg "int" "`db` custom command ID")
+{{ $args := parseArgs 0 "Usage: [staff role ID]"
     (carg "string" "staff role ID")
 }}
 
-{{ $embed_exec := $args.Get 0 }}
-{{ $db := $args.Get 1 }}
-{{ $staffRoleID := $args.Get 2 }}
+{{- /* the old `bootstrap <embed_exec> <db> <role>` would fold all three into this one
+    argument (parseArgs gives the last one the rest of the line): refuse, change nothing */ -}}
+{{ if $args.IsSet 0 }}
+    {{ if not (reFind `^\d+$` ($args.Get 0)) }}
+        {{ sendMessage nil "Usage: [staff role ID] (one role ID, digits only)" }}
+        {{ return }}
+    {{ end }}
+{{ end }}
+
 {{ $yagpdbChannelID := toString .Channel.ID }}
 
 {{ $globalDict := or (dbGet 0 "Global").Value sdict }}
-{{ $commandsDict := or (dbGet 0 "Commands").Value sdict }}
 {{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
 {{ $rolesDict := or (dbGet 0 "Roles").Value sdict }}
 {{ $channelsDict := or (dbGet 0 "Channels").Value sdict }}
@@ -56,15 +61,14 @@
     {{ $globalDict.Set "ExecCC Limit" "10" }}
 {{ end }}
 
-{{ $commandsDict.Set "embed_exec" (str $embed_exec) }}
-{{ $commandsDict.Set "db" (str $db) }}
-
-{{ $rolesDict.Set "Staff" $staffRoleID }}
+{{- /* only when given: without it, a rerun keeps the Staff role already set */ -}}
+{{ if $args.IsSet 0 }}
+    {{ $rolesDict.Set "Staff" ($args.Get 0) }}
+{{ end }}
 
 {{ $channelsDict.Set "YAGPDB" $yagpdbChannelID }}
 
 {{ dbSet 0 "Global" $globalDict }}
-{{ dbSet 0 "Commands" $commandsDict }}
 {{ dbSet 0 "Rules" $rulesDict }}
 {{ dbSet 0 "Roles" $rolesDict }}
 {{ dbSet 0 "Channels" $channelsDict }}
@@ -74,9 +78,12 @@
 {{ dbSet 0 "Inactivity Prune" $inactivityDict }}
 {{ dbSet 0 "Staff" $staffDict }}
 
-{{ execCC $embed_exec .Channel.ID 0 (sdict
-    "Title" "Bootstrap Execution Complete"
-    "Description" "The bootstrapping process completed successfully!"
+{{- /* sent directly: embed_exec's ID comes from the Commands dict, which config_sync may
+    not have filled yet on a new server */ -}}
+{{ sendMessage nil (cembed
+    "title" "Bootstrap Execution Complete"
+    "description" "The bootstrapping process completed successfully!"
+    "color" (toInt ($globalDict.Get "Embed Color"))
 ) }}
 
 {{ deleteTrigger 5 }}

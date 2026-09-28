@@ -25,7 +25,7 @@ setup_db:
       Delete Trigger Delay: 5
   - user_id: 0
     key: "Commands"
-    value: # strings, as the bootstrap stores them (str); commands toInt them
+    value: # strings, as config_sync stores them; commands toInt them
       db: "456"
       embed_exec: "123"
   - user_id: 0

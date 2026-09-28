@@ -15,7 +15,8 @@ This repository contains `.gohtml` template files that implement custom commands
 The system uses YAGPDB's database functionality with a centralized configuration approach:
 
 - **Global Dictionary (`dbGet 0 "Global"`)**: Server-wide settings and configuration
-- **Commands Dictionary (`dbGet 0 "Commands"`)**: Custom command ID mappings
+- **Commands Dictionary (`dbGet 0 "Commands"`)**: Custom command ID mappings, written
+  hourly by `config_sync` from `deploy/panel.json`
 - **Roles Dictionary (`dbGet 0 "Roles"`)**: Role ID mappings for permissions
 - **Channels Dictionary (`dbGet 0 "Channels"`)**: Channel ID mappings for logging and operations
 - **Admin Dictionary (`dbGet 0 "Admin"`)**: Administrative settings and messages
@@ -101,8 +102,12 @@ folder mixes both. Staff-group commands are marked below.
 #### Plumbing (`commands/plumbing/`)
 - **`embed_exec.gohtml`** - Universal embed creation and execution
 - **`message_link.gohtml`** - Generate message links (called by log_user, unmanaged: never
-  deployed, the live copy holds the real watched ID)- **`ticket_clean.gohtml`** - Ticket cleanup utility
+  deployed, the live copy holds the real watched ID)
+- **`ticket_clean.gohtml`** - Ticket cleanup utility
 - **`bootstrap.gohtml`** (staff) - Initial system setup and configuration
+- **`config_sync.gohtml`** (staff, hourly) - Writes every command's panel ID into the
+  `Commands` dict; generated from `deploy/panel.json` by `make config-sync`, never edited by
+  hand
 
 **Key Features:**
 - Advanced permission checking
@@ -194,14 +199,21 @@ The gematria system uses recursive templates for numerical reduction:
 Use the `bootstrap.gohtml` command to initialize the system:
 
 ```
-[prefix]bootstrap [embed_exec_id] [db_id] [staff_role_id]
+[prefix]bootstrap [staff_role_id]
 ```
+
+The staff role ID is optional: without it, a rerun keeps the Staff role already set.
 
 This sets up:
 - Global configuration defaults
-- Command ID mappings
-- Role and channel assignments
+- The Staff role and the YAGPDB channel (the one it runs in)
 - Database structure initialization
+
+Command ID mappings (the `Commands` dict) come from `config_sync`, an hourly command
+generated from `deploy/panel.json`: after adding a command's panel ID there, run
+`make config-sync` and deploy `config_sync`; its next run writes the IDs (merged: keys it
+doesn't know stay). Its panel entry needs a channel set and Enabled ticked: an interval
+command without a channel (or whose channel was deleted) stops running, with no error.
 
 ### 2. Required Custom Commands
 

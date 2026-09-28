@@ -137,6 +137,12 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   server's limit (panel.json gets a per-server tier). Needed by db (17,538) and gematria
   (11,514): comment/indent stripping alone leaves them at ~10.5k/10.8k; variable renaming
   gets both to ~7.7k (measured 2026-09-27).
+- Known defect (found in the config_sync review 2026-09-27): bootstrap makes 18 DB calls
+  (9 dbGets, 9 dbSets), so on a free server it dies at the 11th, the Rules dbSet, and
+  never writes Roles, Channels, Admin, Knowledge, Directory, Inactivity Prune or Staff
+  (`yagtest run -no-premium -strict -db tools/emulator/testdata/initial_db.json
+  commands/plumbing/bootstrap.gohtml`). Fix before a free server bootstraps: e.g. split it
+  in two runs, or set only the dicts a fresh server lacks.
 - Ruled out: passing embed_exec's Global fields through ExecData to save its one dbGet.
   It stays within limits on both tiers (each run has its own counters) and would couple
   ~30 callers to embed_exec's internals.
@@ -362,8 +368,8 @@ gets a failing test first.
 
 - DECIDED (Lila 2026-09-27, both parts; part 1 after the channel_activity + db_get
   deploys, part 2 with the slash work). Shape for part 1: a generated
-  staff/config_sync.gohtml (Hourly interval) with panel.json's ids baked in by the
-  manifest step, dbSet-ing the Commands dict each run (idempotent, self-healing); its own
+  commands/plumbing/config_sync.gohtml (Hourly interval) with panel.json's ids baked in
+  (as shipped: by a generator, the file committed, since deploys paste committed bytes), dbSet-ing the Commands dict each run (idempotent, self-healing); its own
   id also lives in panel.json. Keep config in a few DB dicts (one dbGet each fits the free tier's
   10 DB calls per run), but stop typing IDs by hand. (1) The `Commands` dict comes from
   deploy/panel.json, which already holds every command's panel id: the deploy tool
@@ -372,6 +378,20 @@ gets a failing test first.
   step (today: channel_activity_pager). (2) Role and channel IDs come from a `/setup`
   slash command with Discord's role/channel pickers once slash commands land (resolving
   by name at runtime breaks on a rename, so IDs stay stored).
+  Part 1 shipped 2026-09-27: `scripts/gen-config-sync.py` (`make config-sync`; `make ci`
+  runs its `--check`) generates commands/plumbing/config_sync.gohtml (Hourly interval,
+  Staff Utility) from panel.json, one id map per server chosen by `.Guild.ID`, merged into
+  the Commands dict as strings (1 dbGet + 1 dbSet, no output); bootstrap lost its
+  embed_exec/db arguments (usage `bootstrap [staff role ID]`, and an omitted role no
+  longer sets Roles "Staff" to nil; the old three-ID form is refused, since parseArgs
+  would fold it into the role). Main's config_sync is panel id 88. An interval command
+  runs only with a context channel set: without one (or once that channel is deleted)
+  YAGPDB neither runs nor reschedules it, silently (handle_timed.go:165-172). Part 2
+  (`/setup`) stays open, with the slash work.
+- Deferred (trigger: Lure of the Void is used again): lotv has no config_sync (no panel
+  id in panel.json, so it isn't deployed there and the generated lotv branch is unused),
+  and its bootstrap no longer writes embed_exec/db. Revive it with a config_sync created
+  there (disabled, a channel set), its id in panel.json, `make config-sync`, deploy.
 
 - Shipped (8aa3b70): deploy/deploy.test.js no longer pins the sha256 of real command
   files; the parity test computes the Python-normalized hash at test time (spawnSync

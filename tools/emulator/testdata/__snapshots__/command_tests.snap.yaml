@@ -229,21 +229,15 @@ atbash - Basic cipher:
         - user_id: 0
           key: Rules
           value: '{"Rule #1":"Be respectful to all members.","Rule #2":"No spamming or flooding the chat.","Rule #3":"Keep discussions on topic."}'
-bootstrap - Initialize with command IDs:
+bootstrap - Initialize with a staff role ID:
     output: ""
     messages:
         - channel_id: 999999999
           embeds:
             - |-
               {
-                "author": {
-                  "icon_url": "https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png",
-                  "name": "Test Server"
-                },
                 "color": 16777214,
                 "description": "The bootstrapping process completed successfully!",
-                "image": {},
-                "thumbnail": {},
                 "title": "Bootstrap Execution Complete"
               }
     deletions:
@@ -257,7 +251,7 @@ bootstrap - Initialize with command IDs:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":"999999999"}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"130","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -275,7 +269,7 @@ bootstrap - Initialize with command IDs:
           value: '{"Faq":"This is the FAQ content.","Guidelines":"These are the guidelines."}'
         - user_id: 0
           key: Roles
-          value: '{"Adult":555555555,"Guest":222222222,"Member":333333333,"Minor":444444444,"Staff":"111111111"}'
+          value: '{"Adult":555555555,"Guest":222222222,"Member":333333333,"Minor":444444444,"Staff":"999888777"}'
         - user_id: 0
           key: Rules
           value: '{"Rule #1":"Be respectful to all members.","Rule #2":"No spamming or flooding the chat.","Rule #3":"Keep discussions on topic."}'

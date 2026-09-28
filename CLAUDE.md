@@ -27,7 +27,11 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   unhiatus, inactivity, staff_roles, role_ping, batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
   message_pointer), `knowledge/` (define), `general/` (avatar_viewer, hugemoji,
-  timestamp), `plumbing/` (embed_exec, message_link, log_user, ticket_clean, bootstrap).
+  timestamp), `plumbing/` (embed_exec, message_link, log_user, ticket_clean, bootstrap,
+  config_sync).
+- `config_sync` (hourly) writes every command's panel id into the `Commands` dict; it is
+  generated from `deploy/panel.json` by `make config-sync` (never edit it by hand), and
+  `make ci` fails when it is stale. After changing an id in panel.json, regenerate it.
 - The YAGPDB control-panel group (the permission scope) is the header's `Group:` line:
   `Utility` (everyone) or `Staff Utility` (staff). The linter requires it on every
   command file, and the deploy tool reports a mismatch with the panel's selected group as
@@ -37,7 +41,7 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   run in.
 - `channel_activity_pager` is a Message Component trigger (`^ca:`), the button handler
   `channel_activity` execCCs for its browse view; it finds the pager's CC id in the
-  `Commands` dict (key `channel_activity_pager`).
+  `Commands` dict (key `channel_activity_pager`, written by `config_sync`).
 
 Retired commands (`retired/`) are kept for reference and never deployed.
 

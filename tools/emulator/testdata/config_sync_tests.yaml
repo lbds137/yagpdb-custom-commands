@@ -1,0 +1,62 @@
+name: "config_sync (hourly: merges deploy/panel.json's ids into the Commands dict)"
+description: >
+  Runs the GENERATED commands/plumbing/config_sync.gohtml (scripts/gen-config-sync.py,
+  from deploy/panel.json). The ids checked are panel.json's (embed_exec, db and
+  channel_activity_pager on main; embed_exec on lotv): if one changes there, regenerate
+  with `make config-sync` and update it here. The generator's own tests
+  (scripts/gen_config_sync_test.py) cover the full key set on a fixture panel.json.
+
+tests:
+  - name: "config_sync: main guild writes its ids as strings and keeps an extra key"
+    template: "../../../commands/plumbing/config_sync.gohtml"
+    context:
+      guild: { id: 462036216909398026, name: "Gay Night House" }
+    setup_db:
+      # a hand-entered key panel.json doesn't know, and a stale id it overwrites
+      - { user_id: 0, key: "Commands", value: { hand_entered: "5", embed_exec: "999" } }
+    expected:
+      output_equals: ""
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Commands", value_contains: '"hand_entered":"5"' }
+        - { user_id: 0, key: "Commands", value_contains: '"embed_exec":"3"' }
+        - { user_id: 0, key: "Commands", value_contains: '"db":"15"' }
+        - { user_id: 0, key: "Commands", value_contains: '"channel_activity_pager":"87"' }
+      sent_messages: []
+      execs: []
+      scheduled_runs: []
+
+  - name: "config_sync: a server with no Commands dict yet gets one"
+    template: "../../../commands/plumbing/config_sync.gohtml"
+    context:
+      guild: { id: 833216349932224562, name: "Lure of the Void" }
+    expected:
+      output_equals: ""
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Commands", value_contains: '"embed_exec":"2"' }
+        - { user_id: 0, key: "Commands", value_contains: '"db":"3"' }
+      sent_messages: []
+
+  - name: "config_sync: an unknown guild leaves the Commands dict untouched"
+    template: "../../../commands/plumbing/config_sync.gohtml"
+    context:
+      guild: { id: 123456789012345678, name: "Somewhere Else" }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { embed_exec: "999" } }
+    expected:
+      output_equals: ""
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Commands", value_equals: { embed_exec: "999" } }
+      sent_messages: []
+
+  - name: "config_sync: an unknown guild without a Commands dict doesn't create one"
+    template: "../../../commands/plumbing/config_sync.gohtml"
+    context:
+      guild: { id: 123456789012345678, name: "Somewhere Else" }
+    expected:
+      output_equals: ""
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Commands", not_exists: true }

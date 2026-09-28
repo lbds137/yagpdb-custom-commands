@@ -31,7 +31,7 @@ setup_db:
   # 99 (staff) is where commands run: the emulator auto-adds an undeclared trigger channel
   # as a real text channel (runner.go), so it must be excluded to keep it out of the audit
   - { user_id: 0, key: "Directory", value: { Exclude Categories: [20], Exclude Channels: [22, 99] } }
-  # the pager's CC id, as channel_activity finds it (bootstrap stores ids as strings)
+  # the pager's CC id, as channel_activity finds it (config_sync stores ids as strings)
   - { user_id: 0, key: "Commands", value: { channel_activity_pager: "42" } }
 
 command_map: { 42: "../../../commands/channels/channel_activity_pager.gohtml" }
