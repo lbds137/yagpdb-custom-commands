@@ -33,6 +33,10 @@ var errInvalidToken = errors.New("invalid interaction token")
 var errAlreadyAcked = discordError{"400 Bad Request", 40060,
 	"Interaction has already been acknowledged"}
 
+// errNoMessageToUpdate stands in for Discord's refusal of an UPDATE_MESSAGE response to
+// an application command interaction (INF: shape not captured from Discord).
+var errNoMessageToUpdate = discordError{"400 Bad Request", 50035, "Invalid Form Body"}
+
 // Response kinds (InteractionResponse.Kind), by what YAGPDB sends: SendResponse's
 // three modes (context.go:662-693) and updateMessage's InteractionResponseUpdateMessage.
 const (
@@ -403,6 +407,14 @@ func (e *Engine) updateMessage(fn string, filterSpecialMentions bool,
 		return "", e.ctx.discordRefuses(fn, errAlreadyAcked,
 			fmt.Sprintf("the interaction was deferred (Defer mode: `%s`), which is its response; "+
 				"print the update instead, or set Defer mode to None", e.ctx.deferMode))
+	}
+	if e.ctx.Interaction.Message == nil {
+		// A slash command or context menu interaction has no component message; YAGPDB
+		// still sends the UPDATE_MESSAGE response (:400-403) and Discord refuses it (INF:
+		// the code and text are the emulator's stand-in, not a captured response)
+		return "", e.ctx.discordRefuses(fn, errNoMessageToUpdate,
+			"a slash command or context menu interaction has no message to update; "+
+				"use sendResponse or print the reply")
 	}
 	content, embeds, components := msgSend.Content, msgSend.Embeds, msgSend.Components
 	notEmpty := msgSend.HasFile || msgSend.HasOther || len(components) > 0

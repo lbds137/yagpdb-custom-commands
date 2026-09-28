@@ -63,6 +63,12 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # Component` trigger; component: string_menu (or user_menu,
                                       # role_menu, mentionable_menu, channel_menu) with values: ["3"]
                                       # for a menu. See Button and menu clicks
+    # interaction: { type: slash, subcommand: get, options: { key: "Global", who: 5 } }  # a slash
+                                      # command (`Slash Command` trigger); options typed by the
+                                      # header's Slash option lines. See Slash commands
+    # interaction: { type: user_menu, target: 5 } / { type: message_menu, message_id: 7 }  # a
+                                      # context menu entry used on user 5 / messages entry 7
+                                      # (`User Context Menu` / `Message Context Menu` trigger)
     # an interval/cron header: no .Message, .User or .Member; a None command keeps a message
     # a header line  Case sensitive: `true`  makes the trigger case-sensitive (default: not);
     # Show errors: `false` and Redirect errors: `<channel ID>` set how a failed run's error
@@ -257,8 +263,64 @@ followup, always, where YAGPDB's concurrent child would race (docs/FUTURE_IMPROV
 Responses land in `sent_messages` (`ephemeral: true` to assert it) or, for an update,
 `edited_messages`; snapshots list `interaction_responses:` and mark ephemeral messages.
 Not modelled yet: sendModal/cmodal (unit 4), editResponse/getResponse/
-deleteInteractionResponse, slash commands and context menus (unit 3):
-docs/design/emulator-interactions.md.
+deleteInteractionResponse: docs/design/emulator-interactions.md.
+
+## Slash commands
+
+A slash command's header says `Trigger type: \`Slash Command\``, `Trigger:` its name
+(lowercase, as the panel requires) and one line per panel row: `Slash subcommand:
+\`get read a key\`` (name, description) and `Slash option: \`[sub.]name type[!]
+description\`` with the panel's type keys (string, string_menu, integer, integer_menu,
+number, number_menu, boolean, user, channel, role, mentionable), `!` = required and
+`sub.` = the subcommand it belongs to (a command with subcommands has no top-level
+options). The header is validated as the panel validates the form (vendor
+customcommands/customcommands.go:610-741, its error texts): lowercase names of 1-32
+letters/numbers/dashes/underscores, descriptions of 1-100 characters, no duplicates,
+at most 25 options, and no `Update Message Response` defer mode. To test one:
+
+```yaml
+- name: "Get a key"
+  template: "../../../commands/db/db.gohtml"
+  context:
+    guild: { roles: [{ id: 111, name: "Staff" }], channels: [{ id: 9, name: "log" }] }
+    interaction: { type: slash, subcommand: get, options: { key: "Global", who: 5, where: 9, rank: 111 } }
+  assertions:
+    interaction_responses: [{ kind: message, ephemeral: true, embed_title: "Global" }]
+```
+
+Each option is typed by its header line: a string, a whole number (integer), a number,
+true/false (boolean), or an ID for user (any user; `.Options.who` is the user as
+getMember gives it, `*User` with `.ID`, `.Username`), channel (the run's channel or a
+`guild.channels` entry, `*Channel`) and role (a `guild.roles` entry, `*Role`);
+mentionable is a role when the ID is one, else a user. A missing required option, a
+value of the wrong shape, an unknown option or a bad subcommand is an error before the
+run (Discord never sends those). The run sees the handler's keys (vendor
+customcommands/handle_slashcommand.go:109-238): `.IsSlashCommand`, `.CommandName`/
+`.Cmd` (the name), `.SubCommand` (`""` without one), `.Options` (an sdict by option
+name; an absent optional isn't in it), `.Args` (the name first) and `.CmdArgs` (the
+values in header order, absent optionals skipped; YAML option names match in any case,
+as the handler lowercases them), `.Interaction` (no `.Message`; `.DataCommand` is the
+command data), `.InteractionData` (the same: `.Name`, `.CommandType` 1, `.Options`), `.Message` = a blank
+message (ID 0) with the invoker as `.Author`/`.Member`, and `.User`/`.Member` = the
+invoker. The printed output, `sendResponse`, `ephemeralResponse` and `Defer mode:`
+work as for a click; `updateMessage` is refused (no message to update). An execCC child
+inherits `.Interaction` and the blank `.Message`.
+
+## Context menus
+
+A context menu entry's header says `Trigger type: \`User Context Menu\`` or `\`Message
+Context Menu\`` and `Trigger:` the entry's name (spaces and capitals allowed, 1-32
+characters; matched trimmed, any case; no `Update Message Response` defer mode). Test a
+user entry with `interaction: { type: user_menu, target: 5 }` and a message entry with
+`interaction: { type: message_menu, message_id: 7 }` (a `messages:` entry in the run's
+channel). The run sees (vendor customcommands/handle_contextmenu.go:121-159)
+`.IsContextMenuCommand`, `.CommandName`/`.Cmd`, `.CommandType` (`user`/`message`),
+`.Author` (the invoker's user), `.TargetUser` (the target user / the message's author)
+and `.TargetMember` (their member, or nil if they aren't in `members:`), and for the
+message entry `.Message` = the message used on. There is NO `.User` or `.Member` (the
+handler passes no member), and for the user entry no `.Message`; `sendDM` sends nothing
+and warns (YAGPDB returns `""` without a member, so an entry can't DM its target). An
+execCC child gets the bot's blank message (user entry) or the message used on.
 
 ## When to Use This Skill
 

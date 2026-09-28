@@ -1,0 +1,24 @@
+{{/*
+  Test slash command (not a real command): one option of every panel type, the *_menu
+  ones optional, printing what the handler gave the template.
+
+  Trigger type: `Slash Command`
+  Trigger: `probe`
+  Slash option: `text string! the text`
+  Slash option: `flavor string_menu the flavor, one of a list`
+  Slash option: `count integer! how many`
+  Slash option: `level integer_menu a level, one of a list`
+  Slash option: `ratio number! a ratio`
+  Slash option: `weight number_menu a weight, one of a list`
+  Slash option: `loud boolean! loud or not`
+  Slash option: `who user! a member`
+  Slash option: `where channel! a channel`
+  Slash option: `rank role! a role`
+  Slash option: `whom mentionable! a role or a user`
+*/}}
+{{- .Cmd }}/{{ .CommandName }} sub={{ printf "%q" .SubCommand }} args={{ len .Args }} cmdargs={{ len .CmdArgs }} first={{ index .Args 0 }}
+{{ kindOf .Options.text }}={{ .Options.text }} {{ kindOf .Options.count }}={{ .Options.count }} {{ kindOf .Options.ratio }}={{ .Options.ratio }} {{ kindOf .Options.loud }}={{ .Options.loud }}
+who={{ kindOf .Options.who }} {{ .Options.who.ID }} {{ .Options.who.Username }} where={{ .Options.where.ID }} {{ .Options.where.Name }} rank={{ .Options.rank.ID }} {{ .Options.rank.Name }} whom={{ .Options.whom.ID }} {{ printf "%T" .Options.whom }}
+{{- with .Options.flavor }} flavor={{ . }}{{ end }}{{ with .Options.level }} level={{ kindOf . }}{{ end }}{{ with .Options.weight }} weight={{ kindOf . }}{{ end }}
+message: id={{ .Message.ID }} author={{ .Message.Author.ID }} member={{ .Message.Member.User.ID }} channel={{ .Message.ChannelID }}
+data: {{ .InteractionData.Name }} type={{ .InteractionData.CommandType }} options={{ len .InteractionData.Options }} slash={{ .IsSlashCommand }} user={{ .User.ID }}

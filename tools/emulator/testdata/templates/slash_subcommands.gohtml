@@ -1,0 +1,15 @@
+{{/*
+  Test slash command (not a real command) with subcommands, deferred as an ephemeral
+  "thinking..." that the printed reply then fills.
+
+  Trigger type: `Slash Command`
+  Trigger: `kv`
+  Defer mode: `Ephemeral Message Response`
+  Slash subcommand: `get read a key`
+  Slash subcommand: `set write a key`
+  Slash option: `get.key string! the key`
+  Slash option: `set.key string! the key`
+  Slash option: `set.value string! the value`
+  Slash option: `set.ttl integer a time to live in seconds`
+*/}}
+{{- if .Interaction.Deferred }}deferred {{ end }}{{ .Cmd }} {{ .SubCommand }}:{{ range .CmdArgs }} {{ . }}{{ end }} ({{ len .Options }} options{{ if .Options.HasKey "ttl" }}, ttl {{ .Options.ttl }}{{ end }})

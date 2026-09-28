@@ -338,14 +338,44 @@ func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContex
 		t = runtime.Trigger{Type: "Command", Text: name}
 	}
 	if c.Interaction != nil {
-		if !t.ComponentTriggered() {
-			return t, fmt.Errorf("a component interaction needs a Message Component trigger; the template's is %q", t.Type)
+		mode := runtime.ReadDeferMode(source)
+		switch c.Interaction.Type {
+		case "component":
+			if !t.ComponentTriggered() {
+				return t, fmt.Errorf("a component interaction needs a Message Component trigger; the template's is %q", t.Type)
+			}
+			return t, ctx.SetInteractionComponent(t, c.Interaction.click(), mode)
+		case "slash":
+			if !t.SlashTriggered() {
+				return t, fmt.Errorf("a slash interaction needs a Slash Command trigger; the template's is %q", t.Type)
+			}
+			def, err := runtime.ReadSlashCommand(source)
+			if err != nil {
+				return t, err
+			}
+			return t, ctx.SetInteractionSlash(t, def, c.Interaction.slash(), mode)
+		case "user_menu", "message_menu":
+			want := "User Context Menu"
+			if c.Interaction.Type == "message_menu" {
+				want = "Message Context Menu"
+			}
+			if !strings.EqualFold(t.Type, want) {
+				return t, fmt.Errorf("a %s interaction needs a %s trigger; the template's is %q",
+					c.Interaction.Type, want, t.Type)
+			}
+			return t, ctx.SetInteractionContextMenu(t, c.Interaction.contextMenuTarget(), mode)
 		}
-		return t, ctx.SetInteractionComponent(t, c.Interaction.click(), runtime.ReadDeferMode(source))
 	}
-	if t.ComponentTriggered() {
+	switch {
+	case t.ComponentTriggered():
 		return t, fmt.Errorf("a Message Component trigger runs on a click: give context.interaction " +
 			"{ type: component, custom_id, message_id }")
+	case t.SlashTriggered():
+		return t, fmt.Errorf("a Slash Command trigger runs on a slash invocation: give context.interaction " +
+			"{ type: slash, subcommand, options }")
+	case t.IsContextMenu():
+		return t, fmt.Errorf("a %s trigger runs from the context menu: give context.interaction "+
+			"{ type: user_menu, target } or { type: message_menu, message_id }", t.Type)
 	}
 	if !t.MessageTriggered() {
 		if len(c.Args) > 0 || c.MessageContent != "" {

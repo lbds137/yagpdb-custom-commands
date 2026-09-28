@@ -411,6 +411,14 @@ func (e *Engine) sendMessageNoEscapeRetID(args ...interface{}) (interface{}, err
 }
 
 func (e *Engine) sendDM(msg interface{}) (string, error) {
+	if e.ctx.NoMember {
+		// tmplSendDM returns "" with a nil member (context_funcs.go:75): a context menu run
+		// (handle_contextmenu.go:118-120, so an entry can't DM an arbitrary target) or a
+		// scheduled one has no member to DM
+		e.ctx.Warn(KindResponse, "sendDM: the run has no member (a context menu or scheduled run), so "+
+			"YAGPDB sends no DM and returns \"\"")
+		return "", nil
+	}
 	content := funcs.ToString(msg)
 	// YAGPDB adds a server-info button, so a DM is never empty
 	if ok, _ := e.ctx.checkSend("sendDM", content, nil, true, true); !ok {

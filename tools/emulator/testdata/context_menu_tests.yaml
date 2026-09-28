@@ -1,0 +1,119 @@
+name: "Context menus: a User Context Menu or Message Context Menu trigger"
+
+# The invoker is user 42; 5 is another member, 6 has left; message 7 in the run's channel
+# is by 5, message 8 by 6 (who left)
+defaults:
+  user: { id: 42 }
+  channel: { id: 123456789012345678 }
+  members: [42, 5]
+  member_joined_ago: { 5: 12h }
+  messages:
+    - { id: 7, channel_id: 123456789012345678, author_id: 5, content: "quote me" }
+    - { id: 8, channel_id: 123456789012345678, author_id: 6, content: "gone" }
+
+tests:
+  - name: "User menu: .TargetUser and .TargetMember are the target, .Author the invoker; no .User, .Member or .Message"
+    snapshot: true
+    template_source: |
+      {{/*
+        Trigger type: `User Context Menu`
+        Trigger: `View avatar`
+      */}}
+      {{- .CommandType }} {{ printf "%q" .CommandName }}: target {{ .TargetUser.ID }} {{ .TargetUser.Username }} ({{ .TargetMember.User.ID }}, joined {{ .TargetMember.JoinedAt }}), by {{ .Author.ID }}
+      {{- if .User }} user={{ .User.ID }}{{ end }}{{ if .Member }} member={{ .Member.User.ID }}{{ end }}{{ if .Message }} message={{ .Message.ID }}{{ end }}
+      {{- " " }}{{ .IsContextMenuCommand }} {{ .InteractionData.TargetID }} type={{ .InteractionData.CommandType }} bot={{ .BotUser.ID }}
+    context:
+      clock: 2026-09-27T12:00:00Z
+      interaction: { type: user_menu, target: 5 }
+    expected:
+      output_equals: 'user "View avatar": target 5 MockUser (5, joined 2026-09-27T00:00:00.000000+00:00), by 42 true 5 type=2 bot=1234567890'
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, content_contains: "target 5" }
+
+  - name: "User menu on a user who left: .TargetMember is nil"
+    template_source: |
+      {{/*
+        Trigger type: `User Context Menu`
+        Trigger: `View avatar`
+      */}}
+      {{- ephemeralResponse }}{{ .TargetUser.ID }}: {{ if .TargetMember }}member{{ else }}not a member{{ end }}
+    context:
+      interaction: { type: user_menu, target: 6 }
+    expected:
+      output_equals: "6: not a member"
+    assertions:
+      sent_messages:
+        - { content_contains: "not a member", ephemeral: true }
+      interaction_responses:
+        - { kind: message, ephemeral: true }
+
+  - name: "Message menu: .Message is the message used on, its author the target; sendDM sends nothing"
+    template: "templates/quote_message_menu.gohtml"
+    snapshot: true
+    context:
+      clock: 2026-09-27T12:00:00Z
+      interaction: { type: message_menu, message_id: 7 }
+    expected:
+      output_equals: 'message "Quote Message": message 7 "quote me" by 5 (member, joined 2026-09-27T00:00:00.000000+00:00), asked by 42'
+      warning_contains: "YAGPDB sends no DM"
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, content_contains: "asked by 42" }
+      interaction_responses:
+        - { kind: message, content_contains: "quote me" }
+
+  - name: "Message menu on a message by someone who left: the target user is known, the member nil"
+    template: "templates/quote_message_menu.gohtml"
+    context:
+      interaction: { type: message_menu, message_id: 8 }
+    expected:
+      output_contains: 'message 8 "gone" by 6 (not a member), asked by 42'
+
+  - name: "The entry's name is matched trimmed, in any case; an execCC child inherits the interaction and the blank message"
+    template_source: |
+      {{/*
+        Trigger type: `User Context Menu`
+        Trigger: ` view AVATAR `
+      */}}
+      {{- execCC 2 nil 0 nil }}
+    command_map: { 2: "templates/application_command_child.gohtml" }
+    context:
+      interaction: { type: user_menu, target: 42 }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - { kind: message, content_contains: "child sees message 0 by 1234567890, member 1234567890 (RespondedTo was false" }
+
+  - name: "An execCC child of a message menu run gets the clicked message"
+    template_source: |
+      {{/*
+        Trigger type: `Message Context Menu`
+        Trigger: `Quote Message`
+      */}}
+      {{- execCC 2 nil 0 nil }}
+    command_map: { 2: "templates/application_command_child.gohtml" }
+    context:
+      interaction: { type: message_menu, message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - { kind: message, content_contains: "child sees message 7 by 5, no member (RespondedTo was false" }
+
+  - name: "Message menu deferred (Message Response): the output fills the deferral, visibly"
+    template_source: |
+      {{/*
+        Trigger type: `Message Context Menu`
+        Trigger: `Report`
+        Defer mode: `Message Response`
+      */}}
+      {{- if .Interaction.Deferred }}Reported {{ .Message.Link }}{{ end }}
+    context:
+      interaction: { type: message_menu, message_id: 7 }
+    expected:
+      output_contains: "Reported https://discord.com/channels/111222333444555666/123456789012345678/7"
+    assertions:
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: false, content_contains: "Reported" }
