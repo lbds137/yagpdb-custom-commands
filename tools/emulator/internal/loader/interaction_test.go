@@ -37,13 +37,13 @@ tests:
       reaction: { emoji: "x", message_id: 7 }
       interaction: { type: component, custom_id: "pg:1", message_id: 7 }
 `, "can't be combined with args, message_content, reaction or exec_data"},
-		{"a modal isn't modelled yet", `
+		{"a modal without fields", `
 tests:
   - name: x
     template_source: "{{ .CustomID }}"
     context:
       interaction: { type: modal, custom_id: "edit:1", message_id: 7 }
-`, `interaction type "modal" isn't modelled yet`},
+`, "a modal submits 1 to 5 fields, not 0"},
 		{"an unknown type", `
 tests:
   - name: x

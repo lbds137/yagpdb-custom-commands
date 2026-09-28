@@ -47,15 +47,20 @@ type SnapshotMessage struct {
 }
 
 // SnapshotResponse is an interaction response: its kind (message, followup,
-// deferred_edit, update) and the message it sent or edited.
+// deferred_edit, update, modal) and the message it sent or edited, or the modal opened.
 type SnapshotResponse struct {
-	Kind      string   `yaml:"kind"`
-	Ephemeral bool     `yaml:"ephemeral,omitempty"`
-	MessageID int64    `yaml:"message_id"`
+	Kind      string `yaml:"kind"`
+	Ephemeral bool   `yaml:"ephemeral,omitempty"`
+	// MessageID is nil only for a modal, which has no message
+	MessageID *int64   `yaml:"message_id,omitempty"`
 	Content   snapText `yaml:"content,omitempty"`
 	// Embeds and Components as SnapshotMessage's
 	Embeds     []snapText `yaml:"embeds,omitempty"`
 	Components []snapText `yaml:"components,omitempty"`
+	// A modal's title, custom ID and field IDs (kind modal, which has no message)
+	Title    snapText `yaml:"title,omitempty"`
+	CustomID snapText `yaml:"custom_id,omitempty"`
+	Fields   []string `yaml:"fields,omitempty"`
 }
 
 // SnapshotFile is a file attached to a sent message (complexMessage's "file").
@@ -103,7 +108,12 @@ func takeSnapshot(output string, ctx *runtime.ExecutionContext, db *state.MockDB
 		snap.Execs = append(snap.Execs, x.String())
 	}
 	for _, r := range ctx.InteractionResponses {
-		sr := SnapshotResponse{Kind: r.Kind, Ephemeral: r.Ephemeral, MessageID: r.MessageID, Content: snapText(r.Content)}
+		sr := SnapshotResponse{Kind: r.Kind, Ephemeral: r.Ephemeral, Content: snapText(r.Content),
+			Title: snapText(r.Title), CustomID: snapText(r.CustomID), Fields: r.Fields}
+		if r.Kind != runtime.ResponseModal {
+			id := r.MessageID
+			sr.MessageID = &id
+		}
 		for _, e := range r.Embeds {
 			sr.Embeds = append(sr.Embeds, snapText(readableJSON(e)))
 		}

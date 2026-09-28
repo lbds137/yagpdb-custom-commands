@@ -26,7 +26,12 @@ Data keys per handler:
   clicker (:311-316). `.User/.Member` = clicker.
 - Modal (:337-437): same base keys; `IsModal`, `Values` (ordered) and `ModalValues`
   sdict keyed by field custom_id with {type,value,custom_id} (:355-424); `.Message` =
-  the source message or a blank one (:426-434).
+  the source message or a blank one (:426-434), the submitter set as author on
+  interaction.Message itself, so `.Interaction.Message` is the same (a click does the same
+  to its re-fetched message, :76-80, :311-316). The handler reads action rows (:360) and
+  labels (:373); which one Discord sends back (INF: not captured) is taken to follow how
+  the modal was built (`fields`: action rows; clabels: labels), and a test picks it with
+  `form: label` (unit 4 review).
 - Slash (customcommands/handle_slashcommand.go:109-176): `Interaction`,
   `InteractionData`, `IsSlashCommand`, `CommandName`, `Cmd`, `SubCommand` ("" without
   one, :130-140), `Options` sdict keyed by option name (:147-160), `Args` (name first) /
@@ -120,9 +125,14 @@ the component's message in place. Snapshots gain `interaction_responses:` and
   editMessage or editResponse` (:377), sendModal `no interaction data in context` (:260),
   sendResponse `invalid interaction token` (tokenArg :422-426), ephemeralResponse "" (:227).
 - sendModal `invalid modal passed to sendModal` (:289, :296); CreateModal `cannot have
-  both 'components' and 'fields' in a cmodal` (:82), max 5 fields (:105), default
-  custom_id `templates--0` (:77), unknown key `invalid key "x" passed to send message
-  builder` (:140).
+  both 'components' and 'fields' in a cmodal` (:82), default custom_id `templates--0`
+  (:77), unknown key `invalid key "x" passed to send message builder` (:140). Not an
+  error, a silent cap (corrected by unit 4): a `fields` slice keeps only its first 5
+  entries (:105-107), and `components` goes through ModalBuilder.Set whose error is
+  discarded (:96), so a bad entry (a bare ctextInput, a sixth label) silently ends the
+  list there and a non-slice leaves it empty. modalBuilder/AddComponents do return
+  their errors (context.go:1298-1342: `modal builder can only have maximum 5 top level
+  components`, `invalid top level component passed to modal builder`).
 - Builders: `invalid button style`, `a url field is required for a link button`,
   `button must have a label or emoji` (components.go:213/230/247/250); menu errors
   :283-323; `a select menu cannot share an action row with other components`, `invalid
@@ -156,9 +166,11 @@ the component's message in place. Snapshots gain `interaction_responses:` and
 
 Foreign tokens for editResponse/getResponse/deleteInteractionResponse (a command stores a
 token); Components V2 (components.go:863-977; a command uses is_components_v2); modal
-Label/checkbox/radio/select fields (handle_component.go:373-420; a modal needs more than
-text inputs); resolving menu `Values` beyond strings; the "restricted" reply (:142-159)
-and CmdRunsInChannel/ForUser (panel restrictions get modelled); option min/max/choice
+checkbox/radio/select fields (handle_component.go:384-420; a modal needs more than text
+inputs; unit 4 models clabel around a ctextInput only, and a clabel around a cmenu is
+an emulator error, never a silent pass); resolving menu `Values` beyond strings; the
+"restricted" reply (:142-159) and CmdRunsInChannel/ForUser (panel restrictions get
+modelled); option min/max/choice
 validation (Discord's job); autocomplete; DM interactions (:26-29). (Corrected by unit 3:
 sendDM in a context menu is NOT an error — context menus get a nil member
 (handle_contextmenu.go:115-120) and tmplSendDM returns "" silently when c.MS is nil,

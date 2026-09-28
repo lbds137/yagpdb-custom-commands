@@ -96,8 +96,8 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"deleteMessageReaction":     e.deleteMessageReaction,
 		"deleteAllMessageReactions": e.deleteAllMessageReactions,
 
-		// Interaction responses (context_interactions.go:17-30; sendModal, editResponse,
-		// getResponse and deleteInteractionResponse aren't modelled yet)
+		// Interaction responses (context_interactions.go:17-30; editResponse, getResponse
+		// and deleteInteractionResponse aren't modelled yet)
 		"sendResponse":              e.sendResponseFunc("sendResponse", true, false),
 		"sendResponseNoEscape":      e.sendResponseFunc("sendResponseNoEscape", false, false),
 		"sendResponseNoEscapeRetID": e.sendResponseFunc("sendResponseNoEscapeRetID", false, true),
@@ -105,6 +105,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"updateMessage":             e.updateMessageFunc("updateMessage", true),
 		"updateMessageNoEscape":     e.updateMessageFunc("updateMessageNoEscape", false),
 		"ephemeralResponse":         e.ephemeralResponse,
+		"sendModal":                 e.sendModal,
 
 		// Role functions
 		"setRoles": e.setRoles,
@@ -129,9 +130,13 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"complexMessage":     e.complexMessage,
 		"complexMessageEdit": e.complexMessage, // both CreateComplexMessage (context.go:113-114)
 		"sendTemplate":       e.sendTemplate,
-		// Message component builders (context.go:101-104)
-		"cbutton": CreateButton,
-		"cmenu":   CreateSelectMenu,
+		// Message component and modal builders (context.go:100-105)
+		"cbutton":      CreateButton,
+		"cmenu":        CreateSelectMenu,
+		"cmodal":       CreateModal,
+		"modalBuilder": CreateModalBuilder,
+		"clabel":       CreateLabel,
+		"ctextInput":   CreateTextInput,
 
 		// Control flow
 		"execCC":                  e.execCC,
@@ -293,9 +298,11 @@ func (e *Engine) sendMessageNoEscape(args ...interface{}) (string, error) {
 
 // parseMessageInput is YAGPDB's (context_funcs.go:32-70): what the send, edit and
 // interaction response functions make of their message argument. An embed read back from
-// a message is a *MessageEmbed (discordgo's), cembed's result a types.Embed. YAGPDB's
-// *InteractionResponseData and *ComponentBuilder cases aren't here: the emulator has
-// neither type (no cmodal yet, no componentBuilder), so such a value can't reach this.
+// a message is a *MessageEmbed (discordgo's), cembed's result a types.Embed. A cmodal's
+// .Data is an *InteractionResponseData, whose ToMessageSend (discordgo interactions.go:
+// 600-612) keeps its content, embeds, components and allowed mentions (none set: nobody
+// pinged; its flags a template can't set). YAGPDB's *ComponentBuilder case isn't here:
+// the emulator has no componentBuilder, so such a value can't reach this.
 func parseMessageInput(msg interface{}) *types.MessageSend {
 	msgSend := &types.MessageSend{AllowedMentions: usersOnly()}
 
@@ -313,6 +320,17 @@ func parseMessageInput(msg interface{}) *types.MessageSend {
 		}
 	case *types.MessageSend:
 		msgSend = typedMsg
+	case *types.InteractionResponseData:
+		msgSend = &types.MessageSend{Content: typedMsg.Content, Components: typedMsg.Components}
+		if typedMsg.Embeds != nil {
+			msgSend.Embeds = make([]interface{}, 0, len(typedMsg.Embeds))
+		}
+		for _, embed := range typedMsg.Embeds {
+			msgSend.Embeds = append(msgSend.Embeds, embedOrNil(embed))
+		}
+		if typedMsg.AllowedMentions != nil {
+			msgSend.AllowedMentions = *typedMsg.AllowedMentions
+		}
 	default:
 		msgSend.Content = funcs.ToString(msg)
 	}

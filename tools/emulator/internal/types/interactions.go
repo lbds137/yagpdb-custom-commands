@@ -5,9 +5,9 @@ import "fmt"
 // The interaction types a template sees, copied from discordgo (vendor
 // lib/discordgo/interactions.go, YAGPDB c579722) and YAGPDB's CustomCommandInteraction
 // (common/templates/context.go:286-290), as far as the emulator models them: a message
-// component (button or menu) click, a slash command and a user or message context menu
-// entry (application commands). Modals aren't modelled yet
-// (docs/design/emulator-interactions.md, unit 4).
+// component (button or menu) click, a slash command, a user or message context menu
+// entry (application commands), and a modal submission; and the modal response cmodal
+// builds (docs/design/emulator-interactions.md).
 
 // InteractionType indicates the type of an interaction event (interactions.go:159-168).
 type InteractionType uint8
@@ -56,6 +56,57 @@ type MessageComponentInteractionData struct {
 // Type returns the type of interaction data (interactions.go:347-349).
 func (MessageComponentInteractionData) Type() InteractionType {
 	return InteractionMessageComponent
+}
+
+// ModalSubmitInteractionData is the data of a modal submission (interactions.go:352-355):
+// the modal's full custom ID (templates- prefix included) and its submitted rows, each
+// holding a text input with its value.
+type ModalSubmitInteractionData struct {
+	CustomID   string              `json:"custom_id"`
+	Components []TopLevelComponent `json:"components"`
+}
+
+// Type returns the type of interaction data (interactions.go:358-360).
+func (ModalSubmitInteractionData) Type() InteractionType {
+	return InteractionModalSubmit
+}
+
+// InteractionResponseType is type of interaction response (interactions.go:510-529).
+type InteractionResponseType uint8
+
+// Interaction response types.
+const (
+	InteractionResponsePong                             InteractionResponseType = 1
+	InteractionResponseChannelMessageWithSource         InteractionResponseType = 4
+	InteractionResponseDeferredChannelMessageWithSource InteractionResponseType = 5
+	InteractionResponseDeferredMessageUpdate            InteractionResponseType = 6
+	InteractionResponseUpdateMessage                    InteractionResponseType = 7
+	InteractionApplicationCommandAutocompleteResult     InteractionResponseType = 8
+	InteractionResponseModal                            InteractionResponseType = 9
+)
+
+// InteractionResponse is a response to an interaction (interactions.go:532-535): what
+// cmodal returns, a modal response.
+type InteractionResponse struct {
+	Type InteractionResponseType  `json:"type,omitempty"`
+	Data *InteractionResponseData `json:"data,omitempty"`
+}
+
+// InteractionResponseData is response data for an interaction (interactions.go:538-555),
+// the fields a template can reach (File, Files and the autocomplete Choices aren't here;
+// the emulator's embeds and allowed mentions stand in for discordgo's).
+type InteractionResponseData struct {
+	TTS             bool                `json:"tts"`
+	Content         string              `json:"content"`
+	Components      []TopLevelComponent `json:"components"`
+	Embeds          []*MessageEmbed     `json:"embeds"`
+	AllowedMentions *AllowedMentions    `json:"allowed_mentions,omitempty"`
+	Flags           int                 `json:"flags,omitempty"`
+
+	// NOTE: modal interaction only.
+
+	CustomID string `json:"custom_id,omitempty"`
+	Title    string `json:"title,omitempty"`
 }
 
 // ApplicationCommandType is the kind of application command (interactions.go:20-29): a
@@ -130,8 +181,9 @@ type ApplicationCommandInteractionDataOption struct {
 }
 
 // Interaction represents data of an interaction (interactions.go:185-220) with the
-// fields the emulator fills. Message is the component's message and Member the clicker,
-// as Discord sends them (before the handler makes the clicker .Message's author).
+// fields the emulator fills. Message is the component's message (for a modal submission,
+// the message whose component opened the modal, if any) and Member the clicker, as
+// Discord sends them (before the handler makes the clicker .Message's author).
 type Interaction struct {
 	ID            int64
 	ApplicationID int64

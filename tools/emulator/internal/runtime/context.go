@@ -132,7 +132,8 @@ type ExecutionContext struct {
 	ReactionAdded bool
 
 	// Interaction is the interaction the run answers (YAGPDB's CurrentFrame.Interaction):
-	// a button or menu click; nil for every other run. One pointer is shared with execCC
+	// a button or menu click, a slash command, a context menu use or a modal submission;
+	// nil for every other run. One pointer is shared with execCC
 	// children, as YAGPDB shares it (tmplextensions.go:240-243), so a child's response
 	// counts as the interaction's
 	Interaction *types.CustomCommandInteraction
@@ -146,6 +147,9 @@ type ExecutionContext struct {
 	// .TargetMember, .Author...); nil for an execCC child, as Component. Such a run has
 	// NoMember (the handler passes a nil member)
 	ContextMenu *ContextMenuTrigger
+	// Modal is a modal submission's data as the Modal handler exposes it (.CustomID,
+	// .Values, .ModalValues...); nil for an execCC child, as Component
+	Modal *ModalTrigger
 	// deferMode is the command's header Defer mode, applied before the run
 	deferMode DeferMode
 	// ephemeralResponse is ephemeralResponse's flag (CurrentFrame.EphemeralResponse): the
@@ -183,7 +187,7 @@ type ExecutionContext struct {
 	Reactions []ReactionChange
 	// InteractionResponses are the run's answers to its interaction, in order: the
 	// response, followups, an edit of a deferred response, an update of the component's
-	// message (see InteractionResponse)
+	// message, a modal opened (see InteractionResponse)
 	InteractionResponses []InteractionResponse
 	// Execs are the bot commands the run executed with exec and execAdmin, in order
 	Execs []Exec
@@ -508,6 +512,10 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	if ctx.ContextMenu != nil {
 		ctx.ContextMenu.setData(data)
 	}
+	if ctx.Modal != nil {
+		ctx.Modal.setData(data)
+		data["Message"] = ctx.modalMessage()
+	}
 	// Only a message trigger sets the arguments; YAGPDB leaves them unset otherwise
 	if ctx.triggered {
 		data["Args"] = ctx.Args
@@ -740,6 +748,10 @@ func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
 	case ctx.Slash != nil:
 		// the blank message the slash handler builds (handle_slashcommand.go:166-173)
 		return ctx.slashMessage()
+	case ctx.Modal != nil:
+		// the modal's source message or a blank one, the submitter as author
+		// (handle_component.go:426-434)
+		return ctx.modalMessage()
 	case ctx.ContextMenu != nil && ctx.ContextMenu.Message != nil:
 		// the clicked message (handle_contextmenu.go:145-148)
 		return *ctx.ContextMenu.Message

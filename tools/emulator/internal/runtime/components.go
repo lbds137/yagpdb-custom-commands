@@ -16,7 +16,7 @@ import (
 // YAGPDB's message component builders, copied from vendor common/templates/components.go
 // (c579722) with their error texts: cbutton (CreateButton) and cmenu (CreateSelectMenu),
 // the packing of components into action rows, and custom-ID validation. Components V2
-// and the modal builders aren't here.
+// isn't modelled; the modal builders are in modals.go.
 
 // TemplateCustomIDPrefix is what YAGPDB puts before every custom ID a template sets
 // (common/templates/context_interactions.go:15), so it knows the component is its own.
@@ -76,6 +76,10 @@ func createComponent(expectedType types.ComponentType, values ...any) (types.Mes
 		var comp types.SelectMenu
 		err = json.Unmarshal(encoded, &comp)
 		component = comp
+	case types.TextInputComponent:
+		comp := types.NewShortTextInput()
+		err = json.Unmarshal(encoded, &comp)
+		component = comp
 	case types.UserSelectMenuComponent:
 		comp := types.SelectMenu{MenuType: types.UserSelectMenu}
 		err = json.Unmarshal(encoded, &comp)
@@ -90,6 +94,10 @@ func createComponent(expectedType types.ComponentType, values ...any) (types.Mes
 		component = comp
 	case types.ChannelSelectMenuComponent:
 		comp := types.SelectMenu{MenuType: types.ChannelSelectMenu}
+		err = json.Unmarshal(encoded, &comp)
+		component = comp
+	case types.LabelComponent:
+		comp := types.Label{}
 		err = json.Unmarshal(encoded, &comp)
 		component = comp
 	default:
@@ -430,11 +438,46 @@ func duplicateCustomID(rows []types.TopLevelComponent) string {
 	return ""
 }
 
+// modalOnlyComponent reports whether the rows hold a label or a text input.
+func modalOnlyComponent(rows []types.TopLevelComponent) bool {
+	for _, row := range rows {
+		switch r := row.(type) {
+		case types.Label, *types.Label:
+			return true
+		case types.ActionsRow:
+			if rowHasTextInput(r.Components) {
+				return true
+			}
+		case *types.ActionsRow:
+			if rowHasTextInput(r.Components) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func rowHasTextInput(comps []types.InteractiveComponent) bool {
+	for _, c := range comps {
+		switch c.(type) {
+		case types.TextInput, *types.TextInput:
+			return true
+		}
+	}
+	return false
+}
+
 // checkComponents is the Discord-side check every send, edit and interaction response
 // runs on its components: a repeated custom ID is refused (see duplicateCustomID).
 // refused reports that the call must not go through; err is the error to return, nil when
 // the refusal is only a warning (discordRefuses).
 func (ctx *ExecutionContext) checkComponents(fn string, rows []types.TopLevelComponent) (refused bool, err error) {
+	if modalOnlyComponent(rows) {
+		// A cmodal's .Data sent as a message (parseMessageInput) carries its text inputs
+		// and labels, which Discord only takes in a modal (INF: not captured)
+		return true, ctx.discordRefuses(fn, errInvalidFormBody,
+			"the message holds a text input or a label, which only go in a modal (sendModal)")
+	}
 	id := duplicateCustomID(rows)
 	if id == "" {
 		return false, nil
