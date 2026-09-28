@@ -59,8 +59,12 @@ for its `Commands`-dict key. Only once that comes up empty is it safe to retire 
   it up, and run `make config-sync`: the regenerated `config_sync` (deployed with the
   rest) writes the new id into the `Commands` dict on its next hourly run, so nobody
   types it in with `simple_db_edit`. Ask her to create it DISABLED (Enabled unticked) and
-  to tick it only after the deploy: a new command gets YAGPDB's placeholder response, which it posts on every trigger
-  (a `.*` command answered every message on the server until the deploy landed).
+  to tick it only after the deploy: a new command gets YAGPDB's placeholder response,
+  which it posts on every trigger (a `.*` command answered every message on the server
+  until the deploy landed). An interval command also needs its channel set: without one
+  YAGPDB never runs it, silently. Enabling it or setting its channel is a form POST like
+  the deploy's (resubmit the page's form with only those fields changed, then read back),
+  done only on Lila's explicit yes.
 - Changing a live command's trigger type or trigger text -- `drift` in the results is a report,
   never an instruction to the script to fix it.
 
