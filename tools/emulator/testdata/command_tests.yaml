@@ -39,7 +39,7 @@ setup_db:
       ExecCC Limit: 10
   - user_id: 0
     key: "Commands"
-    value: # strings, as the bootstrap stores them (str); commands toInt them
+    value: # strings, as config_sync stores them; commands toInt them
       embed_exec: "123"
       gematria: "124"
       message_link: "125"
@@ -933,14 +933,45 @@ tests:
 
   # ===== Staff Utility Commands =====
 
-  - name: "bootstrap - Initialize with command IDs"
+  - name: "bootstrap - Initialize with a staff role ID"
     snapshot: true
     template: "../../../commands/plumbing/bootstrap.gohtml"
     context:
-      # embed_exec 123, db 130 (setup_db has 129, so bootstrap's write shows), the Staff
-      # role; run in #yagpdb, which bootstrap records as the YAGPDB channel
-      args: ["123", "130", "111111111"]
+      # a Staff role other than setup_db's 111111111, so bootstrap's write shows; run in
+      # #yagpdb, which bootstrap records as the YAGPDB channel
+      args: ["999888777"]
       channel: { id: 999999999, name: "yagpdb" }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Roles", value_contains: '"Staff":"999888777"' }
+        # the Commands dict is config_sync's: bootstrap leaves setup_db's ids alone
+        - { user_id: 0, key: "Commands", value_contains: '"db":"129"' }
+        - { user_id: 0, key: "Channels", value_contains: '"YAGPDB":"999999999"' }
+      sent_messages:
+        - { channel_id: 999999999, embed_title: "Bootstrap Execution Complete" }
+
+  - name: "bootstrap - Without a staff role ID, the Staff role already set stays"
+    template: "../../../commands/plumbing/bootstrap.gohtml"
+    context:
+      channel: { id: 999999999, name: "yagpdb" }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Roles", value_contains: '"Staff":111111111' }
+        - { user_id: 0, key: "Commands", value_contains: '"db":"129"' }
+      sent_messages:
+        - { channel_id: 999999999, embed_title: "Bootstrap Execution Complete" }
+
+  - name: "bootstrap - The old three-ID form is refused, not stored as the Staff role"
+    template: "../../../commands/plumbing/bootstrap.gohtml"
+    context:
+      # parseArgs folds "3 15 111111111" into the one argument
+      args: ["3", "15", "111111111"]
+      channel: { id: 999999999, name: "yagpdb" }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Roles", value_contains: '"Staff":111111111' }
+      sent_messages:
+        - { channel_id: 999999999, content_contains: "Usage: [staff role ID]" }
 
   - name: "inactivity - Prune an inactive member"
     snapshot: true

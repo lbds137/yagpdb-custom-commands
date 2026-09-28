@@ -38,6 +38,7 @@
     "commands/members/batch_delrep.gohtml": {"main": 76},
     "commands/db/db_get_text.gohtml": {"main": 77},
     "commands/plumbing/bootstrap.gohtml": {"main": 78, "lotv": 1},
+    "commands/plumbing/config_sync.gohtml": {"main": 88},
     "commands/db/simple_db_lookup.gohtml": {"main": 79},
     "commands/members/staff_roles.gohtml": {"main": 80},
     "commands/members/hiatus.gohtml": {"main": 81},

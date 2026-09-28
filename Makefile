@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy
+.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -110,10 +110,15 @@ deploy-manifest: ## Print the deploy manifest for SERVER=<main|lotv> (needs HEAD
 	@test -n "$(SERVER)" || (echo "Usage: make deploy-manifest SERVER=main" && exit 1)
 	@python3 scripts/deploy-manifest.py $(SERVER)
 
-test-deploy: ## Node parity tests for deploy.js + the panel.json/manifest checks
+test-deploy: ## Node parity tests for deploy.js + the panel.json/manifest/config_sync checks
 	@echo "🧪 Running deploy tooling tests..."
 	@node --test deploy/deploy.test.js
 	@python3 scripts/deploy_panel_check.py
 	@python3 scripts/deploy_panel_check_test.py
 	@python3 scripts/deploy_manifest_test.py
 	@python3 scripts/test_changed_since_deploy.py
+	@python3 scripts/gen_config_sync_test.py
+	@python3 scripts/gen-config-sync.py --check
+
+config-sync: ## Regenerate commands/plumbing/config_sync.gohtml from deploy/panel.json
+	@python3 scripts/gen-config-sync.py

@@ -1,7 +1,7 @@
 name: "staff_roles (configures which roles count as staff)"
 description: >
   Staff is pre-seeded (an empty dict) in every test here, as a bootstrapped server always
-  has it (commands/plumbing/bootstrap.gohtml:28 sets it via `or ... sdict`); staff_roles.gohtml
+  has it (commands/plumbing/bootstrap.gohtml:25 sets it via `or ... sdict`); staff_roles.gohtml
   falls back the same way when "Roles" or "Staff" is unset.
 
 defaults:

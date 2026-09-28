@@ -1,6 +1,6 @@
 #!/bin/bash
 # Smoke test: run every command once, with no arguments, on the database a fresh
-# bootstrap leaves (tools/emulator/testdata/initial_db.json). A command that answers with
+# bootstrap plus config_sync leave (tools/emulator/testdata/initial_db.json). A command that answers with
 # its parseArgs usage message passes; regex-trigger commands are skipped, since an empty
 # message can't match their trigger. What's left failing is a real error. The YAML suites
 # (make test) test commands with arguments.

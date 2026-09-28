@@ -85,7 +85,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # where you can; a missing file is an error, an
                                       # unmapped execCC warns [execcc], a failed child fails
                                       # the test (unless warning_contains expects it). IDs are ints: store
-                                      # them as the bootstrap does (strings) and toInt them
+                                      # them as config_sync does (strings) and toInt them
   expected:
     output_contains: "..."            # also output_equals ("" = no output), output_matches, error_contains
                                       # (with error_contains, the other checks still run)

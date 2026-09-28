@@ -316,9 +316,15 @@ The `bootstrap.gohtml` command initializes the entire system:
 
 1. Create base configuration dictionaries
 2. Set default values for all settings
-3. Register command ID mappings
-4. Configure role and channel associations
-5. Initialize specialized systems (Gematria, etc.)
+3. Configure role and channel associations (the Staff role only when given: usage
+   `bootstrap [staff role ID]`)
+4. Initialize specialized systems (Gematria, etc.)
+
+Command ID mappings (the `Commands` dict) are `config_sync`'s, not bootstrap's:
+`scripts/gen-config-sync.py` (`make config-sync`) generates
+`commands/plumbing/config_sync.gohtml` from `deploy/panel.json`, an hourly command that
+merges each server's panel IDs into the dict (as strings; keys it doesn't know stay), and
+`make ci` fails when the generated file is stale.
 
 ### 2. Incremental Updates
 Individual commands can be updated without system-wide disruption:
