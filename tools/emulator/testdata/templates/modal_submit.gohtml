@@ -1,0 +1,15 @@
+{{/*
+  Test modal handler (not a real command): reads what YAGPDB gives a Modal Submission
+  run and answers with an ephemeral reply.
+
+  Trigger type: `Modal Submission`
+  Trigger: `^edit:rule:`
+*/}}
+{{- ephemeralResponse }}
+{{- "" }}modal={{ .IsModal }} id={{ .CustomID }} cmd={{ .Cmd }} args={{ .CmdArgs }} stripped={{ .StrippedID }}
+values={{ range $i, $v := .Values }}{{ if $i }}|{{ end }}{{ $v }}{{ end }}
+{{- range $id, $f := .ModalValues }}
+field {{ $id }}: type={{ $f.type }} value={{ $f.value }} custom_id={{ $f.custom_id }}
+{{- end }}
+data={{ .InteractionData.CustomID }} rows={{ len .InteractionData.Components }}
+message: id={{ .Message.ID }} author={{ .Message.Author.ID }} member={{ .Message.Member.User.ID }} channel={{ .Message.ChannelID }} content={{ .Message.Content }}

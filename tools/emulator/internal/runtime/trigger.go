@@ -253,10 +253,11 @@ func (t Trigger) IsContextMenu() bool {
 	return ok
 }
 
-// InteractionTriggered reports whether an interaction (a click, a slash command or a
-// context menu entry) starts such a run, so a test must give context.interaction.
+// InteractionTriggered reports whether an interaction (a click, a slash command, a
+// context menu entry or a modal submission) starts such a run, so a test must give
+// context.interaction.
 func (t Trigger) InteractionTriggered() bool {
-	return t.ComponentTriggered() || t.SlashTriggered() || t.IsContextMenu()
+	return t.ComponentTriggered() || t.SlashTriggered() || t.IsContextMenu() || t.ModalTriggered()
 }
 
 // CheckMatchComponent is YAGPDB's customcommands.CheckMatchComponent

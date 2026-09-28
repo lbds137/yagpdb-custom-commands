@@ -86,10 +86,10 @@ picks, then the minifier.
   logic (10k/20k-char cap) or dispatches each subcommand to the existing command by
   execCC (one execCC per run on free: fine, a run is one subcommand). Grouping also
   saves slash slots (10 free), so it helps the free-tier top 10.
-- Prerequisite: the emulator doesn't model interactions: Slash (.Options, .CmdArgs,
-  subcommands), Component and Modal triggers (.CustomID, .Values, .IsButton/.IsMenu),
-  context-menu (.TargetUser/.TargetMember/.Message), sendResponse/updateMessage/sendModal/
-  ephemeralResponse, the 1-per-run interaction response. Design and unit order:
+- Prerequisite (met by unit 4, 2026-09-27): the emulator models interactions: Slash
+  (.Options, .CmdArgs, subcommands), Component and Modal triggers (.CustomID, .Values,
+  .IsButton/.IsMenu), context-menu (.TargetUser/.TargetMember/.Message), sendResponse/
+  updateMessage/sendModal/ephemeralResponse, the 1-per-run interaction response. Design and unit order:
   docs/design/emulator-interactions.md (f). Unit 1 (component builders) shipped
   2026-09-27: cbutton/cmenu, complexMessage(+Edit) buttons/menus/components as action
   rows with YAGPDB's custom-ID prefixing and every vendor error text, components on sent,
@@ -114,8 +114,23 @@ picks, then the minifier.
   types slash / user_menu / message_menu (tools/emulator/internal/runtime/slash.go). Not
   captured from Discord (INF): its refusal of `updateMessage` on a slash/context-menu
   interaction, which the emulator stands in for with a 50035 "Invalid Form Body"
-  warning. Unit 4 (modals) is next, from vendor c579722 (common/templates/
-  context_interactions.go sendModal, general.go, handle_component.go:337-437).
+  warning. Unit 4 (modals) shipped 2026-09-27, the last of the four: cmodal/
+  modalBuilder/ctextInput/clabel with every vendor error text and quirk (a `fields`
+  slice keeps its first 5 silently; `components` discards ModalBuilder.Set's error, so
+  a bad entry silently ends the list), sendModal in vendor check order, the `Modal
+  Submission` trigger with .IsModal/.Values (field order)/.ModalValues/.CustomID and
+  .Message = the source message or a blank one, `context.interaction: { type: modal }`
+  with ordered `fields:`, and `{ kind: modal, title, custom_id, fields }` in
+  `interaction_responses:` (tools/emulator/internal/runtime/modals.go; the skill has a
+  two-test recipe). Not captured from Discord (INF): its refusals of a modal after a
+  deferral (40060) or in answer to a modal submission (stood in for with 50035), and of
+  a deferred update of a modal no message opened (then its output and any followup,
+  stood in for with 10015, aren't delivered); of text inputs and labels in a message
+  (50035); and which form a submission comes back in (action rows for a `fields` modal,
+  labels for a clabel one: a test's `form: label`); all warnings. Not modelled: a clabel
+  around a modal select menu, checkbox or radio group (an emulator error; design (e)),
+  and whether Discord accepts a followup after a modal response (the emulator records
+  the printed output as a followup).
 - Deferred (unit 2 review, 2026-09-27): `.Interaction.MessageComponentData` (discordgo's
   method on the embedded Interaction, lib/discordgo/interactions.go:271) isn't modelled:
   a YAGPDB template can call it, the emulator's `.Interaction` has no such method (use
@@ -360,9 +375,9 @@ gets a failing test first.
 - `parseArgs` resolves `user` and `member` arguments through the mocks.
 - Role gaps: a test that declares no guild roles treats any role ID as existing, with a
   `[role]` warning per ID (a stale ID would be nil in production).
-- Component and modal triggers aren't modelled (YAGPDB's `.Message` there is the
-  interaction's message with the clicker as author), nor is a join message's `ctx.Msg` (a
-  blank message from the joining member, which an execCC from it would inherit).
+- A join message's `ctx.Msg` isn't modelled (a blank message from the joining member,
+  which an execCC from it would inherit). (Component and modal triggers now are, with
+  YAGPDB's `.Message`: the interaction's message with the clicker as author.)
 
 ## Tooling defects
 

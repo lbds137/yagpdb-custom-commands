@@ -1,0 +1,221 @@
+name: "Modals: sendModal from a click or a slash run, and a Modal Submission trigger"
+
+# Message 7 is the bot's rule message with an Edit button; the test user (42) clicks it,
+# then submits the modal it opened. Opening and submitting are two tests: one run each.
+defaults:
+  user: { id: 42 }
+  channel: { id: 123456789012345678 }
+  messages:
+    - id: 7
+      channel_id: 123456789012345678
+      author_id: 1234567890
+      content: "Rule 3: be kind"
+
+tests:
+  - name: "A button run opens a modal: the response is the modal, with its fields in order"
+    template: "templates/modal_opener.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: component, custom_id: "edit:3", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      sent_messages: []
+      interaction_responses:
+        - { kind: modal, title: "Edit rule 3", custom_id: "edit:rule:3", fields: ["rule_text", "reason"] }
+
+  - name: "A slash run opens a modal built with modalBuilder, clabel and ctextInput"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `edit`
+        Slash option: `rule integer! the rule's number`
+      */}}
+      {{- $text := ctextInput "custom_id" "rule_text" "style" 2 "value" "be kind" }}
+      {{- sendModal (modalBuilder (print "edit:rule:" .Options.rule) "Edit"
+        (clabel "label" "Rule text" "component" $text)
+        (clabel "label" "Reason" "component" (ctextInput "custom_id" "reason"))) }}
+    context:
+      interaction: { type: slash, options: { rule: 3 } }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit", custom_id: "edit:rule:3", fields: ["rule_text", "reason"] }
+
+  - name: "A second sendModal in one run is the vendor error"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^twice$`
+      */}}
+      {{- $m := cmodal "title" "One" "fields" (sdict "label" "x") }}
+      {{- sendModal $m }}{{ sendModal $m }}
+    context:
+      interaction: { type: component, custom_id: "twice", message_id: 7 }
+    expected:
+      error_contains: "cannot send multiple modals to the same interaction"
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "One", custom_id: "-0", fields: ["0"] }
+
+  - name: "sendModal after sendResponse is the one-response error (the shared counter)"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^late$`
+      */}}
+      {{- sendResponse nil "working..." }}
+      {{- sendModal (cmodal "title" "Too late") }}
+    context:
+      interaction: { type: component, custom_id: "late", message_id: 7 }
+    expected:
+      error_contains: "cannot respond to an interaction > 1 time; consider using a followup"
+    assertions:
+      interaction_responses:
+        - { kind: message, content_contains: "working..." }
+
+  - name: "sendModal without an interaction is the vendor error"
+    template_source: |
+      {{- sendModal (cmodal "title" "Nope") }}
+    expected:
+      error_contains: "no interaction data in context"
+
+  - name: "The submission: .Values in field order, .ModalValues by ID, .CustomID/.CmdArgs, the source .Message; an ephemeral reply"
+    template: "templates/modal_submit.gohtml"
+    snapshot: true
+    context:
+      interaction:
+        type: modal
+        custom_id: "edit:rule:3 now"
+        message_id: 7
+        fields: { rule_text: "be very kind", reason: "clearer" }
+    expected:
+      output_equals: |
+        modal=true id=edit:rule:3 now cmd=edit:rule: args=[3 now] stripped=3 now
+        values=be very kind|clearer
+        field reason: type=4 value=clearer custom_id=reason
+        field rule_text: type=4 value=be very kind custom_id=rule_text
+        data=templates-edit:rule:3 now rows=2
+        message: id=7 author=42 member=42 channel=123456789012345678 content=Rule 3: be kind
+    assertions:
+      sent_messages:
+        - { content_contains: "values=be very kind|clearer", ephemeral: true }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "id=edit:rule:3" }
+
+  - name: ".Values keeps the modal's order, not the IDs' sort order"
+    template_source: |
+      {{/*
+        Trigger type: `Modal`
+        Trigger: `^order$`
+      */}}
+      {{- range .Values }}{{ . }};{{ end }}
+    context:
+      interaction: { type: modal, custom_id: "order", fields: { zeta: "first", alpha: "second", mid: "third" } }
+    expected:
+      output_equals: "first;second;third;"
+
+  - name: "A modal a slash run opened has no source message: .Message is a blank one by the submitter"
+    template: "templates/modal_submit.gohtml"
+    context:
+      interaction: { type: modal, custom_id: "edit:rule:4", fields: { rule_text: "x", reason: "" } }
+    expected:
+      output_contains: "message: id=0 author=42 member=42 channel=123456789012345678 content="
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "values=x|" }
+
+  - name: "The submission updates the source message in place (updateMessage)"
+    template_source: |
+      {{/*
+        Trigger type: `Modal Submission`
+        Trigger: `^edit:rule:\d+$`
+      */}}
+      {{- updateMessage (print "Rule " (index (split .CustomID ":") 2) ": " (index .Values 0)) }}
+    context:
+      interaction: { type: modal, custom_id: "edit:rule:3", message_id: 7, fields: { rule_text: "be very kind" } }
+    expected:
+      output_equals: ""
+    assertions:
+      sent_messages: []
+      edited_messages:
+        - { channel_id: 123456789012345678, content_equals: "Rule 3: be very kind" }
+      interaction_responses:
+        - { kind: update, content_contains: "be very kind" }
+
+  - name: "A submission can't be answered with another modal (Discord refuses it)"
+    template_source: |
+      {{/*
+        Trigger type: `Modal Submission`
+        Trigger: `^edit:`
+      */}}
+      {{- sendModal (cmodal "title" "Again") }}
+    context:
+      interaction: { type: modal, custom_id: "edit:1", fields: { a: "1" } }
+    expected:
+      warning_contains: "can't be answered with another modal"
+    assertions:
+      interaction_responses: []
+
+  - name: "A modal of labels comes back as labels (form: label): the same .Values and .ModalValues"
+    template_source: |
+      {{/*
+        Trigger type: `Modal Submission`
+        Trigger: `^edit:`
+      */}}
+      {{- printf "%T" (index .InteractionData.Components 0) }} {{ index .Values 0 }} {{ .ModalValues.rule_text.value }}
+    context:
+      interaction: { type: modal, custom_id: "edit:rule:3", form: label, fields: { rule_text: "kind" } }
+    expected:
+      output_equals: "*types.Label kind kind"
+
+  - name: ".Interaction.Message is .Message: the handler makes the submitter its author"
+    template_source: |
+      {{/*
+        Trigger type: `Modal Submission`
+        Trigger: `^edit:`
+      */}}
+      {{- .Interaction.Message.Author.ID }} {{ .Message.Author.ID }} {{ (getMessage nil 7).Author.ID }}
+    context:
+      interaction: { type: modal, custom_id: "edit:1", message_id: 7, fields: { a: "1" } }
+    expected:
+      output_equals: "42 42 1234567890"
+
+  - name: "A followup after the failed Update deferral of a modal no message opened isn't delivered"
+    template_source: |
+      {{/*
+        Trigger type: `Modal Submission`
+        Trigger: `^edit:`
+        Defer mode: `Update Message Response`
+      */}}
+      {{- sendResponse nil "saved" }}
+    context:
+      interaction: { type: modal, custom_id: "edit:1", fields: { a: "1" } }
+    expected:
+      warning_contains: "never acknowledged"
+    assertions:
+      sent_messages: []
+      interaction_responses: []
+
+  - name: "A modal's .Data sent as a message: Discord refuses its text inputs outside a modal"
+    template_source: |
+      {{/*
+        Trigger type: `Message Component`
+        Trigger: `^x$`
+      */}}
+      {{- $m := cmodal "title" "t" "fields" (sdict "label" "a" "custom_id" "a") }}
+      {{- sendMessage nil $m.Data }}
+    context:
+      interaction: { type: component, custom_id: "x", message_id: 7 }
+    expected:
+      warning_contains: "only go in a modal"
+    assertions:
+      sent_messages: []
+
+  - name: "A custom ID that doesn't match the trigger doesn't run the command"
+    template: "templates/modal_submit.gohtml"
+    context:
+      interaction: { type: modal, custom_id: "delete:rule:3", fields: { rule_text: "x" } }
+    expected:
+      no_trigger: true

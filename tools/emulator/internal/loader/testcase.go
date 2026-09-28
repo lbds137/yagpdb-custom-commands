@@ -187,17 +187,25 @@ type ReactionDef struct {
 
 // InteractionDef describes the interaction that triggered a command, by type: a
 // component click (component), a slash command invocation (slash), a use of a user
-// context menu entry (user_menu) or of a message context menu entry (message_menu).
-// Modals are unit 4 of docs/design/emulator-interactions.md.
+// context menu entry (user_menu) or of a message context menu entry (message_menu), or a
+// modal submission (modal).
 type InteractionDef struct {
-	Type string `yaml:"type"` // "component", "slash", "user_menu" or "message_menu"
-	// CustomID is the clicked component's custom ID as the command wrote it (the
-	// templates- prefix YAGPDB adds is implied; giving it is fine too)
+	// "component", "slash", "user_menu", "message_menu" or "modal"
+	Type string `yaml:"type"`
+	// CustomID is the clicked component's (or the submitted modal's) custom ID as the
+	// command wrote it (the templates- prefix YAGPDB adds is implied; giving it is fine too)
 	CustomID string `yaml:"custom_id"`
-	// MessageID is the message clicked (component) or the message the entry was used on
-	// (message_menu), in messages: (in the run's channel)
-	MessageID int64    `yaml:"message_id"`
-	Values    []string `yaml:"values"` // a menu's chosen values (.Values)
+	// MessageID is the message clicked (component), the message the entry was used on
+	// (message_menu) or the message whose component opened the modal (modal, optional),
+	// in messages: (in the run's channel)
+	MessageID int64 `yaml:"message_id"`
+	// Fields are a modal's submitted text inputs, in the modal's order (.Values keeps
+	// it): a mapping of custom ID to the text entered
+	Fields ModalFields `yaml:"fields"`
+	// Form is how a modal's fields come back: action_row (the default: a cmodal "fields"
+	// modal) or label (a modal of clabels: modalBuilder, cmodal "components")
+	Form   string   `yaml:"form"`
+	Values []string `yaml:"values"` // a menu's chosen values (.Values)
 	// Component is the clicked component's kind: button (the default), string_menu,
 	// user_menu, role_menu, mentionable_menu or channel_menu
 	Component string `yaml:"component"`
@@ -271,10 +279,62 @@ func (d *InteractionDef) validate() error {
 			return fmt.Errorf("interaction needs the message_id the entry was used on (a messages: entry)")
 		}
 	case "modal":
-		return fmt.Errorf("interaction type %q isn't modelled yet (docs/design/emulator-interactions.md unit 4)", d.Type)
+		if err := d.onlyFields("modal", "custom_id, message_id, fields, form"); err != nil {
+			return err
+		}
+		if d.CustomID == "" {
+			return fmt.Errorf("interaction needs the custom_id of the modal submitted")
+		}
+		// A modal has 1 to 5 top-level components (Discord's limit, ModalBuilder's cap)
+		if len(d.Fields) < 1 || len(d.Fields) > 5 {
+			return fmt.Errorf("interaction fields: a modal submits 1 to 5 fields, not %d", len(d.Fields))
+		}
+		// Discord's custom IDs are 1+ characters and unique within the modal, as the
+		// command wrote them (with the templates- prefix Discord sends back)
+		seen := map[string]string{}
+		for _, f := range d.Fields {
+			full := runtime.WithTemplatePrefix(f.CustomID)
+			if full == runtime.TemplateCustomIDPrefix {
+				return fmt.Errorf("interaction fields: a custom ID can't be empty (%q)", f.CustomID)
+			}
+			if first, dup := seen[full]; dup {
+				return fmt.Errorf("interaction fields: %q and %q are the same custom ID (%s)",
+					first, f.CustomID, full)
+			}
+			seen[full] = f.CustomID
+		}
+		switch d.Form {
+		case "", runtime.ModalFormActionRow, runtime.ModalFormLabel:
+		default:
+			return fmt.Errorf("interaction form %q isn't action_row or label", d.Form)
+		}
 	default:
-		return fmt.Errorf("interaction type %q: write type: component, slash, user_menu or message_menu", d.Type)
+		return fmt.Errorf("interaction type %q: write type: component, slash, user_menu, message_menu or modal", d.Type)
 	}
+	return nil
+}
+
+// ModalFields are a modal submission's fields in the order the test writes them, from a
+// YAML mapping of custom ID to text (`fields: { rule_text: "new text", reason: "typo" }`);
+// a plain map would lose the order .Values has.
+type ModalFields []runtime.ModalField
+
+// UnmarshalYAML reads the mapping in order: each key a field's custom ID, each value the
+// text entered, a scalar. (yaml.v3 itself refuses a key given twice.)
+func (f *ModalFields) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("line %d: interaction fields: write a mapping of custom ID to text "+
+			"(fields: { rule_text: \"new text\" })", node.Line)
+	}
+	out := ModalFields{}
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		key, value := node.Content[i], node.Content[i+1]
+		if key.Kind != yaml.ScalarNode || value.Kind != yaml.ScalarNode {
+			return fmt.Errorf("line %d: interaction fields: each entry is a custom ID and its text", key.Line)
+		}
+		out = append(out, runtime.ModalField{CustomID: key.Value, Value: value.Value})
+	}
+	*f = out
 	return nil
 }
 
@@ -289,11 +349,14 @@ func (d *InteractionDef) onlyFields(typ, allowed string) error {
 		"subcommand": d.Subcommand != "",
 		"options":    d.Options != nil,
 		"target":     d.Target != 0,
+		"fields":     d.Fields != nil,
+		"form":       d.Form != "",
 	}
 	for _, f := range strings.Split(allowed, ", ") {
 		delete(set, f)
 	}
-	for _, f := range []string{"custom_id", "message_id", "values", "component", "subcommand", "options", "target"} {
+	for _, f := range []string{"custom_id", "message_id", "values", "component", "subcommand", "options", "target",
+		"fields", "form"} {
 		if set[f] {
 			return fmt.Errorf("interaction %s isn't a type: %s field (it takes %s)", f, typ, allowed)
 		}
@@ -310,6 +373,12 @@ func (d *InteractionDef) click() runtime.ComponentClick {
 // slash is the invocation as the runtime takes it.
 func (d *InteractionDef) slash() runtime.SlashInvocation {
 	return runtime.SlashInvocation{Subcommand: d.Subcommand, Options: d.Options}
+}
+
+// modal is the submission as the runtime takes it.
+func (d *InteractionDef) modal() runtime.ModalSubmission {
+	return runtime.ModalSubmission{CustomID: d.CustomID, Fields: d.Fields, MessageID: d.MessageID,
+		Form: d.Form}
 }
 
 // contextMenuTarget is the target as the runtime takes it.
@@ -419,19 +488,24 @@ type Assertions struct {
 	Execs *[]ExecCheck `yaml:"execs"`
 	// InteractionResponses are exactly the run's answers to its interaction, in order
 	// (`[]` for none): the response, followups, a deferred response's edit, an update
-	// of the component's message
+	// of the component's message, a modal opened
 	InteractionResponses *[]InteractionResponseCheck `yaml:"interaction_responses"`
 }
 
 // InteractionResponseCheck matches an interaction response; unset fields match anything.
 type InteractionResponseCheck struct {
-	Kind      string `yaml:"kind"` // "message", "followup", "deferred_edit" or "update"
+	Kind      string `yaml:"kind"` // "message", "followup", "deferred_edit", "update" or "modal"
 	Ephemeral *bool  `yaml:"ephemeral"`
 	// The message's checks, as a sent_messages entry has them
 	ContentContains    string `yaml:"content_contains"`
 	EmbedTitle         string `yaml:"embed_title"`
 	EmbedContains      string `yaml:"embed_contains"`
 	ComponentsContains string `yaml:"components_contains"`
+	// A modal's checks (kind: modal): its title and custom ID exactly, and exactly its
+	// fields' custom IDs in order, all without the templates- prefix
+	Title    *string   `yaml:"title"`
+	CustomID *string   `yaml:"custom_id"`
+	Fields   *[]string `yaml:"fields"`
 }
 
 // ExecCheck matches an exec or execAdmin call; unset fields match anything.

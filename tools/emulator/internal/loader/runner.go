@@ -364,12 +364,20 @@ func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContex
 					c.Interaction.Type, want, t.Type)
 			}
 			return t, ctx.SetInteractionContextMenu(t, c.Interaction.contextMenuTarget(), mode)
+		case "modal":
+			if !t.ModalTriggered() {
+				return t, fmt.Errorf("a modal interaction needs a Modal Submission trigger; the template's is %q", t.Type)
+			}
+			return t, ctx.SetInteractionModal(t, c.Interaction.modal(), mode)
 		}
 	}
 	switch {
 	case t.ComponentTriggered():
 		return t, fmt.Errorf("a Message Component trigger runs on a click: give context.interaction " +
 			"{ type: component, custom_id, message_id }")
+	case t.ModalTriggered():
+		return t, fmt.Errorf("a Modal Submission trigger runs on a modal submission: give " +
+			"context.interaction { type: modal, custom_id, fields, message_id (optional) }")
 	case t.SlashTriggered():
 		return t, fmt.Errorf("a Slash Command trigger runs on a slash invocation: give context.interaction " +
 			"{ type: slash, subcommand, options }")
@@ -846,9 +854,10 @@ func checkInteractionResponses(responses []runtime.InteractionResponse, checks *
 	var failures []string
 	for i, c := range *checks {
 		switch c.Kind {
-		case "", runtime.ResponseMessage, runtime.ResponseFollowup, runtime.ResponseDeferredEdit, runtime.ResponseUpdate:
+		case "", runtime.ResponseMessage, runtime.ResponseFollowup, runtime.ResponseDeferredEdit, runtime.ResponseUpdate,
+			runtime.ResponseModal:
 		default:
-			failures = append(failures, fmt.Sprintf("interaction response check %d: kind is %q; it takes message, followup, deferred_edit or update", i, c.Kind))
+			failures = append(failures, fmt.Sprintf("interaction response check %d: kind is %q; it takes message, followup, deferred_edit or update (a message), or modal", i, c.Kind))
 		}
 	}
 	if len(failures) > 0 {
@@ -866,6 +875,11 @@ func checkInteractionResponses(responses []runtime.InteractionResponse, checks *
 		if (c.Kind != "" && r.Kind != c.Kind) || (c.Ephemeral != nil && r.Ephemeral != *c.Ephemeral) {
 			failures = append(failures, fmt.Sprintf("interaction response %d doesn't match (kind %q, ephemeral %s; unset = any): %s",
 				i, c.Kind, fmtBoolPtr(c.Ephemeral), r))
+		}
+		if (c.Title != nil && r.Title != *c.Title) || (c.CustomID != nil && r.CustomID != *c.CustomID) ||
+			(c.Fields != nil && !slices.Equal(r.Fields, *c.Fields)) {
+			failures = append(failures, fmt.Sprintf("interaction response %d: the modal doesn't match "+
+				"(title, custom_id and fields exactly; unset = any): %s", i, r))
 		}
 		msg := runtime.SentMessage{ID: r.MessageID, ChannelID: r.ChannelID, Content: r.Content, Embeds: r.Embeds, Components: r.Components}
 		check := MessageCheck{ContentContains: c.ContentContains, EmbedTitle: c.EmbedTitle,

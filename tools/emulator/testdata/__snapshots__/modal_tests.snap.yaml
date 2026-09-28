@@ -1,0 +1,38 @@
+'A button run opens a modal: the response is the modal, with its fields in order':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: Edit rule 3
+          custom_id: edit:rule:3
+          fields:
+            - rule_text
+            - reason
+'The submission: .Values in field order, .ModalValues by ID, .CustomID/.CmdArgs, the source .Message; an ephemeral reply':
+    output: |-
+        modal=true id=edit:rule:3 now cmd=edit:rule: args=[3 now] stripped=3 now
+        values=be very kind|clearer
+        field reason: type=4 value=clearer custom_id=reason
+        field rule_text: type=4 value=be very kind custom_id=rule_text
+        data=templates-edit:rule:3 now rows=2
+        message: id=7 author=42 member=42 channel=123456789012345678 content=Rule 3: be kind
+    messages:
+        - channel_id: 123456789012345678
+          content: |-
+            modal=true id=edit:rule:3 now cmd=edit:rule: args=[3 now] stripped=3 now
+            values=be very kind|clearer
+            field reason: type=4 value=clearer custom_id=reason
+            field rule_text: type=4 value=be very kind custom_id=rule_text
+            data=templates-edit:rule:3 now rows=2
+            message: id=7 author=42 member=42 channel=123456789012345678 content=Rule 3: be kind
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: |-
+            modal=true id=edit:rule:3 now cmd=edit:rule: args=[3 now] stripped=3 now
+            values=be very kind|clearer
+            field reason: type=4 value=clearer custom_id=reason
+            field rule_text: type=4 value=be very kind custom_id=rule_text
+            data=templates-edit:rule:3 now rows=2
+            message: id=7 author=42 member=42 channel=123456789012345678 content=Rule 3: be kind

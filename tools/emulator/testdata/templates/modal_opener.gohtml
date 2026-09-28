@@ -1,0 +1,15 @@
+{{/*
+  Test modal opener (not a real command): an Edit button's handler that opens a modal
+  for rule <n> (the button's custom ID is edit:<n>); modal_submit.gohtml handles the
+  submission (custom ID edit:rule:<n>).
+
+  Trigger type: `Message Component`
+  Trigger: `^edit:(\d+)$`
+*/}}
+{{- $n := index (split .CustomID ":") 1 }}
+{{- sendModal (cmodal
+	"title" (print "Edit rule " $n)
+	"custom_id" (print "edit:rule:" $n)
+	"fields" (cslice
+		(sdict "label" "Rule text" "custom_id" "rule_text" "style" 2 "required" true)
+		(sdict "label" "Reason" "custom_id" "reason" "placeholder" "why the change"))) }}

@@ -37,6 +37,18 @@ var errAlreadyAcked = discordError{"400 Bad Request", 40060,
 // an application command interaction (INF: shape not captured from Discord).
 var errNoMessageToUpdate = discordError{"400 Bad Request", 50035, "Invalid Form Body"}
 
+// errUnknownWebhook stands in for Discord's refusal of a followup to an interaction that
+// was never acknowledged (INF: shape not captured from Discord).
+var errUnknownWebhook = discordError{"404 Not Found", 10015, "Unknown Webhook"}
+
+// deferralFailed reports that the run's deferral never reached Discord: an Update
+// deferral of a modal no message opened (see SetInteractionModal). YAGPDB still marks
+// the interaction responded to and deferred, but it was never acknowledged.
+func (ctx *ExecutionContext) deferralFailed() bool {
+	in := ctx.Interaction
+	return in != nil && in.Deferred && ctx.deferMode == DeferModeUpdate && in.Message == nil
+}
+
 // Response kinds (InteractionResponse.Kind), by what YAGPDB sends: SendResponse's
 // three modes (context.go:662-693) and updateMessage's InteractionResponseUpdateMessage.
 const (
@@ -48,7 +60,8 @@ const (
 
 // InteractionResponse is one answer to the run's interaction. A message, followup or
 // deferred edit is also a SentMessage (or, for a deferred update, an EditedMessage);
-// an update is an EditedMessage, and edits the component's message in place.
+// an update is an EditedMessage, and edits the component's message in place. A modal
+// (ResponseModal, modals.go) is neither: it has no message.
 type InteractionResponse struct {
 	Kind      string
 	Ephemeral bool
@@ -58,9 +71,17 @@ type InteractionResponse struct {
 	Embeds    []interface{}
 	// Components are the message's action rows; nil when the response didn't set them
 	Components []types.TopLevelComponent
+	// A modal's (Kind ResponseModal, which has no message): its title, its custom ID and
+	// its text inputs' custom IDs in order, both without the templates- prefix
+	Title    string
+	CustomID string
+	Fields   []string
 }
 
 func (r InteractionResponse) String() string {
+	if r.Kind == ResponseModal {
+		return fmt.Sprintf("modal %q (custom_id %q) with fields %q", r.Title, r.CustomID, r.Fields)
+	}
 	s := r.Kind
 	if r.Ephemeral {
 		s += " (ephemeral)"
@@ -119,17 +140,14 @@ func menuTypeName(t types.ComponentType) string {
 	return ""
 }
 
-// componentMessage is a component run's .Message (and YAGPDB's ctx.Msg): the component's
-// message as the emulator knows it, with the clicker as its author and member
-// (handle_component.go:76-80, :311-316). The stored message keeps its real author, so a
-// getMessage of it reads as Discord returns it.
+// componentMessage is a component run's .Message (and YAGPDB's ctx.Msg): the
+// interaction's own copy of the component's message (the re-fetch the handler puts in
+// interaction.Message, handle_component.go:76-80), given the clicker as author and member
+// in place, as the handler does (:311-316), so .Interaction.Message is the same. The
+// stored message keeps its real author, so a getMessage of it reads as Discord returns it.
 func (ctx *ExecutionContext) componentMessage() types.CtxMessage {
-	msg := *ctx.Interaction.Message
-	msg.Author = types.DiscordUser{ID: ctx.UserID, Username: ctx.Username,
-		Discriminator: ctx.Discriminator}
-	member := ctx.member(ctx.UserID)
-	msg.Member = &member
-	return msg
+	ctx.byUser(ctx.Interaction.Message)
+	return *ctx.Interaction.Message
 }
 
 // ComponentClick is a click on a component of a message the emulator knows, as a test
@@ -184,7 +202,7 @@ func (ctx *ExecutionContext) SetInteractionComponent(t Trigger, click ComponentC
 	}
 
 	member := ctx.member(ctx.UserID)
-	clicked := *msg // its own copy: the channel's messages may move as the run sends more
+	clicked := *msg // its own copy (the re-fetch): the channel's messages may move as the run sends more
 	ctx.Interaction = &types.CustomCommandInteraction{Interaction: &types.Interaction{
 		ID:   click.MessageID + 1, // any ID after the message's (Discord's are snowflakes)
 		Type: types.InteractionMessageComponent,
@@ -350,6 +368,12 @@ func (e *Engine) sendResponse(fn string, filterSpecialMentions, returnID bool,
 	if refused, err := e.ctx.checkComponents(fn, components); refused {
 		return "", err
 	}
+	if sendType == sendMessageInteractionFollowup && e.ctx.deferralFailed() {
+		// CreateFollowupMessage's error is returned (context_interactions.go:356-371)
+		return "", e.ctx.discordRefuses(fn, errUnknownWebhook,
+			"the interaction was never acknowledged (the deferred update of a modal no message "+
+				"opened failed), so it takes no followup")
+	}
 	if msgSend.HasFile {
 		e.ctx.RecordFileUpload(e.ctx.ChannelID, msgSend.Filename, msgSend.File)
 	}
@@ -409,12 +433,13 @@ func (e *Engine) updateMessage(fn string, filterSpecialMentions bool,
 				"print the update instead, or set Defer mode to None", e.ctx.deferMode))
 	}
 	if e.ctx.Interaction.Message == nil {
-		// A slash command or context menu interaction has no component message; YAGPDB
-		// still sends the UPDATE_MESSAGE response (:400-403) and Discord refuses it (INF:
-		// the code and text are the emulator's stand-in, not a captured response)
+		// A slash command or context menu interaction, or the submission of a modal no
+		// message opened, has no component message; YAGPDB still sends the UPDATE_MESSAGE
+		// response (:400-403) and Discord refuses it (INF: the code and text are the
+		// emulator's stand-in, not a captured response)
 		return "", e.ctx.discordRefuses(fn, errNoMessageToUpdate,
-			"a slash command or context menu interaction has no message to update; "+
-				"use sendResponse or print the reply")
+			"a slash command or context menu interaction (or a modal no message opened) has no "+
+				"message to update; use sendResponse or print the reply")
 	}
 	content, embeds, components := msgSend.Content, msgSend.Embeds, msgSend.Components
 	notEmpty := msgSend.HasFile || msgSend.HasOther || len(components) > 0
@@ -486,6 +511,11 @@ func (ctx *ExecutionContext) respondWithOutput(out string) {
 		in.RespondedTo = true
 		id := ctx.recordInteractionMessage(ResponseMessage, ephemeral, out, nil, nil, pings)
 		ctx.recordResponseSentEphemeral(id, ephemeral)
+	case ctx.deferralFailed():
+		// A modal no message opened: the deferral failed (see SetInteractionModal), so
+		// there is no message the edit could reach (INF)
+		ctx.Warn(KindResponse, "the output has no message to edit: the deferred update of a "+
+			"modal no message opened fails on Discord's side (INF), so nothing is shown")
 	case in.Deferred && ctx.deferMode == DeferModeUpdate:
 		// EditOriginalInteractionResponse with WebhookParams (omitempty): the content
 		// changes, the message's embeds and components stay

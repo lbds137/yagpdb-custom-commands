@@ -48,7 +48,7 @@ IMPLEMENTED=(
     "deleteAllMessageReactions"
     # Discord - Interaction responses
     "sendResponse" "sendResponseNoEscape" "sendResponseRetID" "sendResponseNoEscapeRetID"
-    "updateMessage" "updateMessageNoEscape" "ephemeralResponse"
+    "updateMessage" "updateMessageNoEscape" "ephemeralResponse" "sendModal"
     # Mentions
     "mentionRoleID" "mentionRole" "mentionEveryone" "mentionHere"
     # Discord - Roles
@@ -62,8 +62,8 @@ IMPLEMENTED=(
     "createTicket"
     # Embeds
     "cembed" "complexMessage" "complexMessageEdit" "sendTemplate"
-    # Message components
-    "cbutton" "cmenu"
+    # Message components and modals
+    "cbutton" "cmenu" "cmodal" "modalBuilder" "clabel" "ctextInput"
     # Control flow
     "execCC" "exec" "execAdmin" "execTemplate" "scheduleUniqueCC" "cancelScheduledUniqueCC"
     "sleep" "catch"

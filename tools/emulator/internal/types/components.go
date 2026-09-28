@@ -1,14 +1,19 @@
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+)
 
-// The message component types a template can build with cbutton and cmenu, copied from
-// discordgo (vendor lib/discordgo/components.go, YAGPDB c579722) with their field names
-// and JSON tags, so a message read back and a snapshot show Discord's shape. Components
-// V2 (sections, containers, ...) isn't modelled.
+// The message component types a template can build with cbutton, cmenu, ctextInput and
+// clabel, copied from discordgo (vendor lib/discordgo/components.go, YAGPDB c579722) with
+// their field names and JSON tags, so a message read back and a snapshot show Discord's
+// shape. Components V2 (sections, containers, ...) isn't modelled.
 
 // ComponentType is type of component (components.go:12-36; only the types the emulator
-// builds are listed).
+// builds are listed). Like discordgo's it has no String method, so a template prints it
+// as its number (a modal field's .ModalValues type is 4).
 type ComponentType uint
 
 // MessageComponent types.
@@ -16,10 +21,12 @@ const (
 	ActionsRowComponent            ComponentType = 1
 	ButtonComponent                ComponentType = 2
 	SelectMenuComponent            ComponentType = 3
+	TextInputComponent             ComponentType = 4
 	UserSelectMenuComponent        ComponentType = 5
 	RoleSelectMenuComponent        ComponentType = 6
 	MentionableSelectMenuComponent ComponentType = 7
 	ChannelSelectMenuComponent     ComponentType = 8
+	LabelComponent                 ComponentType = 18
 )
 
 // MessageComponent is a base interface for all message components (components.go:39-42).
@@ -29,17 +36,20 @@ type MessageComponent interface {
 }
 
 // TopLevelComponent is an interface for message components which can be used on the
-// top level of a message (components.go:112-116).
+// top level of a message (components.go:112-116); IsModalSupported says whether a
+// modal takes it at the top level (ModalBuilder.addComponent).
 type TopLevelComponent interface {
 	MessageComponent
 	IsTopLevel() bool
+	IsModalSupported() bool
 }
 
 // InteractiveComponent is an interface for message components which can be interacted
-// with (components.go:119-123).
+// with (components.go:119-123); IsAllowedInLabel says whether clabel wraps it.
 type InteractiveComponent interface {
 	MessageComponent
 	IsInteractive() bool
+	IsAllowedInLabel() bool
 }
 
 // ActionsRow is a container for interactive components within one row
@@ -69,6 +79,12 @@ func (r ActionsRow) Type() ComponentType {
 // IsTopLevel is a method to assert the component as top level (components.go:193).
 func (ActionsRow) IsTopLevel() bool {
 	return true
+}
+
+// IsModalSupported is a method to assert the component as modal supported
+// (components.go:198-200): an action row isn't, so modalBuilder refuses one.
+func (ActionsRow) IsModalSupported() bool {
+	return false
 }
 
 // ButtonStyle is style of button (components.go:203).
@@ -134,6 +150,11 @@ func (Button) Type() ComponentType {
 // IsInteractive is a method to assert the component as interactive (components.go:261).
 func (Button) IsInteractive() bool {
 	return true
+}
+
+// IsAllowedInLabel is components.go:265-267: a label can't wrap a button.
+func (Button) IsAllowedInLabel() bool {
+	return false
 }
 
 // SelectMenuOption represents an option for a select menu (components.go:275-282).
@@ -234,6 +255,145 @@ func (s SelectMenu) MarshalJSON() ([]byte, error) {
 
 // IsInteractive is a method to assert the component as interactive (components.go:369).
 func (SelectMenu) IsInteractive() bool {
+	return true
+}
+
+// IsAllowedInLabel is components.go:350-352 (a modal select; the emulator's clabel
+// refuses it as not modelled).
+func (SelectMenu) IsAllowedInLabel() bool {
+	return true
+}
+
+// TextInput represents text input component (components.go:373-382). Required has no
+// omitempty, so an unset one is sent as false.
+type TextInput struct {
+	CustomID    string         `json:"custom_id"`
+	Label       string         `json:"label,omitempty"`
+	Style       TextInputStyle `json:"style"`
+	Placeholder string         `json:"placeholder,omitempty"`
+	Value       string         `json:"value,omitempty"`
+	Required    bool           `json:"required"`
+	MinLength   int            `json:"min_length,omitempty"`
+	MaxLength   int            `json:"max_length,omitempty"`
+}
+
+// NewShortTextInput is components.go:384-388: a text input of the short style.
+func NewShortTextInput() TextInput {
+	return TextInput{
+		Style: TextInputShort,
+	}
+}
+
+// Type is a method to get the type of a component (components.go:391).
+func (TextInput) Type() ComponentType {
+	return TextInputComponent
+}
+
+// IsAllowedInLabel is components.go:395-397.
+func (TextInput) IsAllowedInLabel() bool {
+	return true
+}
+
+// MarshalJSON is a method for marshaling TextInput to a JSON object
+// (components.go:400-410).
+func (m TextInput) MarshalJSON() ([]byte, error) {
+	type inputText TextInput
+
+	return json.Marshal(struct {
+		inputText
+		Type ComponentType `json:"type"`
+	}{
+		inputText: inputText(m),
+		Type:      m.Type(),
+	})
+}
+
+// IsInteractive is a method to assert the component as interactive (components.go:422).
+func (TextInput) IsInteractive() bool {
+	return true
+}
+
+// TextInputStyle is style of text in TextInput component (components.go:413).
+type TextInputStyle uint
+
+// Text styles (components.go:416-419).
+const (
+	TextInputShort     TextInputStyle = 1
+	TextInputParagraph TextInputStyle = 2
+)
+
+// Label is a top-level layout component (components.go:526-534): it wraps a modal
+// component with text as a label and an optional description.
+type Label struct {
+	// Unique identifier for the component; auto populated through increment if not provided.
+	ID          int                  `json:"id,omitempty"`
+	Label       string               `json:"label"`
+	Description string               `json:"description,omitempty"`
+	Component   InteractiveComponent `json:"component"`
+}
+
+// Type is a method to get the type of a component (components.go:538).
+func (Label) Type() ComponentType {
+	return LabelComponent
+}
+
+// UnmarshalJSON is components.go:544-559, for the one component the emulator's labels
+// wrap: a text input (discordgo's unmarshalableMessageComponent knows every type).
+func (l *Label) UnmarshalJSON(data []byte) error {
+	type label Label
+	var v struct {
+		label
+		RawComponent json.RawMessage `json:"component"`
+	}
+
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		return err
+	}
+	*l = Label(v.label)
+	if len(v.RawComponent) == 0 {
+		// No "component" key: discordgo asserts the nil interface (:557), a panic YAGPDB's
+		// template call reports with Go's text
+		return errors.New("interface conversion: interface is nil, not discordgo.InteractiveComponent")
+	}
+
+	var kind struct {
+		Type ComponentType `json:"type"`
+	}
+	if err := json.Unmarshal(v.RawComponent, &kind); err != nil {
+		return err
+	}
+	if kind.Type != TextInputComponent {
+		return fmt.Errorf("a label wrapping a component of type %d isn't modelled", kind.Type)
+	}
+	input := &TextInput{}
+	if err := json.Unmarshal(v.RawComponent, input); err != nil {
+		return err
+	}
+	l.Component = input
+	return nil
+}
+
+// MarshalJSON is a method for marshaling Label to a JSON object (components.go:562-572).
+func (l Label) MarshalJSON() ([]byte, error) {
+	type label Label
+
+	return json.Marshal(struct {
+		label
+		Type ComponentType `json:"type"`
+	}{
+		label: label(l),
+		Type:  l.Type(),
+	})
+}
+
+// IsTopLevel is components.go:574-576.
+func (Label) IsTopLevel() bool {
+	return true
+}
+
+// IsModalSupported is components.go:578-580: a modal takes labels at the top level.
+func (Label) IsModalSupported() bool {
 	return true
 }
 

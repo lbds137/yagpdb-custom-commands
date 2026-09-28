@@ -69,6 +69,11 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # interaction: { type: user_menu, target: 5 } / { type: message_menu, message_id: 7 }  # a
                                       # context menu entry used on user 5 / messages entry 7
                                       # (`User Context Menu` / `Message Context Menu` trigger)
+    # interaction: { type: modal, custom_id: "edit:rule:3", message_id: 7,
+    #                fields: { rule_text: "new text", reason: "typo" } }  # a modal submitted
+                                      # (`Modal Submission` trigger), fields in the modal's
+                                      # order; message_id optional; form: label for a
+                                      # modal of clabels. See Modals
     # an interval/cron header: no .Message, .User or .Member; a None command keeps a message
     # a header line  Case sensitive: `true`  makes the trigger case-sensitive (default: not);
     # Show errors: `false` and Redirect errors: `<channel ID>` set how a failed run's error
@@ -137,8 +142,9 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # (its exec_data there is a plain map; the real run gets an *sdict)
     interaction_responses: [{ kind: update, embed_contains: "Page 2" }, { kind: followup, ephemeral: true }]
     # exactly the run's answers to its interaction, in order ([] for none): kind =
-    # message|followup|deferred_edit|update, ephemeral, and content_contains/embed_title/
-    # embed_contains/components_contains as sent_messages has them (see Button and menu clicks)
+    # message|followup|deferred_edit|update|modal, ephemeral, and content_contains/embed_title/
+    # embed_contains/components_contains as sent_messages has them (see Button and menu clicks);
+    # a modal's title, custom_id (exact, no templates- prefix) and fields: [ids in order]
 ```
 
 ## Project Structure
@@ -153,7 +159,8 @@ tools/emulator/
 │   │                     # imported as yagstd: standard functions, sdict/dict/cslice, regex, sort, copied
 │   ├── runtime/          # engine.go (Discord/database mocks, Execute), context.go, limits.go
 │   │                     # (YAGPDB call counters), components.go, interactions.go (clicks,
-│   │                     # sendResponse/updateMessage), trigger.go (header), loopcheck.go, hints.go
+│   │                     # sendResponse/updateMessage), modals.go (cmodal, sendModal, the
+│   │                     # Modal trigger), slash.go, trigger.go (header), loopcheck.go, hints.go
 │   ├── funcs/            # database functions, parseArgs, conversion helpers for the mocks
 │   ├── loader/           # YAML tests, runner, snapshots
 │   ├── schema/           # db_schema.yaml checks
@@ -237,7 +244,8 @@ The run sees the handler's keys: `.Interaction` (`.ID`, `.Token`, `.RespondedTo`
 `.StrippedMsg` from the regex match (the ID after the match, split on spaces), `.IsButton`
 or `.IsMenu` + `.MenuType` (`string`/`user`/`role`/`mentionable`/`channel`) + `.Values`
 (`component: string_menu`, `values: [...]`), and `.Message` = the clicked message with
-the clicker as `.Author`/`.Member` (getMessage of it still shows the bot). `.User`/
+the clicker as `.Author`/`.Member`, like `.Interaction.Message`, the same message
+(getMessage of it still shows the bot). `.User`/
 `.Member` are the clicker. A non-matching custom ID is a `no_trigger` case, like a
 message. `interaction:` can't combine with args, message_content, reaction or exec_data.
 
@@ -262,8 +270,8 @@ keys): its `sendResponse` takes the response and the caller's output becomes a
 followup, always, where YAGPDB's concurrent child would race (docs/FUTURE_IMPROVEMENTS.md).
 Responses land in `sent_messages` (`ephemeral: true` to assert it) or, for an update,
 `edited_messages`; snapshots list `interaction_responses:` and mark ephemeral messages.
-Not modelled yet: sendModal/cmodal (unit 4), editResponse/getResponse/
-deleteInteractionResponse: docs/design/emulator-interactions.md.
+Not modelled yet: editResponse/getResponse/deleteInteractionResponse:
+docs/design/emulator-interactions.md. Modals: see Modals.
 
 ## Slash commands
 
@@ -321,6 +329,65 @@ message entry `.Message` = the message used on. There is NO `.User` or `.Member`
 handler passes no member), and for the user entry no `.Message`; `sendDM` sends nothing
 and warns (YAGPDB returns `""` without a member, so an entry can't DM its target). An
 execCC child gets the bot's blank message (user entry) or the message used on.
+
+## Modals
+
+A modal is two runs, so test it as two tests. First the run that opens it (a click or a
+slash command): `sendModal` answers the interaction with the modal, recorded as
+`{ kind: modal, title, custom_id, fields: [ids in order] }` (IDs without `templates-`):
+
+```yaml
+- name: "Edit opens the modal"
+  template: "../../../commands/rules/rule_edit.gohtml"
+  context:
+    messages: [{ id: 7, channel_id: 9, author_id: 1234567890, content: "Rule 3" }]
+    channel: { id: 9 }
+    interaction: { type: component, custom_id: "edit:3", message_id: 7 }
+  assertions:
+    interaction_responses: [{ kind: modal, title: "Edit rule 3", custom_id: "edit:rule:3", fields: ["rule_text"] }]
+- name: "The submission saves it"
+  template: "../../../commands/rules/rule_save.gohtml"   # illustrative: a Modal Submission command
+  context:
+    messages: [{ id: 7, channel_id: 9, author_id: 1234567890, content: "Rule 3" }]
+    channel: { id: 9 }
+    interaction: { type: modal, custom_id: "edit:rule:3", message_id: 7, fields: { rule_text: "new" } }
+  assertions:
+    interaction_responses: [{ kind: update, content_contains: "new" }]
+```
+
+Build the modal with `cmodal` (keys `title`, `custom_id` (default `templates--0`),
+`fields`: an sdict or a slice of sdicts, each a text input, short unless `"style" 2`; a
+blank field ID is numbered by the fields before it; a slice keeps only its FIRST 5,
+silently) or `components` (a slice of `clabel`s; its error is discarded, so a bad entry
+silently ends the list), or with `modalBuilder "id" "title" (clabel ...)` (at most 5
+labels; `.Set`/`.AddComponents`). `ctextInput "custom_id" "x" "label" ...` is a text
+input and `clabel "label" "L" "component" (ctextInput ...)` wraps it; a bare
+`ctextInput` isn't top-level (`invalid top level component passed to modal builder`). A
+label around a button or a string is YAGPDB's `unsupported component in label`; only a
+component YAGPDB does allow in a label, a modal select menu (`cmenu`), is the emulator's
+not-modelled error. A text input or label sent in a message (a cmodal's `.Data`) is
+refused as Discord refuses it (a warning; an error with `-strict`). Errors are
+YAGPDB's (vendor common/templates/context_interactions.go): `no interaction data in
+context` without an interaction, `cannot send multiple modals to the same interaction`,
+the one-response error after `sendResponse`/`updateMessage`, `invalid modal passed to
+sendModal`. Discord refuses a modal after a deferral (`Defer mode:`, 40060) and in answer
+to a modal submission (a warning; an error with `-strict`).
+
+The submission runs a command whose header says `Trigger type: \`Modal Submission\`` (or
+`Modal`), matched like a click. `fields:` is a mapping in the modal's order (the order
+`.Values` has), each ID non-empty and distinct. Discord sends a `fields` modal back as
+action rows (the default) and a modal of labels (`modalBuilder`, cmodal `components`) as
+labels: give `form: label` for that one, so `.InteractionData.Components` has its shape
+(`.Values`/`.ModalValues` are the same either way). The run sees (vendor customcommands/handle_component.go:337-437)
+`.IsModal`, `.CustomID` (stripped), `.Cmd`/`.CmdArgs`/`.StrippedID`, `.Values` (the texts
+in field order), `.ModalValues` (by field ID: `.type` 4, `.value`, `.custom_id`),
+`.InteractionData` (`.CustomID` with the prefix, `.Components`), and `.Message` = the
+`message_id` message (whose button opened the modal; `.Interaction.Message` is the same
+object) or, without one, a blank message (ID 0; `.Interaction.Message` is nil), either
+way with the submitter as `.Author`/`.Member`. The printed output, `sendResponse`,
+`ephemeralResponse` and `updateMessage` (of the source message; refused without one)
+work as for a click. `Defer mode: \`Update Message Response\`` on a modal no message
+opened fails on Discord's side: the output and any followup are not delivered (warnings).
 
 ## When to Use This Skill
 
