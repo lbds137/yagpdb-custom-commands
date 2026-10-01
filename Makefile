@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync
+.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync vendor-drift
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -122,3 +122,24 @@ test-deploy: ## Node parity tests for deploy.js + the panel.json/manifest/config
 
 config-sync: ## Regenerate commands/plumbing/config_sync.gohtml from deploy/panel.json
 	@python3 scripts/gen-config-sync.py
+
+# The vendored YAGPDB is a SNAPSHOT of upstream; production (hosted yagpdb.xyz) tracks
+# upstream current. Run this before any unit whose design rests on what YAGPDB can or
+# cannot do — and when vendor and upstream docs disagree, suspect your own absence grep
+# first (2026-10-01: a truncated grep hid createForumPost, which was in the vendor all
+# along; this target's first run contradicted the claim and caught it).
+VENDOR_BRANCH := master
+
+vendor-drift: ## Report vendor/yagpdb drift vs upstream (exit 1 when behind; needs network)
+	@cd vendor/yagpdb && git fetch origin -q && \
+	vendored=$$(git rev-parse --short HEAD) && \
+	upstream=$$(git rev-parse --short origin/$(VENDOR_BRANCH)) && \
+	echo "vendored: $$(git log -1 --format='%h %ad' --date=short HEAD)" && \
+	if [ "$$vendored" = "$$upstream" ]; then \
+		echo "✅ vendor is in sync with upstream $(VENDOR_BRANCH)"; \
+	else \
+		echo "⚠️  upstream $(VENDOR_BRANCH) moved: $$(git rev-list --count HEAD..origin/$(VENDOR_BRANCH)) commits behind"; \
+		echo "   template/discordgo-touching commits:"; \
+		git log --oneline HEAD..origin/$(VENDOR_BRANCH) -- common/templates lib/discordgo | head -10; \
+		exit 1; \
+	fi
