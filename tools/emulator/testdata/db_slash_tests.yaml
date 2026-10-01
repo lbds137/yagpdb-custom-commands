@@ -1,0 +1,357 @@
+name: "Database Slash Command Tests"
+
+# The invoker (111...) is a regular member; staff tests give them the Staff role
+# (Roles "Staff" = 888888888, a guild role). Member 555... is the other member a
+# staff `user` option can target.
+defaults:
+  user: { id: 111111111111111111, username: "Invoker" }
+  channel: { id: 222222222222222222, name: "test-channel" }
+  members: [111111111111111111, 555555555555555555]
+  guild:
+    id: 333333333333333333
+    name: "Test Server"
+    roles: [{ id: 888888888, name: "Staff" }]
+    channels: [{ id: 999999999, name: "yagpdb" }]
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value:
+      Delete Trigger Delay: 5
+      Embed Color: 9807270
+  - user_id: 0
+    key: "Commands"
+    value: # strings, as config_sync stores them; commands toInt them
+      db: "456"
+      embed_exec: "123"
+  - user_id: 0
+    key: "Channels"
+    value:
+      YAGPDB: 999999999
+  - user_id: 0
+    key: "Roles"
+    value:
+      Staff: 888888888
+  - { user_id: 111111111111111111, key: "Notes", value: "invoker note" }
+  - user_id: 111111111111111111
+    key: "Prefs"
+    value:
+      Theme: "dark"
+      Alerts: { Ping: true, Digest: false }
+  - { user_id: 111111111111111111, key: "List", value: ["a", "b"] }
+  - { user_id: 111111111111111111, key: "Greeting", value: "hi" }
+  - { user_id: 555555555555555555, key: "Notes", value: "other member note" }
+
+command_map:
+  123: "../../../commands/plumbing/embed_exec.gohtml"
+
+tests:
+  - name: "db_slash view: a top key of the invoker's own row"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: view, options: { key: "Notes" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Database Operation: `view`",
+            embed_contains: "invoker note" }
+
+  - name: "db_slash view: a nested key"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: view, options: { key: "Prefs:Theme" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Prefs > Theme" }
+      # the value itself
+      sent_messages:
+        - { ephemeral: true, embed_contains: "dark" }
+
+  - name: "db_slash view: a missing key"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: view, options: { key: "Nope" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "No value found!" }
+
+  - name: "db_slash view: `user` from a non-staff member is ignored (own row)"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: view,
+                     options: { key: "Notes", user: 555555555555555555 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "invoker note" }
+
+  - name: "db_slash browse: a dictionary's keys"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: browse, options: { key: "Prefs" } }
+    assertions:
+      interaction_responses:
+        # sdict key order isn't fixed, so only one key is asserted
+        - { kind: message, ephemeral: true, embed_title: "Database Operation: `browse`",
+            embed_contains: "Theme" }
+
+  - name: "db_slash browse: a non-dictionary key"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: browse, options: { key: "Notes" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "No dictionary found for the given key!" }
+
+  - name: "db_slash set: a plain string is refused (JSON objects only, as the text command)"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Greeting", value: "hello there" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Invalid value provided!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
+
+  - name: "db_slash set: a JSON object value"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Prefs", value: "{\"Theme\":\"light\",\"Lang\":\"he\"}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully set!" }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Prefs"
+          value_equals:
+            Theme: "light"
+            Lang: "he"
+
+  - name: "db_slash set: a nested key"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Prefs:Alerts", value: "{\"Ping\":false}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Prefs > Alerts" }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Prefs"
+          value_equals:
+            Theme: "dark"
+            Alerts: { Ping: false }
+
+  - name: "db_slash add: merges into a dictionary"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: add,
+                     options: { key: "Prefs", value: "{\"Font\":\"large\"}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully added!" }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Prefs"
+          value_equals:
+            Theme: "dark"
+            Alerts: { Ping: true, Digest: false }
+            Font: "large"
+
+  - name: "db_slash remove: removes a dictionary key"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: remove,
+                     options: { key: "Prefs", value: "{\"Theme\":\"\"}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully removed!" }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Prefs"
+          value_equals:
+            Alerts: { Ping: true, Digest: false }
+
+  - name: "db_slash add: appends to an array"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: add, options: { key: "List", value: "c" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully added!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b", "c"] }
+
+  - name: "db_slash remove: removes an array item"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: remove, options: { key: "List", value: "a" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully removed!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["b"] }
+
+  - name: "db_slash remove: an item the array doesn't hold"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: remove,
+                     options: { key: "List", value: "zed" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "No value found!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
+
+  - name: "db_slash add: a key with no array or dictionary behind it"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: add,
+                     options: { key: "Nope", value: "{\"k\":\"v\"}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "No array or dictionary found for the given key!" }
+
+  - name: "db_slash delete: a top-level key (value echoed)"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: delete, options: { key: "Greeting" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Database Operation: `delete`",
+            embed_contains: "hi" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", not_exists: true }
+
+  - name: "db_slash delete: a nested key"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: delete,
+                     options: { key: "Prefs:Alerts:Ping" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully deleted!" }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Prefs"
+          value_equals:
+            Theme: "dark"
+            Alerts: { Digest: false }
+
+  - name: "db_slash export: staff default is the global row (file)"
+    template: "../../../commands/db/db_slash.gohtml"
+    snapshot: true
+    context:
+      clock: 2026-01-01T00:00:00Z
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: export, options: {} }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Exported 4 entries to file" }
+
+  - name: "db_slash export: with a key"
+    template: "../../../commands/db/db_slash.gohtml"
+    snapshot: true
+    context:
+      clock: 2026-01-01T00:00:00Z
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: export, options: { key: "Global" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Exported 1 entries to file" }
+
+  - name: "db_slash export: a non-staff member's own row (file)"
+    template: "../../../commands/db/db_slash.gohtml"
+    snapshot: true
+    context:
+      clock: 2026-01-01T00:00:00Z
+      interaction: { type: slash, subcommand: export, options: {} }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Exported 4 entries to file" }
+
+  # staff naming THEMSELVES gets their own row, not the global one — the deliberate
+  # change from text db (there `db dump:<own id>` still dumped row 0)
+  - name: "db_slash export: staff naming themselves get their own row (file)"
+    template: "../../../commands/db/db_slash.gohtml"
+    snapshot: true
+    context:
+      clock: 2026-01-01T00:00:00Z
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: export, options: { user: 111111111111111111 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Exported 4 entries to file" }
+
+  - name: "db_slash export: staff naming another member (file)"
+    template: "../../../commands/db/db_slash.gohtml"
+    snapshot: true
+    context:
+      clock: 2026-01-01T00:00:00Z
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: export, options: { user: 555555555555555555 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Exported 1 entries to file" }
+
+  - name: "db_slash view: staff targeting another member's row"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: view,
+                     options: { key: "Notes", user: 555555555555555555 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "other member note" }
+      sent_messages:
+        - { ephemeral: true, embed_contains: "555555555555555555" }
+
+  # staff without `user` on a non-export op: own row, like everyone else
+  - name: "db_slash view: staff without `user` gets their own row"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: view, options: { key: "Notes" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "invoker note" }
+
+  - name: "db_slash set: staff targeting another member's row"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Notes", value: "{\"Text\":\"staff wrote this\"}",
+                                user: 555555555555555555 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully set!" }
+      db_checks:
+        - user_id: 555555555555555555
+          key: "Notes"
+          value_equals: { Text: "staff wrote this" }
+
+  - name: "db_slash ExecData: inactivity's date exec still answers through embed_exec"
+    template: "../../../commands/db/db_slash.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Inactivity Prune", value: { Next Date: "2026-10-01" } }
+    context:
+      exec_data:
+        ChannelID: 222222222222222222
+        UserID: 0
+        Operation: "add"
+        Key: "Inactivity Prune"
+        Value: { Previous Date: "2026-09-30", Next Date: "2027-01-01" }
+        Title: "Inactivity Prune Inactivity Prune Date Editing"
+    expected:
+      output_equals: ""
+    assertions:
+      # public, not ephemeral: the ExecData path is db.gohtml's, embed_exec and all
+      sent_messages:
+        - { embed_title: "Inactivity Prune Inactivity Prune Date Editing" }
+      db_checks:
+        - user_id: 0
+          key: "Inactivity Prune"
+          value_equals: { Previous Date: "2026-09-30", Next Date: "2027-01-01" }

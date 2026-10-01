@@ -3,7 +3,7 @@
   Trigger type: `Command`
   Trigger: `inactivity`
   Group: `Staff Utility`
-  Dependencies: `embed_exec`, `db`
+  Dependencies: `embed_exec`, `db_slash`
 */ -}}
 
 {{ $args := parseArgs 1 "Please specify an action: `date`, `end`, `prune`, `remind`, or `start`."
@@ -17,7 +17,7 @@
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
-{{ $db := toInt ($commandsDict.Get "db") }}
+{{ $db := toInt ($commandsDict.Get "db_slash") }}
 
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
 
