@@ -1,0 +1,168 @@
+name: "emoji_menu"
+
+# The context-menu twin of hugemoji. The invoker is user 987654321098765432 ("Viewer");
+# 555555555555555555 is the member whose messages get expanded (18-digit IDs keep
+# embed_exec on its member-author branch, as production IDs do). The Commands dict maps
+# embed_exec to id 1 and command_map points at the REAL embed_exec, so assertions see the
+# real Emoji Expander embeds. The ephemeral ack answers the interaction and lands as sent
+# message 1; the embeds follow, in content order, capped at min(ExecCC Limit, 10).
+defaults:
+  user: { id: 987654321098765432, username: "Viewer" }
+  channel: { id: 123456789012345678 }
+  members: [987654321098765432, 555555555555555555]
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    channels:
+      - { id: 900000000000000001, name: "yagpdb" }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { ExecCC Limit: 10 }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "1" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 900000000000000001 }
+
+command_map:
+  1: "../../../commands/plumbing/embed_exec.gohtml"
+
+tests:
+  - name: "emoji_menu: one static emoji gets the receipt, the embed and the message link"
+    template: "../../../commands/general/emoji_menu.gohtml"
+    context:
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 555555555555555555, content: "look <:peepo:123456789012345678>" }
+      interaction: { type: message_menu, message_id: 7 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Expanding 1 emoji" }
+      sent_messages:
+        - { ephemeral: true, content_contains: "Expanding 1 emoji" }
+        - { nth: 2, embed_title: "Emoji Expander" }
+        - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/123456789012345678.png?v=1" }
+        - { nth: 2, embed_contains: "https://discord.com/channels/111222333444555666/123456789012345678/7" }
+
+  - name: "emoji_menu: an animated emoji expands to a .gif URL"
+    template: "../../../commands/general/emoji_menu.gohtml"
+    context:
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 555555555555555555, content: "<a:dance:987654321098765432>" }
+      interaction: { type: message_menu, message_id: 7 }
+    strict: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Expanding 1 emoji" }
+      sent_messages:
+        - { nth: 2, embed_title: "Emoji Expander" }
+        - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/987654321098765432.gif?v=1" }
+
+  # The refusal answers the interaction; the snapshot pins that no embed was sent
+  - name: "emoji_menu: a message without custom emoji is refused, and no embed lands"
+    template: "../../../commands/general/emoji_menu.gohtml"
+    context:
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 555555555555555555, content: "just plain text 🙂" }
+      interaction: { type: message_menu, message_id: 7 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "⚠️ No custom emoji found in that message." }
+      sent_messages:
+        - { ephemeral: true, content_contains: "No custom emoji" }
+
+  - name: "emoji_menu: two distinct emojis expand in content order"
+    template: "../../../commands/general/emoji_menu.gohtml"
+    context:
+      messages:
+        - id: 7
+          channel_id: 123456789012345678
+          author_id: 555555555555555555
+          content: "first <:peepo:100000000000000001> then <a:dance:100000000000000002>"
+      interaction: { type: message_menu, message_id: 7 }
+    strict: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Expanding 2 emojis" }
+      sent_messages:
+        - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1" }
+        - { nth: 3, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000002.gif?v=1" }
+
+  # A B A: peepo repeats, so it must be shown once, at its FIRST occurrence (index 0,
+  # before dance) — under last-occurrence dedupe the order would flip to dance first.
+  # The snapshot also pins that a third embed never lands.
+  - name: "emoji_menu: a repeated emoji is expanded once, at its first occurrence"
+    template: "../../../commands/general/emoji_menu.gohtml"
+    context:
+      messages:
+        - id: 7
+          channel_id: 123456789012345678
+          author_id: 555555555555555555
+          content: "<:peepo:100000000000000001> then <a:dance:100000000000000002> again <:peepo:100000000000000001>"
+      interaction: { type: message_menu, message_id: 7 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Expanding 2 emojis" }
+      sent_messages:
+        - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1" }
+        - { nth: 3, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000002.gif?v=1" }
+
+  # 11 distinct emojis with ExecCC Limit 20: the fan-out is capped by the 10 clamp (not
+  # the configured limit) and the ack says so; the snapshot pins that no 12th message
+  # (an 11th embed) ever lands
+  - name: "emoji_menu: 11 emojis with limit 20 clamp to ten, and the ack says the rest"
+    template: "../../../commands/general/emoji_menu.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { ExecCC Limit: 20 }
+    context:
+      messages:
+        - id: 7
+          channel_id: 123456789012345678
+          author_id: 555555555555555555
+          content: "<:e01:100000000000000001> <:e02:100000000000000002> <:e03:100000000000000003> <:e04:100000000000000004> <:e05:100000000000000005> <:e06:100000000000000006> <:e07:100000000000000007> <:e08:100000000000000008> <:e09:100000000000000009> <:e10:100000000000000010> <:e11:100000000000000011>"
+      interaction: { type: message_menu, message_id: 7 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Showing the first 10 of 11" }
+      sent_messages:
+        - { ephemeral: true, content_contains: "Showing the first 10 of 11" }
+        - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1" }
+        - { nth: 11, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000010.png?v=1" }
+
+  # The other direction of the cap (fleet convention, as hugemoji's tests do): the
+  # configured limit 2, not the 10 clamp, binds. The snapshot pins that the third emoji
+  # never lands.
+  - name: "emoji_menu: a configured limit of 2 shows the first 2 of 3 emojis"
+    template: "../../../commands/general/emoji_menu.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { ExecCC Limit: 2 }
+    context:
+      messages:
+        - id: 7
+          channel_id: 123456789012345678
+          author_id: 555555555555555555
+          content: "<:e01:100000000000000001> <:e02:100000000000000002> <:e03:100000000000000003>"
+      interaction: { type: message_menu, message_id: 7 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Showing the first 2 of 3" }
+      sent_messages:
+        - { ephemeral: true, content_contains: "Showing the first 2 of 3" }
+        - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1" }
+        - { nth: 3, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000002.png?v=1" }
