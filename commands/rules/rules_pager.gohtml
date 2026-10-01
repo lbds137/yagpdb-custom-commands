@@ -54,28 +54,48 @@
 {{ $author := sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
 
 {{/* which page: a button carries it in the custom ID, the select the rule number in
-  .Values, `rule` in ExecData */}}
+  .Values, `rule` in ExecData; the dismiss button carries its opener's user id */}}
 {{ $page := 1 }}
 {{ $jumpN := 0 }}
+{{ $action := "" }}
+{{ $parts := cslice }}
 {{- if .Interaction -}}
-    {{- $parts := split .CustomID ":" -}}
-    {{- if eq (index $parts 1) "jump" -}}
+    {{- $parts = split .CustomID ":" -}}
+    {{- $action = index $parts 1 -}}
+    {{- if eq $action "jump" -}}
         {{- $jumpN = toInt (index .Values 0) -}}
-    {{- else -}}
+    {{- else if ne $action "close" -}}
         {{- $page = toInt (index $parts 1) -}}
     {{- end -}}
 {{- else -}}
     {{- $page = toInt (or .ExecData.Page 1) -}}
 {{- end -}}
 
-{{- if eq $count 0 -}}
-    {{- $msg := complexMessage "embed" (cembed
-        "title" "Rules"
-        "description" "No rules are configured yet."
-        "color" $embedColor
-        "author" $author
-        "image" (sdict "url" "")
-        "thumbnail" (sdict "url" "")) -}}
+{{/* the dismiss button: only the member who opened the browser may use it (the opener's
+  id rides in the custom ID; a clicker is .User on a component run). In an execCC child
+  .User is the caller — the member who ran `rule browse` */}}
+{{ $closeID := printf "rules:close:%d" .User.ID }}
+{{ $closeButton := cbutton "emoji" (sdict "name" "🗑") "style" "secondary" "custom_id" $closeID }}
+
+{{- if and (eq $action "close") (ge (len $parts) 3) -}}
+    {{- if eq (toString .User.ID) (index $parts 2) -}}
+        {{- deleteMessage .Channel.ID .Message.ID 0 -}}
+        {{- sendResponse nil (complexMessage "content" "Rule browser dismissed." "ephemeral" true) -}}
+    {{- else -}}
+        {{- sendResponse nil (complexMessage
+            "content" "Only the person who opened this browser can dismiss it."
+            "ephemeral" true) -}}
+    {{- end -}}
+{{- else if eq $count 0 -}}
+    {{- $msg := complexMessage
+        "embed" (cembed
+            "title" "Rules"
+            "description" "No rules are configured yet."
+            "color" $embedColor
+            "author" $author
+            "image" (sdict "url" "")
+            "thumbnail" (sdict "url" ""))
+        "components" (cslice (cslice $closeButton)) -}}
     {{- if .Interaction -}}
         {{- updateMessage $msg -}}
     {{- else -}}
@@ -145,6 +165,7 @@
             "custom_id" "rules:noop" "disabled" true)
         (cbutton "emoji" (sdict "name" "▶") "style" "secondary"
             "custom_id" (printf "rules:%d" (add $page 1)) "disabled" (ge $page $count))
+        $closeButton
     }}
     {{ $msg := complexMessage
         "embed" (cembed "title" $title "description" $description "color" $embedColor

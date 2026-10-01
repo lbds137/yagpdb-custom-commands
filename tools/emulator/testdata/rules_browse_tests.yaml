@@ -179,8 +179,8 @@ tests:
         - kind: update
           embed_contains: 'Keep discussions on topic.'
 
-  - name: "rules_pager: no rules at all is one informational page, no components"
-    # snapshot pins the component-less message (the embed-only zero branch)
+  - name: "rules_pager: no rules at all is one informational page with only a dismiss button"
+    # snapshot pins the near-component-less message: embed + the dismiss row, no select/pager
     template: "../../../commands/rules/rule.gohtml"
     snapshot: true
     context:
@@ -193,6 +193,35 @@ tests:
     assertions:
       sent_messages:
         - { channel_id: 123456789012345678, embed_title: "Rules", embed_contains: "No rules are configured yet." }
+
+  # the dismiss button
+  - name: "rules_pager: the opener's dismiss click deletes the browser and confirms ephemerally"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    snapshot: true
+    context:
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      # the clicker is the opener (defaults.user.id rides in the custom ID)
+      interaction: { type: component, custom_id: "rules:close:987654321098765432", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions:
+        - { of: message, channel_id: 123456789012345678, message_id: 7, delay: 0s }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Rule browser dismissed." }
+
+  - name: "rules_pager: someone else's dismiss click is refused ephemerally, nothing deleted"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      user: { id: 111222333444555001 }
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:close:987654321098765432", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Only the person who opened this browser can dismiss it." }
 
   - name: "rules_pager: a rule over the description cap is cut with an ellipsis (one rule: title Rules)"
     template: "../../../commands/rules/rules_pager.gohtml"
