@@ -46,6 +46,8 @@
 	{{- /* no .Member in a context-menu run; the invoker is .Author */ -}}
 	{{ $userID := .Author.ID }}
 	{{ $channelID := .Channel.ID }}
+	{{/* one stamp for the whole set: every embed's Dismiss carries the same spawn time */}}
+	{{ $stamp := currentTime.Unix }}
 	{{ $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" .Message.Link ")" }}
 
 	{{ if eq (len $dictSortHelper) 0 }}
@@ -83,12 +85,20 @@
 				{{- $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) -}}
 				{{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
 
+				{{- /* one row under each embed: that emoji at full size, and a dismiss only
+				    the invoker or staff may click (gated server-side by the custom_id) */ -}}
+				{{- $buttons := cslice
+					(cbutton "label" "Open image" "style" "link" "url" $emojiUrl)
+					(cbutton "label" "Dismiss" "style" "secondary"
+						"custom_id" (print "dismiss:" $userID ":" $stamp)) -}}
+
 				{{- execCC $embed_exec $yagpdbChannelID 0 (sdict
 					"AuthorID" $userID
 					"ChannelID" $channelID
 					"Title" "Emoji Expander"
 					"ImageURL" $emojiUrl
 					"Fields" $fields
+					"Components" $buttons
 				) -}}
 			{{- end -}}
 		{{- end -}}

@@ -1,0 +1,29 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Component`
+  Trigger: `^dismiss:(\d+):(\d+)$`
+  Group: `Utility`
+  Dependencies: none
+
+  The Dismiss button avatar_menu and emoji_menu put under every embed they post. The
+  custom_id carries the spawner's snowflake and a spawn stamp; only the spawner or staff
+  may dismiss (the gate is server-side, like every destructive confirm in the fleet).
+  Utility, NOT Staff Utility: members run the context menus that spawn these embeds.
+  Defer mode stays None, as on the pager and edit_confirm.
+*/ -}}
+{{ if .Interaction }}
+	{{ $rolesDict := (dbGet 0 "Roles").Value }}
+	{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+	{{ $parts := split .CustomID ":" }}
+	{{ $invokerID := index $parts 1 }}
+	{{ if or (eq (toString .Member.User.ID) $invokerID) (hasRoleID $staffRoleID) }}
+		{{ deleteMessage .Channel.ID .Message.ID 0 }}
+		{{ sendResponse nil (complexMessage "content" "Dismissed." "ephemeral" true) }}
+	{{ else }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ Only the person who ran the command or staff can dismiss this."
+			"ephemeral" true) }}
+	{{ end }}
+{{ else }}
+Reached by a Dismiss button under an avatar or emoji embed; use the context menus instead.
+{{ end }}

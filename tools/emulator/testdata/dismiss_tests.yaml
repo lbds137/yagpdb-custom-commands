@@ -1,0 +1,69 @@
+name: "dismiss"
+
+# The Dismiss button under every avatar_menu/emoji_menu embed. The custom_id carries the
+# spawner's snowflake + stamp (dismiss:<invoker>:<unix>); the handler gates server-side:
+# only the spawner or staff may delete, everyone else gets an ephemeral refusal. The
+# invoker is 987654321098765432 ("Viewer", the menu suites' user), 555555555555555555 is
+# another non-staff member, 444444444444444444 holds the Staff role (888888888). Message 7
+# is the embed the button sits on. The loader cannot click an already-deleted message
+# (deletions only happen inside a run), so there is no replay case here.
+defaults:
+  user: { id: 987654321098765432, username: "Viewer" }
+  channel: { id: 123456789012345678 }
+  clock: 2026-01-02T15:04:05Z
+  members: [987654321098765432, 555555555555555555, 444444444444444444]
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    roles: [{ id: 888888888, name: "Staff" }]
+
+setup_db:
+  - user_id: 0
+    key: "Roles"
+    value: { Staff: 888888888 }
+
+tests:
+  - name: "dismiss: the invoker's click deletes the embed and acks ephemerally"
+    template: "../../../commands/general/dismiss.gohtml"
+    snapshot: true
+    context:
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Avatar Viewer" }] }
+      interaction: { type: component, custom_id: "dismiss:987654321098765432:1767366245", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions:
+        - { of: message, channel_id: 123456789012345678, message_id: 7, delay: 0s }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Dismissed." }
+
+  - name: "dismiss: another member's click is refused ephemerally, nothing deleted"
+    template: "../../../commands/general/dismiss.gohtml"
+    context:
+      user: { id: 555555555555555555, username: "Other" }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Avatar Viewer" }] }
+      interaction: { type: component, custom_id: "dismiss:987654321098765432:1767366245", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "⚠️ Only the person who ran the command or staff can dismiss this." }
+
+  - name: "dismiss: staff may dismiss someone else's embed"
+    template: "../../../commands/general/dismiss.gohtml"
+    context:
+      user: { id: 444444444444444444, username: "Staffer", roles: [888888888] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Emoji Expander" }] }
+      interaction: { type: component, custom_id: "dismiss:987654321098765432:1767366245", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions:
+        - { of: message, channel_id: 123456789012345678, message_id: 7, delay: 0s }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Dismissed." }

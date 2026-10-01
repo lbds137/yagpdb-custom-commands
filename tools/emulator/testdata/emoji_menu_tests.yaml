@@ -5,10 +5,14 @@ name: "emoji_menu"
 # embed_exec on its member-author branch, as production IDs do). The Commands dict maps
 # embed_exec to id 1 and command_map points at the REAL embed_exec, so assertions see the
 # real Emoji Expander embeds. The ephemeral ack answers the interaction and lands as sent
-# message 1; the embeds follow, in content order, capped at min(ExecCC Limit, 10).
+# message 1; the embeds follow, in content order, capped at min(ExecCC Limit, 10). The
+# clock is frozen at 2026-01-02T15:04:05Z (unix 1767366245), so the Dismiss custom_id's
+# stamp — one stamp for the whole set — is exact; every embed carries the button row
+# (Open image link with THAT emoji's URL + Dismiss) through embed_exec's Components key.
 defaults:
   user: { id: 987654321098765432, username: "Viewer" }
   channel: { id: 123456789012345678 }
+  clock: 2026-01-02T15:04:05Z
   members: [987654321098765432, 555555555555555555]
   guild:
     id: 111222333444555666
@@ -47,6 +51,10 @@ tests:
         - { nth: 2, embed_title: "Emoji Expander" }
         - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/123456789012345678.png?v=1" }
         - { nth: 2, embed_contains: "https://discord.com/channels/111222333444555666/123456789012345678/7" }
+        - { nth: 2, components_contains: '"label": "Open image"' }
+        - { nth: 2, components_contains: '"url": "https://cdn.discordapp.com/emojis/123456789012345678.png?v=1"' }
+        - { nth: 2, components_contains: '"label": "Dismiss"' }
+        - { nth: 2, components_contains: '"custom_id": "templates-dismiss:987654321098765432:1767366245"' }
 
   - name: "emoji_menu: an animated emoji expands to a .gif URL"
     template: "../../../commands/general/emoji_menu.gohtml"
@@ -61,6 +69,9 @@ tests:
       sent_messages:
         - { nth: 2, embed_title: "Emoji Expander" }
         - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/987654321098765432.gif?v=1" }
+        - { nth: 2, components_contains: '"label": "Open image"' }
+        - { nth: 2, components_contains: '"url": "https://cdn.discordapp.com/emojis/987654321098765432.gif?v=1"' }
+        - { nth: 2, components_contains: '"label": "Dismiss"' }
 
   # The refusal answers the interaction; the snapshot pins that no embed was sent
   - name: "emoji_menu: a message without custom emoji is refused, and no embed lands"
@@ -93,6 +104,10 @@ tests:
       sent_messages:
         - { nth: 2, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1" }
         - { nth: 3, embed_contains: "https://cdn.discordapp.com/emojis/100000000000000002.gif?v=1" }
+        - { nth: 2, components_contains: '"url": "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1"' }
+        - { nth: 3, components_contains: '"url": "https://cdn.discordapp.com/emojis/100000000000000002.gif?v=1"' }
+        - { nth: 2, components_contains: '"label": "Dismiss"' }
+        - { nth: 3, components_contains: '"label": "Dismiss"' }
 
   # A B A: peepo repeats, so it must be shown once, at its FIRST occurrence (index 0,
   # before dance) — under last-occurrence dedupe the order would flip to dance first.

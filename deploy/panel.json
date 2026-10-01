@@ -14,6 +14,7 @@
     "commands/edit/edit_confirm.gohtml": {"main": 93},
     "commands/general/avatar_menu.gohtml": {"main": 94},
     "commands/general/emoji_menu.gohtml": {"main": 95},
+    "commands/general/dismiss.gohtml": {"main": 96},
     "commands/color/hex_to_int.gohtml": {"main": 18, "lotv": 6},
     "commands/db/db_get_embed.gohtml": {"main": 22, "lotv": 5},
     "commands/plumbing/ticket_clean.gohtml": {"main": 29},
