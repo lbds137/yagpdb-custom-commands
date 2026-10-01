@@ -1,0 +1,98 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Context Menu`
+  Trigger: `Expand Emoji`
+  Group: `Utility`
+  Dependencies: `embed_exec`
+
+  The context-menu twin of hugemoji: right-click a message, "Expand Emoji", and every
+  distinct custom emoji in it becomes an Emoji Expander embed through embed_exec, in
+  content order, capped at the ExecCC limit (itself clamped to YAGPDB's 10 per run). The
+  clicked message is in this channel by construction, so there is no NSFW guard and the
+  Original Message link is always known.
+*/ -}}
+{{ if .IsContextMenuCommand }}
+	{{ $globalDict := (dbGet 0 "Global").Value }}
+	{{/* the loop below is this run's only execCC fan-out, so clamp straight to YAGPDB's
+	  10-per-run premium cap */}}
+	{{ $execCCLimit := toInt (min (toInt ($globalDict.Get "ExecCC Limit")) 10) }}
+
+	{{ $commandsDict := (dbGet 0 "Commands").Value }}
+	{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+	{{ $channelsDict := (dbGet 0 "Channels").Value }}
+	{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+	{{ $emojiRegex := "<a?:[[:word:]]{2,}:\\d{16,}>" }}
+	{{ $animatedEmojiRegex := "<a:[[:word:]]{2,}:\\d{16,}>" }}
+	{{ $emojiIDRegex := "\\d{16,}" }}
+
+	{{- /* key by emoji string: a repeated emoji is shown once, at its first occurrence */ -}}
+	{{ $emojiStrDict := sdict }}
+	{{ $index := 0 }}
+	{{- range $emojiStr := reFindAll $emojiRegex .Message.Content -}}
+		{{- if not ($emojiStrDict.HasKey $emojiStr) -}}
+			{{- $emojiStrDict.Set $emojiStr (sdict "index" $index "emojiString" $emojiStr) -}}
+		{{- end -}}
+		{{- $index = add 1 $index -}}
+	{{- end -}}
+
+	{{ $dictSortHelper := cslice }}
+	{{- range $k, $v := $emojiStrDict -}}
+		{{- $dictSortHelper = $dictSortHelper.Append $v -}}
+	{{- end -}}
+	{{ $dictSortHelper = sort $dictSortHelper (sdict "key" "index" "reverse" false) }}
+
+	{{- /* no .Member in a context-menu run; the invoker is .Author */ -}}
+	{{ $userID := .Author.ID }}
+	{{ $channelID := .Channel.ID }}
+	{{ $msgLinkString := joinStr "" "🔗 [Click or tap here to view the message.](" .Message.Link ")" }}
+
+	{{ if eq (len $dictSortHelper) 0 }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ No custom emoji found in that message."
+			"ephemeral" true) }}
+	{{ else }}
+		{{ $foundCount := len $dictSortHelper }}
+		{{ $ackContent := "" }}
+		{{ if gt $foundCount $execCCLimit }}
+			{{ $ackContent = joinStr "" "Showing the first " $execCCLimit " of " $foundCount
+				" emojis from " .TargetUser.String "'s message." }}
+		{{ else }}
+			{{ $emojiNoun := "emojis" }}
+			{{ if eq 1 $foundCount }}
+				{{ $emojiNoun = "emoji" }}
+			{{ end }}
+			{{ $ackContent = joinStr "" "Expanding " $foundCount " " $emojiNoun
+				" from " .TargetUser.String "'s message." }}
+		{{ end }}
+		{{ sendResponse nil (complexMessage "content" $ackContent "ephemeral" true) }}
+
+		{{- range $i, $entry := $dictSortHelper -}}
+			{{- if lt $i $execCCLimit -}}
+				{{- $emojiStr := $entry.Get "emojiString" -}}
+				{{- $fileExtension := ".png" -}}
+				{{- if reFind $animatedEmojiRegex $emojiStr -}}
+					{{- $fileExtension = ".gif" -}}
+				{{- end -}}
+				{{- $emojiStrParts := split $emojiStr ":" -}}
+				{{- $emojiName := index $emojiStrParts 1 -}}
+				{{- $emojiUrl := joinStr ""
+					"https://cdn.discordapp.com/emojis/" (reFind $emojiIDRegex $emojiStr) $fileExtension "?v=1" -}}
+
+				{{- $fields := cslice (sdict "name" "Name" "value" $emojiName "inline" false) -}}
+				{{- $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLinkString "inline" false) -}}
+
+				{{- execCC $embed_exec $yagpdbChannelID 0 (sdict
+					"AuthorID" $userID
+					"ChannelID" $channelID
+					"Title" "Emoji Expander"
+					"ImageURL" $emojiUrl
+					"Fields" $fields
+				) -}}
+			{{- end -}}
+		{{- end -}}
+	{{ end }}
+{{ else }}
+Use "Expand Emoji" from a message's context menu.
+{{ end }}

@@ -1,0 +1,52 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `User Context Menu`
+  Trigger: `View Avatar`
+  Group: `Utility`
+  Dependencies: `embed_exec`
+
+  The context-menu twin of avatar_viewer: right-click a member, "View Avatar", and the
+  same Avatar Viewer embed is posted through embed_exec. The ephemeral receipt goes out
+  before anything else, so a failure later still leaves the interaction answered.
+*/ -}}
+{{ if .IsContextMenuCommand }}
+	{{- /* answer the interaction before anything can fail: the receipt is the one response */ -}}
+	{{ sendResponse nil (complexMessage
+		"content" (joinStr "" "Viewing " .TargetUser.String "'s avatar.")
+		"ephemeral" true) }}
+
+	{{ $commandsDict := (dbGet 0 "Commands").Value }}
+	{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+	{{ $channelsDict := (dbGet 0 "Channels").Value }}
+	{{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
+
+	{{- /* no .Member in a context-menu run; the invoker is .Author */ -}}
+	{{ $avatarOwnerNickname := "" }}
+	{{ if .TargetMember }}
+		{{ if .TargetMember.Nick }}
+			{{ $avatarOwnerNickname = .TargetMember.Nick }}
+		{{ end }}
+	{{ end }}
+
+	{{ $fields := cslice }}
+	{{ $fields = $fields.Append (sdict "name" "ID" "value" (toString .TargetUser.ID) "inline" false) }}
+	{{ $avatarOwnerTimestamp :=
+		div .TargetUser.ID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
+	}}
+	{{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $avatarOwnerTimestamp) "inline" false) }}
+	{{ $fields = $fields.Append (sdict "name" "Name" "value" .TargetUser.String "inline" false) }}
+	{{ if $avatarOwnerNickname }}
+		{{ $fields = $fields.Append (sdict "name" "Nickname" "value" $avatarOwnerNickname "inline" false) }}
+	{{ end }}
+
+	{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+		"AuthorID" .Author.ID
+		"ChannelID" .Channel.ID
+		"Title" "Avatar Viewer"
+		"ImageURL" (.TargetUser.AvatarURL "1024")
+		"Fields" $fields
+	) }}
+{{ else }}
+Use "View Avatar" from a member's context menu.
+{{ end }}

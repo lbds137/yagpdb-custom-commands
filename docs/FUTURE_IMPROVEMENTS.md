@@ -59,8 +59,11 @@ picks, then the minifier.
   always posts publicly with sendMessage), 7 subcommands — IMPLEMENTED 2026-09-30 as
   commands/db/db_slash.gohtml (spec docs/design/db-slash.md; awaiting the panel command's
   creation + deploy, see its §Rollout); (5) user/message context-menu
-  entries for avatar_viewer and hugemoji (text triggers kept); (6) slash with role/user
-  pickers for staff_roles, inactivity (kick behind a confirm), role_ping.
+  entries for avatar_viewer and hugemoji (text triggers kept) — IMPLEMENTED 2026-10-01 as
+  commands/general/avatar_menu.gohtml ("View Avatar", user menu, panel 94) +
+  emoji_menu.gohtml ("Expand Emoji", message menu, panel 95), deploy pending; adds 1 to
+  each per-type cap (5 free / 15 premium, customcommands.go:963-964); (6) slash with
+  role/user pickers for staff_roles, inactivity (kick behind a confirm), role_ping.
   Shared blocks: one pager handler (Component trigger `^pg:(\w+):(\w+):(\d+)$`, page logic
   inside it; the slash command execCCs it for page 1, inheriting the Interaction,
   tmplextensions.go:240-242), one confirm handler (`confirm:<action>:<id>`). Slot budget:
@@ -216,6 +219,22 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- Found 2026-10-01 (grounding the context-menu unit), Lila's call — the color is
+  user-visible: avatar_viewer.gohtml's role-color loop (lines 170-178) computes `$color`
+  from the TARGET member's top colored role but never passes it to embed_exec, so the
+  embed always takes the INVOKER's color (embed_exec derives it from AuthorID). Either
+  pass `"Color" $color` (avatar embeds adopt the viewed person's color) or delete the
+  loop (invoker-colored, today's live behavior). The context-menu twin avatar_menu
+  shipped without the loop (invoker-colored).
+- Found 2026-10-01 (same grounding): avatar_viewer's guild-icon branch builds
+  `https://cdn.discordapp.com/icons/<id>/.png` — a 404 — when the guild has no icon:
+  `.Guild.Icon` is empty and the `or $avatarURL $defaultAvatarURL` fallback can't catch
+  non-empty garbage. Fix shape: fall back to `$defaultAvatarURL` when `.Guild.Icon` is
+  empty, mirroring embed_exec's own guild branch. (The same `or` fallback IS live in the
+  text command for a typed unresolvable snowflake: userArg nil → "(Unknown)" +
+  Default Avatar; the context-menu twin dropped it as dead code — resolveSlashUser never
+  returns nil and AvatarURL never returns empty, vendor handle_slashcommand.go:231-238 +
+  user.go:162-189.)
 - Known quirk, candidate improvement (found 2026-09-30 building db_slash, probed against
   db.gohtml): `db set` (text and slash alike) only accepts JSON OBJECT values — the set
   path runs jsonToSdict on every string, so `db set Key hello` fails with "Invalid value
@@ -304,6 +323,11 @@ gets a failing test first.
   alone; a prefill regression passes the suite. Promote before any unit needs to
   assert a modal field's value or placeholder: record the fields in the response and
   expose them to yaml assertions and snapshots (expect snapshot churn in modal tests).
+- The mock user factory (runtime/context.go:644) hardcodes a no-avatar user
+  (MockUser/0), so avatar URL assertions only exercise the computed default-avatar path
+  (`embed/avatars/N.png?size=1024` — size passthrough pinned by avatar_menu_tests); a
+  real `cdn/avatars/<id>/<hash>.png` URL is unreachable in tests. Promote when a unit
+  needs to assert a real avatar URL: give the factory an optional avatar field.
 - Discord's error bodies are written as `{"message": "...", "code": N}` (errors.go
   discordError): the spacing is Discord's usual, not captured from a live response, and
   a 50035 Invalid Form Body body also lists the fields at fault, which the emulator's

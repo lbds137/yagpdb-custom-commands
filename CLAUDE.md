@@ -26,9 +26,9 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   db_get_embed, db_get_text, simple_db_edit, simple_db_lookup), `members/` (hiatus,
   unhiatus, inactivity, staff_roles, role_ping, batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
-  message_pointer), `knowledge/` (define), `general/` (avatar_viewer, hugemoji,
-  timestamp), `plumbing/` (embed_exec, message_link, log_user, ticket_clean, bootstrap,
-  config_sync).
+  message_pointer), `knowledge/` (define), `general/` (avatar_menu, avatar_viewer,
+  emoji_menu, hugemoji, timestamp), `plumbing/` (embed_exec, message_link, log_user,
+  ticket_clean, bootstrap, config_sync).
 - `config_sync` (hourly) writes every command's panel id into the `Commands` dict; it is
   generated from `deploy/panel.json` by `make config-sync` (never edit it by hand), and
   `make ci` fails when it is stale. After changing an id in panel.json, regenerate it.

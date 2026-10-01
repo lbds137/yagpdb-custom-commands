@@ -1,0 +1,76 @@
+name: "avatar_menu"
+
+# The context-menu twin of avatar_viewer. The invoker is user 987654321098765432
+# ("Viewer"); 555555555555555555 is another member (nick "Tea"), 666666666666666666 has
+# left. The Commands dict maps embed_exec to id 1 and command_map points at the REAL
+# embed_exec, so assertions see the real Avatar Viewer embed. The ephemeral ack answers
+# the interaction and lands as sent message 1; the embed is 2. The 18-digit IDs keep
+# embed_exec on its member-author branch, as production IDs do.
+defaults:
+  user: { id: 987654321098765432, username: "Viewer" }
+  channel: { id: 123456789012345678 }
+  members: [987654321098765432, 555555555555555555]
+  member_nicks: { 555555555555555555: "Tea" }
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    channels:
+      - { id: 900000000000000001, name: "yagpdb" }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: {}
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "1" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 900000000000000001 }
+
+command_map:
+  1: "../../../commands/plumbing/embed_exec.gohtml"
+
+tests:
+  - name: "avatar_menu: a member with a nickname gets the ephemeral receipt and the embed"
+    template: "../../../commands/general/avatar_menu.gohtml"
+    context:
+      interaction: { type: user_menu, target: 555555555555555555 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Viewing" }
+      sent_messages:
+        - { ephemeral: true, content_contains: "Viewing" }
+        - { nth: 2, embed_title: "Avatar Viewer" }
+        - { nth: 2, embed_contains: "?size=1024" }
+        - { nth: 2, embed_contains: '"name": "Nickname"' }
+        - { nth: 2, embed_contains: '"value": "Tea"' }
+
+  # No embed_not_contains assertion exists: the snapshot pins the embed without a
+  # Nickname field (the invoker themself, a member with no nick)
+  - name: "avatar_menu: a member without a nickname gets no Nickname field"
+    template: "../../../commands/general/avatar_menu.gohtml"
+    context:
+      interaction: { type: user_menu, target: 987654321098765432 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Viewing" }
+      sent_messages:
+        - { nth: 2, embed_title: "Avatar Viewer" }
+
+  # 666666666666666666 is not in members: .TargetMember is nil, .TargetUser still works
+  - name: "avatar_menu: a user who left still gets their avatar, without a nickname"
+    template: "../../../commands/general/avatar_menu.gohtml"
+    context:
+      interaction: { type: user_menu, target: 666666666666666666 }
+    strict: true
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Viewing" }
+      sent_messages:
+        - { nth: 2, embed_title: "Avatar Viewer" }
