@@ -295,8 +295,8 @@ make watch         # rerun them whenever a command or test file changes
 make ci            # everything CI runs: Go vet + unit tests, template tests, linter, gofmt
 
 ./bin/yagtest run commands/general/timestamp.gohtml         # run one command
-./bin/yagtest run -args "get,Global" -verbose commands/db/db.gohtml
-./bin/yagtest run -no-premium -strict commands/db/db.gohtml  # fail where a free server would
+./bin/yagtest run -args "get,Global" -verbose retired/db.gohtml
+./bin/yagtest run -no-premium -strict retired/db.gohtml  # fail where a free server would
 ./bin/yagtest check commands/*/*.gohtml                     # parse only, plus static warnings
 ```
 

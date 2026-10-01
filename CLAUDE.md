@@ -20,10 +20,10 @@ This repository contains a comprehensive suite of custom commands for the YAGPDB
 Every deployed command lives in one tree, `commands/<topic>/`, with a folder per topic
 (the planned slash-command roots); a folder mixes both panel groups:
 
-- `bump/` (bump_check, bump_remind, bump_reset), `rules/` (rule, rules, rule_edit),
+- `bump/` (bump_check, bump_remind, bump_reset), `rules/` (rule, rules),
   `gematria/` (gematria, gematria_bootstrap), `hebrew/` (alefbet, atbash, pyramid,
-  rand_hebrew), `color/` (contrast, contrasts, hex_to_int, rand_color), `db/` (db,
-  db_get_embed, db_get_text, simple_db_edit, simple_db_lookup), `members/` (hiatus,
+  rand_hebrew), `color/` (contrast, contrasts, hex_to_int, rand_color), `db/`
+  (db_get_embed, db_get_text, simple_db_lookup), `members/` (hiatus,
   unhiatus, inactivity, staff_roles, role_ping, batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
   message_pointer), `knowledge/` (define), `general/` (avatar_menu, avatar_viewer,
