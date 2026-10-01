@@ -1,0 +1,159 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Component`
+  Trigger: `^rules:`
+  Group: `Utility`
+  Dependencies: none (`rule` execCCs this for the first page)
+*/ -}}
+{{- /* Browse view for the rulebook: one rule per page. `rule browse` execCCs this with
+  ExecData {Page: 1}; a click rebuilds the page in place — the ◀/▶ buttons carry the page
+  in the custom ID (rules:<page>) and the jump select (rules:jump) carries the rule number
+  in .Values. Utility, NOT Staff Utility: members click these buttons (the panel group
+  gates every run — the reason unhiatus sits in Utility too). Defer mode stays None, as on
+  channel_activity_pager: an updateMessage under Update Message Response is refused
+  (Discord 40060). */ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
+{{ $serverURL := or ($globalDict.Get "Server URL") "" }}
+{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
+
+{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+
+{{/* existing rule numbers ascending (a deleted middle rule leaves a gap); the same scan
+  rules.gohtml does for its max */}}
+{{ $maxRule := 0 }}
+{{- range $k, $v := $rulesDict -}}
+    {{- if reFind "\\ARule #(\\d+)\\z" $k -}}
+        {{- $ruleN := toInt (reReplace "\\ARule #" $k "") -}}
+        {{- if gt $ruleN $maxRule -}}
+            {{- $maxRule = $ruleN -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+{{ $nums := cslice }}
+{{- range $i := seq 0 $maxRule -}}
+    {{- $n := add 1 $i -}}
+    {{- if $rulesDict.HasKey (joinStr "" "Rule #" $n) -}}
+        {{- $nums = $nums.Append $n -}}
+    {{- end -}}
+{{- end -}}
+{{ $count := len $nums }}
+
+{{/* the guild author, the same block rules.gohtml puts on every rule embed */}}
+{{ $gIconExtension := ".png" }}
+{{ if ge $guildPremiumTier 1 }}
+    {{ $gIconExtension = ".gif" }}
+{{ end }}
+{{ $gIcon := "" }}
+{{ if .Guild.Icon }}
+    {{ $gIcon = (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconExtension) }}
+{{ else }}
+    {{ $gIcon = $globalDict.Get "Default Avatar" }}
+{{ end }}
+{{ $author := sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
+
+{{/* which page: a button carries it in the custom ID, the select the rule number in
+  .Values, `rule` in ExecData */}}
+{{ $page := 1 }}
+{{ $jumpN := 0 }}
+{{- if .Interaction -}}
+    {{- $parts := split .CustomID ":" -}}
+    {{- if eq (index $parts 1) "jump" -}}
+        {{- $jumpN = toInt (index .Values 0) -}}
+    {{- else -}}
+        {{- $page = toInt (index $parts 1) -}}
+    {{- end -}}
+{{- else -}}
+    {{- $page = toInt (or .ExecData.Page 1) -}}
+{{- end -}}
+
+{{- if eq $count 0 -}}
+    {{- $msg := complexMessage "embed" (cembed
+        "title" "Rules"
+        "description" "No rules are configured yet."
+        "color" $embedColor
+        "author" $author
+        "image" (sdict "url" "")
+        "thumbnail" (sdict "url" "")) -}}
+    {{- if .Interaction -}}
+        {{- updateMessage $msg -}}
+    {{- else -}}
+        {{- sendMessage nil $msg -}}
+    {{- end -}}
+{{- else -}}
+    {{/* resolve a jump to the nearest existing rule at or after it (the last page when
+      that rule was deleted between renders), then clamp any page into range */}}
+    {{- if gt $jumpN 0 -}}
+        {{- $jumped := false -}}
+        {{- $page = $count -}}
+        {{- range $idx, $n := $nums -}}
+            {{- if and (not $jumped) (ge $n $jumpN) -}}
+                {{- $page = add $idx 1 -}}
+                {{- $jumped = true -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+    {{- if lt $page 1 -}}{{- $page = 1 -}}{{- end -}}
+    {{- if gt $page $count -}}{{- $page = $count -}}{{- end -}}
+
+    {{ $ruleN := index $nums (sub $page 1) }}
+    {{ $key := joinStr "" "Rule #" $ruleN }}
+    {{ $title := $key }}
+    {{- if eq (len $rulesDict) 1 -}}
+        {{- $title = "Rules" -}}
+    {{- end -}}
+
+    {{/* the summary line, then the rule text cut to fit the description inside Discord's
+      4,096-character cap and the 6,000-character whole-embed cap, in code points — the
+      cutting embed_exec does for `rule`, done here since the pager owns its embed */}}
+    {{- $summary := printf "%d rules — page %d of %d" $count $page $count -}}
+    {{- $otherLen := add (len (toRune $title)) (len (toRune (print (or $author.name "")))) -}}
+    {{- $textMax := toInt (min 4096 (sub 6000 $otherLen)) -}}
+    {{- $textMax = sub $textMax (add (len (toRune $summary)) 2) -}}
+    {{- $full := $rulesDict.Get $key -}}
+    {{- $text := $full -}}
+    {{- if gt (len (toRune $full)) $textMax -}}
+        {{- $text = "" -}}
+        {{- if ge $textMax 1 -}}
+            {{- $kept := slice (split $full "") 0 (sub $textMax 1) -}}
+            {{- $text = joinStr "" $kept "…" -}}
+        {{- end -}}
+    {{- end -}}
+    {{- $description := joinStr "\n\n" $summary $text -}}
+
+    {{/* the jump select: every existing rule as an option, the shown one selected.
+      Discord caps a select at 25 options; the server has 13. Past 25 the rest stay
+      reachable by paging only — a range-grouped redesign is filed in
+      docs/FUTURE_IMPROVEMENTS.md, trigger: the 26th rule */}}
+    {{- $options := cslice -}}
+    {{- range $n := $nums -}}
+        {{- if lt (len $options) 25 -}}
+            {{- $opt := sdict "label" (joinStr "" "Rule #" $n) "value" (toString $n) -}}
+            {{- if eq $n $ruleN -}}
+                {{- $opt.Set "default" true -}}
+            {{- end -}}
+            {{- $options = $options.Append $opt -}}
+        {{- end -}}
+    {{- end -}}
+    {{ $row1 := cslice (cmenu "custom_id" "rules:jump" "placeholder" "Jump to rule" "options" $options) }}
+    {{/* the trailing "noop" keeps the indicator's ID distinct from every page number */}}
+    {{ $row2 := cslice
+        (cbutton "emoji" (sdict "name" "◀") "style" "secondary"
+            "custom_id" (printf "rules:%d" (sub $page 1)) "disabled" (le $page 1))
+        (cbutton "label" (printf "Page %d/%d" $page $count) "style" "secondary"
+            "custom_id" "rules:noop" "disabled" true)
+        (cbutton "emoji" (sdict "name" "▶") "style" "secondary"
+            "custom_id" (printf "rules:%d" (add $page 1)) "disabled" (ge $page $count))
+    }}
+    {{ $msg := complexMessage
+        "embed" (cembed "title" $title "description" $description "color" $embedColor
+            "author" $author "image" (sdict "url" "") "thumbnail" (sdict "url" ""))
+        "components" (cslice $row1 $row2)
+    }}
+    {{- if .Interaction -}}
+        {{- updateMessage $msg -}}
+    {{- else -}}
+        {{- sendMessage nil $msg -}}
+    {{- end -}}
+{{- end -}}

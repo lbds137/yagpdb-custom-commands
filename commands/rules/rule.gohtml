@@ -3,7 +3,10 @@
   Trigger type: `Command`
   Trigger: `rule`
   Group: `Utility`
-  Dependencies: `embed_exec`
+  Dependencies: `embed_exec`, `rules_pager`
+
+  Usage: `rule [rule number]` views one rule; `rule browse` opens the browse view (one
+  rule per page, with ◀/▶ paging and a jump select — rules_pager owns that message).
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
@@ -11,6 +14,7 @@
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+{{ $rules_pager := toInt ($commandsDict.Get "rules_pager") }}
 
 {{ $rulesDict := (dbGet 0 "Rules").Value }}
 
@@ -28,13 +32,45 @@
     {{- end -}}
 {{- end -}}
 
-{{ $args := parseArgs 1 (joinStr "" "Please enter a valid rule number (" $min "-" $max ").")
-    (carg "int" "rule number to view")
-}}
+{{ $usageText := joinStr "" "Please enter a valid rule number (" $min "-" $max ")." }}
+{{ $args := parseArgs 0 $usageText (carg "string" "rule number, or browse") }}
 
-{{ $n := or .ExecData.RuleNumber ($args.Get 0) }}
+{{ $isBrowse := false }}
+{{ $n := 0 }}
+{{- if .ExecData.RuleNumber -}}
+    {{- $n = .ExecData.RuleNumber -}}
+{{- else -}}
+    {{- $arg := "" -}}
+    {{- with $args.Get 0 -}}{{- $arg = . -}}{{- end -}}
+    {{- if eq $arg "browse" -}}
+        {{- $isBrowse = true -}}
+    {{- else if reFind "\\A\\d+\\z" $arg -}}
+        {{- $n = toInt $arg -}}
+    {{- else -}}
+        {{- /* No argument, or not a plain number: raise the same usage failure the old
+              single int parse raised, by re-running it on the same .CmdArgs (a negative
+              or +prefixed number still parses here and flows to the lookup below, as it
+              did before the browse keyword existed) */ -}}
+        {{- $parsed := parseArgs 1 $usageText (carg "int" "rule number to view") -}}
+        {{- $n = $parsed.Get 0 -}}
+    {{- end -}}
+{{- end -}}
 
-{{ if and (ge $n $min) ($rulesDict.HasKey (joinStr "" "Rule #" $n)) }}
+{{ if $isBrowse }}
+    {{/* the browse view: rules_pager owns the message (embed_exec can't carry
+      components). An id of 0 means it isn't in the Commands dict yet — config_sync
+      hasn't picked the command up (or this server has no config_sync, like lotv): say
+      so instead of execCC-ing command 0 */}}
+    {{ if gt $rules_pager 0 }}
+        {{ execCC $rules_pager .Channel.ID 0 (sdict "Page" 1) }}
+    {{ else }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "Rules Browse Unavailable"
+            "Description" "⚠️ The rules browse view isn't set up on this server yet."
+        ) }}
+    {{ end }}
+{{ else if and (ge $n $min) ($rulesDict.HasKey (joinStr "" "Rule #" $n)) }}
     {{ $key := joinStr "" "Rule #" $n }}
     {{ $result := $rulesDict.Get $key }}
     {{ $title := $key }}
