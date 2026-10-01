@@ -1,0 +1,143 @@
+name: "role_ping (pings Roles-dictionary roles by name)"
+
+# The text path stays as it was (it composes messages, which the panel can't); a bare
+# run now posts the quick-ping panel (panel 98, a string select of the Roles dict's
+# keys handled by role_ping_pick). Mod 111111111111111111 is the Staff role; the
+# invoker is 500000000000000001, 555555555555555555 is another non-staff member.
+# Roles-dict values are role IDs, so "Helper" maps to 222222222222222222.
+
+defaults:
+  guild:
+    channels:
+      - { id: 999999999, name: "yagpdb" }
+    roles:
+      - { id: 111111111111111111, name: "Mod" }
+      - { id: 222222222222222222, name: "Helper" }
+  channel:
+    id: 123456789012345678
+  user:
+    id: 500000000000000001
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Delete Trigger Delay: 5, Delete Response Delay: 10, Command Prefix: "-" }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "1" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 999999999 }
+  - user_id: 0
+    key: "Roles"
+    value: { Staff: "111111111111111111", Helper: "222222222222222222" }
+
+command_map:
+  1: "../../../commands/plumbing/embed_exec.gohtml"
+
+tests:
+  - name: "role_ping: the text path sends the message and pings the role"
+    template: "../../../commands/members/role_ping.gohtml"
+    context:
+      message_content: "-role_ping Helper:standup in 5"
+    expected:
+      output_contains: "<@&222222222222222222>"
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, content_equals: "standup in 5" }
+      response_pings: { roles: [222222222222222222] }
+
+  - name: "role_ping: the text path (nil) sends only the message"
+    template: "../../../commands/members/role_ping.gohtml"
+    context:
+      message_content: "-role_ping (nil):cleaning up"
+    expected:
+      output_equals: ""
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, content_equals: "cleaning up" }
+
+  - name: "role_ping: an unknown name is the text path's error embed"
+    template: "../../../commands/members/role_ping.gohtml"
+    context:
+      message_content: "-role_ping Ghost"
+    assertions:
+      sent_messages:
+        - { embed_title: "Invalid Argument", embed_contains: "⚠️ You must enter a valid role to ping!" }
+
+  - name: "role_ping: a bare run posts the picker panel"
+    template: "../../../commands/members/role_ping.gohtml"
+    context:
+      message_content: "-role_ping"
+    assertions:
+      sent_messages:
+        - embed_title: "Role Ping"
+          embed_contains: "Pick a role to ping below."
+          components_contains: "templates-rp:500000000000000001"
+
+  - name: "role_ping: the panel's options come from the Roles dictionary"
+    template: "../../../commands/members/role_ping.gohtml"
+    snapshot: true
+    context:
+      message_content: "-role_ping"
+    assertions:
+      sent_messages:
+        # the snapshot carries the full option list; one key is asserted here so the
+        # test stays red if the options ever stop coming from the dict
+        - embed_title: "Role Ping"
+          components_contains: '"value": "Helper"'
+
+  - name: "role_ping: with no usable Roles entries the bare run posts an error embed, no select"
+    template: "../../../commands/members/role_ping.gohtml"
+    snapshot: true
+    setup_db:
+      # Staff's empty value isn't pingable; a string select cannot have 0 options
+      - { user_id: 0, key: "Roles", value: { Staff: "" } }
+    context:
+      message_content: "-role_ping"
+    assertions:
+      sent_messages:
+        - { embed_title: "No Pingable Roles", embed_contains: "⚠️ The Roles dictionary has no entries to ping!" }
+
+  - name: "role_ping_pick: a staff pick answers publicly with the role's mention"
+    template: "../../../commands/members/role_ping_pick.gohtml"
+    context:
+      user: { id: 500000000000000001, roles: [111111111111111111] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Role Ping" }] }
+      interaction:
+        { type: component, custom_id: "rp:500000000000000001", message_id: 7,
+          component: string_menu, values: ["Helper"] }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, content_contains: "<@&222222222222222222>" }
+      # the mention text alone proves nothing — pin that the role is actually
+      # allowlisted on the response (notify), not just rendered
+      response_pings: { roles: [222222222222222222] }
+      edited_messages: []
+
+  - name: "role_ping_pick: a key that left the Roles dictionary is refused ephemerally"
+    template: "../../../commands/members/role_ping_pick.gohtml"
+    context:
+      user: { id: 500000000000000001, roles: [111111111111111111] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Role Ping" }] }
+      interaction:
+        { type: component, custom_id: "rp:500000000000000001", message_id: 7,
+          component: string_menu, values: ["Ghost"] }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "⚠️ `Ghost` is no longer in the Roles dictionary" }
+
+  - name: "role_ping_pick: a non-staff pick is refused ephemerally"
+    template: "../../../commands/members/role_ping_pick.gohtml"
+    context:
+      user: { id: 555555555555555555, username: "Other" }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Role Ping" }] }
+      interaction:
+        { type: component, custom_id: "rp:500000000000000001", message_id: 7,
+          component: string_menu, values: ["Helper"] }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "⚠️ Only staff can ping roles." }

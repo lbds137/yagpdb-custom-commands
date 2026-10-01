@@ -1,0 +1,158 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Component`
+  Trigger: `^ip:\d+(:\w+)?$`
+  Group: `Staff Utility`
+  Dependencies: none (inactivity execCCs this for the text-path confirm)
+
+  The Inactivity Prune panel. ip:<spawner> is a user select; a submit renders the
+  verdict now — an inactive member gets a confirm state with a red Kick behind it
+  (ip:<spawner>:kick) plus a Cancel (ip:<spawner>:cancel), an active one a verdict with
+  Kick disabled. Kick RE-CHECKS membership and the Inactive role at press time (the
+  select can be stale), then execs the kick, restores the picker state and posts the
+  result embed publicly. inactivity prune <user> execCCs this with ExecData
+  (User, Spawner) so the text path lands on the same confirm — one mechanism, no
+  bypass. The gate is staff, in every mode. Defer mode stays None.
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
+{{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
+
+{{ $rolesDict := (dbGet 0 "Roles").Value }}
+{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+{{ $activeRoleID := toInt ($rolesDict.Get "Active") }}
+{{ $inactiveRoleID := toInt ($rolesDict.Get "Inactive") }}
+
+{{ $pruneCategory := "Inactivity Prune" }}
+{{ $pruneDict := (dbGet 0 $pruneCategory).Value }}
+{{ $prevDate := $pruneDict.Get "Previous Date" }}
+{{ $nextDate := $pruneDict.Get "Next Date" }}
+
+{{/* mode and targets: a click carries them in the custom ID, the text path in
+  ExecData (no .Interaction there — pager idiom) */}}
+{{ $spawner := "" }}
+{{ $targetID := 0 }}
+{{ $mode := "select" }}
+{{ if .Interaction }}
+    {{ $parts := split .CustomID ":" }}
+    {{ $spawner = index $parts 1 }}
+    {{ if eq (len $parts) 3 }}
+        {{ $mode = index $parts 2 }}
+    {{ else if .Values }}
+        {{ $targetID = toInt (or (index .Values 0) 0) }}
+    {{ end }}
+{{ else }}
+    {{ $mode = "exec" }}
+    {{ $targetID = toInt (or .ExecData.User 0) }}
+    {{ $spawner = toString (or .ExecData.Spawner "") }}
+{{ end }}
+
+{{/* the confirm state carries its target as the mention in the embed, so the Kick
+  button can recover it (the custom ID holds only the spawner) */}}
+{{ if eq $mode "kick" }}
+    {{ if gt (len .Message.Embeds) 0 }}
+        {{ $targetID = toInt (or (reFind "\\d{5,}" (index .Message.Embeds 0).Description) 0) }}
+    {{ end }}
+{{ end }}
+
+{{/* the verdict, on the text path's rules */}}
+{{ $member := getMember $targetID }}
+{{ $isActive := false }}
+{{ $isInactive := false }}
+{{ if $member }}
+    {{ $isActive = targetHasRoleID $targetID $activeRoleID }}
+    {{ $isInactive = targetHasRoleID $targetID $inactiveRoleID }}
+{{ end }}
+{{ $needsKick := and $isInactive (not $isActive) }}
+
+{{ $userAvatar := $defaultAvatar }}
+{{ if $member }}
+    {{ $userAvatar = or ($member.User.AvatarURL "128") $defaultAvatar }}
+{{ end }}
+
+{{ $pickerMsg := complexMessage
+    "embed" (cembed
+        "title" $pruneCategory
+        "color" $embedColor
+        "description" (joinStr "\n"
+            (joinStr "" "Previous prune: " (or $prevDate "_not set_"))
+            (joinStr "" "Next prune: " (or $nextDate "_not set_"))
+            ""
+            "Pick a member to review for pruning."))
+    "components" (cslice
+        (cmenu "type" "user"
+            "custom_id" (print "ip:" $spawner)
+            "max_values" 1
+            "placeholder" "Pick a member to prune…"))
+}}
+
+{{ $kickReason := "pruned due to inactivity" }}
+{{ $confirmMsg := complexMessage
+    "embed" (cembed
+        "title" $pruneCategory
+        "color" $embedColor
+        "description" (joinStr "" "🥾 <@" $targetID "> will be kicked!")
+        "thumbnail" (sdict "url" $userAvatar))
+    "components" (cslice
+        (cbutton "label" "Kick" "style" "danger"
+            "custom_id" (print "ip:" $spawner ":kick"))
+        (cbutton "label" "Cancel" "style" "secondary"
+            "custom_id" (print "ip:" $spawner ":cancel")))
+}}
+
+{{ $note := "is not inactive." }}
+{{ if not $member }}
+    {{ $note = "is no longer in the server." }}
+{{ end }}
+{{ $verdictMsg := complexMessage
+    "embed" (cembed
+        "title" $pruneCategory
+        "color" $embedColor
+        "description" (joinStr "" "❌ No action was taken — <@" $targetID "> " $note))
+    "components" (cslice
+        (cbutton "label" "Kick" "style" "danger" "disabled" true
+            "custom_id" (print "ip:" $spawner ":kick"))
+        (cbutton "label" "Cancel" "style" "secondary"
+            "custom_id" (print "ip:" $spawner ":cancel")))
+}}
+
+{{ if not (hasRoleID $staffRoleID) }}
+    {{ if .Interaction }}
+        {{ sendResponse nil (complexMessage
+            "content" "⚠️ Only staff can prune members."
+            "ephemeral" true) }}
+    {{ else }}
+        {{ sendMessage nil "⚠️ Only staff can prune members." }}
+    {{ end }}
+{{ else if eq $mode "cancel" }}
+    {{ updateMessage $pickerMsg }}
+{{ else if eq $mode "kick" }}
+    {{ if $needsKick }}
+        {{/* ack first (updateMessage is the interaction response), kick second — a
+          slow kick REST call must not eat the 3s ack window */}}
+        {{- updateMessage $pickerMsg -}}
+        {{ $silent := exec "kick" $targetID $kickReason }}
+        {{ sendMessage nil (cembed
+            "title" $pruneCategory
+            "color" $embedColor
+            "description" (joinStr "" "🥾 **" $member.User.String "** has been kicked!")
+            "fields" (cslice (sdict "name" "Reason" "value" (joinStr "" "The user was " $kickReason ".")))
+            "thumbnail" (sdict "url" $userAvatar)
+        ) }}
+    {{ else }}
+        {{ updateMessage $verdictMsg }}
+    {{ end }}
+{{ else if $needsKick }}
+    {{- if .Interaction -}}
+        {{- updateMessage $confirmMsg -}}
+    {{- else -}}
+        {{- sendMessage nil $confirmMsg -}}
+    {{- end -}}
+{{ else }}
+    {{- if .Interaction -}}
+        {{- updateMessage $verdictMsg -}}
+    {{- else -}}
+        {{- sendMessage nil $verdictMsg -}}
+    {{- end -}}
+{{ end }}

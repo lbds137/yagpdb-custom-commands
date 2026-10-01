@@ -1202,11 +1202,30 @@ inactivity - Prune an inactive member:
     messages:
         - channel_id: 123456789012345678
           embeds:
-            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"description\": \"\U0001F97E **MockUser** has been kicked!\",\n  \"fields\": [\n    {\n      \"name\": \"Reason\",\n      \"value\": \"The user was pruned due to inactivity.\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/5.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
+            - "{\n  \"description\": \"\U0001F97E <@222333444555666777> will be kicked!\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/5.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Kick",
+                    "style": 4,
+                    "disabled": false,
+                    "custom_id": "templates-ip:987654321098765432:kick",
+                    "type": 2
+                  },
+                  {
+                    "label": "Cancel",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ip:987654321098765432:cancel",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
-    execs:
-        - exec kick 222333444555666777 "pruned due to inactivity" in channel 123456789012345678
     db:
         - user_id: 0
           key: Admin
@@ -1216,7 +1235,7 @@ inactivity - Prune an inactive member:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"embed_exec":"123","inactivity_prune_pick":"131"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'

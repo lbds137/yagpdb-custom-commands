@@ -1,0 +1,105 @@
+'staff_roles: a bare run with no configured roles posts the empty-state panel':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "TestUser#0001",
+                  "url": "https://discordapp.com/users/500000000000000001"
+                },
+                "description": "No staff roles have been designated yet. Pick them below.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Staff Roles Configuration"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "custom_id": "templates-sr:500000000000000001",
+                    "placeholder": "Pick the staff roles…",
+                    "min_values": 1,
+                    "max_values": 25,
+                    "disabled": false,
+                    "required": false,
+                    "type": 6
+                  }
+                ],
+                "type": 1
+              }
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1"}'
+        - user_id: 0
+          key: Global
+          value: '{"Command Prefix":"-","Delete Response Delay":10,"Delete Trigger Delay":5}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":"222222222222222222"}'
+'staff_roles: the bare-run panel carries the current roles as default_values':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "TestUser#0001",
+                  "url": "https://discordapp.com/users/500000000000000001"
+                },
+                "description": "The following roles have been designated as staff roles: \n- <@&111111111111111111>",
+                "image": {},
+                "thumbnail": {},
+                "title": "Staff Roles Configuration"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "custom_id": "templates-sr:500000000000000001",
+                    "placeholder": "Pick the staff roles…",
+                    "min_values": 1,
+                    "max_values": 25,
+                    "default_values": [
+                      {
+                        "id": "111111111111111111",
+                        "type": "role"
+                      }
+                    ],
+                    "disabled": false,
+                    "required": false,
+                    "type": 6
+                  }
+                ],
+                "type": 1
+              }
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1"}'
+        - user_id: 0
+          key: Global
+          value: '{"Command Prefix":"-","Delete Response Delay":10,"Delete Trigger Delay":5}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":"222222222222222222"}'
+        - user_id: 0
+          key: Staff
+          value: '{"Roles":["111111111111111111"]}'

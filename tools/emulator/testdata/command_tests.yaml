@@ -979,13 +979,11 @@ tests:
     snapshot: true
     template: "../../../commands/members/inactivity.gohtml"
     context:
-      # prune checks the member's Active/Inactive roles; this one is Inactive only
+      # prune no longer kicks: it execCCs inactivity_prune_pick, whose verdict on an
+      # Inactive-only member (Active 131313131 not held) is the confirm with Kick
       args: ["prune", "<@222333444555666777>"]
       user: { roles: [111111111] }
       member_roles: { 222333444555666777: [333333333, 121212121] }
-      # YAGPDB's kick response (moderation/commands.go ~330, GenericCmdResp with noDur=true),
-      # with the target's String() as the emulator gives it here ("MockUser", discriminator "0")
-      exec_responses: { 'kick 222333444555666777 "pruned due to inactivity"': "👢 Kicked `MockUser`" }
       guild:
         roles:
           - { id: 111111111, name: "Staff" }
@@ -996,6 +994,11 @@ tests:
           - { id: 121212121, name: "Inactive" }
           - { id: 131313131, name: "Active" }
     setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: # embed_exec kept so nested execCC still resolves; the picker added for prune
+          embed_exec: "123"
+          inactivity_prune_pick: "131"
       - user_id: 0
         key: "Roles"
         value:
@@ -1013,6 +1016,8 @@ tests:
           Next Date: "September 1"
           Message Threshold: "10"
           Minute Threshold: "30"
+    command_map:
+      131: "../../../commands/members/inactivity_prune_pick.gohtml"
 
   - name: "inactivity - date action rotates the previous/next dates via the db execCC"
     template: "../../../commands/members/inactivity.gohtml"

@@ -1,0 +1,49 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Component`
+  Trigger: `^rp:\d+$`
+  Group: `Staff Utility`
+  Dependencies: none (role_ping spawns the panel through embed_exec)
+
+  The Role Ping panel's select. A staff pick answers with a PUBLIC message whose
+  content is the role's mention; the role is allowlisted explicitly via
+  "allowed_mentions" (the sendResponse function ignores the frame's mention
+  allowlist — see the comment at the send). The panel is not edited; it stays for the
+  next ping. A key that left the Roles dictionary since the panel was spawned gets an
+  ephemeral refusal. Defer mode stays None.
+*/ -}}
+
+{{ $rolesDict := or (dbGet 0 "Roles").Value sdict }}
+{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+
+{{ if hasRoleID $staffRoleID }}
+    {{ if .Values }}
+        {{ $key := index .Values 0 }}
+        {{ $roleID := $rolesDict.Get $key }}
+        {{ if $roleID }}
+            {{/* the sendResponse FUNCTION ignores the frame's mention allowlist
+              (context_interactions.go uses the message's own AllowedMentions only),
+              so the role is allowlisted explicitly here — mentionRoleID alone would
+              render without notifying */}}
+            {{ sendResponse nil (complexMessage
+                "content" (mentionRoleID $roleID)
+                "allowed_mentions" (sdict "roles" (cslice $roleID))) }}
+        {{ else }}
+            {{ sendResponse nil (complexMessage
+                "content" (joinStr "" "⚠️ `" $key "` is no longer in the Roles dictionary — run the command again.")
+                "ephemeral" true) }}
+        {{ end }}
+    {{ else }}
+        {{ sendResponse nil (complexMessage
+            "content" "⚠️ No role was selected."
+            "ephemeral" true) }}
+    {{ end }}
+{{ else }}
+    {{ if .Interaction }}
+        {{ sendResponse nil (complexMessage
+            "content" "⚠️ Only staff can ping roles."
+            "ephemeral" true) }}
+    {{ else }}
+Reached by the Role Ping panel's select; use -role_ping instead.
+    {{ end }}
+{{ end }}
