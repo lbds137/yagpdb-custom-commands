@@ -648,13 +648,14 @@ type ContextMenuTarget struct {
 // ContextMenuTrigger is what the click gave the context menu handler
 // (handle_contextmenu.go:121-159): the entry's name, "user" or "message", the invoker
 // as .Author, the target's user and member (nil when they aren't a member), and, for the
-// message menu, the clicked message.
+// message menu, the clicked message. TargetMember is the MemberState shape, as
+// bot.GetMember returns it.
 type ContextMenuTrigger struct {
 	CommandName  string
 	CommandType  string
 	Author       *types.DiscordUser
 	TargetUser   *types.DiscordUser
-	TargetMember *types.CtxMember
+	TargetMember *types.CtxTargetMember
 	Message      *types.CtxMessage
 }
 
@@ -759,12 +760,22 @@ func (ctx *ExecutionContext) SetInteractionContextMenu(t Trigger, target Context
 	return nil
 }
 
-// targetMember is bot.GetMember's result for a context menu target: the member, or nil
+// targetMember is bot.GetMember's result for a context menu target: the member as a
+// dstate.MemberState (its member fields under .Member, always set for a found member —
+// the fetch only returns members with Member != nil, bot/memberfetcher.go:26), or nil
 // when the user isn't in the server.
-func (ctx *ExecutionContext) targetMember(userID int64) *types.CtxMember {
+func (ctx *ExecutionContext) targetMember(userID int64) *types.CtxTargetMember {
 	if !ctx.isMember(userID) {
 		return nil
 	}
 	m := ctx.member(userID)
-	return &m
+	return &types.CtxTargetMember{
+		User:    m.User,
+		GuildID: ctx.GuildID,
+		Member: &types.CtxMemberFields{
+			JoinedAt: m.JoinedAt,
+			Roles:    m.Roles,
+			Nick:     m.Nick,
+		},
+	}
 }

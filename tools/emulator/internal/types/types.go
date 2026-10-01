@@ -405,6 +405,23 @@ type CtxMember struct {
 	JoinedAt Timestamp
 }
 
+// CtxTargetMember mirrors dstate.MemberState (lib/dstate/interface.go:305): the bot's
+// member state as bot.GetMember returns it for .TargetMember — NOT discordgo.Member
+// (what the getMember template func returns): Nick/JoinedAt/Roles live under .Member.
+type CtxTargetMember struct {
+	User    DiscordUser
+	GuildID int64
+	Member  *CtxMemberFields
+}
+
+// CtxMemberFields mirrors dstate.MemberFields (lib/dstate/interface.go:315), the member
+// fields Discord doesn't always send.
+type CtxMemberFields struct {
+	JoinedAt Timestamp
+	Roles    []int64
+	Nick     string
+}
+
 // CtxMessage represents a Discord message.
 type CtxMessage struct {
 	ID              int64
