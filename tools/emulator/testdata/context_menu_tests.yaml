@@ -19,7 +19,7 @@ tests:
         Trigger type: `User Context Menu`
         Trigger: `View avatar`
       */}}
-      {{- .CommandType }} {{ printf "%q" .CommandName }}: target {{ .TargetUser.ID }} {{ .TargetUser.Username }} ({{ .TargetMember.User.ID }}, joined {{ .TargetMember.JoinedAt }}), by {{ .Author.ID }}
+      {{- .CommandType }} {{ printf "%q" .CommandName }}: target {{ .TargetUser.ID }} {{ .TargetUser.Username }} ({{ .TargetMember.User.ID }}, joined {{ .TargetMember.Member.JoinedAt }}), by {{ .Author.ID }}
       {{- if .User }} user={{ .User.ID }}{{ end }}{{ if .Member }} member={{ .Member.User.ID }}{{ end }}{{ if .Message }} message={{ .Message.ID }}{{ end }}
       {{- " " }}{{ .IsContextMenuCommand }} {{ .InteractionData.TargetID }} type={{ .InteractionData.CommandType }} bot={{ .BotUser.ID }}
     context:
@@ -47,6 +47,22 @@ tests:
         - { content_contains: "not a member", ephemeral: true }
       interaction_responses:
         - { kind: message, ephemeral: true }
+
+  # Pins .TargetMember's production shape: bot.GetMember returns *dstate.MemberState
+  # (lib/dstate/interface.go:305), whose Nick/JoinedAt/Roles live under .Member — NOT the
+  # flat discordgo.Member the getMember template func returns
+  - name: "TargetMember is the MemberState shape: Nick lives under .Member"
+    template_source: |
+      {{/*
+        Trigger type: `User Context Menu`
+        Trigger: `View avatar`
+      */}}
+      {{- if .TargetMember }}nick={{ .TargetMember.Member.Nick }}{{ end }}
+    context:
+      member_nicks: { 5: "Tea" }
+      interaction: { type: user_menu, target: 5 }
+    expected:
+      output_equals: "nick=Tea"
 
   - name: "Message menu: .Message is the message used on, its author the target; sendDM sends nothing"
     template: "templates/quote_message_menu.gohtml"

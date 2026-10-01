@@ -23,9 +23,13 @@
 
 	{{- /* no .Member in a context-menu run; the invoker is .Author */ -}}
 	{{ $avatarOwnerNickname := "" }}
+	{{- /* .TargetMember is a dstate.MemberState: the nick lives under .Member, which is
+	    nil when Discord didn't send member fields; nested ifs, since and/or don't short-circuit */ -}}
 	{{ if .TargetMember }}
-		{{ if .TargetMember.Nick }}
-			{{ $avatarOwnerNickname = .TargetMember.Nick }}
+		{{ if .TargetMember.Member }}
+			{{ if .TargetMember.Member.Nick }}
+				{{ $avatarOwnerNickname = .TargetMember.Member.Nick }}
+			{{ end }}
 		{{ end }}
 	{{ end }}
 

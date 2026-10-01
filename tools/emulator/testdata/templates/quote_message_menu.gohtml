@@ -5,6 +5,6 @@
   Trigger type: `Message Context Menu`
   Trigger: `Quote Message`
 */}}
-{{- .CommandType }} {{ printf "%q" .CommandName }}: message {{ .Message.ID }} {{ printf "%q" .Message.Content }} by {{ .TargetUser.ID }} ({{ if .TargetMember }}member, joined {{ .TargetMember.JoinedAt }}{{ else }}not a member{{ end }}), asked by {{ .Author.ID }}
+{{- .CommandType }} {{ printf "%q" .CommandName }}: message {{ .Message.ID }} {{ printf "%q" .Message.Content }} by {{ .TargetUser.ID }} ({{ if .TargetMember }}member, joined {{ .TargetMember.Member.JoinedAt }}{{ else }}not a member{{ end }}), asked by {{ .Author.ID }}
 {{- if .User }} user={{ .User.ID }}{{ end }}{{ if .Member }} member={{ .Member.User.ID }}{{ end }}
 {{- sendDM "psst" }}

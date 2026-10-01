@@ -319,7 +319,7 @@ func TestSetInteractionContextMenu(t *testing.T) {
 		t.Errorf("keys: %v %v %q", data["IsContextMenuCommand"], data["CommandType"], data["CommandName"])
 	}
 	if data["Author"].(*types.DiscordUser).ID != 42 || data["TargetUser"].(*types.DiscordUser).ID != 5 ||
-		data["TargetMember"].(*types.CtxMember).User.ID != 5 {
+		data["TargetMember"].(*types.CtxTargetMember).User.ID != 5 {
 		t.Errorf("author/target: %+v %+v %+v", data["Author"], data["TargetUser"], data["TargetMember"])
 	}
 	if in := ctx.Interaction.Data.(types.ApplicationCommandInteractionData); in.CommandType != types.UserApplicationCommand ||
@@ -338,7 +338,7 @@ func TestSetInteractionContextMenu(t *testing.T) {
 	if err := ctx.SetInteractionContextMenu(user, ContextMenuTarget{UserID: 6}, DeferModeNone); err != nil {
 		t.Fatal(err)
 	}
-	if m, ok := ctx.BuildTemplateData()["TargetMember"].(*types.CtxMember); !ok || m != nil {
+	if m, ok := ctx.BuildTemplateData()["TargetMember"].(*types.CtxTargetMember); !ok || m != nil {
 		t.Errorf("TargetMember for a non-member: %#v", ctx.BuildTemplateData()["TargetMember"])
 	}
 
@@ -353,7 +353,7 @@ func TestSetInteractionContextMenu(t *testing.T) {
 		t.Errorf(".Message: %+v", msg)
 	}
 	if data["CommandType"] != "message" || data["TargetUser"].(*types.DiscordUser).Username != "Gone" ||
-		data["TargetMember"].(*types.CtxMember) != nil {
+		data["TargetMember"].(*types.CtxTargetMember) != nil {
 		t.Errorf("message target: %v %+v %v", data["CommandType"], data["TargetUser"], data["TargetMember"])
 	}
 	if ctx.NoMessage || !ctx.NoMember || !ctx.Interaction.Deferred {
