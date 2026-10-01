@@ -23,8 +23,10 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
 - `bump/` (bump_check, bump_remind, bump_reset), `rules/` (rule, rules),
   `gematria/` (gematria, gematria_bootstrap), `hebrew/` (alefbet, atbash, pyramid,
   rand_hebrew), `color/` (contrast, contrasts, hex_to_int, rand_color), `db/`
-  (db_get_embed, db_get_text, simple_db_lookup), `members/` (hiatus,
-  unhiatus, inactivity, staff_roles, role_ping, batch_delrep), `channels/`
+  (db_get_embed, db_get_text, db_slash, simple_db_lookup), `edit/` (edit_slash,
+  edit_modal, edit_confirm), `members/` (hiatus, unhiatus, inactivity,
+  inactivity_prune_pick, staff_roles, staff_roles_pick, role_ping, role_ping_pick,
+  role_ping_slash, batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
   message_pointer), `knowledge/` (define), `general/` (avatar_menu, avatar_viewer,
   dismiss, emoji_menu, hugemoji, timestamp), `plumbing/` (embed_exec, message_link, log_user,
