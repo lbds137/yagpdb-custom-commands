@@ -64,10 +64,12 @@ the panel form and the header).
   object, absent when not provided. Absent optional options are unset in `.Options`.
 - `.Member.User.ID` is the invoker (vendor builds a minimal member-carrying message,
   :153-166), so `hasRoleID` works: staff = `Roles` dict "Staff", as today.
-- Target row: invoker's by default; `.Options.user.ID` only when the invoker is staff
-  (non-staff silently keep their own row, exactly today's colon-form gate).
-- export's row choice ports today's dump rules verbatim: staff without `user` → row 0
-  (global), staff naming themselves → their row, non-staff → own row.
+- Target row, ONE rule on every subcommand (revised 2026-10-01 after Lila's catch —
+  the first build defaulted staff to their own row, which a user picker can't steer
+  to row 0, stranding every global dict): **staff without `user` → row 0 (global,
+  the text command's `:0`); staff with `user` (self included) → that member's row;
+  non-staff → own row, a `user` option silently ignored.** Export needs no special
+  case under this rule (its old one collapsed into it).
 - Value parsing ports unchanged: a string starting `{` goes through `jsonToSdict`;
   nested keys split on `:`; the whole nested-key engine (split/sdict walk, parent
   rewrite, plain-map→sdict promotion) is copied from db.gohtml, not rewritten.

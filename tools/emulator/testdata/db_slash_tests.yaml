@@ -308,15 +308,28 @@ tests:
       sent_messages:
         - { ephemeral: true, embed_contains: "555555555555555555" }
 
-  # staff without `user` on a non-export op: own row, like everyone else
-  - name: "db_slash view: staff without `user` gets their own row"
+  # staff without `user` default to the GLOBAL row on every subcommand (the text
+  # command's `:0`), so the seeded Commands dict is visible with no options
+  - name: "db_slash view: staff without `user` get the global row"
     template: "../../../commands/db/db_slash.gohtml"
     context:
       user: { roles: [888888888] }
-      interaction: { type: slash, subcommand: view, options: { key: "Notes" } }
+      interaction: { type: slash, subcommand: view, options: { key: "Commands" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "invoker note" }
+        - { kind: message, ephemeral: true, embed_contains: "embed_exec" }
+
+  - name: "db_slash set: staff without `user` writes the global row"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Probe", value: "{\"a\":1}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully set!" }
+      db_checks:
+        - { user_id: 0, key: "Probe", value_equals: { a: 1 } }
 
   - name: "db_slash set: staff targeting another member's row"
     template: "../../../commands/db/db_slash.gohtml"
