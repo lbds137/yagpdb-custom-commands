@@ -75,8 +75,11 @@
   id rides in the custom ID; a clicker is .User on a component run). In an execCC child
   .User is the caller — the member who ran `rule browse` */}}
 {{ $closeID := printf "rules:close:%d" .User.ID }}
-{{/* danger (red): destructive, Tzurot's color convention (Lila, 2026-09-30) */}}
-{{ $closeButton := cbutton "emoji" (sdict "name" "🗑") "style" "danger" "custom_id" $closeID }}
+{{/* Tzurot design language (consult 2026-09-30): every button carries text, and red is
+  reserved for deleting entities — closing a UI the user spawned is a non-action, so
+  Dismiss is secondary-styled with a label, not danger-styled */}}
+{{ $closeButton := cbutton "emoji" (sdict "name" "🗑") "label" "Dismiss"
+    "style" "secondary" "custom_id" $closeID }}
 
 {{- if and (eq $action "close") (ge (len $parts) 3) -}}
     {{- if eq (toString .User.ID) (index $parts 2) -}}
