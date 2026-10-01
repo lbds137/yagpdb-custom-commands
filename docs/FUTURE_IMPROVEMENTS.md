@@ -78,6 +78,18 @@ picks, then the minifier.
   picker would need /setup-style machinery (YAGPDB's string_menu choices are static,
   set in the panel form). Pick up with the next /edit polish round or with the
   pickers (roadmap item 4).
+- Staff-facing tools are still techy (Lila 2026-10-01: "my regular staff might have a
+  hard time understanding how to use them" — pre-existing; the modal UX is "a ton
+  better" but the vocabulary stayed). The techiness is storage shape leaking into
+  tasks: users type Category/Key/value and colon-nesting where they think in jobs
+  ("change the greeting", "edit rule 3"). Candidate pickup: a comprehension audit
+  with a staff lens — first question, what IS the regular-staff surface (/edit and
+  /db may be admin-only in practice, which shrinks the problem); then per command:
+  what job is a moderator doing, and where does storage vocabulary (categories,
+  keys, `Rule #N`, title-casing) surface in the UI. Fixes likely overlap the pickers
+  / /setup (roadmap item 4) and the new: cleanup; the cheap teaching layer (option
+  descriptions, modal placeholders) already shipped with the slash work.
+
 
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
   2026-09-27: slash commands are "a game changer"). The main server's text prefix is
