@@ -24,7 +24,7 @@
 		{{ $role := .Options.role }}
 		{{ $mention := mentionRoleID $role.ID }}
 		{{ $message := or .Options.message "" }}
-		{{/* Discord caps content at 2000 characters: leave room for the newline and the
+		{{/* Discord caps content at 2000 characters: leave room for the space after the
 			mention, and one more for the ellipsis a clamp appends */}}
 		{{ $limit := sub 2000 (add (len $mention) 2) }}
 		{{ if gt (len (toRune $message)) $limit }}
@@ -32,7 +32,7 @@
 		{{ end }}
 		{{ $content := $mention }}
 		{{ if $message }}
-			{{ $content = joinStr "\n" $message $mention }}
+			{{ $content = joinStr " " $mention $message }}
 		{{ end }}
 		{{ sendResponse nil (complexMessage
 			"content" $content
