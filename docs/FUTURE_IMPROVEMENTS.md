@@ -258,6 +258,15 @@ gets a failing test first.
 
 ## Emulator Enhancements
 
+- Found 2026-09-30 deploying db_slash: the panel/validator counts every newline TWICE
+  against the response limit (form arrives CRLF server-side; runes + newline-count vs
+  20,000 premium — customcommands-editcmd.html updateCCLength, web/validation.go
+  ValidateTemplateField), so a template can pass every emulator test and still be
+  REFUSED at save time (db_slash was: 19,881 runes + 449 lines). The emulator's
+  premium char check should model this (its limit check counts runes only). Guard in
+  place meanwhile: the linter's `response-length` rule (tools/linter/yagpdb_lint.py)
+  errors on any command file whose panel count exceeds 20,000.
+
 ### Remaining emulator gaps
 - Deferred, unverified: embed_exec cuts titles and descriptions by code point, and the
   emulator's limit checks count code points too (limits.go, `utf8.RuneCountInString`). The

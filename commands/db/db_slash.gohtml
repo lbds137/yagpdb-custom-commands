@@ -115,9 +115,8 @@
     {{ $key = "all" }}
 {{ end }}
 {{ if and $operationCheck $key $valueCheck }}
-    {{/* $found: the key exists (its value may be false, 0 or ""); for a nested key,
-        $parentFound: every key before the last is a dictionary, the last one's being
-        $lastParentExistingValue, inside the stored $parentExistingValue */}}
+    {{/* the engine below is db.gohtml's verbatim; its explanatory comments live there
+        (kept out here: YAGPDB's panel double-counts newlines against the 20k limit) */}}
     {{ $existingValue := "" }}
     {{ $found := false }}
 
@@ -142,8 +141,7 @@
                 {{ $parentFound = true }}
                 {{ $found = $existingValue.HasKey $subkey }}
                 {{ $existingValue = $existingValue.Get $subkey }}
-                {{/* a dictionary inside stored JSON is a plain map, without Get or Set:
-                    make it an sdict in its parent */}}
+                {{/* plain map inside stored JSON: promote to sdict in its parent */}}
                 {{ if eq $plainMapType (printf "%T" $existingValue) }}
                     {{ $existingValue = sdict $existingValue }}
                     {{ $lastParentExistingValue.Set $subkey $existingValue }}
@@ -168,9 +166,7 @@
 
     {{ $ptAction := "" }}
     {{ if $isDump }}
-        {{/* Dump operation: export database entries as a JSON file */}}
-        {{/* staff without `user` export row 0; naming a member (self included) that
-            row; regular users only ever their own */}}
+        {{/* staff: no `user` = row 0, `user` (self too) = that row; others: own row */}}
         {{ $dumpUserID := .Member.User.ID }}
         {{ if hasRoleID $staffRoleID }}
             {{ if $targeted }}
@@ -187,13 +183,8 @@
                 {{ $dumpData.Set $key $entry.Value }}
             {{ end }}
         {{ else }}
-            {{/* Build directly from dbGetPattern's own entries: each already carries its
-                Value, so re-fetching with dbGet would cost one more db_interactions call
-                per key (YAGPDB caps that at 10 free / 50 premium per run:
-                vendor/yagpdb/customcommands/tmplextensions.go:516), which a user with many
-                keys could exceed. Caps at 100 entries per call, YAGPDB's max
-                (tmplextensions.go tmplDBGetPattern). Keys are unique per user, and json
-                marshals the sdict key-sorted, so no dedupe or sort is needed here. */}}
+            {{/* build from dbGetPattern's own entries (1 interaction, 100/call max);
+                rationale in db.gohtml's copy of this loop */}}
             {{- range $entry := dbGetPattern $dumpUserID "%" 100 0 -}}
                 {{- if $entry.Value -}}
                     {{- $dumpData.Set $entry.Key $entry.Value -}}
@@ -247,7 +238,6 @@
         {{ try }}
             {{ $parsedValue := $value }}
             {{ if eq $stringType $valueType }}
-                {{/* Only try parsing as JSON if it starts with { (JSON object) */}}
                 {{ if and (gt (len $value) 0) (eq "{" (index $value 0 | printf "%c")) }}
                     {{ $parsedValue = jsonToSdict $value }}
                 {{ end }}
@@ -257,20 +247,16 @@
             {{ else }}
                 {{ $ptAction = "removed" }}
             {{ end }}
-            {{/* a stored array reads back as a *templates.Slice: look through the pointer */}}
             {{ $existingIsSlice := and $found (eq "slice" (kindOf $existingValue true)) }}
             {{ $existingIsDict := and $found (eq "map" (kindOf $existingValue true)) }}
             {{ $parsedIsDict := eq "map" (kindOf $parsedValue true) }}
-            {{/* Direct array operations: if target is a slice */}}
             {{ if and $existingIsSlice $isAdd }}
-                {{/* Convert raw slice to cslice and append */}}
                 {{ $newSlice := cslice }}
                 {{ range $item := $existingValue }}
                     {{ $newSlice = $newSlice.Append $item }}
                 {{ end }}
                 {{ $newSlice = $newSlice.Append $parsedValue }}
                 {{ $existingValue = $newSlice }}
-                {{/* Update the parent with the modified slice */}}
                 {{ if ge (len $keyArray) 2 }}
                     {{ $lastParentExistingValue.Set $lastSubkey $existingValue }}
                     {{ dbSet $userID $firstSubkey $parentExistingValue }}
@@ -279,7 +265,6 @@
                 {{ end }}
                 {{ $value = $parsedValue }}
             {{ else if and $existingIsSlice $isRemove }}
-                {{/* Remove item from array by value */}}
                 {{ $newSlice := cslice }}
                 {{ $removed := false }}
                 {{ range $item := $existingValue }}
@@ -291,7 +276,6 @@
                 {{ end }}
                 {{ if $removed }}
                     {{ $existingValue = $newSlice }}
-                    {{/* Update the parent with the modified slice */}}
                     {{ if ge (len $keyArray) 2 }}
                         {{ $lastParentExistingValue.Set $lastSubkey $existingValue }}
                         {{ dbSet $userID $firstSubkey $parentExistingValue }}
@@ -308,11 +292,9 @@
                 {{ $removedAny := false }}
                 {{- range $k, $v := $value -}}
                     {{- if $isAdd -}}
-                        {{- /* Check if both existing and new values are slices - if so, append */ -}}
                         {{- $existingAtK := $existingValue.Get $k -}}
                         {{- if and (eq "slice" (kindOf $existingAtK true)) (eq "slice" (kindOf $v true)) -}}
-                            {{- /* Append new items to a copy of the existing slice (one from
-                                stored JSON is a plain slice, without Append) */ -}}
+                            {{- /* both slices: append to a cslice copy (plain ones lack Append) */ -}}
                             {{- $newSlice := cslice -}}
                             {{- range $item := $existingAtK -}}
                                 {{- $newSlice = $newSlice.Append $item -}}
