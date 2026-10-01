@@ -104,13 +104,13 @@
         {{- $title = "Rules" -}}
     {{- end -}}
 
-    {{/* the summary line, then the rule text cut to fit the description inside Discord's
-      4,096-character cap and the 6,000-character whole-embed cap, in code points — the
-      cutting embed_exec does for `rule`, done here since the pager owns its embed */}}
-    {{- $summary := printf "%d rules — page %d of %d" $count $page $count -}}
+    {{/* the rule text, cut to fit the description inside Discord's 4,096-character cap
+      and the 6,000-character whole-embed cap, in code points — the cutting embed_exec
+      does for `rule`, done here since the pager owns its embed. No summary line (Lila,
+      2026-09-30): one rule per page makes "page X of Y" redundant with the Page X/Y
+      button, and the rule count shows in the jump menu */}}
     {{- $otherLen := add (len (toRune $title)) (len (toRune (print (or $author.name "")))) -}}
     {{- $textMax := toInt (min 4096 (sub 6000 $otherLen)) -}}
-    {{- $textMax = sub $textMax (add (len (toRune $summary)) 2) -}}
     {{- $full := $rulesDict.Get $key -}}
     {{- $text := $full -}}
     {{- if gt (len (toRune $full)) $textMax -}}
@@ -120,7 +120,7 @@
             {{- $text = joinStr "" $kept "…" -}}
         {{- end -}}
     {{- end -}}
-    {{- $description := joinStr "\n\n" $summary $text -}}
+    {{- $description := $text -}}
 
     {{/* the jump select: every existing rule as an option, the shown one selected.
       Discord caps a select at 25 options; the server has 13. Past 25 the rest stay
