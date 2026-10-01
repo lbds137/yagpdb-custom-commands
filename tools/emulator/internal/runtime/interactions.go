@@ -383,6 +383,13 @@ func (e *Engine) sendResponse(fn string, filterSpecialMentions, returnID bool,
 		e.ctx.Interaction.RespondedTo = true
 	}
 	pings := e.ctx.pings(content, allowed, e.ctx.ChannelID, msgSend.ReplyTo)
+	if kind == ResponseMessage {
+		// the function's response IS the run's response, allowed_mentions and all
+		// (production sends these data verbatim, context_interactions.go:324-341) — so
+		// its pings are the response_pings a test asserts. ctx.response() must not
+		// recompute them from the (usually empty) plain output afterwards.
+		e.ctx.ResponsePings = pings
+	}
 	id := e.ctx.recordInteractionMessage(kind, msgSend.Ephemeral, content, embeds, components, pings)
 	if returnID {
 		return id, nil

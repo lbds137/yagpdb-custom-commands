@@ -22,72 +22,101 @@
 {{ $staffDict := or (dbGet 0 "Staff").Value sdict }}
 
 {{ $trigger := .Message.Content }}
-{{ if $staffRoleID }}
-    {{ if not (reFind $staffRoleID $trigger) }}
-        {{ $trigger = joinStr " " $trigger $staffRoleID }}
-    {{ end }}
-{{ end }}
 {{ $roleIDs := reFindAll "\\d{16,}" $trigger }}
-{{ $count := len $roleIDs }}
-
-{{ if gt $count 0 }}
-    {{ $guildRoleIDs := sdict }}
-    {{- range $guildRole := .Guild.Roles -}}
-        {{- $guildRoleIDs.Set (toString $guildRole.ID) true -}}
-    {{- end -}}
-
-    {{ $validRoleIDs := cslice }}
-    {{ $ignoredRoleIDs := cslice }}
-    {{- range $roleID := $roleIDs -}}
-        {{- if $guildRoleIDs.Get $roleID -}}
-            {{- $validRoleIDs = $validRoleIDs.Append $roleID -}}
-        {{- else -}}
-            {{- $ignoredRoleIDs = $ignoredRoleIDs.Append $roleID -}}
-        {{- end -}}
-    {{- end -}}
-
-    {{ if gt (len $validRoleIDs) 0 }}
-        {{ $staffDict.Set "Roles" $validRoleIDs }}
-        {{ dbSet 0 "Staff" $staffDict }}
-        {{ $result := "The following roles have been designated as staff roles: " }}
-        {{- range $validRoleID := $validRoleIDs -}}
-            {{- $result = joinStr "" $result "\n- <@&" $validRoleID ">" -}}
+{{ if gt (len $roleIDs) 0 }}
+    {{/* the text path: the configured Staff role rides along when missing, so a
+      partial list never silently drops staff access */}}
+    {{ if $staffRoleID }}
+        {{ if not (reFind $staffRoleID $trigger) }}
+            {{ $trigger = joinStr " " $trigger $staffRoleID }}
+        {{ end }}
+    {{ end }}
+    {{ $roleIDs = reFindAll "\\d{16,}" $trigger }}
+    {{ $count := len $roleIDs }}
+    {{ if gt $count 0 }}
+        {{ $guildRoleIDs := sdict }}
+        {{- range $guildRole := .Guild.Roles -}}
+            {{- $guildRoleIDs.Set (toString $guildRole.ID) true -}}
         {{- end -}}
 
-        {{ if gt (len $ignoredRoleIDs) 0 }}
-            {{- $result = joinStr "\n\n" $result "The following role IDs provided were invalid: " -}}
+        {{ $validRoleIDs := cslice }}
+        {{ $ignoredRoleIDs := cslice }}
+        {{- range $roleID := $roleIDs -}}
+            {{- if $guildRoleIDs.Get $roleID -}}
+                {{- $validRoleIDs = $validRoleIDs.Append $roleID -}}
+            {{- else -}}
+                {{- $ignoredRoleIDs = $ignoredRoleIDs.Append $roleID -}}
+            {{- end -}}
+        {{- end -}}
+
+        {{ if gt (len $validRoleIDs) 0 }}
+            {{ $staffDict.Set "Roles" $validRoleIDs }}
+            {{ dbSet 0 "Staff" $staffDict }}
+            {{ $result := "The following roles have been designated as staff roles: " }}
+            {{- range $validRoleID := $validRoleIDs -}}
+                {{- $result = joinStr "" $result "\n- <@&" $validRoleID ">" -}}
+            {{- end -}}
+
+            {{ if gt (len $ignoredRoleIDs) 0 }}
+                {{- $result = joinStr "\n\n" $result "The following role IDs provided were invalid: " -}}
+                {{- range $ignoredRoleID := $ignoredRoleIDs -}}
+                    {{- $result = joinStr "" $result "\n- `" $ignoredRoleID "`" -}}
+                {{- end -}}
+            {{ end }}
+
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
+                "Title" "Staff Roles Configuration"
+                "Description" $result
+                "AuthorID" .Member.User.ID
+            ) }}
+        {{ else }}
+            {{ $result := "⚠️ None of the provided role IDs were valid: " }}
             {{- range $ignoredRoleID := $ignoredRoleIDs -}}
                 {{- $result = joinStr "" $result "\n- `" $ignoredRoleID "`" -}}
             {{- end -}}
+
+            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                "ChannelID" .Channel.ID
+                "Title" "Invalid Role IDs"
+                "Description" $result
+                "DeleteResponse" true
+                "DeleteDelay" $deleteResponseDelay
+            ) }}
         {{ end }}
-
-        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-            "ChannelID" .Channel.ID
-            "Title" "Staff Roles Configuration"
-            "Description" $result
-            "AuthorID" .Member.User.ID
-        ) }}
-    {{ else }}
-        {{ $result := "⚠️ None of the provided role IDs were valid: " }}
-        {{- range $ignoredRoleID := $ignoredRoleIDs -}}
-            {{- $result = joinStr "" $result "\n- `" $ignoredRoleID "`" -}}
-        {{- end -}}
-
-        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-            "ChannelID" .Channel.ID
-            "Title" "Invalid Role IDs"
-            "Description" $result
-            "DeleteResponse" true
-            "DeleteDelay" $deleteResponseDelay
-        ) }}
     {{ end }}
 {{ else }}
+    {{/* bare run: post the picker panel (staff_roles_pick handles the select). The old
+      append-and-save clobber is gone; resetting to just the Staff role is now "pick
+      only the Staff role in the panel and submit" */}}
+    {{ $current := or ($staffDict.Get "Roles") cslice }}
+    {{ $result := "No staff roles have been designated yet. Pick them below." }}
+    {{ if gt (len $current) 0 }}
+        {{ $result = "The following roles have been designated as staff roles: " }}
+        {{- range $roleID := $current -}}
+            {{- $result = joinStr "" $result "\n- <@&" $roleID ">" -}}
+        {{- end -}}
+    {{ end }}
+
+    {{ $defaults := cslice }}
+    {{- range $roleID := $current -}}
+        {{- if lt (len $defaults) 25 -}}
+            {{- $defaults = $defaults.Append (sdict "id" $roleID "type" "role") -}}
+        {{- end -}}
+    {{- end -}}
+
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID
-        "Title" "Missing Role IDs"
-        "Description" "⚠️ You must provide at least one role ID!"
-        "DeleteResponse" true
-        "DeleteDelay" $deleteResponseDelay
+        "Title" "Staff Roles Configuration"
+        "Description" $result
+        "AuthorID" .Member.User.ID
+        "Components" (cslice
+            (cmenu "type" "role"
+                "custom_id" (print "sr:" .Member.User.ID)
+                "min_values" 1
+                "max_values" 25
+                "placeholder" "Pick the staff roles…"
+                "default_values" $defaults))
     ) }}
 {{ end }}
 

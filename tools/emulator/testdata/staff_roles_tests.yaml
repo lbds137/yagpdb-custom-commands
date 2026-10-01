@@ -108,3 +108,92 @@ tests:
         - { user_id: 0, key: "Staff", value_equals: { Roles: ["333333333333333333"] } }
       sent_messages:
         - { embed_title: "Invalid Role IDs", embed_contains: "`999999999999999999`" }
+
+  # The picker panel (panel 97): a bare run used to append the Staff role and clobber
+  # the stored list; it now posts the role select instead. Resetting to just the Staff
+  # role is "pick only the Staff role in the panel and submit".
+  - name: "staff_roles: a bare run posts the picker panel and leaves Staff.Roles alone"
+    template: "../../../commands/members/staff_roles.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Roles", value: { Staff: "222222222222222222" } }
+      - { user_id: 0, key: "Staff", value: { Roles: ["111111111111111111"] } }
+    context:
+      message_content: "-staff_roles"
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: ["111111111111111111"] } }
+      sent_messages:
+        - embed_title: "Staff Roles Configuration"
+          embed_contains: "<@&111111111111111111>"
+          components_contains: "templates-sr:500000000000000001"
+      deletions:
+        - { of: trigger, delay: 5s }
+
+  - name: "staff_roles: a bare run with no configured roles posts the empty-state panel"
+    template: "../../../commands/members/staff_roles.gohtml"
+    snapshot: true
+    setup_db:
+      - { user_id: 0, key: "Roles", value: { Staff: "222222222222222222" } }
+    context:
+      message_content: "-staff_roles"
+    assertions:
+      sent_messages:
+        - embed_title: "Staff Roles Configuration"
+          embed_contains: "No staff roles have been designated yet"
+          components_contains: '"min_values": 1'
+
+  - name: "staff_roles: the bare-run panel carries the current roles as default_values"
+    template: "../../../commands/members/staff_roles.gohtml"
+    snapshot: true
+    setup_db:
+      - { user_id: 0, key: "Roles", value: { Staff: "222222222222222222" } }
+      - { user_id: 0, key: "Staff", value: { Roles: ["111111111111111111"] } }
+    context:
+      message_content: "-staff_roles"
+    assertions:
+      sent_messages:
+        - embed_title: "Staff Roles Configuration"
+          components_contains: '"id": "111111111111111111"'
+
+  - name: "staff_roles_pick: a staff submit saves Staff.Roles and rebuilds the panel"
+    template: "../../../commands/members/staff_roles_pick.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Roles", value: { Staff: "111111111111111111" } }
+      - { user_id: 0, key: "Staff", value: { Roles: ["333333333333333333"] } }
+    context:
+      user: { id: 500000000000000001, roles: [111111111111111111] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Staff Roles Configuration" }] }
+      interaction:
+        { type: component, custom_id: "sr:500000000000000001", message_id: 7,
+          component: role_menu, values: ["111111111111111111", "222222222222222222"] }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: ["111111111111111111", "222222222222222222"] } }
+      interaction_responses:
+        - kind: update
+          embed_contains: "<@&111111111111111111>"
+          components_contains: "templates-sr:500000000000000001"
+      edited_messages:
+        - channel_id: 123456789012345678
+          embed_contains: "<@&222222222222222222>"
+          components_contains: '"id": "222222222222222222"'
+
+  - name: "staff_roles_pick: a non-staff submit is refused ephemerally and saves nothing"
+    template: "../../../commands/members/staff_roles_pick.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Roles", value: { Staff: "111111111111111111" } }
+      - { user_id: 0, key: "Staff", value: { Roles: ["333333333333333333"] } }
+    context:
+      user: { id: 555555555555555555, username: "Other" }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Staff Roles Configuration" }] }
+      interaction:
+        { type: component, custom_id: "sr:500000000000000001", message_id: 7,
+          component: role_menu, values: ["111111111111111111"] }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: ["333333333333333333"] } }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "⚠️ Only staff can configure staff roles." }
+      edited_messages: []

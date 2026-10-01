@@ -18,6 +18,7 @@
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 {{ $db := toInt ($commandsDict.Get "db_slash") }}
+{{ $prunePick := toInt ($commandsDict.Get "inactivity_prune_pick") }}
 
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
 
@@ -93,46 +94,40 @@
             ) }}
         {{ end }}
     {{ else if $isPrune }}
-        {{ $userArg := userArg $param }}
-        {{ if $userArg }}
-            {{ $userID := $userArg.ID }}
-            {{ $member := getMember $userID }}
-
-            {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
-            {{ $userAvatar := $member.User.AvatarURL "128" }}
-
-            {{ $activeRoleID := toInt ($rolesDict.Get "Active") }}
-            {{ $inactiveRoleID := toInt ($rolesDict.Get "Inactive") }}
-
-            {{ $isActive := targetHasRoleID $userID $activeRoleID }}
-            {{ $isInactive := targetHasRoleID $userID $inactiveRoleID }}
-
-            {{ $reason := "" }}
-            {{ if and (not $isActive) $isInactive }}
-                {{ $kickReason := joinStr "" "pruned due to inactivity" }}
-                {{ $reason = joinStr "" "The user was " $kickReason "." }}
-                {{ $result = joinStr "" "🥾 **" $member.User.String "** has been kicked!" }}
-                {{ $silent := exec "kick" $userID $kickReason }}
+        {{ if $param }}
+            {{ $userArg := userArg $param }}
+            {{ if $userArg }}
+                {{/* the kick is behind the panel's confirm now, on both paths: hand
+                  the target to the picker, which posts the confirm state */}}
+                {{ execCC $prunePick .Channel.ID 0 (sdict
+                    "User" $userArg.ID
+                    "Spawner" .Member.User.ID
+                ) }}
             {{ else }}
-                {{ $reason = "The user is not inactive." }}
-                {{ $result = joinStr "" "❌ No action was taken against **" $member.User.String "**." }}
+                {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                    "ChannelID" .Channel.ID
+                    "Title" "Invalid User Parameter"
+                    "Description" "⚠️ You must enter a valid user parameter!"
+                    "DeleteResponse" true
+                    "DeleteDelay" $deleteResponseDelay
+                ) }}
             {{ end }}
-
-            {{ $fields := cslice (sdict "name" "Reason" "value" $reason) }}
+        {{ else }}
+            {{/* bare prune: post the picker panel (inactivity_prune_pick handles it) */}}
             {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
                 "ChannelID" .Channel.ID
                 "Title" $pruneCategory
-                "Description" $result
-                "Fields" $fields
-                "ThumbnailURL" (or $userAvatar $defaultAvatar)
-            ) }}
-        {{ else }}
-            {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-                "ChannelID" .Channel.ID
-                "Title" "Invalid User Parameter"
-                "Description" "⚠️ You must enter a valid user parameter!"
-                "DeleteResponse" true
-                "DeleteDelay" $deleteResponseDelay
+                "Description" (joinStr "\n"
+                    (joinStr "" "Previous prune: " (or $prevDate "_not set_"))
+                    (joinStr "" "Next prune: " (or $nextDate "_not set_"))
+                    ""
+                    "Pick a member to review for pruning.")
+                "AuthorID" .Member.User.ID
+                "Components" (cslice
+                    (cmenu "type" "user"
+                        "custom_id" (print "ip:" .Member.User.ID)
+                        "max_values" 1
+                        "placeholder" "Pick a member to prune…"))
             ) }}
         {{ end }}
     {{ end }}

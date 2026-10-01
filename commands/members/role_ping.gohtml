@@ -20,38 +20,80 @@
 
 {{ $nilValue := "(nil)" }}
 
-{{ $args := parseArgs 1 "Usage: `[role to ping or (nil)][:][optional message to include with ping]`"
+{{ $args := parseArgs 0 "Usage: `[role to ping or (nil)][:][optional message to include with ping]`"
   (carg "string" "[role name][:][optional message]")
 }}
 
-{{ $arg := $args.Get 0 }}
-{{ $roleIDArg := $arg }}
-{{ $messageArg := "" }}
-{{ $argArray := reSplit ":" $arg 2 }}
-{{ if eq 2 (len $argArray) }}
-  {{ $roleIDArg = index $argArray 0 }}
-  {{ $messageArg = index $argArray 1 }}
-{{ end }}
-{{ if ne $roleIDArg $nilValue }}
-  {{ $roleIDArg = title $roleIDArg }}
-{{ end }}
+{{ if $args.IsSet 0 }}
+    {{ $arg := $args.Get 0 }}
+    {{ $roleIDArg := $arg }}
+    {{ $messageArg := "" }}
+    {{ $argArray := reSplit ":" $arg 2 }}
+    {{ if eq 2 (len $argArray) }}
+      {{ $roleIDArg = index $argArray 0 }}
+      {{ $messageArg = index $argArray 1 }}
+    {{ end }}
+    {{ if ne $roleIDArg $nilValue }}
+      {{ $roleIDArg = title $roleIDArg }}
+    {{ end }}
 
-{{ $roleID := $rolesDict.Get $roleIDArg }}
-{{ if or $roleID (eq $roleIDArg $nilValue) }}
-  {{ if $messageArg }}
-    {{ sendMessage .Channel.ID $messageArg }}
-  {{ end }}
-  {{ if $roleID }}
-    {{ mentionRoleID $roleID }}
-  {{ end }}
+    {{ $roleID := $rolesDict.Get $roleIDArg }}
+    {{ if or $roleID (eq $roleIDArg $nilValue) }}
+      {{ if $messageArg }}
+        {{ sendMessage .Channel.ID $messageArg }}
+      {{ end }}
+      {{ if $roleID }}
+        {{ mentionRoleID $roleID }}
+      {{ end }}
+    {{ else }}
+      {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+        "ChannelID" .Channel.ID
+        "Title" "Invalid Argument"
+        "Description" "⚠️ You must enter a valid role to ping!"
+        "DeleteResponse" true
+        "DeleteDelay" $deleteResponseDelay
+      ) }}
+    {{ end }}
 {{ else }}
-  {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-    "ChannelID" .Channel.ID
-    "Title" "Invalid Argument"
-    "Description" "⚠️ You must enter a valid role to ping!"
-    "DeleteResponse" true
-    "DeleteDelay" $deleteResponseDelay
-  ) }}
+    {{/* bare run: post the quick-ping panel (role_ping_pick handles the select). The
+      panel does not compose messages — for those, use the text path */}}
+    {{ $keys := cslice }}
+    {{- range $key, $roleID := or $rolesDict sdict -}}
+        {{- if $roleID -}}
+            {{- $keys = $keys.Append $key -}}
+        {{- end -}}
+    {{- end -}}
+    {{ $keys = sort $keys }}
+
+    {{ if gt (len $keys) 0 }}
+        {{ $options := cslice }}
+        {{- range $key := $keys -}}
+            {{- if lt (len $options) 25 -}}
+                {{- $options = $options.Append (sdict "label" $key "value" $key) -}}
+            {{- end -}}
+        {{- end -}}
+
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "Role Ping"
+            "Description" "Pick a role to ping below."
+            "AuthorID" .Member.User.ID
+            "Components" (cslice
+                (cmenu "type" "string"
+                    "custom_id" (print "rp:" .Member.User.ID)
+                    "placeholder" "Pick a role to ping…"
+                    "options" $options))
+        ) }}
+    {{ else }}
+        {{/* a string select cannot have 0 options */}}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" .Channel.ID
+            "Title" "No Pingable Roles"
+            "Description" "⚠️ The Roles dictionary has no entries to ping!"
+            "DeleteResponse" true
+            "DeleteDelay" $deleteResponseDelay
+        ) }}
+    {{ end }}
 {{ end }}
 
 {{ deleteTrigger $deleteTriggerDelay }}

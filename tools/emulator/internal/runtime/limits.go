@@ -369,7 +369,13 @@ func (ctx *ExecutionContext) response(output string) string {
 		ctx.Warn(KindLimit, "the response is %d characters; YAGPDB replaces responses over %d with a notice", n, maxResponseRunes)
 		return output // the notice YAGPDB sends pings no one
 	}
-	ctx.ResponsePings = ctx.pings(output, ctx.responseMentions(), ctx.ChannelID, 0)
+	// The output is the response only when nothing responded yet: after a sendResponse
+	// (or updateMessage) the interaction has RespondedTo, and production turns further
+	// output into a followup or drops it empty (context.go:604-608, 647) — the response's
+	// own pings (set where it was sent) must stand.
+	if ctx.Interaction == nil || !ctx.Interaction.RespondedTo {
+		ctx.ResponsePings = ctx.pings(output, ctx.responseMentions(), ctx.ChannelID, 0)
+	}
 	return output
 }
 

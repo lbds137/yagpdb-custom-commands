@@ -1,0 +1,65 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Component`
+  Trigger: `^sr:\d+$`
+  Group: `Staff Utility`
+  Dependencies: none (staff_roles spawns the panel through embed_exec)
+
+  The Staff Roles panel's select. Staff pick the staff roles; a submit saves
+  Staff.Roles (snowflake strings, parity with the text path's regex strings) and
+  rebuilds the panel in place with the new defaults — the visible confirmation is the
+  panel change, no extra ack. Non-staff get an ephemeral refusal (dismiss idiom).
+  Defer mode stays None, as on the pager and dismiss.
+*/ -}}
+
+{{ $globalDict := (dbGet 0 "Global").Value }}
+{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
+
+{{ $rolesDict := or (dbGet 0 "Roles").Value sdict }}
+{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+
+{{ if hasRoleID $staffRoleID }}
+    {{ $values := or .Values cslice }}
+    {{ $staffDict := or (dbGet 0 "Staff").Value sdict }}
+    {{ $staffDict.Set "Roles" $values }}
+    {{ dbSet 0 "Staff" $staffDict }}
+
+    {{ $result := "The following roles have been designated as staff roles: " }}
+    {{- range $roleID := $values -}}
+        {{- $result = joinStr "" $result "\n- <@&" $roleID ">" -}}
+    {{- end -}}
+
+    {{ $defaults := cslice }}
+    {{- range $roleID := $values -}}
+        {{- if lt (len $defaults) 25 -}}
+            {{- $defaults = $defaults.Append (sdict "id" $roleID "type" "role") -}}
+        {{- end -}}
+    {{- end -}}
+
+    {{ $msg := complexMessage
+        "embed" (cembed
+            "title" "Staff Roles Configuration"
+            "color" $embedColor
+            "description" $result)
+        "components" (cslice
+            (cmenu "type" "role"
+                "custom_id" .CustomID
+                "min_values" 1
+                "max_values" 25
+                "placeholder" "Pick the staff roles…"
+                "default_values" $defaults))
+    }}
+    {{- if .Interaction -}}
+        {{- updateMessage $msg -}}
+    {{- else -}}
+        {{- sendMessage nil $msg -}}
+    {{- end -}}
+{{ else }}
+    {{ if .Interaction }}
+        {{ sendResponse nil (complexMessage
+            "content" "⚠️ Only staff can configure staff roles."
+            "ephemeral" true) }}
+    {{ else }}
+        {{ sendMessage nil "⚠️ Only staff can configure staff roles." }}
+    {{ end }}
+{{ end }}
