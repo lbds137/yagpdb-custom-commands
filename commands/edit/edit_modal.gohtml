@@ -1,0 +1,208 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Modal Submission`
+  Trigger: `^edit:(rule:\d+|entry):\d+$`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  The /edit forms' writer (edit_slash opens them): the engines are rule_edit's and
+  simple_db_edit's, copied minus their `(nil)` delete branches — deletes go through
+  /edit delete's confirm (edit_confirm). Acks are ephemeral sendResponses, no public
+  embed_exec post.
+*/ -}}
+{{ if .IsModal }}
+	{{ $rolesDict := (dbGet 0 "Roles").Value }}
+	{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+	{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
+	{{ $parts := split .CustomID ":" }}
+	{{ $kind := index $parts 1 }}
+	{{ $stamp := toInt (index $parts (sub (len $parts) 1)) }}
+	{{ if not (hasRoleID $staffRoleID) }}
+		{{ sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true) }}
+	{{ else if not (lt (sub currentTime.Unix $stamp) 3600) }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ This form expired — it's older than an hour. Run /edit again."
+			"ephemeral" true) }}
+	{{ else if eq $kind "rule" }}
+		{{ $n := toInt (index $parts 2) }}
+		{{ $text := .ModalValues.rule_text.value }}
+		{{ if lt $n 1 }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ You must provide an integer greater than zero!" "ephemeral" true) }}
+		{{ else if eq $text "(nil)" }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ To delete, use `/edit delete`." "ephemeral" true) }}
+		{{ else }}
+			{{ $key := joinStr "" "Rule #" $n }}
+			{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+			{{ $found := $rulesDict.HasKey $key }}
+			{{ $old := "" }}
+			{{ if $found }}
+				{{ $old = $rulesDict.Get $key }}
+			{{ end }}
+			{{ $oldIsString := eq "string" (printf "%T" $old) }}
+			{{/* "and" isn't short-circuiting in Go templates: eq $old $text would still run
+				(and error) on a non-comparable $old if inlined into one "and" condition */}}
+			{{ $isUnchanged := false }}
+			{{ if $oldIsString }}
+				{{ $isUnchanged = eq $old $text }}
+			{{ end }}
+			{{ $title := "" }}
+			{{ $description := "" }}
+			{{ $fields := cslice }}
+			{{ if not $found }}
+				{{ $rulesDict.Set $key $text }}
+				{{ dbSet 0 "Rules" $rulesDict }}
+				{{ $title = joinStr "" $key " added" }}
+				{{ $description = $text }}
+			{{ else if $isUnchanged }}
+				{{ $title = joinStr "" $key " unchanged" }}
+				{{ $description = $text }}
+			{{ else }}
+				{{ $rulesDict.Set $key $text }}
+				{{ dbSet 0 "Rules" $rulesDict }}
+				{{ $title = joinStr "" $key " updated" }}
+				{{ $description = $text }}
+				{{ $was := $old }}
+				{{ if $oldIsString }}
+					{{ if gt (len (toRune $was)) 1024 }}
+						{{ $kept := slice (split $was "") 0 1023 }}
+						{{ $was = joinStr "" $kept "…" }}
+					{{ end }}
+				{{ else }}
+					{{/* cut the json first, then fence: fencing after a truncation drops
+						the closing fence and breaks the embed's markdown */}}
+					{{ $wasJSON := json $was true }}
+					{{ $wasJSONMax := sub 1024 8 }}
+					{{ if gt (len (toRune $wasJSON)) $wasJSONMax }}
+						{{ $kept := slice (split $wasJSON "") 0 (sub $wasJSONMax 1) }}
+						{{ $wasJSON = joinStr "" $kept "…" }}
+					{{ end }}
+					{{ $was = joinStr "" "```\n" $wasJSON "\n```" }}
+				{{ end }}
+				{{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
+			{{ end }}
+			{{ sendResponse nil (complexMessage "ephemeral" true
+				"embed" (cembed "title" $title "color" $embedColor
+					"description" $description "fields" $fields)) }}
+		{{ end }}
+	{{ else }}
+		{{ $categoryArg := .ModalValues.category.value }}
+		{{ $typedKey := .ModalValues.key.value }}
+		{{ $value := .ModalValues.value.value }}
+		{{ if eq $value "(nil)" }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ To delete, use `/edit delete`." "ephemeral" true) }}
+		{{ else }}
+			{{ $plainMapType := "map[string]interface {}" }}
+			{{ $isNew := reFind "(?i)\\Anew:" $categoryArg }}
+			{{ $categoryName := $categoryArg }}
+			{{ if $isNew }}
+				{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
+			{{ end }}
+			{{ $category := title $categoryName }}
+			{{ $refused := "" }}
+			{{ if and $isNew (not $categoryName) }}
+				{{ $refused = "⚠️ Give a category name after `new:`." }}
+			{{ end }}
+			{{ $categoryEntry := "" }}
+			{{ if not $refused }}
+				{{ $categoryEntry = dbGet 0 $category }}
+				{{ if and (not $isNew) (not $categoryEntry) }}
+					{{ $refused = joinStr "" "⚠️ There is no `" $category
+						"` category. Check the spelling, or use `new:" $category "` to create it." }}
+				{{ end }}
+			{{ end }}
+			{{ $categoryDict := sdict }}
+			{{ if not $refused }}
+				{{ if $categoryEntry }}
+					{{ $categoryValue := $categoryEntry.Value }}
+					{{ if eq $plainMapType (printf "%T" $categoryValue) }}
+						{{ $categoryDict = sdict $categoryValue }}
+					{{ else if eq "map" (kindOf $categoryValue true) }}
+						{{ $categoryDict = $categoryValue }}
+					{{ else }}
+						{{ $refused = joinStr "" "⚠️ The `" $category
+							"` category doesn't hold a dictionary of entries." }}
+					{{ end }}
+				{{ end }}
+			{{ end }}
+			{{ if $refused }}
+				{{ sendResponse nil (complexMessage "content" $refused "ephemeral" true) }}
+			{{ else }}
+				{{ $key := $typedKey }}
+				{{ if ne $category "Commands" }}
+					{{ $key = title $typedKey }}
+				{{ end }}
+				{{ $storedKeyDiffers := ne $key $typedKey }}
+				{{ $found := $categoryDict.HasKey $key }}
+				{{ $old := "" }}
+				{{ if $found }}
+					{{ $old = $categoryDict.Get $key }}
+				{{ end }}
+				{{ $oldIsString := eq "string" (printf "%T" $old) }}
+				{{/* "and" isn't short-circuiting in Go templates: eq $old $value would still
+					run (and error) on a non-comparable $old if inlined into one "and" */}}
+				{{ $isUnchanged := false }}
+				{{ if $oldIsString }}
+					{{ $isUnchanged = eq $old $value }}
+				{{ end }}
+				{{ $label := joinStr " › " $category $key }}
+				{{ $storedAs := $key }}
+				{{ if gt (len (toRune $storedAs)) 1024 }}
+					{{ $kept := slice (split $storedAs "") 0 1023 }}
+					{{ $storedAs = joinStr "" $kept "…" }}
+				{{ end }}
+				{{ $title := "" }}
+				{{ $description := "" }}
+				{{ $fields := cslice }}
+				{{ if not $found }}
+					{{ $categoryDict.Set $key $value }}
+					{{ dbSet 0 $category $categoryDict }}
+					{{ $title = joinStr " " $label "added" }}
+					{{ $description = $value }}
+					{{ if $storedKeyDiffers }}
+						{{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+					{{ end }}
+				{{ else if $isUnchanged }}
+					{{ $title = joinStr " " $label "unchanged" }}
+					{{ $description = $value }}
+					{{ if $storedKeyDiffers }}
+						{{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+					{{ end }}
+				{{ else }}
+					{{ $categoryDict.Set $key $value }}
+					{{ dbSet 0 $category $categoryDict }}
+					{{ $title = joinStr " " $label "updated" }}
+					{{ $description = $value }}
+					{{ $was := $old }}
+					{{ if $oldIsString }}
+						{{ if gt (len (toRune $was)) 1024 }}
+							{{ $kept := slice (split $was "") 0 1023 }}
+							{{ $was = joinStr "" $kept "…" }}
+						{{ end }}
+					{{ else }}
+						{{/* cut the json first, then fence: fencing after a truncation drops
+							the closing fence and breaks the embed's markdown */}}
+						{{ $wasJSON := json $was true }}
+						{{ $wasJSONMax := sub 1024 8 }}
+						{{ if gt (len (toRune $wasJSON)) $wasJSONMax }}
+							{{ $kept := slice (split $wasJSON "") 0 (sub $wasJSONMax 1) }}
+							{{ $wasJSON = joinStr "" $kept "…" }}
+						{{ end }}
+						{{ $was = joinStr "" "```\n" $wasJSON "\n```" }}
+					{{ end }}
+					{{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
+					{{ if $storedKeyDiffers }}
+						{{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+					{{ end }}
+				{{ end }}
+				{{ sendResponse nil (complexMessage "ephemeral" true
+					"embed" (cembed "title" $title "color" $embedColor
+						"description" $description "fields" $fields)) }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+{{ else }}
+Reached by submitting an /edit form; use /edit as a slash command.
+{{ end }}

@@ -1,0 +1,119 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Message Component`
+  Trigger: `^editdel:\d+:\d+:(go|no)$`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  The /edit delete confirm's buttons (edit_slash spawns it, the record on the spawner's
+  row under "Edit Pending"). Defer None like the pager's: under a deferral an
+  updateMessage is Discord's 40060.
+*/ -}}
+{{ if .Interaction }}
+	{{ $rolesDict := (dbGet 0 "Roles").Value }}
+	{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+	{{ $parts := split .CustomID ":" }}
+	{{ $uid := toInt (index $parts 1) }}
+	{{ $stamp := toInt (index $parts 2) }}
+	{{ if not (hasRoleID $staffRoleID) }}
+		{{ sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true) }}
+	{{ else if not (lt (sub currentTime.Unix $stamp) 3600) }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ This confirm expired — it's older than an hour. Run /edit again."
+			"ephemeral" true) }}
+	{{ else }}
+		{{ $pending := dbGet $uid "Edit Pending" }}
+		{{ if not $pending }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ Nothing pending — already handled or expired. Run /edit again."
+				"ephemeral" true) }}
+		{{ else if eq (index $parts 3) "no" }}
+			{{ dbDel $uid "Edit Pending" }}
+			{{ updateMessage "Dismissed." }}
+		{{ else }}
+			{{ $record := $pending.Value }}
+			{{ if eq ($record.Get "kind") "rule" }}
+				{{ $n := toInt ($record.Get "rule") }}
+				{{ $key := joinStr "" "Rule #" $n }}
+				{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+				{{ if not ($rulesDict.HasKey $key) }}
+					{{ updateMessage (complexMessage
+						"content" (joinStr "" "⚠️ " $key " not found — already gone.")) }}
+				{{ else }}
+					{{ $old := $rulesDict.Get $key }}
+					{{ $description := "" }}
+					{{ if eq "string" (printf "%T" $old) }}
+						{{ if gt (len (toRune $old)) 4096 }}
+							{{ $kept := slice (split $old "") 0 4095 }}
+							{{ $old = joinStr "" $kept "…" }}
+						{{ end }}
+						{{ $description = $old }}
+					{{ else }}
+						{{/* cut the json first, then fence: fencing after a truncation drops
+							the closing fence and breaks the embed's markdown */}}
+						{{ $oldJSON := json $old true }}
+						{{ $oldJSONMax := sub 4096 8 }}
+						{{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
+							{{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
+							{{ $oldJSON = joinStr "" $kept "…" }}
+						{{ end }}
+						{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
+					{{ end }}
+					{{ $rulesDict.Del $key }}
+					{{ dbSet 0 "Rules" $rulesDict }}
+					{{ dbDel $uid "Edit Pending" }}
+					{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
+					{{ updateMessage (complexMessage
+						"embed" (cembed "title" (joinStr "" $key " removed")
+							"color" $embedColor "description" $description)) }}
+				{{ end }}
+			{{ else }}
+				{{ $category := $record.Get "category" }}
+				{{ $key := $record.Get "key" }}
+				{{ $categoryEntry := dbGet 0 $category }}
+				{{ $categoryDict := sdict }}
+				{{ if $categoryEntry }}
+					{{ $categoryValue := $categoryEntry.Value }}
+					{{ if eq "map[string]interface {}" (printf "%T" $categoryValue) }}
+						{{ $categoryDict = sdict $categoryValue }}
+					{{ else if eq "map" (kindOf $categoryValue true) }}
+						{{ $categoryDict = $categoryValue }}
+					{{ end }}
+				{{ end }}
+				{{ if not ($categoryDict.HasKey $key) }}
+					{{ updateMessage (complexMessage
+						"content" (joinStr "" "⚠️ `" $key "` not found — already gone.")) }}
+				{{ else }}
+					{{ $old := $categoryDict.Get $key }}
+					{{ $description := "" }}
+					{{ if eq "string" (printf "%T" $old) }}
+						{{ if gt (len (toRune $old)) 4096 }}
+							{{ $kept := slice (split $old "") 0 4095 }}
+							{{ $old = joinStr "" $kept "…" }}
+						{{ end }}
+						{{ $description = $old }}
+					{{ else }}
+						{{/* cut the json first, then fence: fencing after a truncation drops
+							the closing fence and breaks the embed's markdown */}}
+						{{ $oldJSON := json $old true }}
+						{{ $oldJSONMax := sub 4096 8 }}
+						{{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
+							{{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
+							{{ $oldJSON = joinStr "" $kept "…" }}
+						{{ end }}
+						{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
+					{{ end }}
+					{{ $categoryDict.Del $key }}
+					{{ dbSet 0 $category $categoryDict }}
+					{{ dbDel $uid "Edit Pending" }}
+					{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
+					{{ updateMessage (complexMessage
+						"embed" (cembed "title" (joinStr "" (joinStr " › " $category $key) " removed")
+							"color" $embedColor "description" $description)) }}
+				{{ end }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+{{ else }}
+Reached by a Delete or Dismiss button an /edit delete confirm sent; use /edit as a slash command.
+{{ end }}

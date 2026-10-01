@@ -1,0 +1,265 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `edit`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  The modal front end for rule_edit and simple_db_edit (the text commands stay): /edit
+  opens a prefilled modal (the engines live in edit_modal, the delete confirm's buttons
+  in edit_confirm). Defer None is mandatory, not a choice: sendModal IS the interaction's
+  one response, and a deferral would eat the slot.
+
+  Slash subcommand: `rule edit a rule's text`
+  Slash option: `rule.rule integer! the rule's number`
+  Slash subcommand: `entry edit a database entry`
+  Slash option: `entry.category string category to prefill`
+  Slash option: `entry.key string key to prefill`
+  Slash subcommand: `delete delete a rule or entry`
+  Slash option: `delete.rule integer rule number`
+  Slash option: `delete.category string category`
+  Slash option: `delete.key string key`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $rolesDict := (dbGet 0 "Roles").Value }}
+	{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+	{{ if not (hasRoleID $staffRoleID) }}
+		{{ sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true) }}
+	{{ else if eq .SubCommand "rule" }}
+		{{ $n := toInt (or .Options.rule 0) }}
+		{{ if lt $n 1 }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ You must provide an integer greater than zero!" "ephemeral" true) }}
+		{{ else }}
+			{{ $key := joinStr "" "Rule #" $n }}
+			{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+			{{ $found := $rulesDict.HasKey $key }}
+			{{ $old := "" }}
+			{{ if $found }}
+				{{ $old = $rulesDict.Get $key }}
+			{{ end }}
+			{{ $field := sdict "label" (joinStr "" "Rule " $n " text")
+				"custom_id" "rule_text" "style" 2 "required" true }}
+			{{ if $found }}
+				{{ if eq "string" (printf "%T" $old) }}
+					{{ if gt (len (toRune $old)) 4000 }}
+						{{/* never prefill-truncate: a silent cut would store the truncation on save */}}
+						{{ $field.Set "placeholder"
+							"current text is too long for this box; type a replacement" }}
+					{{ else }}
+						{{ $field.Set "value" $old }}
+					{{ end }}
+				{{ else }}
+					{{ $field.Set "placeholder"
+						"current value isn't plain text; type a replacement" }}
+				{{ end }}
+			{{ else }}
+				{{ $field.Set "placeholder" "new rule; type its text" }}
+			{{ end }}
+			{{ sendModal (cmodal
+				"title" (joinStr "" "Edit rule " $n)
+				"custom_id" (print "edit:rule:" $n ":" currentTime.Unix)
+				"fields" (cslice $field)
+			) }}
+		{{ end }}
+	{{ else if eq .SubCommand "entry" }}
+		{{ $categoryArg := toString (or .Options.category "") }}
+		{{ $keyArg := toString (or .Options.key "") }}
+		{{ $catField := sdict "label" "Category" "custom_id" "category" "style" 1 "required" true
+			"placeholder" "e.g. Admin — new:Name creates one" }}
+		{{ $keyField := sdict "label" "Key" "custom_id" "key" "style" 1 "required" true
+			"placeholder" "the entry's name" }}
+		{{ $valueField := sdict "label" "Value" "custom_id" "value" "style" 2 "required" true
+			"placeholder" "the new text" }}
+		{{/* fields echo the raw input: transformation at store time shows up in the ack */}}
+		{{ if $categoryArg }}
+			{{ $catField.Set "value" $categoryArg }}
+		{{ end }}
+		{{ if $keyArg }}
+			{{ $keyField.Set "value" $keyArg }}
+		{{ end }}
+		{{ $isNew := reFind "(?i)\\Anew:" $categoryArg }}
+		{{ $categoryName := $categoryArg }}
+		{{ if $isNew }}
+			{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
+		{{ end }}
+		{{ $category := title $categoryName }}
+		{{ $categoryEntry := dbGet 0 $category }}
+		{{ if $categoryEntry }}
+			{{ $categoryValue := $categoryEntry.Value }}
+			{{ $categoryDict := sdict }}
+			{{ $isDict := false }}
+			{{ if eq "map[string]interface {}" (printf "%T" $categoryValue) }}
+				{{ $categoryDict = sdict $categoryValue }}
+				{{ $isDict = true }}
+			{{ else if eq "map" (kindOf $categoryValue true) }}
+				{{ $categoryDict = $categoryValue }}
+				{{ $isDict = true }}
+			{{ end }}
+			{{ if $isDict }}
+				{{ $key := $keyArg }}
+				{{ if ne $category "Commands" }}
+					{{ $key = title $keyArg }}
+				{{ end }}
+				{{ if $categoryDict.HasKey $key }}
+					{{ $old := $categoryDict.Get $key }}
+					{{ if eq "string" (printf "%T" $old) }}
+						{{ if gt (len (toRune $old)) 4000 }}
+							{{ $valueField.Set "placeholder"
+								"current text is too long for this box; type a replacement" }}
+						{{ else }}
+							{{ $valueField.Set "value" $old }}
+						{{ end }}
+					{{ end }}
+				{{ end }}
+			{{ end }}
+		{{ end }}
+		{{ sendModal (cmodal
+			"title" "Edit entry"
+			"custom_id" (print "edit:entry:" currentTime.Unix)
+			"fields" (cslice $catField $keyField $valueField)
+		) }}
+	{{ else if eq .SubCommand "delete" }}
+		{{/* HasKey, not truthiness: an explicit 0 is a given (and refused below), not absent */}}
+		{{ $ruleGiven := false }}
+		{{ if .Options.HasKey "rule" }}
+			{{ $ruleGiven = true }}
+		{{ end }}
+		{{ $categoryArg := toString (or .Options.category "") }}
+		{{ $keyArg := toString (or .Options.key "") }}
+		{{ $valid := or
+			(and $ruleGiven (not $categoryArg) (not $keyArg))
+			(and $categoryArg $keyArg (not $ruleGiven)) }}
+		{{ if not $valid }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ Give exactly one form: `rule`, or both `category` and `key`."
+				"ephemeral" true) }}
+		{{ else if $ruleGiven }}
+			{{ $n := toInt (or .Options.rule 0) }}
+			{{ if lt $n 1 }}
+				{{ sendResponse nil (complexMessage
+					"content" "⚠️ You must provide an integer greater than zero!" "ephemeral" true) }}
+			{{ else }}
+				{{ $key := joinStr "" "Rule #" $n }}
+				{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+				{{ if not ($rulesDict.HasKey $key) }}
+					{{ sendResponse nil (complexMessage
+						"content" (print "⚠️ There is no rule #" $n " to delete.") "ephemeral" true) }}
+				{{ else }}
+					{{ $old := $rulesDict.Get $key }}
+					{{ $description := "" }}
+					{{ if eq "string" (printf "%T" $old) }}
+						{{ if gt (len (toRune $old)) 4096 }}
+							{{ $kept := slice (split $old "") 0 4095 }}
+							{{ $old = joinStr "" $kept "…" }}
+						{{ end }}
+						{{ $description = $old }}
+					{{ else }}
+						{{/* cut the json first, then fence: fencing after a truncation drops
+							the closing fence and breaks the embed's markdown */}}
+						{{ $oldJSON := json $old true }}
+						{{ $oldJSONMax := sub 4096 8 }}
+						{{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
+							{{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
+							{{ $oldJSON = joinStr "" $kept "…" }}
+						{{ end }}
+						{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
+					{{ end }}
+					{{ $uid := .Member.User.ID }}
+					{{ dbSet $uid "Edit Pending" (sdict "kind" "rule" "rule" $n) }}
+					{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
+					{{ $row := cslice
+						(cbutton "label" (joinStr "" "Delete rule " $n) "style" "danger"
+							"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":go"))
+						(cbutton "label" "Dismiss" "style" "secondary"
+							"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":no"))
+					}}
+					{{ sendResponse nil (complexMessage "ephemeral" true
+						"embed" (cembed "title" (joinStr "" "Delete rule #" $n "?")
+							"color" $embedColor "description" $description)
+						"components" (cslice $row)) }}
+				{{ end }}
+			{{ end }}
+		{{ else }}
+			{{ $isNew := reFind "(?i)\\Anew:" $categoryArg }}
+			{{ $categoryName := $categoryArg }}
+			{{ if $isNew }}
+				{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
+			{{ end }}
+			{{ $category := title $categoryName }}
+			{{ $refused := "" }}
+			{{ if and $isNew (not $categoryName) }}
+				{{ $refused = "⚠️ Give a category name after `new:`." }}
+			{{ end }}
+			{{ $categoryEntry := "" }}
+			{{ if not $refused }}
+				{{ $categoryEntry = dbGet 0 $category }}
+				{{ if and (not $isNew) (not $categoryEntry) }}
+					{{ $refused = joinStr "" "⚠️ There is no `" $category
+						"` category. Check the spelling, or use `new:" $category "` to create it." }}
+				{{ end }}
+			{{ end }}
+			{{ $categoryDict := sdict }}
+			{{ if and (not $refused) $categoryEntry }}
+				{{ $categoryValue := $categoryEntry.Value }}
+				{{ if eq "map[string]interface {}" (printf "%T" $categoryValue) }}
+					{{ $categoryDict = sdict $categoryValue }}
+				{{ else if eq "map" (kindOf $categoryValue true) }}
+					{{ $categoryDict = $categoryValue }}
+				{{ else }}
+					{{ $refused = joinStr "" "⚠️ The `" $category
+						"` category doesn't hold a dictionary of entries." }}
+				{{ end }}
+			{{ end }}
+			{{ $key := $keyArg }}
+			{{ if not $refused }}
+				{{ if ne $category "Commands" }}
+					{{ $key = title $keyArg }}
+				{{ end }}
+				{{ if not ($categoryDict.HasKey $key) }}
+					{{ $refused = joinStr "" "⚠️ There is no `" $key "` entry in `" $category
+						"` to remove." }}
+				{{ end }}
+			{{ end }}
+			{{ if $refused }}
+				{{ sendResponse nil (complexMessage "content" $refused "ephemeral" true) }}
+			{{ else }}
+				{{ $old := $categoryDict.Get $key }}
+				{{ $description := "" }}
+				{{ if eq "string" (printf "%T" $old) }}
+					{{ if gt (len (toRune $old)) 4096 }}
+						{{ $kept := slice (split $old "") 0 4095 }}
+						{{ $old = joinStr "" $kept "…" }}
+					{{ end }}
+					{{ $description = $old }}
+				{{ else }}
+					{{/* cut the json first, then fence: fencing after a truncation drops
+						the closing fence and breaks the embed's markdown */}}
+					{{ $oldJSON := json $old true }}
+					{{ $oldJSONMax := sub 4096 8 }}
+					{{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
+						{{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
+						{{ $oldJSON = joinStr "" $kept "…" }}
+					{{ end }}
+					{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
+				{{ end }}
+				{{ $uid := .Member.User.ID }}
+				{{ dbSet $uid "Edit Pending"
+					(sdict "kind" "entry" "category" $category "key" $key) }}
+				{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
+				{{ $row := cslice
+					(cbutton "label" "Delete entry" "style" "danger"
+						"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":go"))
+					(cbutton "label" "Dismiss" "style" "secondary"
+						"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":no"))
+				}}
+				{{ sendResponse nil (complexMessage "ephemeral" true
+					"embed" (cembed "title" (joinStr "" "Delete " $category " › " $key "?")
+						"color" $embedColor "description" $description)
+					"components" (cslice $row)) }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+{{ else }}
+Use /edit as a slash command: rule · entry · delete
+{{ end }}
