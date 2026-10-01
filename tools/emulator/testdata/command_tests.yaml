@@ -96,7 +96,7 @@ command_map:
   126: "../../../commands/db/db_get_embed.gohtml"
   127: "../../../commands/db/db_get_text.gohtml"
   128: "../../../commands/color/contrast.gohtml"
-  129: "../../../commands/db/db.gohtml"
+  129: "../../../retired/db.gohtml"
   130: "../../../commands/db/db_slash.gohtml"
 
 tests:
@@ -1165,7 +1165,7 @@ tests:
       response_pings: {}
 
   - name: "rule_edit - Add a new rule"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["4", "New rule text."]
     assertions:
@@ -1174,7 +1174,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Update a rule shows the old text in a Was field"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["1", "Updated rule text here."]
     assertions:
@@ -1189,7 +1189,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Setting the same text is a no-op"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["1", "Be respectful to all members."]
     assertions:
@@ -1206,7 +1206,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Remove an existing rule"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["2", "(nil)"]
     assertions:
@@ -1225,7 +1225,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Removing a missing rule reports not found and leaves the DB unchanged"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["9", "(nil)"]
     assertions:
@@ -1242,7 +1242,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Invalid rule number is rejected"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["0", "Some text."]
     assertions:
@@ -1250,7 +1250,7 @@ tests:
       deletions: [{ of: "message" }, { of: "trigger" }]
 
   - name: "rule_edit - A non-string old value's Was field is fenced json"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["5", "Updated rule text."]
     setup_db:
@@ -1266,7 +1266,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "rule_edit - Removing a non-string rule shows fenced json"
-    template: "../../../commands/rules/rule_edit.gohtml"
+    template: "../../../retired/rule_edit.gohtml"
     context:
       args: ["5", "(nil)"]
     setup_db:
@@ -1296,7 +1296,7 @@ tests:
       sent_messages: [{ embed_contains: "123" }]
 
   - name: "simple_db_edit - Update an existing Knowledge key shows the old text"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Faq", "Updated FAQ content"]
     assertions:
@@ -1311,7 +1311,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Add a new key"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Notes", "Some new notes."]
     assertions:
@@ -1320,7 +1320,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - An unknown category is refused and the DB stays unchanged"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Widgets", "Color", "Red"]
     assertions:
@@ -1329,7 +1329,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: creates a category that doesn't exist yet"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["new:Widgets", "Color", "Red"]
     assertions:
@@ -1338,7 +1338,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: with nothing after it is refused"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["new:", "Color", "Red"]
     assertions:
@@ -1353,7 +1353,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: with only whitespace after it is refused"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["new:   ", "Color", "Red"]
     assertions:
@@ -1362,7 +1362,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - new: on an existing category just proceeds"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["new:Knowledge", "Faq", "Prefixed update"]
     assertions:
@@ -1377,7 +1377,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A key that gets title-cased shows Stored as"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "notes", "Some notes."]
     assertions:
@@ -1386,7 +1386,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Commands category key is not title-cased"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Commands", "embed_exec", "999"]
     assertions:
@@ -1395,7 +1395,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A non-dict category is refused"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Counter", "Anything", "Val"]
     setup_db:
@@ -1406,7 +1406,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Remove an existing key"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Guidelines", "(nil)"]
     assertions:
@@ -1421,7 +1421,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Removing a missing key reports not found"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "Nonexistent", "(nil)"]
     assertions:
@@ -1434,7 +1434,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A long non-string old value's Was field ends with a closed fence"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Widgets", "Big", "New value"]
     setup_db:
@@ -1451,7 +1451,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - Deleting an existing key by its lowercase form has no Stored as field"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "guidelines", "(nil)"]
     assertions:
@@ -1461,7 +1461,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A not-found delete of a lowercase-typed key has no Stored as field"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "nonexistent", "(nil)"]
     assertions:
@@ -1471,7 +1471,7 @@ tests:
       deletions: [{ of: "trigger" }]
 
   - name: "simple_db_edit - A 1,100-rune lowercase key's Stored as value is capped at 1,024 runes ending an ellipsis"
-    template: "../../../commands/db/simple_db_edit.gohtml"
+    template: "../../../retired/simple_db_edit.gohtml"
     context:
       args: ["Knowledge", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "val"]
     assertions:
@@ -1486,7 +1486,7 @@ tests:
 
   - name: "db dump - Dump all keys"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["dump:0"]
       user: { roles: [111111111] }
@@ -1494,14 +1494,14 @@ tests:
 
   - name: "db dump - Dump specific key"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["dump:0", "Global"]
       user: { roles: [111111111] }
       clock: 2026-01-02T03:04:05Z # the file name holds the time
 
   - name: "db dump - Includes keys the old hardcoded list missed"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["dump:0"]
       user: { roles: [111111111] }
@@ -1523,7 +1523,7 @@ tests:
 
   - name: "db dump - Doesn't re-fetch entries dbGetPattern already has"
     strict: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["dump:0"]
       user: { roles: [111111111] }
@@ -1662,7 +1662,7 @@ tests:
   # through the pointer
   - name: "db add - Append to array via nested key"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "Directory:Exclude Categories", "New Category"]
       user: { roles: [111111111] }
@@ -1671,7 +1671,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '"Archive","New Category"]' }]
 
   - name: "db add - JSON array appends to a stored array"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "Directory", "{\"Exclude Categories\": [\"Memes\"]}"]
       user: { roles: [111111111] }
@@ -1680,7 +1680,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '"Archive","Memes"]' }]
 
   - name: "db add - JSON merges into a nested dictionary"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "Nested:Inner", "{\"b\": 2}"]
       user: { roles: [111111111] }
@@ -1691,7 +1691,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Nested", value_equals: { Inner: { a: 1, b: 2 }, Other: 3 } }]
 
   - name: "db add - A missing key is not a success"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "Nothing", "x"]
       user: { roles: [111111111] }
@@ -1700,7 +1700,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Nothing", not_exists: true }]
 
   - name: "db add - A missing nested key is not a success"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "Global:Nothing", "x"]
       user: { roles: [111111111] }
@@ -1709,7 +1709,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 10 } }]
 
   - name: "db add - Text into a dictionary is refused"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "Global", "x"]
       user: { roles: [111111111] }
@@ -1719,7 +1719,7 @@ tests:
 
   - name: "db get - Read a nested array"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["get:0", "Directory:Exclude Categories"]
       user: { roles: [111111111] }
@@ -1728,7 +1728,7 @@ tests:
 
   - name: "db remove - Remove item from array via nested key"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["remove:0", "Directory:Exclude Categories", "Staff Only"]
       user: { roles: [111111111] }
@@ -1737,7 +1737,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '["Bot Commands","Archive"]' }]
 
   - name: "db remove - An item not in the array is not a success"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["remove:0", "Directory:Exclude Categories", "Nope"]
       user: { roles: [111111111] }
@@ -1746,7 +1746,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Directory", value_contains: '["Staff Only","Bot Commands","Archive"]' }]
 
   - name: "db remove - A key not in the dictionary is not a success"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["remove:0", "Global", "{\"Nope\": \"\"}"]
       user: { roles: [111111111] }
@@ -1754,7 +1754,7 @@ tests:
       sent_messages: [{ embed_contains: "No value found!" }]
 
   - name: "db remove - JSON removes from a nested dictionary"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["remove:0", "Nested:Inner", "{\"a\": \"\"}"]
       user: { roles: [111111111] }
@@ -1766,7 +1766,7 @@ tests:
 
   - name: "db remove - Remove with JSON from dict"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["remove:0", "Global", "{\"Delete Trigger Delay\": \"\"}"]
       user: { roles: [111111111] }
@@ -1775,20 +1775,20 @@ tests:
 
   - name: "db keys - List dictionary keys"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["keys:0", "Global"]
       user: { roles: [111111111] }
 
   - name: "db delete - Delete a nested key"
     snapshot: true
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["delete:0", "Directory:Exclude Categories"]
       user: { roles: [111111111] }
 
   - name: "db get - A stored false is a value"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["get:0", "Directory:Show Empty"]
       user: { roles: [111111111] }
@@ -1796,7 +1796,7 @@ tests:
       sent_messages: [{ embed_contains: "Value successfully retrieved!" }]
 
   - name: "db get - A stored 0 is a value"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["get:0", "Counter"]
       user: { roles: [111111111] }
@@ -1806,7 +1806,7 @@ tests:
       sent_messages: [{ embed_contains: "Value successfully retrieved!" }]
 
   - name: "db get - A path through a missing key finds nothing"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["get:0", "Directory:Nope:Show Empty"]
       user: { roles: [111111111] }
@@ -1814,7 +1814,7 @@ tests:
       sent_messages: [{ embed_contains: "No value found!" }]
 
   - name: "db get - A path through a value that isn't a dictionary finds nothing"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["get:0", "Admin:Welcome Message:Deeper"]
       user: { roles: [111111111] }
@@ -1822,7 +1822,7 @@ tests:
       sent_messages: [{ embed_contains: "No value found!" }]
 
   - name: "db delete - A stored false is deleted"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["delete:0", "Directory:Show Empty"]
       user: { roles: [111111111] }
@@ -1834,7 +1834,7 @@ tests:
           value_equals: { Exclude Categories: ["Staff Only", "Bot Commands", "Archive"], Show NSFW: false }
 
   - name: "db delete - A stored 0 is deleted"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["delete:0", "Counter"]
       user: { roles: [111111111] }
@@ -1845,7 +1845,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Counter", not_exists: true }]
 
   - name: "db set - A path through a missing key is refused"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["set:0", "Global:Nope:Deeper", "{\"a\": 1}"]
       user: { roles: [111111111] }
@@ -1854,7 +1854,7 @@ tests:
       db_checks: [{ user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: 5, Delete Response Delay: 10, ExecCC Limit: 10 } }]
 
   - name: "db set - A nested key"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["set:0", "Global:New", "{\"a\": 1}"]
       user: { roles: [111111111] }
@@ -1892,7 +1892,7 @@ tests:
   # "J" is stored as `db set` stores JSON: its nested dictionary and array are a plain map
   # and a plain slice (setup_db would make them an sdict and a cslice)
   - name: "db add - JSON merges into a nested dictionary made by db set"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "J:Inner", "{\"b\": 2}"]
       user: { roles: [111111111] }
@@ -1902,7 +1902,7 @@ tests:
       db_checks: [{ user_id: 0, key: "J", value_equals: { Inner: { a: 1, b: 2 }, arr: ["x"] } }]
 
   - name: "db get - A key in a nested dictionary made by db set"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["get:0", "J:Inner:a"]
       user: { roles: [111111111] }
@@ -1913,7 +1913,7 @@ tests:
         - { embed_contains: "Value successfully retrieved!" }
 
   - name: "db add - JSON array appends to an array made by db set"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["add:0", "J", "{\"arr\": [\"y\"]}"]
       user: { roles: [111111111] }
@@ -1923,7 +1923,7 @@ tests:
       db_checks: [{ user_id: 0, key: "J", value_equals: { Inner: { a: 1 }, arr: ["x", "y"] } }]
 
   - name: "db get - A stored empty text is a value"
-    template: "../../../commands/db/db.gohtml"
+    template: "../../../retired/db.gohtml"
     context:
       args: ["get:0", "Empty"]
       user: { roles: [111111111] }

@@ -1,7 +1,7 @@
 name: "config_sync (hourly: merges deploy/panel.json's ids into the Commands dict)"
 description: >
   Runs the GENERATED commands/plumbing/config_sync.gohtml (scripts/gen-config-sync.py,
-  from deploy/panel.json). The ids checked are panel.json's (embed_exec, db and
+  from deploy/panel.json). The ids checked are panel.json's (embed_exec and
   channel_activity_pager on main; embed_exec on lotv): if one changes there, regenerate
   with `make config-sync` and update it here. The generator's own tests
   (scripts/gen_config_sync_test.py) cover the full key set on a fixture panel.json.
@@ -20,7 +20,6 @@ tests:
       db_checks:
         - { user_id: 0, key: "Commands", value_contains: '"hand_entered":"5"' }
         - { user_id: 0, key: "Commands", value_contains: '"embed_exec":"3"' }
-        - { user_id: 0, key: "Commands", value_contains: '"db":"15"' }
         - { user_id: 0, key: "Commands", value_contains: '"channel_activity_pager":"87"' }
       sent_messages: []
       execs: []
@@ -35,7 +34,6 @@ tests:
     assertions:
       db_checks:
         - { user_id: 0, key: "Commands", value_contains: '"embed_exec":"2"' }
-        - { user_id: 0, key: "Commands", value_contains: '"db":"3"' }
       sent_messages: []
 
   - name: "config_sync: an unknown guild leaves the Commands dict untouched"

@@ -100,10 +100,10 @@ Watch Options:
     -interval <dur>   How often to check for changes (default: 500ms)
 
 Examples:
-    yagtest run commands/db/db.gohtml
-    yagtest run -args "get,Global" commands/db/db.gohtml
+    yagtest run retired/db.gohtml
+    yagtest run -args "get,Global" retired/db.gohtml
     yagtest run -message "#ff8800" commands/color/hex_to_int.gohtml
-    yagtest run -db initial_db.json -context context.json commands/db/db.gohtml
+    yagtest run -db initial_db.json -context context.json retired/db.gohtml
     yagtest test testdata/simple_tests.yaml
     yagtest test testdata/db_tests.yaml testdata/pings_tests.yaml
     yagtest test testdata/

@@ -18,9 +18,9 @@ make update-snapshots  # accept an intended change in snapshot output (also prun
 make prune-snapshots   # only remove the entries of renamed/deleted tests (make ci and CI
                        # fail while any are left; a plain make test warns)
 
-./bin/yagtest run -args "get,Global" -verbose commands/db/db.gohtml
+./bin/yagtest run -args "get,Global" -verbose retired/db.gohtml
 ./bin/yagtest run -message "#ff8800" commands/color/hex_to_int.gohtml # whole message (Regex triggers need it)
-./bin/yagtest run -no-premium -strict commands/db/db.gohtml   # free-server limits, fail on breach
+./bin/yagtest run -no-premium -strict retired/db.gohtml   # free-server limits, fail on breach
 ./bin/yagtest check commands/*/*.gohtml                   # parse + static warnings
 ./bin/yagtest test tools/emulator/testdata/db_tests.yaml tools/emulator/testdata/pings_tests.yaml  # several suites
 make test-templates                # smoke-run every command with no args on a bootstrapped DB (in make ci)
@@ -293,7 +293,7 @@ at most 25 options, and no `Update Message Response` defer mode. To test one:
 
 ```yaml
 - name: "Get a key"
-  template: "../../../commands/db/db.gohtml"
+  template: "../../../retired/db.gohtml"
   context:
     guild: { roles: [{ id: 111, name: "Staff" }], channels: [{ id: 9, name: "log" }] }
     interaction: { type: slash, subcommand: get, options: { key: "Global", who: 5, where: 9, rank: 111 } }
@@ -343,7 +343,7 @@ slash command): `sendModal` answers the interaction with the modal, recorded as
 
 ```yaml
 - name: "Edit opens the modal"
-  template: "../../../commands/rules/rule_edit.gohtml"
+  template: "../../../retired/rule_edit.gohtml"
   context:
     messages: [{ id: 7, channel_id: 9, author_id: 1234567890, content: "Rule 3" }]
     channel: { id: 9 }

@@ -29,8 +29,13 @@ the single source of truth, as with the rules. The owner is deleting the `kb` co
 the `Knowledge` DB entry from YAGPDB. Its tests stay in
 `tools/emulator/testdata/command_tests.yaml`, pointed at `retired/kb.gohtml`.
 
+`db.gohtml` (text database interface) retired 2026-10-01: replaced by the `/db` slash
+command (db_slash, live 2026-09-30). `rule_edit.gohtml` and `simple_db_edit.gohtml`
+retired 2026-10-01: replaced by `/edit` modals (live 2026-10-01). Their tests stay,
+repointed to `retired/`.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
-`make changed-since-deploy` (all three scan only `everyone/` and `staff/`). `make lint`
+`make changed-since-deploy` (all three scan only `commands/`). `make lint`
 still walks them, since `tools/linter/yagpdb_lint.py --dir .` recurses the whole repo except
 `tools/`, `vendor/` and `.git/` — its warnings are non-blocking either way.
