@@ -75,7 +75,8 @@ folder mixes both. Staff-group commands are marked below.
   a staff member on hiatus has lost the staff roles the `Staff Utility` group requires)
 - **`inactivity.gohtml`** (staff) - Inactivity tracking and management
 - **`staff_roles.gohtml`** (staff) - Staff role management
-- **`role_ping.gohtml`** (staff) - Role-based ping management
+- **`role_ping_slash.gohtml`** (staff) - `/role_ping`: ping any role, with an
+  optional message (text role_ping and the quick-ping panel retired 2026-10-01)
 - **`batch_delrep.gohtml`** (staff) - Batch delete and reputation management
 
 #### Channels (`commands/channels/`)

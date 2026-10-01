@@ -34,6 +34,12 @@ command (db_slash, live 2026-09-30). `rule_edit.gohtml` and `simple_db_edit.goht
 retired 2026-10-01: replaced by `/edit` modals (live 2026-10-01). Their tests stay,
 repointed to `retired/`.
 
+`role_ping.gohtml` (text, panel 70) and `role_ping_pick.gohtml` (quick-ping panel, 98)
+retired 2026-10-01: replaced by the `/role_ping` slash command (role_ping_slash, panel
+100, live 2026-10-01) — Discord's role option reaches any role, so the Roles-dict name
+mapping and the picker panel both lost their reason to exist. Their tests stay,
+repointed to `retired/`.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
 `make changed-since-deploy` (all three scan only `commands/`). `make lint`
