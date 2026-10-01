@@ -249,7 +249,7 @@ The following tools are generally safe to use without explicit permission:
 
 ### Deployment
 
-YAGPDB has no API for custom commands. The primary path is `.claude/skills/yagpdb-deploy.md`:
+YAGPDB has no API for custom commands. The primary path is `.claude/skills/yagpdb-deploy/SKILL.md`:
 Claude drives a Claude-in-Chrome browser tab in the owner's logged-in session and pastes each
 command's exact committed bytes via a form POST, verified by hash before and after. Use it
 when Claude-in-Chrome is available.
@@ -280,7 +280,7 @@ The following operations should be discussed before executing:
 Implementation over ~5 lines goes through the harness `delegation` skill: a
 `harness:implementer` worker edits in a worktree, and the driver reads the full diff,
 runs `make ci` and commits. This repo's gates, ceilings and landmines are in
-`.claude/skills/yagpdb-delegation.md`.
+`.claude/skills/yagpdb-delegation/SKILL.md`.
 
 ### Best Practices
 1. Use the Task agent when analyzing unfamiliar areas of the codebase

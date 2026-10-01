@@ -1,3 +1,8 @@
+---
+name: yagpdb-emulator
+description: Running the YAGPDB template emulator (yagtest) - commands, test YAML shapes, assertions, snapshots, gotchas
+---
+
 # YAGPDB Template Emulator
 
 ## Quick Commands
