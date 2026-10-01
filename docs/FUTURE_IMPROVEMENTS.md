@@ -67,6 +67,18 @@ picks, then the minifier.
   6 of 10 free slash CCs (50 premium), 2 of 5 context-menu CCs (customcommands.go:950-964).
   Smaller wins not picked (fine as is for now): contrasts as one embed (also frees the
   free tier's 1 execCC), rand_hebrew / simple_db_lookup / bootstrap as slash.
+- /edit entry's `new:` prefix is UI cruft (Lila 2026-10-01, first live use: "works but
+  messy"). Inherited verbatim from simple_db_edit, where a text command needed an
+  in-band create signal; its real job is typo protection (a stray `Admib` must not
+  silently become a category), so the fix moves that protection to a typed control
+  rather than dropping it. Leading candidate: a `create` true/false slash option on
+  `/edit entry` — the modal keeps its free-text Category field (prefill needs it),
+  and the handler refuses unknown categories unless `create` is set. `/edit delete`'s
+  unknown-category refusal stays as is (delete never creates). A dynamic category
+  picker would need /setup-style machinery (YAGPDB's string_menu choices are static,
+  set in the panel form). Pick up with the next /edit polish round or with the
+  pickers (roadmap item 4).
+
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
   2026-09-27: slash commands are "a game changer"). The main server's text prefix is
   already `/` (members type `/gematria` as text), so a real slash CC of the same name
