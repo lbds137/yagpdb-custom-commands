@@ -228,6 +228,23 @@ gets a failing test first.
   (Ă Â Î Ș Ț) merged with the French ones (À Â Ç ...), which share Â; the repeated key has
   the same value (lines 59 and 63), so it is a no-op, and an edit would only cost a paste
   and a bootstrap rerun.
+- Ruled out (2026-09-30, tripped Lila once): only `db dump` defaults staff to the global
+  row (userID 0); get/delete/set/add/remove need the explicit `operation:0` form (db.gohtml
+  63-73, 161-169). Deliberate shape left as is: for destructive operations, naming the row
+  is the safety catch; dump defaults to 0 because it only reads. Documented here so nobody
+  "fixes" it into a fat-fingered global delete.
+- Deferred (found in the rules browse review 2026-09-30, pre-existing pattern shared with
+  rules.gohtml): the rules family scans `seq 1..maxRuleNumber` linearly, so a pathological
+  key like "Rule #1000000" (rule_edit's number argument is free-form) would exhaust the
+  ops budget on the next `rule`/`rules`/browse run. Bound the number in rule_edit —
+  natural home: the planned /edit modal unit (validate 1..9999 there). Trigger: that
+  unit, or a real typo incident.
+- Stale key noted 2026-09-30 (config_sync verification dump): the Commands dict still
+  held `ticket_adduser_exec` "45" from the command retired 2026-09-25 — config_sync
+  merges without owning the dict, so pre-existing keys survive. Inert (nothing deployed
+  reads it; the emulator's admission tests use their own test-local dict). DELETED by
+  Lila 2026-09-30 via `/db delete:0 Commands:ticket_adduser_exec`; the dict now holds
+  exactly the managed set.
 
 ## Emulator Enhancements
 
