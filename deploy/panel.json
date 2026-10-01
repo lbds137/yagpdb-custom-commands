@@ -8,6 +8,7 @@
     "commands/plumbing/embed_exec.gohtml": {"main": 3, "lotv": 2},
     "commands/channels/channel_link.gohtml": {"main": 14, "lotv": 10},
     "commands/db/db.gohtml": {"main": 15, "lotv": 3},
+    "commands/db/db_slash.gohtml": {"main": 90},
     "commands/color/hex_to_int.gohtml": {"main": 18, "lotv": 6},
     "commands/db/db_get_embed.gohtml": {"main": 22, "lotv": 5},
     "commands/plumbing/ticket_clean.gohtml": {"main": 29},

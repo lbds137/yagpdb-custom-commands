@@ -47,6 +47,7 @@ setup_db:
       db_get_text: "127"
       contrast: "128"
       db: "129"
+      db_slash: "130"
   - user_id: 0
     key: "Channels"
     value:
@@ -96,6 +97,7 @@ command_map:
   127: "../../../commands/db/db_get_text.gohtml"
   128: "../../../commands/color/contrast.gohtml"
   129: "../../../commands/db/db.gohtml"
+  130: "../../../commands/db/db_slash.gohtml"
 
 tests:
   # ===== Utility Commands =====

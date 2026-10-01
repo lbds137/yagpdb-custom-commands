@@ -56,7 +56,9 @@ picks, then the minifier.
   pager, jump-to-rule select, public rulebook posting kept; (3) `/edit` slash opening a
   modal for rule_edit and simple_db_edit, deletes behind a danger confirm button; (4) db
   as a slash command with ephemeral replies via sendResponse (bypass embed_exec, which
-  always posts publicly with sendMessage), 7 subcommands; (5) user/message context-menu
+  always posts publicly with sendMessage), 7 subcommands — IMPLEMENTED 2026-09-30 as
+  commands/db/db_slash.gohtml (spec docs/design/db-slash.md; awaiting the panel command's
+  creation + deploy, see its §Rollout); (5) user/message context-menu
   entries for avatar_viewer and hugemoji (text triggers kept); (6) slash with role/user
   pickers for staff_roles, inactivity (kick behind a confirm), role_ping.
   Shared blocks: one pager handler (Component trigger `^pg:(\w+):(\w+):(\d+)$`, page logic
@@ -190,6 +192,14 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- Known quirk, candidate improvement (found 2026-09-30 building db_slash, probed against
+  db.gohtml): `db set` (text and slash alike) only accepts JSON OBJECT values — the set
+  path runs jsonToSdict on every string, so `db set Key hello` fails with "Invalid value
+  provided!"; a plain string must be sent as `"hello"` (a JSON string literal), which
+  jsonToSdict also refuses (objects only). Kept for parity in the slash port (tests pin
+  it). Improvement would be: accept a plain string as-is when it doesn't start with `{`,
+  storing it as a string. Lila's call whether the convenience is worth the behavior
+  change.
 - Fixed 2026-09-27, access control (found 2026-09-27 by the Night House site session,
   confirmed by code-reading): everyone/services/db_get_embed.gohtml (and db_get_text,
   same shape) took any all-digit first argument as the target user ID with no staff

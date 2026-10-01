@@ -53,7 +53,7 @@ alefbet - Arabic to Hebrew:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -90,7 +90,7 @@ alefbet - Paleo-Hebrew to Hebrew:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -136,7 +136,7 @@ alefbet - Rejects text that is already Hebrew:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -210,7 +210,7 @@ atbash - Basic cipher:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -251,7 +251,7 @@ bootstrap - Initialize with a staff role ID:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":"999999999"}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -293,7 +293,7 @@ contrast - Hex without hash:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -329,7 +329,7 @@ contrast - Role ID:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -365,7 +365,7 @@ contrast - Valid hex color:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -402,7 +402,7 @@ contrasts - A role ID:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -443,7 +443,7 @@ contrasts - A role ID and a color:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -484,7 +484,7 @@ contrasts - Colors separated by a comma:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -529,7 +529,7 @@ contrasts - Multiple colors:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -590,7 +590,7 @@ db add - Append to array via nested key:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive","New Category"],"Show Empty":false,"Show NSFW":false}'
@@ -651,7 +651,7 @@ db delete - Delete a nested key:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Show Empty":false,"Show NSFW":false}'
@@ -705,7 +705,7 @@ db dump - Dump all keys:
     files:
         - channel_id: 123456789012345678
           filename: db_dump_0_1767323045.txt
-          content: "{\n\t\"Admin\": {\n\t\t\"Welcome Message\": \"Welcome to the server!\"\n\t},\n\t\"Channels\": {\n\t\t\"Admission Log\": 555555555,\n\t\t\"Introduction\": 888888888888888888,\n\t\t\"Introduction Archive\": 777777777,\n\t\t\"Welcome\": 666666666,\n\t\t\"YAGPDB\": 999999999\n\t},\n\t\"Commands\": {\n\t\t\"contrast\": \"128\",\n\t\t\"db\": \"129\",\n\t\t\"db_get_embed\": \"126\",\n\t\t\"db_get_text\": \"127\",\n\t\t\"embed_exec\": \"123\",\n\t\t\"gematria\": \"124\",\n\t\t\"message_link\": \"125\"\n\t},\n\t\"Directory\": {\n\t\t\"Exclude Categories\": [\n\t\t\t\"Staff Only\",\n\t\t\t\"Bot Commands\",\n\t\t\t\"Archive\"\n\t\t],\n\t\t\"Show Empty\": false,\n\t\t\"Show NSFW\": false\n\t},\n\t\"Gematria\": {\n\t\t\"Final Letters\": {\n\t\t\t\"א\": \"א\",\n\t\t\t\"ב\": \"ב\",\n\t\t\t\"ג\": \"ג\",\n\t\t\t\"ד\": \"ד\",\n\t\t\t\"ה\": \"ה\",\n\t\t\t\"ו\": \"ו\",\n\t\t\t\"ז\": \"ז\",\n\t\t\t\"ח\": \"ח\",\n\t\t\t\"ט\": \"ט\",\n\t\t\t\"י\": \"י\",\n\t\t\t\"כ\": \"ך\",\n\t\t\t\"ל\": \"ל\",\n\t\t\t\"מ\": \"ם\",\n\t\t\t\"נ\": \"ן\",\n\t\t\t\"ס\": \"ס\",\n\t\t\t\"ע\": \"ע\",\n\t\t\t\"פ\": \"ף\",\n\t\t\t\"צ\": \"ץ\",\n\t\t\t\"ק\": \"ק\",\n\t\t\t\"ר\": \"ר\",\n\t\t\t\"ש\": \"ש\",\n\t\t\t\"ת\": \"ת\"\n\t\t},\n\t\t\"RWS Names\": {\n\t\t\t\"0\": \"The Fool\",\n\t\t\t\"1\": \"The Magician\",\n\t\t\t\"10\": \"The Wheel of Fortune\",\n\t\t\t\"11\": \"Justice\",\n\t\t\t\"12\": \"The Hanged Man\",\n\t\t\t\"13\": \"Death\",\n\t\t\t\"14\": \"Temperance\",\n\t\t\t\"15\": \"The Devil\",\n\t\t\t\"16\": \"The Tower\",\n\t\t\t\"17\": \"The Star\",\n\t\t\t\"18\": \"The Moon\",\n\t\t\t\"19\": \"The Sun\",\n\t\t\t\"2\": \"The High Priestess\",\n\t\t\t\"20\": \"Judgement\",\n\t\t\t\"21\": \"The World\",\n\t\t\t\"3\": \"The Empress\",\n\t\t\t\"4\": \"The Emperor\",\n\t\t\t\"5\": \"The Hierophant\",\n\t\t\t\"6\": \"The Lovers\",\n\t\t\t\"7\": \"The Chariot\",\n\t\t\t\"8\": \"Strength\",\n\t\t\t\"9\": \"The Hermit\"\n\t\t},\n\t\t\"RWS Numerals\": {\n\t\t\t\"0\": \"0\",\n\t\t\t\"1\": \"I\",\n\t\t\t\"10\": \"X\",\n\t\t\t\"11\": \"XI\",\n\t\t\t\"12\": \"XII\",\n\t\t\t\"13\": \"XIII\",\n\t\t\t\"14\": \"XIV\",\n\t\t\t\"15\": \"XV\",\n\t\t\t\"16\": \"XVI\",\n\t\t\t\"17\": \"XVII\",\n\t\t\t\"18\": \"XVIII\",\n\t\t\t\"19\": \"XIX\",\n\t\t\t\"2\": \"II\",\n\t\t\t\"20\": \"XX\",\n\t\t\t\"21\": \"XXI\",\n\t\t\t\"3\": \"III\",\n\t\t\t\"4\": \"IV\",\n\t\t\t\"5\": \"V\",\n\t\t\t\"6\": \"VI\",\n\t\t\t\"7\": \"VII\",\n\t\t\t\"8\": \"VIII\",\n\t\t\t\"9\": \"IX\"\n\t\t},\n\t\t\"Tarot Indices\": {\n\t\t\t\"1\": 0,\n\t\t\t\"10\": 9,\n\t\t\t\"100\": 18,\n\t\t\t\"1000\": 15,\n\t\t\t\"2\": 1,\n\t\t\t\"20\": 10,\n\t\t\t\"200\": 19,\n\t\t\t\"3\": 2,\n\t\t\t\"30\": 11,\n\t\t\t\"300\": 20,\n\t\t\t\"4\": 3,\n\t\t\t\"40\": 12,\n\t\t\t\"400\": 21,\n\t\t\t\"5\": 4,\n\t\t\t\"50\": 13,\n\t\t\t\"500\": 20,\n\t\t\t\"6\": 5,\n\t\t\t\"60\": 14,\n\t\t\t\"600\": 7,\n\t\t\t\"7\": 6,\n\t\t\t\"70\": 15,\n\t\t\t\"700\": 6,\n\t\t\t\"8\": 7,\n\t\t\t\"80\": 16,\n\t\t\t\"800\": 17,\n\t\t\t\"9\": 8,\n\t\t\t\"90\": 17,\n\t\t\t\"900\": 17\n\t\t},\n\t\t\"Thoth Names\": {\n\t\t\t\"0\": \"The Fool\",\n\t\t\t\"1\": \"The Magus\",\n\t\t\t\"10\": \"Fortune\",\n\t\t\t\"11\": \"Adjustment\",\n\t\t\t\"12\": \"The Hanged Man\",\n\t\t\t\"13\": \"Death\",\n\t\t\t\"14\": \"Art\",\n\t\t\t\"15\": \"The Devil\",\n\t\t\t\"16\": \"The Tower\",\n\t\t\t\"17\": \"The Emperor\",\n\t\t\t\"18\": \"The Moon\",\n\t\t\t\"19\": \"The Sun\",\n\t\t\t\"2\": \"The Priestess\",\n\t\t\t\"20\": \"The Æon\",\n\t\t\t\"21\": \"The Universe\",\n\t\t\t\"3\": \"The Empress\",\n\t\t\t\"4\": \"The Star\",\n\t\t\t\"5\": \"The Hierophant\",\n\t\t\t\"6\": \"The Lovers\",\n\t\t\t\"7\": \"The Chariot\",\n\t\t\t\"8\": \"Lust\",\n\t\t\t\"9\": \"The Hermit\"\n\t\t},\n\t\t\"Thoth Numerals\": {\n\t\t\t\"0\": \"0\",\n\t\t\t\"1\": \"I\",\n\t\t\t\"10\": \"X\",\n\t\t\t\"11\": \"VIII\",\n\t\t\t\"12\": \"XII\",\n\t\t\t\"13\": \"XIII\",\n\t\t\t\"14\": \"XIV\",\n\t\t\t\"15\": \"XV\",\n\t\t\t\"16\": \"XVI\",\n\t\t\t\"17\": \"IV\",\n\t\t\t\"18\": \"XVIII\",\n\t\t\t\"19\": \"XIX\",\n\t\t\t\"2\": \"II\",\n\t\t\t\"20\": \"XX\",\n\t\t\t\"21\": \"XXI\",\n\t\t\t\"3\": \"III\",\n\t\t\t\"4\": \"XVII\",\n\t\t\t\"5\": \"V\",\n\t\t\t\"6\": \"VI\",\n\t\t\t\"7\": \"VII\",\n\t\t\t\"8\": \"XI\",\n\t\t\t\"9\": \"IX\"\n\t\t},\n\t\t\"Values\": {\n\t\t\t\"1\": 1,\n\t\t\t\"2\": 2,\n\t\t\t\"3\": 3,\n\t\t\t\"4\": 4,\n\t\t\t\"5\": 5,\n\t\t\t\"6\": 6,\n\t\t\t\"7\": 7,\n\t\t\t\"8\": 8,\n\t\t\t\"9\": 9,\n\t\t\t\"A\": 1,\n\t\t\t\"B\": 2,\n\t\t\t\"C\": 3,\n\t\t\t\"D\": 4,\n\t\t\t\"E\": 5,\n\t\t\t\"F\": 6,\n\t\t\t\"G\": 7,\n\t\t\t\"H\": 8,\n\t\t\t\"I\": 9,\n\t\t\t\"J\": 600,\n\t\t\t\"K\": 10,\n\t\t\t\"L\": 20,\n\t\t\t\"M\": 30,\n\t\t\t\"N\": 40,\n\t\t\t\"O\": 50,\n\t\t\t\"P\": 60,\n\t\t\t\"Q\": 70,\n\t\t\t\"R\": 80,\n\t\t\t\"S\": 90,\n\t\t\t\"T\": 100,\n\t\t\t\"U\": 200,\n\t\t\t\"V\": 700,\n\t\t\t\"W\": 900,\n\t\t\t\"X\": 300,\n\t\t\t\"Y\": 400,\n\t\t\t\"Z\": 500,\n\t\t\t\"a\": 1,\n\t\t\t\"b\": 2,\n\t\t\t\"c\": 3,\n\t\t\t\"d\": 4,\n\t\t\t\"e\": 5,\n\t\t\t\"f\": 6,\n\t\t\t\"g\": 7,\n\t\t\t\"h\": 8,\n\t\t\t\"i\": 9,\n\t\t\t\"j\": 600,\n\t\t\t\"k\": 10,\n\t\t\t\"l\": 20,\n\t\t\t\"m\": 30,\n\t\t\t\"n\": 40,\n\t\t\t\"o\": 50,\n\t\t\t\"p\": 60,\n\t\t\t\"q\": 70,\n\t\t\t\"r\": 80,\n\t\t\t\"s\": 90,\n\t\t\t\"t\": 100,\n\t\t\t\"u\": 200,\n\t\t\t\"v\": 700,\n\t\t\t\"w\": 900,\n\t\t\t\"x\": 300,\n\t\t\t\"y\": 400,\n\t\t\t\"z\": 500,\n\t\t\t\"À\": 1,\n\t\t\t\"Â\": 1,\n\t\t\t\"Æ\": 6,\n\t\t\t\"Ç\": 3,\n\t\t\t\"È\": 5,\n\t\t\t\"É\": 5,\n\t\t\t\"Ê\": 5,\n\t\t\t\"Ë\": 5,\n\t\t\t\"Î\": 9,\n\t\t\t\"Ï\": 9,\n\t\t\t\"Ñ\": 40,\n\t\t\t\"Ô\": 50,\n\t\t\t\"Ù\": 200,\n\t\t\t\"Û\": 200,\n\t\t\t\"Ü\": 200,\n\t\t\t\"à\": 1,\n\t\t\t\"â\": 1,\n\t\t\t\"æ\": 6,\n\t\t\t\"ç\": 3,\n\t\t\t\"è\": 5,\n\t\t\t\"é\": 5,\n\t\t\t\"ê\": 5,\n\t\t\t\"ë\": 5,\n\t\t\t\"î\": 9,\n\t\t\t\"ï\": 9,\n\t\t\t\"ñ\": 40,\n\t\t\t\"ô\": 50,\n\t\t\t\"ù\": 200,\n\t\t\t\"û\": 200,\n\t\t\t\"ü\": 200,\n\t\t\t\"ÿ\": 400,\n\t\t\t\"Ă\": 1,\n\t\t\t\"ă\": 1,\n\t\t\t\"Œ\": 55,\n\t\t\t\"œ\": 55,\n\t\t\t\"Ÿ\": 400,\n\t\t\t\"Ș\": 90,\n\t\t\t\"ș\": 90,\n\t\t\t\"Ț\": 100,\n\t\t\t\"ț\": 100,\n\t\t\t\"Ά\": 1,\n\t\t\t\"Έ\": 5,\n\t\t\t\"Ή\": 8,\n\t\t\t\"Ί\": 10,\n\t\t\t\"Ό\": 70,\n\t\t\t\"Ύ\": 400,\n\t\t\t\"Ώ\": 800,\n\t\t\t\"ΐ\": 10,\n\t\t\t\"Α\": 1,\n\t\t\t\"Β\": 2,\n\t\t\t\"Γ\": 3,\n\t\t\t\"Δ\": 4,\n\t\t\t\"Ε\": 5,\n\t\t\t\"Ζ\": 7,\n\t\t\t\"Η\": 8,\n\t\t\t\"Θ\": 9,\n\t\t\t\"Ι\": 10,\n\t\t\t\"Κ\": 20,\n\t\t\t\"Λ\": 30,\n\t\t\t\"Μ\": 40,\n\t\t\t\"Ν\": 50,\n\t\t\t\"Ξ\": 60,\n\t\t\t\"Ο\": 70,\n\t\t\t\"Π\": 80,\n\t\t\t\"Ρ\": 100,\n\t\t\t\"Σ\": 200,\n\t\t\t\"Τ\": 300,\n\t\t\t\"Υ\": 400,\n\t\t\t\"Φ\": 500,\n\t\t\t\"Χ\": 600,\n\t\t\t\"Ψ\": 700,\n\t\t\t\"Ω\": 800,\n\t\t\t\"Ϊ\": 10,\n\t\t\t\"Ϋ\": 400,\n\t\t\t\"ά\": 1,\n\t\t\t\"έ\": 5,\n\t\t\t\"ή\": 8,\n\t\t\t\"ί\": 10,\n\t\t\t\"ΰ\": 400,\n\t\t\t\"α\": 1,\n\t\t\t\"β\": 2,\n\t\t\t\"γ\": 3,\n\t\t\t\"δ\": 4,\n\t\t\t\"ε\": 5,\n\t\t\t\"ζ\": 7,\n\t\t\t\"η\": 8,\n\t\t\t\"θ\": 9,\n\t\t\t\"ι\": 10,\n\t\t\t\"κ\": 20,\n\t\t\t\"λ\": 30,\n\t\t\t\"μ\": 40,\n\t\t\t\"ν\": 50,\n\t\t\t\"ξ\": 60,\n\t\t\t\"ο\": 70,\n\t\t\t\"π\": 80,\n\t\t\t\"ρ\": 100,\n\t\t\t\"ς\": 200,\n\t\t\t\"σ\": 200,\n\t\t\t\"τ\": 300,\n\t\t\t\"υ\": 400,\n\t\t\t\"φ\": 500,\n\t\t\t\"χ\": 600,\n\t\t\t\"ψ\": 700,\n\t\t\t\"ω\": 800,\n\t\t\t\"ϊ\": 10,\n\t\t\t\"ϋ\": 400,\n\t\t\t\"ό\": 70,\n\t\t\t\"ύ\": 400,\n\t\t\t\"ώ\": 800,\n\t\t\t\"Ϙ\": 90,\n\t\t\t\"ϙ\": 90,\n\t\t\t\"Ϛ\": 6,\n\t\t\t\"ϛ\": 6,\n\t\t\t\"Ϝ\": 6,\n\t\t\t\"ϝ\": 6,\n\t\t\t\"Ϡ\": 900,\n\t\t\t\"ϡ\": 900,\n\t\t\t\"א\": 1,\n\t\t\t\"ב\": 2,\n\t\t\t\"ג\": 3,\n\t\t\t\"ד\": 4,\n\t\t\t\"ה\": 5,\n\t\t\t\"ו\": 6,\n\t\t\t\"ז\": 7,\n\t\t\t\"ח\": 8,\n\t\t\t\"ט\": 9,\n\t\t\t\"י\": 10,\n\t\t\t\"ך\": 20,\n\t\t\t\"כ\": 20,\n\t\t\t\"ל\": 30,\n\t\t\t\"ם\": 40,\n\t\t\t\"מ\": 40,\n\t\t\t\"ן\": 50,\n\t\t\t\"נ\": 50,\n\t\t\t\"ס\": 60,\n\t\t\t\"ע\": 70,\n\t\t\t\"ף\": 80,\n\t\t\t\"פ\": 80,\n\t\t\t\"ץ\": 90,\n\t\t\t\"צ\": 90,\n\t\t\t\"ק\": 100,\n\t\t\t\"ר\": 200,\n\t\t\t\"ש\": 300,\n\t\t\t\"ת\": 400,\n\t\t\t\"آ\": 1,\n\t\t\t\"أ\": 1,\n\t\t\t\"ؤ\": 6,\n\t\t\t\"إ\": 1,\n\t\t\t\"ئ\": 10,\n\t\t\t\"ا\": 1,\n\t\t\t\"ب\": 2,\n\t\t\t\"ة\": 5,\n\t\t\t\"ت\": 400,\n\t\t\t\"ث\": 500,\n\t\t\t\"ج\": 3,\n\t\t\t\"ح\": 8,\n\t\t\t\"خ\": 600,\n\t\t\t\"د\": 4,\n\t\t\t\"ذ\": 700,\n\t\t\t\"ر\": 200,\n\t\t\t\"ز\": 7,\n\t\t\t\"س\": 60,\n\t\t\t\"ش\": 300,\n\t\t\t\"ص\": 90,\n\t\t\t\"ض\": 800,\n\t\t\t\"ط\": 9,\n\t\t\t\"ظ\": 900,\n\t\t\t\"ع\": 70,\n\t\t\t\"غ\": 1000,\n\t\t\t\"ف\": 80,\n\t\t\t\"ق\": 100,\n\t\t\t\"ك\": 20,\n\t\t\t\"ل\": 30,\n\t\t\t\"م\": 40,\n\t\t\t\"ن\": 50,\n\t\t\t\"ه\": 5,\n\t\t\t\"و\": 6,\n\t\t\t\"ى\": 1,\n\t\t\t\"ي\": 10,\n\t\t\t\"پ\": 2,\n\t\t\t\"چ\": 3,\n\t\t\t\"ژ\": 7,\n\t\t\t\"ک\": 20,\n\t\t\t\"گ\": 20,\n\t\t\t\"ۆ\": 6,\n\t\t\t\"ی\": 10,\n\t\t\t\"ە\": 1,\n\t\t\t\"ᚠ\": 1,\n\t\t\t\"ᚡ\": 1,\n\t\t\t\"ᚢ\": 2,\n\t\t\t\"ᚣ\": 2,\n\t\t\t\"ᚤ\": 2,\n\t\t\t\"ᚥ\": 2,\n\t\t\t\"ᚦ\": 3,\n\t\t\t\"ᚧ\": 3,\n\t\t\t\"ᚨ\": 4,\n\t\t\t\"ᚩ\": 4,\n\t\t\t\"ᚪ\": 4,\n\t\t\t\"ᚫ\": 4,\n\t\t\t\"ᚬ\": 4,\n\t\t\t\"ᚭ\": 4,\n\t\t\t\"ᚮ\": 4,\n\t\t\t\"ᚯ\": 4,\n\t\t\t\"ᚰ\": 4,\n\t\t\t\"ᚱ\": 5,\n\t\t\t\"ᚲ\": 6,\n\t\t\t\"ᚳ\": 6,\n\t\t\t\"ᚴ\": 6,\n\t\t\t\"ᚵ\": 6,\n\t\t\t\"ᚶ\": 6,\n\t\t\t\"ᚷ\": 7,\n\t\t\t\"ᚸ\": 7,\n\t\t\t\"ᚹ\": 8,\n\t\t\t\"ᚺ\": 9,\n\t\t\t\"ᚻ\": 9,\n\t\t\t\"ᚼ\": 9,\n\t\t\t\"ᚽ\": 9,\n\t\t\t\"ᚾ\": 10,\n\t\t\t\"ᚿ\": 10,\n\t\t\t\"ᛀ\": 10,\n\t\t\t\"ᛁ\": 20,\n\t\t\t\"ᛂ\": 20,\n\t\t\t\"ᛃ\": 30,\n\t\t\t\"ᛄ\": 30,\n\t\t\t\"ᛅ\": 30,\n\t\t\t\"ᛆ\": 30,\n\t\t\t\"ᛇ\": 40,\n\t\t\t\"ᛈ\": 50,\n\t\t\t\"ᛉ\": 60,\n\t\t\t\"ᛊ\": 70,\n\t\t\t\"ᛋ\": 70,\n\t\t\t\"ᛌ\": 70,\n\t\t\t\"ᛍ\": 70,\n\t\t\t\"ᛎ\": 70,\n\t\t\t\"ᛏ\": 80,\n\t\t\t\"ᛐ\": 80,\n\t\t\t\"ᛑ\": 80,\n\t\t\t\"ᛒ\": 90,\n\t\t\t\"ᛓ\": 90,\n\t\t\t\"ᛔ\": 90,\n\t\t\t\"ᛕ\": 90,\n\t\t\t\"ᛖ\": 100,\n\t\t\t\"ᛗ\": 200,\n\t\t\t\"ᛘ\": 200,\n\t\t\t\"ᛙ\": 200,\n\t\t\t\"ᛚ\": 300,\n\t\t\t\"ᛛ\": 300,\n\t\t\t\"ᛜ\": 400,\n\t\t\t\"ᛝ\": 400,\n\t\t\t\"ᛞ\": 500,\n\t\t\t\"ᛟ\": 600,\n\t\t\t\"ᛠ\": 80,\n\t\t\t\"ᛡ\": 30,\n\t\t\t\"ᛦ\": 60,\n\t\t\t\"ᛧ\": 60,\n\t\t\t\"ᛨ\": 60,\n\t\t\t\"ἀ\": 1,\n\t\t\t\"ἁ\": 1,\n\t\t\t\"ἂ\": 1,\n\t\t\t\"ἃ\": 1,\n\t\t\t\"ἄ\": 1,\n\t\t\t\"ἅ\": 1,\n\t\t\t\"ἆ\": 1,\n\t\t\t\"ἇ\": 1,\n\t\t\t\"Ἀ\": 1,\n\t\t\t\"Ἁ\": 1,\n\t\t\t\"Ἂ\": 1,\n\t\t\t\"Ἃ\": 1,\n\t\t\t\"Ἄ\": 1,\n\t\t\t\"Ἅ\": 1,\n\t\t\t\"Ἆ\": 1,\n\t\t\t\"Ἇ\": 1,\n\t\t\t\"ἐ\": 5,\n\t\t\t\"ἑ\": 5,\n\t\t\t\"ἒ\": 5,\n\t\t\t\"ἓ\": 5,\n\t\t\t\"ἔ\": 5,\n\t\t\t\"ἕ\": 5,\n\t\t\t\"Ἐ\": 5,\n\t\t\t\"Ἑ\": 5,\n\t\t\t\"Ἒ\": 5,\n\t\t\t\"Ἓ\": 5,\n\t\t\t\"Ἔ\": 5,\n\t\t\t\"Ἕ\": 5,\n\t\t\t\"ἠ\": 8,\n\t\t\t\"ἡ\": 8,\n\t\t\t\"ἢ\": 8,\n\t\t\t\"ἣ\": 8,\n\t\t\t\"ἤ\": 8,\n\t\t\t\"ἥ\": 8,\n\t\t\t\"ἦ\": 8,\n\t\t\t\"ἧ\": 8,\n\t\t\t\"Ἠ\": 8,\n\t\t\t\"Ἡ\": 8,\n\t\t\t\"Ἢ\": 8,\n\t\t\t\"Ἣ\": 8,\n\t\t\t\"Ἤ\": 8,\n\t\t\t\"Ἥ\": 8,\n\t\t\t\"Ἦ\": 8,\n\t\t\t\"Ἧ\": 8,\n\t\t\t\"ἰ\": 10,\n\t\t\t\"ἱ\": 10,\n\t\t\t\"ἲ\": 10,\n\t\t\t\"ἳ\": 10,\n\t\t\t\"ἴ\": 10,\n\t\t\t\"ἵ\": 10,\n\t\t\t\"ἶ\": 10,\n\t\t\t\"ἷ\": 10,\n\t\t\t\"Ἰ\": 10,\n\t\t\t\"Ἱ\": 10,\n\t\t\t\"Ἲ\": 10,\n\t\t\t\"Ἳ\": 10,\n\t\t\t\"Ἴ\": 10,\n\t\t\t\"Ἵ\": 10,\n\t\t\t\"Ἶ\": 10,\n\t\t\t\"Ἷ\": 10,\n\t\t\t\"ὀ\": 70,\n\t\t\t\"ὁ\": 70,\n\t\t\t\"ὂ\": 70,\n\t\t\t\"ὃ\": 70,\n\t\t\t\"ὄ\": 70,\n\t\t\t\"ὅ\": 70,\n\t\t\t\"Ὀ\": 70,\n\t\t\t\"Ὁ\": 70,\n\t\t\t\"Ὂ\": 70,\n\t\t\t\"Ὃ\": 70,\n\t\t\t\"Ὄ\": 70,\n\t\t\t\"Ὅ\": 70,\n\t\t\t\"ὐ\": 400,\n\t\t\t\"ὑ\": 400,\n\t\t\t\"ὒ\": 400,\n\t\t\t\"ὓ\": 400,\n\t\t\t\"ὔ\": 400,\n\t\t\t\"ὕ\": 400,\n\t\t\t\"ὖ\": 400,\n\t\t\t\"ὗ\": 400,\n\t\t\t\"Ὑ\": 400,\n\t\t\t\"Ὓ\": 400,\n\t\t\t\"Ὕ\": 400,\n\t\t\t\"Ὗ\": 400,\n\t\t\t\"ὠ\": 800,\n\t\t\t\"ὡ\": 800,\n\t\t\t\"ὢ\": 800,\n\t\t\t\"ὣ\": 800,\n\t\t\t\"ὤ\": 800,\n\t\t\t\"ὥ\": 800,\n\t\t\t\"ὦ\": 800,\n\t\t\t\"ὧ\": 800,\n\t\t\t\"Ὠ\": 800,\n\t\t\t\"Ὡ\": 800,\n\t\t\t\"Ὢ\": 800,\n\t\t\t\"Ὣ\": 800,\n\t\t\t\"Ὤ\": 800,\n\t\t\t\"Ὥ\": 800,\n\t\t\t\"Ὦ\": 800,\n\t\t\t\"Ὧ\": 800,\n\t\t\t\"ὰ\": 1,\n\t\t\t\"ὲ\": 5,\n\t\t\t\"ὴ\": 8,\n\t\t\t\"ὶ\": 10,\n\t\t\t\"ὸ\": 70,\n\t\t\t\"ὺ\": 400,\n\t\t\t\"ὼ\": 800,\n\t\t\t\"ᾀ\": 1,\n\t\t\t\"ᾁ\": 1,\n\t\t\t\"ᾂ\": 1,\n\t\t\t\"ᾃ\": 1,\n\t\t\t\"ᾄ\": 1,\n\t\t\t\"ᾅ\": 1,\n\t\t\t\"ᾆ\": 1,\n\t\t\t\"ᾇ\": 1,\n\t\t\t\"ᾈ\": 1,\n\t\t\t\"ᾉ\": 1,\n\t\t\t\"ᾊ\": 1,\n\t\t\t\"ᾋ\": 1,\n\t\t\t\"ᾌ\": 1,\n\t\t\t\"ᾍ\": 1,\n\t\t\t\"ᾎ\": 1,\n\t\t\t\"ᾏ\": 1,\n\t\t\t\"ᾐ\": 8,\n\t\t\t\"ᾑ\": 8,\n\t\t\t\"ᾒ\": 8,\n\t\t\t\"ᾓ\": 8,\n\t\t\t\"ᾔ\": 8,\n\t\t\t\"ᾕ\": 8,\n\t\t\t\"ᾖ\": 8,\n\t\t\t\"ᾗ\": 8,\n\t\t\t\"ᾘ\": 8,\n\t\t\t\"ᾙ\": 8,\n\t\t\t\"ᾚ\": 8,\n\t\t\t\"ᾛ\": 8,\n\t\t\t\"ᾜ\": 8,\n\t\t\t\"ᾝ\": 8,\n\t\t\t\"ᾞ\": 8,\n\t\t\t\"ᾟ\": 8,\n\t\t\t\"ᾠ\": 800,\n\t\t\t\"ᾡ\": 800,\n\t\t\t\"ᾢ\": 800,\n\t\t\t\"ᾣ\": 800,\n\t\t\t\"ᾤ\": 800,\n\t\t\t\"ᾥ\": 800,\n\t\t\t\"ᾦ\": 800,\n\t\t\t\"ᾧ\": 800,\n\t\t\t\"ᾨ\": 800,\n\t\t\t\"ᾩ\": 800,\n\t\t\t\"ᾪ\": 800,\n\t\t\t\"ᾫ\": 800,\n\t\t\t\"ᾬ\": 800,\n\t\t\t\"ᾭ\": 800,\n\t\t\t\"ᾮ\": 800,\n\t\t\t\"ᾯ\": 800,\n\t\t\t\"ᾰ\": 1,\n\t\t\t\"ᾱ\": 1,\n\t\t\t\"ᾲ\": 1,\n\t\t\t\"ᾳ\": 1,\n\t\t\t\"ᾴ\": 1,\n\t\t\t\"ᾶ\": 1,\n\t\t\t\"ᾷ\": 1,\n\t\t\t\"Ᾰ\": 1,\n\t\t\t\"Ᾱ\": 1,\n\t\t\t\"Ὰ\": 1,\n\t\t\t\"ᾼ\": 1,\n\t\t\t\"ῂ\": 8,\n\t\t\t\"ῃ\": 8,\n\t\t\t\"ῄ\": 8,\n\t\t\t\"ῆ\": 8,\n\t\t\t\"ῇ\": 8,\n\t\t\t\"Ὲ\": 5,\n\t\t\t\"Ὴ\": 8,\n\t\t\t\"ῌ\": 8,\n\t\t\t\"ῐ\": 10,\n\t\t\t\"ῑ\": 10,\n\t\t\t\"ῒ\": 10,\n\t\t\t\"ῖ\": 10,\n\t\t\t\"ῗ\": 10,\n\t\t\t\"Ῐ\": 10,\n\t\t\t\"Ῑ\": 10,\n\t\t\t\"Ὶ\": 10,\n\t\t\t\"ῠ\": 400,\n\t\t\t\"ῡ\": 400,\n\t\t\t\"ῢ\": 400,\n\t\t\t\"ῤ\": 100,\n\t\t\t\"ῥ\": 100,\n\t\t\t\"ῦ\": 400,\n\t\t\t\"ῧ\": 400,\n\t\t\t\"Ῠ\": 400,\n\t\t\t\"Ῡ\": 400,\n\t\t\t\"Ὺ\": 400,\n\t\t\t\"Ῥ\": 100,\n\t\t\t\"ῲ\": 800,\n\t\t\t\"ῳ\": 800,\n\t\t\t\"ῴ\": 800,\n\t\t\t\"ῶ\": 800,\n\t\t\t\"ῷ\": 800,\n\t\t\t\"Ὸ\": 70,\n\t\t\t\"Ὼ\": 800,\n\t\t\t\"\U00010900\": 1,\n\t\t\t\"\U00010901\": 2,\n\t\t\t\"\U00010902\": 3,\n\t\t\t\"\U00010903\": 4,\n\t\t\t\"\U00010904\": 5,\n\t\t\t\"\U00010905\": 6,\n\t\t\t\"\U00010906\": 7,\n\t\t\t\"\U00010907\": 8,\n\t\t\t\"\U00010908\": 9,\n\t\t\t\"\U00010909\": 10,\n\t\t\t\"\U0001090A\": 20,\n\t\t\t\"\U0001090B\": 30,\n\t\t\t\"\U0001090C\": 40,\n\t\t\t\"\U0001090D\": 50,\n\t\t\t\"\U0001090E\": 60,\n\t\t\t\"\U0001090F\": 70,\n\t\t\t\"\U00010910\": 80,\n\t\t\t\"\U00010911\": 90,\n\t\t\t\"\U00010912\": 100,\n\t\t\t\"\U00010913\": 200,\n\t\t\t\"\U00010914\": 300,\n\t\t\t\"\U00010915\": 400\n\t\t}\n\t},\n\t\"Global\": {\n\t\t\"Delete Response Delay\": 10,\n\t\t\"Delete Trigger Delay\": 5,\n\t\t\"ExecCC Limit\": 10\n\t},\n\t\"Knowledge\": {\n\t\t\"Faq\": \"This is the FAQ content.\",\n\t\t\"Guidelines\": \"These are the guidelines.\"\n\t},\n\t\"Roles\": {\n\t\t\"Adult\": 555555555,\n\t\t\"Guest\": 222222222,\n\t\t\"Member\": 333333333,\n\t\t\"Minor\": 444444444,\n\t\t\"Staff\": 111111111\n\t},\n\t\"Rules\": {\n\t\t\"Rule #1\": \"Be respectful to all members.\",\n\t\t\"Rule #2\": \"No spamming or flooding the chat.\",\n\t\t\"Rule #3\": \"Keep discussions on topic.\"\n\t}\n}"
+          content: "{\n\t\"Admin\": {\n\t\t\"Welcome Message\": \"Welcome to the server!\"\n\t},\n\t\"Channels\": {\n\t\t\"Admission Log\": 555555555,\n\t\t\"Introduction\": 888888888888888888,\n\t\t\"Introduction Archive\": 777777777,\n\t\t\"Welcome\": 666666666,\n\t\t\"YAGPDB\": 999999999\n\t},\n\t\"Commands\": {\n\t\t\"contrast\": \"128\",\n\t\t\"db\": \"129\",\n\t\t\"db_get_embed\": \"126\",\n\t\t\"db_get_text\": \"127\",\n\t\t\"db_slash\": \"130\",\n\t\t\"embed_exec\": \"123\",\n\t\t\"gematria\": \"124\",\n\t\t\"message_link\": \"125\"\n\t},\n\t\"Directory\": {\n\t\t\"Exclude Categories\": [\n\t\t\t\"Staff Only\",\n\t\t\t\"Bot Commands\",\n\t\t\t\"Archive\"\n\t\t],\n\t\t\"Show Empty\": false,\n\t\t\"Show NSFW\": false\n\t},\n\t\"Gematria\": {\n\t\t\"Final Letters\": {\n\t\t\t\"א\": \"א\",\n\t\t\t\"ב\": \"ב\",\n\t\t\t\"ג\": \"ג\",\n\t\t\t\"ד\": \"ד\",\n\t\t\t\"ה\": \"ה\",\n\t\t\t\"ו\": \"ו\",\n\t\t\t\"ז\": \"ז\",\n\t\t\t\"ח\": \"ח\",\n\t\t\t\"ט\": \"ט\",\n\t\t\t\"י\": \"י\",\n\t\t\t\"כ\": \"ך\",\n\t\t\t\"ל\": \"ל\",\n\t\t\t\"מ\": \"ם\",\n\t\t\t\"נ\": \"ן\",\n\t\t\t\"ס\": \"ס\",\n\t\t\t\"ע\": \"ע\",\n\t\t\t\"פ\": \"ף\",\n\t\t\t\"צ\": \"ץ\",\n\t\t\t\"ק\": \"ק\",\n\t\t\t\"ר\": \"ר\",\n\t\t\t\"ש\": \"ש\",\n\t\t\t\"ת\": \"ת\"\n\t\t},\n\t\t\"RWS Names\": {\n\t\t\t\"0\": \"The Fool\",\n\t\t\t\"1\": \"The Magician\",\n\t\t\t\"10\": \"The Wheel of Fortune\",\n\t\t\t\"11\": \"Justice\",\n\t\t\t\"12\": \"The Hanged Man\",\n\t\t\t\"13\": \"Death\",\n\t\t\t\"14\": \"Temperance\",\n\t\t\t\"15\": \"The Devil\",\n\t\t\t\"16\": \"The Tower\",\n\t\t\t\"17\": \"The Star\",\n\t\t\t\"18\": \"The Moon\",\n\t\t\t\"19\": \"The Sun\",\n\t\t\t\"2\": \"The High Priestess\",\n\t\t\t\"20\": \"Judgement\",\n\t\t\t\"21\": \"The World\",\n\t\t\t\"3\": \"The Empress\",\n\t\t\t\"4\": \"The Emperor\",\n\t\t\t\"5\": \"The Hierophant\",\n\t\t\t\"6\": \"The Lovers\",\n\t\t\t\"7\": \"The Chariot\",\n\t\t\t\"8\": \"Strength\",\n\t\t\t\"9\": \"The Hermit\"\n\t\t},\n\t\t\"RWS Numerals\": {\n\t\t\t\"0\": \"0\",\n\t\t\t\"1\": \"I\",\n\t\t\t\"10\": \"X\",\n\t\t\t\"11\": \"XI\",\n\t\t\t\"12\": \"XII\",\n\t\t\t\"13\": \"XIII\",\n\t\t\t\"14\": \"XIV\",\n\t\t\t\"15\": \"XV\",\n\t\t\t\"16\": \"XVI\",\n\t\t\t\"17\": \"XVII\",\n\t\t\t\"18\": \"XVIII\",\n\t\t\t\"19\": \"XIX\",\n\t\t\t\"2\": \"II\",\n\t\t\t\"20\": \"XX\",\n\t\t\t\"21\": \"XXI\",\n\t\t\t\"3\": \"III\",\n\t\t\t\"4\": \"IV\",\n\t\t\t\"5\": \"V\",\n\t\t\t\"6\": \"VI\",\n\t\t\t\"7\": \"VII\",\n\t\t\t\"8\": \"VIII\",\n\t\t\t\"9\": \"IX\"\n\t\t},\n\t\t\"Tarot Indices\": {\n\t\t\t\"1\": 0,\n\t\t\t\"10\": 9,\n\t\t\t\"100\": 18,\n\t\t\t\"1000\": 15,\n\t\t\t\"2\": 1,\n\t\t\t\"20\": 10,\n\t\t\t\"200\": 19,\n\t\t\t\"3\": 2,\n\t\t\t\"30\": 11,\n\t\t\t\"300\": 20,\n\t\t\t\"4\": 3,\n\t\t\t\"40\": 12,\n\t\t\t\"400\": 21,\n\t\t\t\"5\": 4,\n\t\t\t\"50\": 13,\n\t\t\t\"500\": 20,\n\t\t\t\"6\": 5,\n\t\t\t\"60\": 14,\n\t\t\t\"600\": 7,\n\t\t\t\"7\": 6,\n\t\t\t\"70\": 15,\n\t\t\t\"700\": 6,\n\t\t\t\"8\": 7,\n\t\t\t\"80\": 16,\n\t\t\t\"800\": 17,\n\t\t\t\"9\": 8,\n\t\t\t\"90\": 17,\n\t\t\t\"900\": 17\n\t\t},\n\t\t\"Thoth Names\": {\n\t\t\t\"0\": \"The Fool\",\n\t\t\t\"1\": \"The Magus\",\n\t\t\t\"10\": \"Fortune\",\n\t\t\t\"11\": \"Adjustment\",\n\t\t\t\"12\": \"The Hanged Man\",\n\t\t\t\"13\": \"Death\",\n\t\t\t\"14\": \"Art\",\n\t\t\t\"15\": \"The Devil\",\n\t\t\t\"16\": \"The Tower\",\n\t\t\t\"17\": \"The Emperor\",\n\t\t\t\"18\": \"The Moon\",\n\t\t\t\"19\": \"The Sun\",\n\t\t\t\"2\": \"The Priestess\",\n\t\t\t\"20\": \"The Æon\",\n\t\t\t\"21\": \"The Universe\",\n\t\t\t\"3\": \"The Empress\",\n\t\t\t\"4\": \"The Star\",\n\t\t\t\"5\": \"The Hierophant\",\n\t\t\t\"6\": \"The Lovers\",\n\t\t\t\"7\": \"The Chariot\",\n\t\t\t\"8\": \"Lust\",\n\t\t\t\"9\": \"The Hermit\"\n\t\t},\n\t\t\"Thoth Numerals\": {\n\t\t\t\"0\": \"0\",\n\t\t\t\"1\": \"I\",\n\t\t\t\"10\": \"X\",\n\t\t\t\"11\": \"VIII\",\n\t\t\t\"12\": \"XII\",\n\t\t\t\"13\": \"XIII\",\n\t\t\t\"14\": \"XIV\",\n\t\t\t\"15\": \"XV\",\n\t\t\t\"16\": \"XVI\",\n\t\t\t\"17\": \"IV\",\n\t\t\t\"18\": \"XVIII\",\n\t\t\t\"19\": \"XIX\",\n\t\t\t\"2\": \"II\",\n\t\t\t\"20\": \"XX\",\n\t\t\t\"21\": \"XXI\",\n\t\t\t\"3\": \"III\",\n\t\t\t\"4\": \"XVII\",\n\t\t\t\"5\": \"V\",\n\t\t\t\"6\": \"VI\",\n\t\t\t\"7\": \"VII\",\n\t\t\t\"8\": \"XI\",\n\t\t\t\"9\": \"IX\"\n\t\t},\n\t\t\"Values\": {\n\t\t\t\"1\": 1,\n\t\t\t\"2\": 2,\n\t\t\t\"3\": 3,\n\t\t\t\"4\": 4,\n\t\t\t\"5\": 5,\n\t\t\t\"6\": 6,\n\t\t\t\"7\": 7,\n\t\t\t\"8\": 8,\n\t\t\t\"9\": 9,\n\t\t\t\"A\": 1,\n\t\t\t\"B\": 2,\n\t\t\t\"C\": 3,\n\t\t\t\"D\": 4,\n\t\t\t\"E\": 5,\n\t\t\t\"F\": 6,\n\t\t\t\"G\": 7,\n\t\t\t\"H\": 8,\n\t\t\t\"I\": 9,\n\t\t\t\"J\": 600,\n\t\t\t\"K\": 10,\n\t\t\t\"L\": 20,\n\t\t\t\"M\": 30,\n\t\t\t\"N\": 40,\n\t\t\t\"O\": 50,\n\t\t\t\"P\": 60,\n\t\t\t\"Q\": 70,\n\t\t\t\"R\": 80,\n\t\t\t\"S\": 90,\n\t\t\t\"T\": 100,\n\t\t\t\"U\": 200,\n\t\t\t\"V\": 700,\n\t\t\t\"W\": 900,\n\t\t\t\"X\": 300,\n\t\t\t\"Y\": 400,\n\t\t\t\"Z\": 500,\n\t\t\t\"a\": 1,\n\t\t\t\"b\": 2,\n\t\t\t\"c\": 3,\n\t\t\t\"d\": 4,\n\t\t\t\"e\": 5,\n\t\t\t\"f\": 6,\n\t\t\t\"g\": 7,\n\t\t\t\"h\": 8,\n\t\t\t\"i\": 9,\n\t\t\t\"j\": 600,\n\t\t\t\"k\": 10,\n\t\t\t\"l\": 20,\n\t\t\t\"m\": 30,\n\t\t\t\"n\": 40,\n\t\t\t\"o\": 50,\n\t\t\t\"p\": 60,\n\t\t\t\"q\": 70,\n\t\t\t\"r\": 80,\n\t\t\t\"s\": 90,\n\t\t\t\"t\": 100,\n\t\t\t\"u\": 200,\n\t\t\t\"v\": 700,\n\t\t\t\"w\": 900,\n\t\t\t\"x\": 300,\n\t\t\t\"y\": 400,\n\t\t\t\"z\": 500,\n\t\t\t\"À\": 1,\n\t\t\t\"Â\": 1,\n\t\t\t\"Æ\": 6,\n\t\t\t\"Ç\": 3,\n\t\t\t\"È\": 5,\n\t\t\t\"É\": 5,\n\t\t\t\"Ê\": 5,\n\t\t\t\"Ë\": 5,\n\t\t\t\"Î\": 9,\n\t\t\t\"Ï\": 9,\n\t\t\t\"Ñ\": 40,\n\t\t\t\"Ô\": 50,\n\t\t\t\"Ù\": 200,\n\t\t\t\"Û\": 200,\n\t\t\t\"Ü\": 200,\n\t\t\t\"à\": 1,\n\t\t\t\"â\": 1,\n\t\t\t\"æ\": 6,\n\t\t\t\"ç\": 3,\n\t\t\t\"è\": 5,\n\t\t\t\"é\": 5,\n\t\t\t\"ê\": 5,\n\t\t\t\"ë\": 5,\n\t\t\t\"î\": 9,\n\t\t\t\"ï\": 9,\n\t\t\t\"ñ\": 40,\n\t\t\t\"ô\": 50,\n\t\t\t\"ù\": 200,\n\t\t\t\"û\": 200,\n\t\t\t\"ü\": 200,\n\t\t\t\"ÿ\": 400,\n\t\t\t\"Ă\": 1,\n\t\t\t\"ă\": 1,\n\t\t\t\"Œ\": 55,\n\t\t\t\"œ\": 55,\n\t\t\t\"Ÿ\": 400,\n\t\t\t\"Ș\": 90,\n\t\t\t\"ș\": 90,\n\t\t\t\"Ț\": 100,\n\t\t\t\"ț\": 100,\n\t\t\t\"Ά\": 1,\n\t\t\t\"Έ\": 5,\n\t\t\t\"Ή\": 8,\n\t\t\t\"Ί\": 10,\n\t\t\t\"Ό\": 70,\n\t\t\t\"Ύ\": 400,\n\t\t\t\"Ώ\": 800,\n\t\t\t\"ΐ\": 10,\n\t\t\t\"Α\": 1,\n\t\t\t\"Β\": 2,\n\t\t\t\"Γ\": 3,\n\t\t\t\"Δ\": 4,\n\t\t\t\"Ε\": 5,\n\t\t\t\"Ζ\": 7,\n\t\t\t\"Η\": 8,\n\t\t\t\"Θ\": 9,\n\t\t\t\"Ι\": 10,\n\t\t\t\"Κ\": 20,\n\t\t\t\"Λ\": 30,\n\t\t\t\"Μ\": 40,\n\t\t\t\"Ν\": 50,\n\t\t\t\"Ξ\": 60,\n\t\t\t\"Ο\": 70,\n\t\t\t\"Π\": 80,\n\t\t\t\"Ρ\": 100,\n\t\t\t\"Σ\": 200,\n\t\t\t\"Τ\": 300,\n\t\t\t\"Υ\": 400,\n\t\t\t\"Φ\": 500,\n\t\t\t\"Χ\": 600,\n\t\t\t\"Ψ\": 700,\n\t\t\t\"Ω\": 800,\n\t\t\t\"Ϊ\": 10,\n\t\t\t\"Ϋ\": 400,\n\t\t\t\"ά\": 1,\n\t\t\t\"έ\": 5,\n\t\t\t\"ή\": 8,\n\t\t\t\"ί\": 10,\n\t\t\t\"ΰ\": 400,\n\t\t\t\"α\": 1,\n\t\t\t\"β\": 2,\n\t\t\t\"γ\": 3,\n\t\t\t\"δ\": 4,\n\t\t\t\"ε\": 5,\n\t\t\t\"ζ\": 7,\n\t\t\t\"η\": 8,\n\t\t\t\"θ\": 9,\n\t\t\t\"ι\": 10,\n\t\t\t\"κ\": 20,\n\t\t\t\"λ\": 30,\n\t\t\t\"μ\": 40,\n\t\t\t\"ν\": 50,\n\t\t\t\"ξ\": 60,\n\t\t\t\"ο\": 70,\n\t\t\t\"π\": 80,\n\t\t\t\"ρ\": 100,\n\t\t\t\"ς\": 200,\n\t\t\t\"σ\": 200,\n\t\t\t\"τ\": 300,\n\t\t\t\"υ\": 400,\n\t\t\t\"φ\": 500,\n\t\t\t\"χ\": 600,\n\t\t\t\"ψ\": 700,\n\t\t\t\"ω\": 800,\n\t\t\t\"ϊ\": 10,\n\t\t\t\"ϋ\": 400,\n\t\t\t\"ό\": 70,\n\t\t\t\"ύ\": 400,\n\t\t\t\"ώ\": 800,\n\t\t\t\"Ϙ\": 90,\n\t\t\t\"ϙ\": 90,\n\t\t\t\"Ϛ\": 6,\n\t\t\t\"ϛ\": 6,\n\t\t\t\"Ϝ\": 6,\n\t\t\t\"ϝ\": 6,\n\t\t\t\"Ϡ\": 900,\n\t\t\t\"ϡ\": 900,\n\t\t\t\"א\": 1,\n\t\t\t\"ב\": 2,\n\t\t\t\"ג\": 3,\n\t\t\t\"ד\": 4,\n\t\t\t\"ה\": 5,\n\t\t\t\"ו\": 6,\n\t\t\t\"ז\": 7,\n\t\t\t\"ח\": 8,\n\t\t\t\"ט\": 9,\n\t\t\t\"י\": 10,\n\t\t\t\"ך\": 20,\n\t\t\t\"כ\": 20,\n\t\t\t\"ל\": 30,\n\t\t\t\"ם\": 40,\n\t\t\t\"מ\": 40,\n\t\t\t\"ן\": 50,\n\t\t\t\"נ\": 50,\n\t\t\t\"ס\": 60,\n\t\t\t\"ע\": 70,\n\t\t\t\"ף\": 80,\n\t\t\t\"פ\": 80,\n\t\t\t\"ץ\": 90,\n\t\t\t\"צ\": 90,\n\t\t\t\"ק\": 100,\n\t\t\t\"ר\": 200,\n\t\t\t\"ש\": 300,\n\t\t\t\"ת\": 400,\n\t\t\t\"آ\": 1,\n\t\t\t\"أ\": 1,\n\t\t\t\"ؤ\": 6,\n\t\t\t\"إ\": 1,\n\t\t\t\"ئ\": 10,\n\t\t\t\"ا\": 1,\n\t\t\t\"ب\": 2,\n\t\t\t\"ة\": 5,\n\t\t\t\"ت\": 400,\n\t\t\t\"ث\": 500,\n\t\t\t\"ج\": 3,\n\t\t\t\"ح\": 8,\n\t\t\t\"خ\": 600,\n\t\t\t\"د\": 4,\n\t\t\t\"ذ\": 700,\n\t\t\t\"ر\": 200,\n\t\t\t\"ز\": 7,\n\t\t\t\"س\": 60,\n\t\t\t\"ش\": 300,\n\t\t\t\"ص\": 90,\n\t\t\t\"ض\": 800,\n\t\t\t\"ط\": 9,\n\t\t\t\"ظ\": 900,\n\t\t\t\"ع\": 70,\n\t\t\t\"غ\": 1000,\n\t\t\t\"ف\": 80,\n\t\t\t\"ق\": 100,\n\t\t\t\"ك\": 20,\n\t\t\t\"ل\": 30,\n\t\t\t\"م\": 40,\n\t\t\t\"ن\": 50,\n\t\t\t\"ه\": 5,\n\t\t\t\"و\": 6,\n\t\t\t\"ى\": 1,\n\t\t\t\"ي\": 10,\n\t\t\t\"پ\": 2,\n\t\t\t\"چ\": 3,\n\t\t\t\"ژ\": 7,\n\t\t\t\"ک\": 20,\n\t\t\t\"گ\": 20,\n\t\t\t\"ۆ\": 6,\n\t\t\t\"ی\": 10,\n\t\t\t\"ە\": 1,\n\t\t\t\"ᚠ\": 1,\n\t\t\t\"ᚡ\": 1,\n\t\t\t\"ᚢ\": 2,\n\t\t\t\"ᚣ\": 2,\n\t\t\t\"ᚤ\": 2,\n\t\t\t\"ᚥ\": 2,\n\t\t\t\"ᚦ\": 3,\n\t\t\t\"ᚧ\": 3,\n\t\t\t\"ᚨ\": 4,\n\t\t\t\"ᚩ\": 4,\n\t\t\t\"ᚪ\": 4,\n\t\t\t\"ᚫ\": 4,\n\t\t\t\"ᚬ\": 4,\n\t\t\t\"ᚭ\": 4,\n\t\t\t\"ᚮ\": 4,\n\t\t\t\"ᚯ\": 4,\n\t\t\t\"ᚰ\": 4,\n\t\t\t\"ᚱ\": 5,\n\t\t\t\"ᚲ\": 6,\n\t\t\t\"ᚳ\": 6,\n\t\t\t\"ᚴ\": 6,\n\t\t\t\"ᚵ\": 6,\n\t\t\t\"ᚶ\": 6,\n\t\t\t\"ᚷ\": 7,\n\t\t\t\"ᚸ\": 7,\n\t\t\t\"ᚹ\": 8,\n\t\t\t\"ᚺ\": 9,\n\t\t\t\"ᚻ\": 9,\n\t\t\t\"ᚼ\": 9,\n\t\t\t\"ᚽ\": 9,\n\t\t\t\"ᚾ\": 10,\n\t\t\t\"ᚿ\": 10,\n\t\t\t\"ᛀ\": 10,\n\t\t\t\"ᛁ\": 20,\n\t\t\t\"ᛂ\": 20,\n\t\t\t\"ᛃ\": 30,\n\t\t\t\"ᛄ\": 30,\n\t\t\t\"ᛅ\": 30,\n\t\t\t\"ᛆ\": 30,\n\t\t\t\"ᛇ\": 40,\n\t\t\t\"ᛈ\": 50,\n\t\t\t\"ᛉ\": 60,\n\t\t\t\"ᛊ\": 70,\n\t\t\t\"ᛋ\": 70,\n\t\t\t\"ᛌ\": 70,\n\t\t\t\"ᛍ\": 70,\n\t\t\t\"ᛎ\": 70,\n\t\t\t\"ᛏ\": 80,\n\t\t\t\"ᛐ\": 80,\n\t\t\t\"ᛑ\": 80,\n\t\t\t\"ᛒ\": 90,\n\t\t\t\"ᛓ\": 90,\n\t\t\t\"ᛔ\": 90,\n\t\t\t\"ᛕ\": 90,\n\t\t\t\"ᛖ\": 100,\n\t\t\t\"ᛗ\": 200,\n\t\t\t\"ᛘ\": 200,\n\t\t\t\"ᛙ\": 200,\n\t\t\t\"ᛚ\": 300,\n\t\t\t\"ᛛ\": 300,\n\t\t\t\"ᛜ\": 400,\n\t\t\t\"ᛝ\": 400,\n\t\t\t\"ᛞ\": 500,\n\t\t\t\"ᛟ\": 600,\n\t\t\t\"ᛠ\": 80,\n\t\t\t\"ᛡ\": 30,\n\t\t\t\"ᛦ\": 60,\n\t\t\t\"ᛧ\": 60,\n\t\t\t\"ᛨ\": 60,\n\t\t\t\"ἀ\": 1,\n\t\t\t\"ἁ\": 1,\n\t\t\t\"ἂ\": 1,\n\t\t\t\"ἃ\": 1,\n\t\t\t\"ἄ\": 1,\n\t\t\t\"ἅ\": 1,\n\t\t\t\"ἆ\": 1,\n\t\t\t\"ἇ\": 1,\n\t\t\t\"Ἀ\": 1,\n\t\t\t\"Ἁ\": 1,\n\t\t\t\"Ἂ\": 1,\n\t\t\t\"Ἃ\": 1,\n\t\t\t\"Ἄ\": 1,\n\t\t\t\"Ἅ\": 1,\n\t\t\t\"Ἆ\": 1,\n\t\t\t\"Ἇ\": 1,\n\t\t\t\"ἐ\": 5,\n\t\t\t\"ἑ\": 5,\n\t\t\t\"ἒ\": 5,\n\t\t\t\"ἓ\": 5,\n\t\t\t\"ἔ\": 5,\n\t\t\t\"ἕ\": 5,\n\t\t\t\"Ἐ\": 5,\n\t\t\t\"Ἑ\": 5,\n\t\t\t\"Ἒ\": 5,\n\t\t\t\"Ἓ\": 5,\n\t\t\t\"Ἔ\": 5,\n\t\t\t\"Ἕ\": 5,\n\t\t\t\"ἠ\": 8,\n\t\t\t\"ἡ\": 8,\n\t\t\t\"ἢ\": 8,\n\t\t\t\"ἣ\": 8,\n\t\t\t\"ἤ\": 8,\n\t\t\t\"ἥ\": 8,\n\t\t\t\"ἦ\": 8,\n\t\t\t\"ἧ\": 8,\n\t\t\t\"Ἠ\": 8,\n\t\t\t\"Ἡ\": 8,\n\t\t\t\"Ἢ\": 8,\n\t\t\t\"Ἣ\": 8,\n\t\t\t\"Ἤ\": 8,\n\t\t\t\"Ἥ\": 8,\n\t\t\t\"Ἦ\": 8,\n\t\t\t\"Ἧ\": 8,\n\t\t\t\"ἰ\": 10,\n\t\t\t\"ἱ\": 10,\n\t\t\t\"ἲ\": 10,\n\t\t\t\"ἳ\": 10,\n\t\t\t\"ἴ\": 10,\n\t\t\t\"ἵ\": 10,\n\t\t\t\"ἶ\": 10,\n\t\t\t\"ἷ\": 10,\n\t\t\t\"Ἰ\": 10,\n\t\t\t\"Ἱ\": 10,\n\t\t\t\"Ἲ\": 10,\n\t\t\t\"Ἳ\": 10,\n\t\t\t\"Ἴ\": 10,\n\t\t\t\"Ἵ\": 10,\n\t\t\t\"Ἶ\": 10,\n\t\t\t\"Ἷ\": 10,\n\t\t\t\"ὀ\": 70,\n\t\t\t\"ὁ\": 70,\n\t\t\t\"ὂ\": 70,\n\t\t\t\"ὃ\": 70,\n\t\t\t\"ὄ\": 70,\n\t\t\t\"ὅ\": 70,\n\t\t\t\"Ὀ\": 70,\n\t\t\t\"Ὁ\": 70,\n\t\t\t\"Ὂ\": 70,\n\t\t\t\"Ὃ\": 70,\n\t\t\t\"Ὄ\": 70,\n\t\t\t\"Ὅ\": 70,\n\t\t\t\"ὐ\": 400,\n\t\t\t\"ὑ\": 400,\n\t\t\t\"ὒ\": 400,\n\t\t\t\"ὓ\": 400,\n\t\t\t\"ὔ\": 400,\n\t\t\t\"ὕ\": 400,\n\t\t\t\"ὖ\": 400,\n\t\t\t\"ὗ\": 400,\n\t\t\t\"Ὑ\": 400,\n\t\t\t\"Ὓ\": 400,\n\t\t\t\"Ὕ\": 400,\n\t\t\t\"Ὗ\": 400,\n\t\t\t\"ὠ\": 800,\n\t\t\t\"ὡ\": 800,\n\t\t\t\"ὢ\": 800,\n\t\t\t\"ὣ\": 800,\n\t\t\t\"ὤ\": 800,\n\t\t\t\"ὥ\": 800,\n\t\t\t\"ὦ\": 800,\n\t\t\t\"ὧ\": 800,\n\t\t\t\"Ὠ\": 800,\n\t\t\t\"Ὡ\": 800,\n\t\t\t\"Ὢ\": 800,\n\t\t\t\"Ὣ\": 800,\n\t\t\t\"Ὤ\": 800,\n\t\t\t\"Ὥ\": 800,\n\t\t\t\"Ὦ\": 800,\n\t\t\t\"Ὧ\": 800,\n\t\t\t\"ὰ\": 1,\n\t\t\t\"ὲ\": 5,\n\t\t\t\"ὴ\": 8,\n\t\t\t\"ὶ\": 10,\n\t\t\t\"ὸ\": 70,\n\t\t\t\"ὺ\": 400,\n\t\t\t\"ὼ\": 800,\n\t\t\t\"ᾀ\": 1,\n\t\t\t\"ᾁ\": 1,\n\t\t\t\"ᾂ\": 1,\n\t\t\t\"ᾃ\": 1,\n\t\t\t\"ᾄ\": 1,\n\t\t\t\"ᾅ\": 1,\n\t\t\t\"ᾆ\": 1,\n\t\t\t\"ᾇ\": 1,\n\t\t\t\"ᾈ\": 1,\n\t\t\t\"ᾉ\": 1,\n\t\t\t\"ᾊ\": 1,\n\t\t\t\"ᾋ\": 1,\n\t\t\t\"ᾌ\": 1,\n\t\t\t\"ᾍ\": 1,\n\t\t\t\"ᾎ\": 1,\n\t\t\t\"ᾏ\": 1,\n\t\t\t\"ᾐ\": 8,\n\t\t\t\"ᾑ\": 8,\n\t\t\t\"ᾒ\": 8,\n\t\t\t\"ᾓ\": 8,\n\t\t\t\"ᾔ\": 8,\n\t\t\t\"ᾕ\": 8,\n\t\t\t\"ᾖ\": 8,\n\t\t\t\"ᾗ\": 8,\n\t\t\t\"ᾘ\": 8,\n\t\t\t\"ᾙ\": 8,\n\t\t\t\"ᾚ\": 8,\n\t\t\t\"ᾛ\": 8,\n\t\t\t\"ᾜ\": 8,\n\t\t\t\"ᾝ\": 8,\n\t\t\t\"ᾞ\": 8,\n\t\t\t\"ᾟ\": 8,\n\t\t\t\"ᾠ\": 800,\n\t\t\t\"ᾡ\": 800,\n\t\t\t\"ᾢ\": 800,\n\t\t\t\"ᾣ\": 800,\n\t\t\t\"ᾤ\": 800,\n\t\t\t\"ᾥ\": 800,\n\t\t\t\"ᾦ\": 800,\n\t\t\t\"ᾧ\": 800,\n\t\t\t\"ᾨ\": 800,\n\t\t\t\"ᾩ\": 800,\n\t\t\t\"ᾪ\": 800,\n\t\t\t\"ᾫ\": 800,\n\t\t\t\"ᾬ\": 800,\n\t\t\t\"ᾭ\": 800,\n\t\t\t\"ᾮ\": 800,\n\t\t\t\"ᾯ\": 800,\n\t\t\t\"ᾰ\": 1,\n\t\t\t\"ᾱ\": 1,\n\t\t\t\"ᾲ\": 1,\n\t\t\t\"ᾳ\": 1,\n\t\t\t\"ᾴ\": 1,\n\t\t\t\"ᾶ\": 1,\n\t\t\t\"ᾷ\": 1,\n\t\t\t\"Ᾰ\": 1,\n\t\t\t\"Ᾱ\": 1,\n\t\t\t\"Ὰ\": 1,\n\t\t\t\"ᾼ\": 1,\n\t\t\t\"ῂ\": 8,\n\t\t\t\"ῃ\": 8,\n\t\t\t\"ῄ\": 8,\n\t\t\t\"ῆ\": 8,\n\t\t\t\"ῇ\": 8,\n\t\t\t\"Ὲ\": 5,\n\t\t\t\"Ὴ\": 8,\n\t\t\t\"ῌ\": 8,\n\t\t\t\"ῐ\": 10,\n\t\t\t\"ῑ\": 10,\n\t\t\t\"ῒ\": 10,\n\t\t\t\"ῖ\": 10,\n\t\t\t\"ῗ\": 10,\n\t\t\t\"Ῐ\": 10,\n\t\t\t\"Ῑ\": 10,\n\t\t\t\"Ὶ\": 10,\n\t\t\t\"ῠ\": 400,\n\t\t\t\"ῡ\": 400,\n\t\t\t\"ῢ\": 400,\n\t\t\t\"ῤ\": 100,\n\t\t\t\"ῥ\": 100,\n\t\t\t\"ῦ\": 400,\n\t\t\t\"ῧ\": 400,\n\t\t\t\"Ῠ\": 400,\n\t\t\t\"Ῡ\": 400,\n\t\t\t\"Ὺ\": 400,\n\t\t\t\"Ῥ\": 100,\n\t\t\t\"ῲ\": 800,\n\t\t\t\"ῳ\": 800,\n\t\t\t\"ῴ\": 800,\n\t\t\t\"ῶ\": 800,\n\t\t\t\"ῷ\": 800,\n\t\t\t\"Ὸ\": 70,\n\t\t\t\"Ὼ\": 800,\n\t\t\t\"\U00010900\": 1,\n\t\t\t\"\U00010901\": 2,\n\t\t\t\"\U00010902\": 3,\n\t\t\t\"\U00010903\": 4,\n\t\t\t\"\U00010904\": 5,\n\t\t\t\"\U00010905\": 6,\n\t\t\t\"\U00010906\": 7,\n\t\t\t\"\U00010907\": 8,\n\t\t\t\"\U00010908\": 9,\n\t\t\t\"\U00010909\": 10,\n\t\t\t\"\U0001090A\": 20,\n\t\t\t\"\U0001090B\": 30,\n\t\t\t\"\U0001090C\": 40,\n\t\t\t\"\U0001090D\": 50,\n\t\t\t\"\U0001090E\": 60,\n\t\t\t\"\U0001090F\": 70,\n\t\t\t\"\U00010910\": 80,\n\t\t\t\"\U00010911\": 90,\n\t\t\t\"\U00010912\": 100,\n\t\t\t\"\U00010913\": 200,\n\t\t\t\"\U00010914\": 300,\n\t\t\t\"\U00010915\": 400\n\t\t}\n\t},\n\t\"Global\": {\n\t\t\"Delete Response Delay\": 10,\n\t\t\"Delete Trigger Delay\": 5,\n\t\t\"ExecCC Limit\": 10\n\t},\n\t\"Knowledge\": {\n\t\t\"Faq\": \"This is the FAQ content.\",\n\t\t\"Guidelines\": \"These are the guidelines.\"\n\t},\n\t\"Roles\": {\n\t\t\"Adult\": 555555555,\n\t\t\"Guest\": 222222222,\n\t\t\"Member\": 333333333,\n\t\t\"Minor\": 444444444,\n\t\t\"Staff\": 111111111\n\t},\n\t\"Rules\": {\n\t\t\"Rule #1\": \"Be respectful to all members.\",\n\t\t\"Rule #2\": \"No spamming or flooding the chat.\",\n\t\t\"Rule #3\": \"Keep discussions on topic.\"\n\t}\n}"
     deletions:
         - trigger 234567890 in channel 123456789012345678 after 5s
     db:
@@ -717,7 +717,7 @@ db dump - Dump all keys:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -790,7 +790,7 @@ db dump - Dump specific key:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -851,7 +851,7 @@ db get - Read a nested array:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -912,7 +912,7 @@ db keys - List dictionary keys:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -973,7 +973,7 @@ db remove - Remove item from array via nested key:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1034,7 +1034,7 @@ db remove - Remove with JSON from dict:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1070,7 +1070,7 @@ hugemoji - A link to an NSFW channel from a non-NSFW channel is refused for a no
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1124,7 +1124,7 @@ hugemoji - Animated emoji:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1178,7 +1178,7 @@ hugemoji - Discord custom emoji:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1216,7 +1216,7 @@ inactivity - Prune an inactive member:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1265,7 +1265,7 @@ kb - Knowledge base lookup:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1301,7 +1301,7 @@ message_pointer - Valid message link:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1387,7 +1387,7 @@ pyramid - Simple text:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1457,7 +1457,7 @@ rand_hebrew - Generate random letters:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1539,7 +1539,7 @@ rand_hebrew - NxM group mode:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1574,7 +1574,7 @@ role_ping - (nil) sends the message without a ping:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1620,7 +1620,7 @@ role_ping - An unknown role sends only the error:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1655,7 +1655,7 @@ role_ping - Ping a role:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1700,7 +1700,7 @@ rule - View rule 1:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1745,7 +1745,7 @@ rule - View rule 2:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1800,7 +1800,7 @@ rules - Skips a gap without a lookup failure or counting it:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1865,7 +1865,7 @@ rules - Three rules pack into one message, in order:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
@@ -1911,7 +1911,7 @@ simple_db_lookup - Lookup knowledge entry:
           value: '{"Admission Log":555555555,"Introduction":888888888888888888,"Introduction Archive":777777777,"Welcome":666666666,"YAGPDB":999999999}'
         - user_id: 0
           key: Commands
-          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","embed_exec":"123","gematria":"124","message_link":"125"}'
+          value: '{"contrast":"128","db":"129","db_get_embed":"126","db_get_text":"127","db_slash":"130","embed_exec":"123","gematria":"124","message_link":"125"}'
         - user_id: 0
           key: Directory
           value: '{"Exclude Categories":["Staff Only","Bot Commands","Archive"],"Show Empty":false,"Show NSFW":false}'
