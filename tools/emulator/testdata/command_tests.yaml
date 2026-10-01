@@ -1141,12 +1141,12 @@ tests:
 
   - name: "role_ping - Ping a role"
     snapshot: true
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       args: ["Member:Important announcement!"]
 
   - name: "role_ping - A lowercase role name without a message"
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       args: ["member"]
     assertions:
@@ -1154,7 +1154,7 @@ tests:
 
   - name: "role_ping - An unknown role sends only the error"
     snapshot: true
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       args: ["Nope:hello everyone"]
     assertions:
@@ -1162,7 +1162,7 @@ tests:
 
   - name: "role_ping - (nil) sends the message without a ping"
     snapshot: true
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       args: ["(nil):hello everyone"]
     assertions:

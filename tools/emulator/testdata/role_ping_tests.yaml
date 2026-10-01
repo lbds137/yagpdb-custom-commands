@@ -37,7 +37,7 @@ command_map:
 
 tests:
   - name: "role_ping: the text path sends the message and pings the role"
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       message_content: "-role_ping Helper:standup in 5"
     expected:
@@ -48,7 +48,7 @@ tests:
       response_pings: { roles: [222222222222222222] }
 
   - name: "role_ping: the text path (nil) sends only the message"
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       message_content: "-role_ping (nil):cleaning up"
     expected:
@@ -58,7 +58,7 @@ tests:
         - { channel_id: 123456789012345678, content_equals: "cleaning up" }
 
   - name: "role_ping: an unknown name is the text path's error embed"
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       message_content: "-role_ping Ghost"
     assertions:
@@ -66,7 +66,7 @@ tests:
         - { embed_title: "Invalid Argument", embed_contains: "⚠️ You must enter a valid role to ping!" }
 
   - name: "role_ping: a bare run posts the picker panel"
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     context:
       message_content: "-role_ping"
     assertions:
@@ -76,7 +76,7 @@ tests:
           components_contains: "templates-rp:500000000000000001"
 
   - name: "role_ping: the panel's options come from the Roles dictionary"
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     snapshot: true
     context:
       message_content: "-role_ping"
@@ -88,7 +88,7 @@ tests:
           components_contains: '"value": "Helper"'
 
   - name: "role_ping: with no usable Roles entries the bare run posts an error embed, no select"
-    template: "../../../commands/members/role_ping.gohtml"
+    template: "../../../retired/role_ping.gohtml"
     snapshot: true
     setup_db:
       # Staff's empty value isn't pingable; a string select cannot have 0 options
@@ -100,7 +100,7 @@ tests:
         - { embed_title: "No Pingable Roles", embed_contains: "⚠️ The Roles dictionary has no entries to ping!" }
 
   - name: "role_ping_pick: a staff pick answers publicly with the role's mention"
-    template: "../../../commands/members/role_ping_pick.gohtml"
+    template: "../../../retired/role_ping_pick.gohtml"
     context:
       user: { id: 500000000000000001, roles: [111111111111111111] }
       messages:
@@ -117,7 +117,7 @@ tests:
       edited_messages: []
 
   - name: "role_ping_pick: a key that left the Roles dictionary is refused ephemerally"
-    template: "../../../commands/members/role_ping_pick.gohtml"
+    template: "../../../retired/role_ping_pick.gohtml"
     context:
       user: { id: 500000000000000001, roles: [111111111111111111] }
       messages:
@@ -130,7 +130,7 @@ tests:
         - { kind: message, ephemeral: true, content_contains: "⚠️ `Ghost` is no longer in the Roles dictionary" }
 
   - name: "role_ping_pick: a non-staff pick is refused ephemerally"
-    template: "../../../commands/members/role_ping_pick.gohtml"
+    template: "../../../retired/role_ping_pick.gohtml"
     context:
       user: { id: 555555555555555555, username: "Other" }
       messages:
