@@ -449,6 +449,40 @@ class DatabaseOperationRule(Rule):
         return results
 
 
+class ResponseLengthRule(Rule):
+    """YAGPDB's panel counts every newline twice against the response limit.
+
+    The form POST arrives with CRLF on the backend, so the panel's counter and the
+    server's validator measure runes + newline count against the limit (premium
+    20,000; free 10,000) — customcommands-editcmd.html updateCCLength and
+    web/validation.go ValidateTemplateField. A file under the limit in runes can
+    still be refused at save time (db_slash.gohtml was, at 19,881 runes + 449
+    lines, 2026-09-30).
+    """
+
+    PANEL_LIMIT = 20000
+
+    def name(self) -> str:
+        return "response-length"
+
+    def check(self, filename: str, lines: List[str]) -> List[LintResult]:
+        if not is_command_file(filename):
+            return []
+        text = "\n".join(lines) + ("\n" if lines else "")
+        runes = len(text)
+        newlines = text.count("\n")
+        panel_count = runes + newlines
+        if panel_count > self.PANEL_LIMIT:
+            return [LintResult(
+                file=filename, line=1, column=1, rule=self.name(),
+                message=(f"panel count {panel_count} ({runes} chars + {newlines} "
+                         f"double-counted newlines) exceeds YAGPDB's {self.PANEL_LIMIT} "
+                         "premium limit; the panel will refuse the save — trim or minify"),
+                severity="error",
+            )]
+        return []
+
+
 class YAGPDBLinter:
     """Main linter class"""
     
@@ -462,6 +496,7 @@ class YAGPDBLinter:
             VariableNamingRule(),
             RegexPatternRule(),
             DatabaseOperationRule(),
+            ResponseLengthRule(),
         ]
         self.results = []
     

@@ -117,10 +117,14 @@ template must not error.)
 ### Free-tier shape
 
 Slash path: 0 execCC, ≤7 DB interactions (4 setup reads + op's read/write; export = 5).
-ExecData path unchanged (1 execCC). Size: 19,859 runes of the 20,000 premium cap
-(vendor counts RUNES, customcommands.go:458 — 141 runes of headroom; anything that
-grows the file past that must go through the minifier). The minifier unit (backlog
-item 5) is the standing fix for char pressure.
+ExecData path unchanged (1 execCC). **Size vs the panel: YAGPDB counts every newline
+twice** (the form arrives CRLF server-side; the panel counter and validator measure
+runes + newline-count, customcommands-editcmd.html `updateCCLength` + web/validation.go
+`ValidateTemplateField`) — the effective limit for an N-line file is 20,000 − N, which
+refused the first build at 19,881 runes + 449 lines. The trimmed file is 18,484 runes +
+431 lines = panel count 18,915 (headroom ~1,085; the linter's `response-length` rule now
+guards every command file against this). The engine comments cut here live on in
+db.gohtml. The minifier unit (backlog item 5) remains the fix for real char pressure.
 
 ### inactivity repoint (same unit, second commit step)
 
