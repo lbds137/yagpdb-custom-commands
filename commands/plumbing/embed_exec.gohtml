@@ -84,7 +84,15 @@
 }}
 
 {{ $targetChannel := or .ExecData.ChannelID .Channel.ID }}
-{{ $messageID := sendMessageRetID $targetChannel $embed }}
+{{/* callers that pass no Components keep the bare-embed send, byte for byte */}}
+{{ $messageID := "" }}
+{{ if .ExecData.Components }}
+    {{ $messageID = sendMessageRetID $targetChannel (complexMessage
+        "embed" $embed
+        "components" .ExecData.Components) }}
+{{ else }}
+    {{ $messageID = sendMessageRetID $targetChannel $embed }}
+{{ end }}
 {{ if .ExecData.DeleteResponse }}
     {{ deleteMessage $targetChannel $messageID (or .ExecData.DeleteDelay $deleteResponseDelay) }}
 {{ end }}

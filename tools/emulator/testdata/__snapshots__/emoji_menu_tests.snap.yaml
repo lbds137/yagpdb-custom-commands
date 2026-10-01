@@ -7,33 +7,243 @@
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e01\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000001.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e02\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000002.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000002.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e03\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000003.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000003.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e04\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000004.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000004.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e05\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000005.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000005.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e06\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000006.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000006.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e07\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000007.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000007.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e08\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000008.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000008.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e09\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000009.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000009.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e10\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000010.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000010.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
     interaction_responses:
         - kind: message
           ephemeral: true
@@ -58,9 +268,51 @@
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e01\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000001.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"e02\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000002.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000002.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
     interaction_responses:
         - kind: message
           ephemeral: true
@@ -106,9 +358,51 @@
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"peepo\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000001.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000001.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"dance\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/100000000000000002.gif?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/100000000000000002.gif?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
     interaction_responses:
         - kind: message
           ephemeral: true
@@ -133,6 +427,27 @@
         - channel_id: 123456789012345678
           embeds:
             - "{\n  \"author\": {\n    \"icon_url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\",\n    \"name\": \"Viewer#0001\",\n    \"url\": \"https://discordapp.com/users/987654321098765432\"\n  },\n  \"fields\": [\n    {\n      \"name\": \"Name\",\n      \"value\": \"peepo\"\n    },\n    {\n      \"name\": \"Original Message\",\n      \"value\": \"\U0001F517 [Click or tap here to view the message.](https://discord.com/channels/111222333444555666/123456789012345678/7)\"\n    }\n  ],\n  \"image\": {\n    \"url\": \"https://cdn.discordapp.com/emojis/123456789012345678.png?v=1\"\n  },\n  \"thumbnail\": {},\n  \"title\": \"Emoji Expander\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/emojis/123456789012345678.png?v=1",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
     interaction_responses:
         - kind: message
           ephemeral: true

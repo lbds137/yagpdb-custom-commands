@@ -37,6 +37,27 @@
                 "thumbnail": {},
                 "title": "Avatar Viewer"
               }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/embed/avatars/1.png?size=1024",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
     interaction_responses:
         - kind: message
           ephemeral: true
@@ -87,6 +108,27 @@
                 "thumbnail": {},
                 "title": "Avatar Viewer"
               }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/embed/avatars/1.png?size=1024",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
     interaction_responses:
         - kind: message
           ephemeral: true
@@ -136,6 +178,27 @@
                 },
                 "thumbnail": {},
                 "title": "Avatar Viewer"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Open image",
+                    "style": 5,
+                    "disabled": false,
+                    "url": "https://cdn.discordapp.com/embed/avatars/3.png?size=1024",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-dismiss:987654321098765432:1767366245",
+                    "type": 2
+                  }
+                ],
+                "type": 1
               }
     interaction_responses:
         - kind: message

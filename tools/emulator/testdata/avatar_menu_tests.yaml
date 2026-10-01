@@ -5,10 +5,13 @@ name: "avatar_menu"
 # left. The Commands dict maps embed_exec to id 1 and command_map points at the REAL
 # embed_exec, so assertions see the real Avatar Viewer embed. The ephemeral ack answers
 # the interaction and lands as sent message 1; the embed is 2. The 18-digit IDs keep
-# embed_exec on its member-author branch, as production IDs do.
+# embed_exec on its member-author branch, as production IDs do. The clock is frozen at
+# 2026-01-02T15:04:05Z (unix 1767366245) so the Dismiss custom_id's stamp is exact; the
+# button row (Open image link + Dismiss) rides through embed_exec's Components key.
 defaults:
   user: { id: 987654321098765432, username: "Viewer" }
   channel: { id: 123456789012345678 }
+  clock: 2026-01-02T15:04:05Z
   members: [987654321098765432, 555555555555555555]
   member_nicks: { 555555555555555555: "Tea" }
   guild:
@@ -47,6 +50,10 @@ tests:
         - { nth: 2, embed_contains: "?size=1024" }
         - { nth: 2, embed_contains: '"name": "Nickname"' }
         - { nth: 2, embed_contains: '"value": "Tea"' }
+        - { nth: 2, components_contains: '"label": "Open image"' }
+        - { nth: 2, components_contains: '"url": "https://cdn.discordapp.com/embed/avatars/1.png?size=1024"' }
+        - { nth: 2, components_contains: '"label": "Dismiss"' }
+        - { nth: 2, components_contains: '"custom_id": "templates-dismiss:987654321098765432:1767366245"' }
 
   # No embed_not_contains assertion exists: the snapshot pins the embed without a
   # Nickname field (the invoker themself, a member with no nick)
@@ -61,6 +68,9 @@ tests:
         - { kind: message, ephemeral: true, content_contains: "Viewing" }
       sent_messages:
         - { nth: 2, embed_title: "Avatar Viewer" }
+        - { nth: 2, components_contains: '"label": "Open image"' }
+        - { nth: 2, components_contains: '"label": "Dismiss"' }
+        - { nth: 2, components_contains: '"custom_id": "templates-dismiss:987654321098765432:1767366245"' }
 
   # 666666666666666666 is not in members: .TargetMember is nil, .TargetUser still works
   - name: "avatar_menu: a user who left still gets their avatar, without a nickname"
@@ -74,3 +84,6 @@ tests:
         - { kind: message, ephemeral: true, content_contains: "Viewing" }
       sent_messages:
         - { nth: 2, embed_title: "Avatar Viewer" }
+        - { nth: 2, components_contains: '"label": "Open image"' }
+        - { nth: 2, components_contains: '"url": "https://cdn.discordapp.com/embed/avatars/3.png?size=1024"' }
+        - { nth: 2, components_contains: '"label": "Dismiss"' }
