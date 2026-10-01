@@ -471,6 +471,24 @@ gets a failing test first.
 
 ## Tooling defects
 
+- Forum prompts are POSSIBLE with the vendored YAGPDB (CORRECTED 2026-10-01 evening —
+  an earlier entry here claimed the vendor was stale and `createForumPost` absent; that
+  was a grep miss: the absence grep's `head -8` truncated before
+  context_funcs.go:1532). Facts: `createForumPost` is registered in our vendor
+  (context.go:916) and posts a forum thread WITH a first message
+  (`ForumThreadStartComplex`, context_funcs.go:1532); content can be a complexMessage,
+  so `allowed_mentions` rides on the message. Whether forum first-messages actually
+  NOTIFY is still to be runtime-verified at /prompt's smoke (the same
+  content-vs-pings lesson as the role ping). What's actually missing: the EMULATOR
+  knows the name (yagpdb_funcs.go known-funcs list) but has no implementation — a
+  /prompt unit ports `tmplCreateForumPost` from the vendor first (fidelity rule: copy,
+  don't reimplement). `make vendor-drift` (added 2026-10-01) guards vendor-vs-upstream
+  drift; its first run is what exposed the false staleness claim.
+- Upstream stance research (2026-10-01, for any future submission): botlabs-gg/yagpdb
+  CONTRIBUTING.md says NOTHING about AI-assisted contributions (silent, not hostile);
+  MIT license; PRs target `dev`, not master. No known upstream issue/PR covers forum
+  thread creation (it shipped). Openly-AI-labelled contribution remains Lila's call
+  if one ever happens.
 - `scripts/test-all-templates.sh` asserts each bare run's exit code only, and the yaml
   runner refuses bare runs of Slash/Modal/Component triggers by design
   (loader/runner.go:374-383) — so the one-line usage messages those runs print (e.g.
