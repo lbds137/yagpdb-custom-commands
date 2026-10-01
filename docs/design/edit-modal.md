@@ -139,8 +139,8 @@ sendResponse nil (complexMessage "ephemeral" true
 
 - embed: title `"Delete rule #<n>?"` / `"Delete <Category> › <Key>?"`; description
   = the current value (string → as-is; non-string → the fenced-json form; both cut
-  at 4096 by the exact truncation block copied from rule_edit's delete echo — cut
-  first, then fence).
+  at 4096 — the JSON branch is rule_edit's truncation block verbatim; the string-side
+  cut is new here, so a >4096-char value can't make Discord refuse the confirm embed).
 - buttons: `(cbutton "label" "Delete rule <n>"|"Delete entry" "style" "danger"
   "custom_id" (print "editdel:" $uid ":" $stamp ":go"))` and `… "Dismiss"
   "style" "secondary" … ":no"`. Text on every button; danger = deleting an entity;
@@ -207,14 +207,18 @@ Defer None like the pager's: under a defer, updateMessage is Discord's 40060.
      verbatim from rule_edit's delete echo).
    - entry: category resolution copied; missing key → ack
      "`<Key>` not found". Found → Del + dbSet, `dbDel` record, ack
-     (`<Category> › <Key> removed`, echo as the text command).
+     (`<Category> › <Key> removed`, echo as the text command). A category that
+     stopped being a dictionary between confirm and click gets the generic
+     "not found" ack, not simple_db_edit's "doesn't hold a dictionary" wording —
+     the target is unreachable either way (conscious divergence, review round).
    - updateMessage takes the complexMessage embed; the confirm was ephemeral and
      the update stays ephemeral.
 
 ### Budgets
 
-db ops per path: /edit rule 0 + submit 2 · /edit entry 1 + submit 2 ·
-/edit delete 2 + click 3. All far under caps. execCC: 0 anywhere. File sizes
+db ops per path (Roles staff-gate read and the ack's Global color read included):
+/edit rule 1 + submit 4 · /edit entry 2 + submit 4 · /edit delete 4 + click `go` 6
+(click `no` 3) — all under the free tier's 10 per run, far under premium's 50. execCC: 0 anywhere. File sizes
 will sit near the small text commands, nowhere near the panel limit (the
 response-length lint rule guards it anyway).
 
@@ -223,8 +227,10 @@ response-length lint rule guards it anyway).
 One file, three CCs. Seeds mirror db_slash_tests.yaml's world (guild + Staff role
 888888888, invoker 111…, second member 555…; staff tests use db_slash_tests'
 staff-context syntax). **Every id-pinning test sets `clock: 2026-01-02T15:04:05Z`**
-(unix 1767363845 — the emulator freezes `currentTime` and the db clock, so stamped
-custom_ids and snapshots are exact). Stale ids use stamp 1750000000. The
+(unix 1767366245 — the emulator freezes `currentTime` and the db clock, so stamped
+custom_ids and snapshots are exact). The emulator records a modal response's shape
+only (kind/title/custom_id/field ids), so the prefill cases pin the modal's shape;
+value/placeholder assertions are a filed emulator gap (FUTURE_IMPROVEMENTS). Stale ids use stamp 1750000000. The
 `templates-` prefix is added/stripped by the engine; yaml asserts bare ids.
 
 Spawner:
