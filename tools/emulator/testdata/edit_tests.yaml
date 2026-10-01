@@ -1,0 +1,634 @@
+name: "/edit: slash spawner, modal writer, danger-confirm deletes"
+
+# The world db_slash_tests uses (guild + Staff role 888888888, invoker 111..., second
+# member 555...), plus the seeds /edit reads: Rules (a string rule #3, a dict rule #4),
+# an Admin category, the Commands dict. The clock is frozen at 2026-01-02T15:04:05Z
+# (unix 1767366245), so every stamped custom_id and snapshot is exact; stale ids use
+# stamp 1750000000. Message 7 is the confirm the spawner sent, its buttons clicked.
+# Modal-field prefills (value/placeholder) aren't recorded by the engine, so the
+# prefill cases pin the modal's title/custom_id/fields; the confirm snapshots pin the
+# buttons (style danger, labels) in the components JSON.
+defaults:
+  user: { id: 111111111111111111, username: "Invoker" }
+  channel: { id: 222222222222222222, name: "test-channel" }
+  clock: 2026-01-02T15:04:05Z
+  members: [111111111111111111, 555555555555555555]
+  guild:
+    id: 333333333333333333
+    name: "Test Server"
+    roles: [{ id: 888888888, name: "Staff" }]
+    channels: [{ id: 999999999, name: "yagpdb" }]
+  messages:
+    - id: 7
+      channel_id: 222222222222222222
+      author_id: 1234567890
+      content: ""
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value:
+      Embed Color: 9807270
+  - user_id: 0
+    key: "Roles"
+    value:
+      Staff: 888888888
+  - user_id: 0
+    key: "Rules"
+    value:
+      "Rule #3": "be kind"
+      "Rule #4": { note: "a dict, not text" }
+  - user_id: 0
+    key: "Admin"
+    value:
+      Greeting: "hello"
+      Motd: "stay golden"
+  - user_id: 0
+    key: "Commands"
+    value:
+      embed_exec: "123"
+
+tests:
+  # ---------- the spawner (/edit) ----------
+  - name: "edit rule: an existing rule opens the rule's modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: rule, options: { rule: 3 } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit rule 3", custom_id: "edit:rule:3:1767366245",
+            fields: ["rule_text"] }
+
+  - name: "edit rule: a missing rule opens a new-rule modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: rule, options: { rule: 9 } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit rule 9", custom_id: "edit:rule:9:1767366245",
+            fields: ["rule_text"] }
+
+  - name: "edit rule: a non-string rule value opens a no-prefill modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: rule, options: { rule: 4 } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit rule 4", custom_id: "edit:rule:4:1767366245",
+            fields: ["rule_text"] }
+
+  - name: "edit rule: a number under 1 is refused"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: rule, options: { rule: 0 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "You must provide an integer greater than zero!" }
+
+  - name: "edit entry: a known category and key open the entry modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { category: "Admin", key: "greeting" } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit entry", custom_id: "edit:entry:1767366245",
+            fields: ["category", "key", "value"] }
+
+  - name: "edit entry: an unknown key opens a blank form"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { category: "Admin", key: "nowhere" } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit entry", custom_id: "edit:entry:1767366245",
+            fields: ["category", "key", "value"] }
+
+  - name: "edit entry: no options open a blank form"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry, options: {} }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit entry", custom_id: "edit:entry:1767366245",
+            fields: ["category", "key", "value"] }
+
+  - name: "edit delete rule: a seeded rule gets a danger confirm, record written"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete, options: { rule: 3 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Delete rule #3?",
+            components_contains: "editdel:111111111111111111:1767366245:go" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: rule, rule: 3 } }
+
+  - name: "edit delete entry: a seeded entry gets a danger confirm, record written"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete,
+                     options: { category: "admin", key: "greeting" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Delete Admin › Greeting?",
+            components_contains: "editdel:111111111111111111:1767366245:go" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: entry, category: "Admin", key: "Greeting" } }
+
+  - name: "edit delete rule: an unknown rule is refused"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete, options: { rule: 9 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "There is no rule #9 to delete." }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Edit Pending", not_exists: true }
+
+  - name: "edit delete entry: an unknown entry is refused with the text command's wording"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete,
+                     options: { category: "Admin", key: "nowhere" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "There is no `Nowhere` entry in `Admin` to remove." }
+
+  - name: "edit delete entry: an unknown category is refused with the text command's wording"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete,
+                     options: { category: "Nope", key: "greeting" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "There is no `Nope` category" }
+
+  - name: "edit delete: no form at all is a usage error naming both forms"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete, options: {} }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "exactly one form: `rule`, or both `category` and `key`" }
+
+  - name: "edit delete: both forms at once is a usage error"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete,
+                     options: { rule: 3, category: "Admin", key: "greeting" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "exactly one form: `rule`, or both `category` and `key`" }
+
+  - name: "edit delete rule: rule 0 is refused (an explicit 0 is a given, not absent)"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete, options: { rule: 0 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "You must provide an integer greater than zero!" }
+
+  - name: "edit rule: a non-staff member is refused"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: rule, options: { rule: 3 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Staff only." }
+
+  # ---------- the submission (edit_modal) ----------
+  - name: "submit rule: an update stores the text and acks Was"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:3:1767366245",
+                     fields: { rule_text: "be kinder" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Rule #3 updated",
+            embed_contains: "Was" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kinder"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "submit rule: a new number adds the rule"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:5:1767366245",
+                     fields: { rule_text: "new one" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Rule #5 added" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+            "Rule #5": "new one"
+
+  - name: "submit rule: the same text acks unchanged, nothing written"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:3:1767366245",
+                     fields: { rule_text: "be kind" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Rule #3 unchanged" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "submit rule: (nil) is refused, nothing written"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:3:1767366245",
+                     fields: { rule_text: "(nil)" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "To delete, use `/edit delete`." }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "submit rule: a stale stamp is expired"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:3:1750000000",
+                     fields: { rule_text: "be kinder" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "expired" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "submit rule: rule number 0 is refused"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:0:1767366245",
+                     fields: { rule_text: "text" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "You must provide an integer greater than zero!" }
+
+  - name: "submit entry: a new key adds the entry, Stored as when the casing differs"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "Admin", key: "farewell", value: "goodbye" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Admin › Farewell added",
+            embed_contains: "Stored as" }
+      db_checks:
+        - user_id: 0
+          key: "Admin"
+          value_equals:
+            Greeting: "hello"
+            Motd: "stay golden"
+            Farewell: "goodbye"
+
+  - name: "submit entry: an update acks Was and Stored as"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "Admin", key: "greeting", value: "hi there" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Admin › Greeting updated",
+            embed_contains: "Was" }
+      db_checks:
+        - user_id: 0
+          key: "Admin"
+          value_equals:
+            Greeting: "hi there"
+            Motd: "stay golden"
+
+  - name: "submit entry: the same value acks unchanged"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "Admin", key: "greeting", value: "hello" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Admin › Greeting unchanged" }
+      db_checks:
+        - user_id: 0
+          key: "Admin"
+          value_equals:
+            Greeting: "hello"
+            Motd: "stay golden"
+
+  - name: "submit entry: new: creates the category"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "new:Widgets", key: "gizmo", value: "x" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Widgets › Gizmo added" }
+      db_checks:
+        - { user_id: 0, key: "Widgets", value_equals: { Gizmo: "x" } }
+
+  - name: "submit entry: an unknown category is refused, nothing written"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "Nope", key: "a", value: "b" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "There is no `Nope` category" }
+      db_checks:
+        - { user_id: 0, key: "Nope", not_exists: true }
+
+  - name: "submit entry: a non-dictionary category is refused"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Flat", value: "just a string" }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "Flat", key: "a", value: "b" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "doesn't hold a dictionary of entries" }
+      db_checks:
+        - { user_id: 0, key: "Flat", value_equals: "just a string" }
+
+  - name: "submit entry: a Commands key keeps its case (no Stored as)"
+    snapshot: true
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "Commands", key: "new_key", value: "9" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Commands › new_key added" }
+      db_checks:
+        - user_id: 0
+          key: "Commands"
+          value_equals:
+            embed_exec: "123"
+            new_key: "9"
+
+  - name: "submit entry: (nil) is refused, nothing written"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "Admin", key: "greeting", value: "(nil)" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "To delete, use `/edit delete`." }
+      db_checks:
+        - user_id: 0
+          key: "Admin"
+          value_equals:
+            Greeting: "hello"
+            Motd: "stay golden"
+
+  - name: "submit entry: a stale stamp is expired"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1750000000",
+                     fields: { category: "Admin", key: "greeting", value: "hi" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "expired" }
+      db_checks:
+        - user_id: 0
+          key: "Admin"
+          value_equals:
+            Greeting: "hello"
+            Motd: "stay golden"
+
+  - name: "submit: a non-staff member is refused (defense; Discord won't send this)"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      interaction: { type: modal, custom_id: "edit:rule:3:1767366245",
+                     fields: { rule_text: "be kinder" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Staff only." }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "submit: a wrong-shape custom ID doesn't trigger"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:foo:123",
+                     fields: { rule_text: "x" } }
+    expected:
+      no_trigger: true
+
+  # ---------- the confirm buttons (edit_confirm) ----------
+  - name: "confirm go: a rule is deleted, record consumed, ack replaces the confirm"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 3 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, embed_title: "Rule #3 removed" }
+      edited_messages:
+        - { channel_id: 222222222222222222, embed_title: "Rule #3 removed",
+            embed_contains: "be kind" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #4": { note: "a dict, not text" }
+        - { user_id: 111111111111111111, key: "Edit Pending", not_exists: true }
+
+  - name: "confirm go: an entry is deleted, record consumed, ack replaces the confirm"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: entry, category: "Admin", key: "Greeting" } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, embed_title: "Admin › Greeting removed",
+            embed_contains: "hello" }
+      edited_messages:
+        - { channel_id: 222222222222222222, embed_title: "Admin › Greeting removed" }
+      db_checks:
+        - { user_id: 0, key: "Admin", value_equals: { Motd: "stay golden" } }
+        - { user_id: 111111111111111111, key: "Edit Pending", not_exists: true }
+
+  - name: "confirm go: an already-deleted rule acks not found"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 9 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, content_contains: "Rule #9 not found" }
+      edited_messages:
+        - { channel_id: 222222222222222222, content_contains: "Rule #9 not found" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: rule, rule: 9 } }
+
+  - name: "confirm no: dismiss consumes the record and changes nothing"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 3 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:no",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, content_contains: "Dismissed." }
+      edited_messages:
+        - { channel_id: 222222222222222222, content_equals: "Dismissed." }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+        - { user_id: 111111111111111111, key: "Edit Pending", not_exists: true }
+
+  - name: "confirm: no pending record is a refusal"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Nothing pending" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "confirm: a stale stamp is expired"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 3 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1750000000:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "expired" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: rule, rule: 3 } }
+
+  - name: "confirm: a non-staff click is refused"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 3 } }
+    context:
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Staff only." }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "confirm: a wrong-shape id doesn't trigger"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:1:2:maybe", message_id: 7 }
+    expected:
+      no_trigger: true

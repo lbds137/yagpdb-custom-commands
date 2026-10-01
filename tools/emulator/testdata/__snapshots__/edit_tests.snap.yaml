@@ -1,0 +1,467 @@
+'edit delete entry: a seeded entry gets a danger confirm, record written':
+    output: ""
+    messages:
+        - channel_id: 222222222222222222
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "hello",
+                "title": "Delete Admin › Greeting?"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Delete entry",
+                    "style": 4,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:go",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:no",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "hello",
+                "title": "Delete Admin › Greeting?"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Delete entry",
+                    "style": 4,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:go",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:no",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+        - user_id: 111111111111111111
+          key: Edit Pending
+          value: '{"category":"Admin","key":"Greeting","kind":"entry"}'
+'edit delete rule: a seeded rule gets a danger confirm, record written':
+    output: ""
+    messages:
+        - channel_id: 222222222222222222
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "be kind",
+                "title": "Delete rule #3?"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Delete rule 3",
+                    "style": 4,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:go",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:no",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "be kind",
+                "title": "Delete rule #3?"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Delete rule 3",
+                    "style": 4,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:go",
+                    "type": 2
+                  },
+                  {
+                    "label": "Dismiss",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-editdel:111111111111111111:1767366245:no",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+        - user_id: 111111111111111111
+          key: Edit Pending
+          value: '{"kind":"rule","rule":3}'
+'edit entry: a known category and key open the entry modal':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: Edit entry
+          custom_id: edit:entry:1767366245
+          fields:
+            - category
+            - key
+            - value
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'edit entry: an unknown key opens a blank form':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: Edit entry
+          custom_id: edit:entry:1767366245
+          fields:
+            - category
+            - key
+            - value
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'edit entry: no options open a blank form':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: Edit entry
+          custom_id: edit:entry:1767366245
+          fields:
+            - category
+            - key
+            - value
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'edit rule: a missing rule opens a new-rule modal':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: Edit rule 9
+          custom_id: edit:rule:9:1767366245
+          fields:
+            - rule_text
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'edit rule: a non-string rule value opens a no-prefill modal':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: Edit rule 4
+          custom_id: edit:rule:4:1767366245
+          fields:
+            - rule_text
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'edit rule: an existing rule opens the rule''s modal':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: Edit rule 3
+          custom_id: edit:rule:3:1767366245
+          fields:
+            - rule_text
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'submit entry: a Commands key keeps its case (no Stored as)':
+    output: ""
+    messages:
+        - channel_id: 222222222222222222
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "9",
+                "title": "Commands › new_key added"
+              }
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "9",
+                "title": "Commands › new_key added"
+              }
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123","new_key":"9"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'submit entry: an update acks Was and Stored as':
+    output: ""
+    messages:
+        - channel_id: 222222222222222222
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "hi there",
+                "fields": [
+                  {
+                    "name": "Was",
+                    "value": "hello"
+                  },
+                  {
+                    "name": "Stored as",
+                    "value": "Greeting"
+                  }
+                ],
+                "title": "Admin › Greeting updated"
+              }
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "hi there",
+                "fields": [
+                  {
+                    "name": "Was",
+                    "value": "hello"
+                  },
+                  {
+                    "name": "Stored as",
+                    "value": "Greeting"
+                  }
+                ],
+                "title": "Admin › Greeting updated"
+              }
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hi there","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
+'submit entry: the same value acks unchanged':
+    output: ""
+    messages:
+        - channel_id: 222222222222222222
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "hello",
+                "fields": [
+                  {
+                    "name": "Stored as",
+                    "value": "Greeting"
+                  }
+                ],
+                "title": "Admin › Greeting unchanged"
+              }
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "color": 9807270,
+                "description": "hello",
+                "fields": [
+                  {
+                    "name": "Stored as",
+                    "value": "Greeting"
+                  }
+                ],
+                "title": "Admin › Greeting unchanged"
+              }
+    db:
+        - user_id: 0
+          key: Admin
+          value: '{"Greeting":"hello","Motd":"stay golden"}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+        - user_id: 0
+          key: Roles
+          value: '{"Staff":888888888}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
