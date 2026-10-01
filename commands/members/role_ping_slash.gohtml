@@ -1,0 +1,44 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `role_ping`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  The slash version of role_ping.gohtml (the text command and the quick-ping panel
+  stay): Discord's own role picker instead of the Roles dictionary's names, so any
+  role can be pinged, not just the dict's. The response carries allowed_mentions
+  naming the role: sendResponse ignores the frame's mention allowlist (the one
+  sendMessage responses build from mentionRoleID), so without it the mention
+  renders but never notifies.
+
+  Slash option: `role role! role to ping`
+  Slash option: `message string message to send with the ping`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $rolesDict := (dbGet 0 "Roles").Value }}
+	{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+	{{ if not (hasRoleID $staffRoleID) }}
+		{{ sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true) }}
+	{{ else }}
+		{{ $role := .Options.role }}
+		{{ $mention := mentionRoleID $role.ID }}
+		{{ $message := or .Options.message "" }}
+		{{/* Discord caps content at 2000 characters: leave room for the newline and the
+			mention, and one more for the ellipsis a clamp appends */}}
+		{{ $limit := sub 2000 (add (len $mention) 2) }}
+		{{ if gt (len (toRune $message)) $limit }}
+			{{ $message = joinStr "" (slice (split $message "") 0 $limit) "…" }}
+		{{ end }}
+		{{ $content := $mention }}
+		{{ if $message }}
+			{{ $content = joinStr "\n" $message $mention }}
+		{{ end }}
+		{{ sendResponse nil (complexMessage
+			"content" $content
+			"allowed_mentions" (sdict "roles" (cslice $role.ID))
+		) }}
+	{{ end }}
+{{ else }}
+Use /role_ping as a slash command: role (required), message (optional)
+{{ end }}
