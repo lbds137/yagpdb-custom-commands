@@ -1,3 +1,8 @@
+---
+name: yagpdb-deploy
+description: Browser deploy of committed command bytes into the YAGPDB control panel via Claude-in-Chrome; manual paste is the fallback
+---
+
 # Browser deploy (Claude-in-Chrome)
 
 YAGPDB has no API for custom commands, but the control panel is a plain form. This skill has

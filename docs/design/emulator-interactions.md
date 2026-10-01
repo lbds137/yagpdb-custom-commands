@@ -194,4 +194,4 @@ common/templates/context_funcs.go:75; the emulator models that, with a warning.)
 4. Modals (~500 lines): cmodal/CreateModal/CreateTextInput, sendModal, Modal trigger with
    .Values/.ModalValues, `interaction: {type: modal}`. Unblocks /edit.
 Units 3 and 4 are independent after 2; each updates scripts/find-missing-functions.sh
-and .claude/skills/yagpdb-emulator.md.
+and .claude/skills/yagpdb-emulator/SKILL.md.

@@ -1,3 +1,8 @@
+---
+name: yagpdb-templates
+description: YAGPDB template development conventions and quick reference for this repo's commands
+---
+
 # YAGPDB Template Development
 
 ## Quick Reference

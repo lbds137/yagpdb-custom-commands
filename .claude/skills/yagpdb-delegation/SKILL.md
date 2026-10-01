@@ -1,3 +1,8 @@
+---
+name: yagpdb-delegation
+description: Delegation in this repo - gates, ceilings, landmines, and the dispatch folder for harness:implementer workers
+---
+
 # Delegation in this repo
 
 This repo uses the harness `delegation` skill (adopted 2026-09-25, Lila's yes): the driver
