@@ -274,6 +274,12 @@ gets a failing test first.
   two UTF-16 units. If so, an emoji-heavy title or description near the limit would still
   be rejected, and the emulator couldn't show it. Promote on a live rejection of an
   emoji-heavy embed, or on a Discord doc or source that settles how it counts.
+- A modal interaction response records its shape only — kind, title, custom_id, field
+  ids (runtime SnapshotResponse) — not each text input's value/placeholder/required/
+  style. /edit's prefill behavior (edit_tests.yaml) is therefore pinned by modal shape
+  alone; a prefill regression passes the suite. Promote before any unit needs to
+  assert a modal field's value or placeholder: record the fields in the response and
+  expose them to yaml assertions and snapshots (expect snapshot churn in modal tests).
 - Discord's error bodies are written as `{"message": "...", "code": N}` (errors.go
   discordError): the spacing is Discord's usual, not captured from a live response, and
   a 50035 Invalid Form Body body also lists the fields at fault, which the emulator's
@@ -417,6 +423,12 @@ gets a failing test first.
 
 ## Tooling defects
 
+- `scripts/test-all-templates.sh` asserts each bare run's exit code only, and the yaml
+  runner refuses bare runs of Slash/Modal/Component triggers by design
+  (loader/runner.go:374-383) — so the one-line usage messages those runs print (e.g.
+  /edit's three) are pinned nowhere: a wording regression in a bare line cannot redden
+  any gate. Shape: the script (or a generated fixture) asserts each bare output against
+  the file's expected line.
 - DECIDED (Lila 2026-09-27, both parts; part 1 after the channel_activity + db_get
   deploys, part 2 with the slash work). Shape for part 1: a generated
   commands/plumbing/config_sync.gohtml (Hourly interval) with panel.json's ids baked in
