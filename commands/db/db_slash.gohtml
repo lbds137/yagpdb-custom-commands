@@ -35,8 +35,9 @@
   Slash option: `export.key string empty = all entries`
   Slash option: `export.user user another member (staff)`
 
-  view = get, browse = keys, export = dump; `user` replaces the colon hack (staff
-  only; everyone else silently keeps their own row).
+  view = get, browse = keys, export = dump. Rows: staff default to the global row 0
+  (the old `:0` without the colon), a picked `user` targets that member, everyone
+  else their own row.
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
@@ -88,10 +89,14 @@
     {{ $key = or .Options.key "" }}
     {{ $value = or .Options.value "" }}
     {{ $valueType = printf "%T" $value }}
-    {{/* staff can target another member's row; others silently keep their own */}}
-    {{ if and .Options.user (hasRoleID $staffRoleID) }}
-        {{ $userID = toInt .Options.user.ID }}
-        {{ $targeted = true }}
+    {{/* staff default to the GLOBAL row (0) — the text command's `:0`, no colon needed;
+        a picked `user` targets that member (self included); others keep their own row */}}
+    {{ if hasRoleID $staffRoleID }}
+        {{ $userID = 0 }}
+        {{ if .Options.user }}
+            {{ $userID = toInt .Options.user.ID }}
+            {{ $targeted = true }}
+        {{ end }}
     {{ end }}
 {{ end }}
 
@@ -166,15 +171,9 @@
 
     {{ $ptAction := "" }}
     {{ if $isDump }}
-        {{/* staff: no `user` = row 0, `user` (self too) = that row; others: own row */}}
-        {{ $dumpUserID := .Member.User.ID }}
-        {{ if hasRoleID $staffRoleID }}
-            {{ if $targeted }}
-                {{ $dumpUserID = $userID }}
-            {{ else }}
-                {{ $dumpUserID = 0 }}
-            {{ end }}
-        {{ end }}
+        {{/* one rule everywhere now: staff default row 0, staff `user` = that row,
+            others own — dump needs no special case anymore */}}
+        {{ $dumpUserID := $userID }}
         {{ $dumpData := sdict }}
         {{ if and $key (ne $key "all") }}
             {{/* Dump specific key only */}}
