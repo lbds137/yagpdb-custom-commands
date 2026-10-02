@@ -38,7 +38,7 @@ var (
 	limitSendDM       = callLimit{"send_dm", 1, 1}
 	limitSort         = callLimit{"sort", 1, 3}
 	limitTicket       = callLimit{"ticket", 1, 1}
-	limitCreateThread = callLimit{"create_thread", 1, 1} // createForumPost (createThread later); not silent: ErrTooManyCalls
+	limitCreateThread = callLimit{"create_thread", 1, 1} // createForumPost and createThread; not silent: ErrTooManyCalls
 	limitExecChild    = callLimit{"exec_child", 3, 3}
 	limitExec         = callLimit{"exec", 5, 5} // commands/tmplexec.go: maxExec, shared by exec and execAdmin
 	limitReactTrig    = callLimit{"add_reaction_trigger", 20, 20}
@@ -92,6 +92,7 @@ var limitedFuncs = map[string]limitedFunc{
 	"sort":                    {limits: []callLimit{limitSort}},
 	"createTicket":            {limits: []callLimit{limitTicket}},
 	"createForumPost":         {limits: []callLimit{limitCreateThread}},
+	"createThread":            {limits: []callLimit{limitCreateThread}},
 
 	// One API call, and one call per target user (tmplSetRoles)
 	"setRoles": {check: checkSetRoles},

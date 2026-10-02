@@ -121,6 +121,7 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 
 		// Forum functions
 		"createForumPost": e.createForumPost,
+		"createThread":    e.createThread,
 
 		// Discord - Roles (lookup)
 		"roleAbove": e.roleAbove,

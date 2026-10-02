@@ -59,7 +59,7 @@ IMPLEMENTED=(
     # Discord - Channels
     "getChannel" "getChannelOrThread"
     # Discord - Forums
-    "createForumPost"
+    "createForumPost" "createThread"
     # Discord - Tickets
     "createTicket"
     # Embeds
