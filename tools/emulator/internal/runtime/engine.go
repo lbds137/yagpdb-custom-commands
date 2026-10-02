@@ -119,6 +119,9 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"getChannel":         e.getChannel,
 		"getChannelOrThread": e.getChannelOrThread,
 
+		// Forum functions
+		"createForumPost": e.createForumPost,
+
 		// Discord - Roles (lookup)
 		"roleAbove": e.roleAbove,
 

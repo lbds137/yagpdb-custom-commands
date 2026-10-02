@@ -405,9 +405,18 @@ type ChannelDef struct {
 	Position int    `yaml:"position"`  // .Guild.Channels is sorted by position
 	Topic    string `yaml:"topic"`
 	NSFW     bool   `yaml:"nsfw"`
+	// AvailableTags are a forum channel's tags, which a createForumPost "tags" argument
+	// can apply, by name or by ID (meaningful on type 15 channels only)
+	AvailableTags []TagDef `yaml:"available_tags"`
 	// BotCannotSend makes a send to this channel fail as Discord refuses it (403 Missing
 	// Permissions), instead of being recorded
 	BotCannotSend bool `yaml:"bot_cannot_send"`
+}
+
+// TagDef is a forum channel's tag, as a test declares it.
+type TagDef struct {
+	ID   int64  `yaml:"id"`
+	Name string `yaml:"name"`
 }
 
 // GuildDef defines guild/server context.

@@ -30,20 +30,21 @@ type callLimit struct {
 }
 
 var (
-	limitDB          = callLimit{"db_interactions", 10, 50}
-	limitDBMultiple  = callLimit{"db_multiple", 2, 10}
-	limitAPI         = callLimit{"api_call", 100, 100}
-	limitRunCC       = callLimit{"runcc", 1, 10}
-	limitCancelCC    = callLimit{"cancelcc", 10, 10}
-	limitSendDM      = callLimit{"send_dm", 1, 1}
-	limitSort        = callLimit{"sort", 1, 3}
-	limitTicket      = callLimit{"ticket", 1, 1}
-	limitExecChild   = callLimit{"exec_child", 3, 3}
-	limitExec        = callLimit{"exec", 5, 5} // commands/tmplexec.go: maxExec, shared by exec and execAdmin
-	limitReactTrig   = callLimit{"add_reaction_trigger", 20, 20}
-	limitReactMsg    = callLimit{"add_reaction_message", 20, 20}
-	limitDelReactMsg = callLimit{"del_reaction_message", 10, 10}
-	limitReactResp   = callLimit{"add_reaction_response", 20, 20}
+	limitDB           = callLimit{"db_interactions", 10, 50}
+	limitDBMultiple   = callLimit{"db_multiple", 2, 10}
+	limitAPI          = callLimit{"api_call", 100, 100}
+	limitRunCC        = callLimit{"runcc", 1, 10}
+	limitCancelCC     = callLimit{"cancelcc", 10, 10}
+	limitSendDM       = callLimit{"send_dm", 1, 1}
+	limitSort         = callLimit{"sort", 1, 3}
+	limitTicket       = callLimit{"ticket", 1, 1}
+	limitCreateThread = callLimit{"create_thread", 1, 1} // createForumPost (createThread later); not silent: ErrTooManyCalls
+	limitExecChild    = callLimit{"exec_child", 3, 3}
+	limitExec         = callLimit{"exec", 5, 5} // commands/tmplexec.go: maxExec, shared by exec and execAdmin
+	limitReactTrig    = callLimit{"add_reaction_trigger", 20, 20}
+	limitReactMsg     = callLimit{"add_reaction_message", 20, 20}
+	limitDelReactMsg  = callLimit{"del_reaction_message", 10, 10}
+	limitReactResp    = callLimit{"add_reaction_response", 20, 20}
 )
 
 // overLimitErr is the error of a function that fails differently from its counter's usual
@@ -90,6 +91,7 @@ var limitedFuncs = map[string]limitedFunc{
 	"sendTemplate":            {limits: []callLimit{limitExecChild}},
 	"sort":                    {limits: []callLimit{limitSort}},
 	"createTicket":            {limits: []callLimit{limitTicket}},
+	"createForumPost":         {limits: []callLimit{limitCreateThread}},
 
 	// One API call, and one call per target user (tmplSetRoles)
 	"setRoles": {check: checkSetRoles},

@@ -249,7 +249,8 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	ctx.ChannelDetails = map[int64]types.CtxChannel{}
 	for _, ch := range tc.Context.Guild.Channels {
 		ctx.ChannelDetails[ch.ID] = types.CtxChannel{ID: ch.ID, Name: ch.Name, Type: ch.Type,
-			ParentID: ch.ParentID, Position: ch.Position, Topic: ch.Topic, NSFW: ch.NSFW}
+			ParentID: ch.ParentID, Position: ch.Position, Topic: ch.Topic, NSFW: ch.NSFW,
+			AvailableTags: forumTags(ch.AvailableTags)}
 		if ch.BotCannotSend {
 			if ctx.ChannelsCannotSend == nil {
 				ctx.ChannelsCannotSend = map[int64]bool{}
@@ -309,6 +310,19 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	}
 	ctx.TemplateBaseDir = r.config.BaseDir
 	return ctx
+}
+
+// forumTags converts a channel's declared tags; nil when none are, so a forum channel
+// without them applies no "tags" argument silently (vendor's nil AvailableTags).
+func forumTags(defs []TagDef) []types.ForumTag {
+	if len(defs) == 0 {
+		return nil
+	}
+	tags := make([]types.ForumTag, len(defs))
+	for i, d := range defs {
+		tags[i] = types.ForumTag{ID: d.ID, Name: d.Name}
+	}
+	return tags
 }
 
 // setTriggerMessage gives the command the message that triggered it: the test's

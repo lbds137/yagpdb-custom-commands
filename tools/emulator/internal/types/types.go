@@ -270,6 +270,13 @@ func (u DiscordUser) String() string {
 	return fmt.Sprintf("%s#%s", u.Username, u.Discriminator)
 }
 
+// ForumTag is discordgo.ForumTag: a forum channel's tag, which a new post can apply.
+type ForumTag struct {
+	ID        int64
+	Name      string
+	Moderated bool
+}
+
 // CtxChannel represents a Discord channel context.
 type CtxChannel struct {
 	ID        int64
@@ -283,6 +290,15 @@ type CtxChannel struct {
 	IsThread  bool
 	IsForum   bool
 	Type      int // discordgo.ChannelType: 0 text, 2 voice, 4 category, 5 announcement, 15 forum
+	// AvailableTags are a forum channel's tags (a test's guild.channels declares them);
+	// AppliedTags are the ones a thread applied (createForumPost sets them), as vendor's
+	// CtxChannel carries both
+	AvailableTags []ForumTag
+	AppliedTags   []int64
+	// DefaultThreadRateLimitPerUser is a forum channel's slowmode for its new threads
+	// (dstate.ChannelState's field, which processThreadArgs reads; no test field
+	// declares it yet, so it is 0)
+	DefaultThreadRateLimitPerUser int
 }
 
 // CtxGuild represents a Discord guild/server context.

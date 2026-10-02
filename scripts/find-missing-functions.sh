@@ -58,6 +58,8 @@ IMPLEMENTED=(
     "getMember" "userArg" "getTargetPermissionsIn"
     # Discord - Channels
     "getChannel" "getChannelOrThread"
+    # Discord - Forums
+    "createForumPost"
     # Discord - Tickets
     "createTicket"
     # Embeds
