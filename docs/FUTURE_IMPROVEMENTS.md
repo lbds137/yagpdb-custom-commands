@@ -492,6 +492,11 @@ gets a failing test first.
   check stays the guard; (d) the port records a first message's file upload and
   reply-lookup against the forum channel rather than the created thread (reviewer
   NIT — visible only if a test uploads or replies in a post's first message).
+- Command headers record `Slash option:` descriptions but not the top-level slash
+  command's description (the panel's slash_command_description field,
+  customcommands.go:233/619/649) — so the panel and the repo can drift. Candidate: a
+  `Slash description:` header line the linter cross-checks; meanwhile /prompt's
+  panel description lives in this unit's deploy report (2026-10-01).
 - Upstream stance research (2026-10-01, for any future submission): botlabs-gg/yagpdb
   CONTRIBUTING.md says NOTHING about AI-assisted contributions (silent, not hostile);
   MIT license; PRs target `dev`, not master. No known upstream issue/PR covers forum
