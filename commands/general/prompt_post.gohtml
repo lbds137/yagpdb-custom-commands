@@ -1,0 +1,130 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Modal Submission`
+  Trigger: `^prompt:post:`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  The /prompt form's writer (prompt opens it): posts the submitted prompt where the
+  form's custom ID points — a new thread titled `YYYY-MM-DD: ...` (thread mode) or a
+  plain message (inline). The date is local time by the Global dict's
+  `Timezone Offset` in hours (default -4 = ET). A role in the form leads the content
+  mention-first. Everything the staff member sees is ephemeral; the post is the
+  public artifact.
+*/ -}}
+{{ if .IsModal }}
+	{{ $rolesDict := (dbGet 0 "Roles").Value }}
+	{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+	{{ if not (hasRoleID $staffRoleID) }}
+		{{ sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true) }}
+	{{ else }}
+		{{/* prompt wrote the custom ID: prompt:post:<t|i>:<target channel ID>:<role ID,
+			0 = none>. Nothing else produces this trigger, but a foreign or hand-made ID
+			must fail soft — and each part is checked before it is indexed or converted,
+			since "or" isn't short-circuiting here */}}
+		{{ $parts := split .CustomID ":" }}
+		{{ if ne (len $parts) 5 }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true) }}
+		{{ else }}
+			{{ $mode := index $parts 2 }}
+			{{ $targetID := toInt (index $parts 3) }}
+			{{ $roleID := toInt (index $parts 4) }}
+			{{ if or (and (ne $mode "t") (ne $mode "i"))
+				(not (reFind "\\A\\d+\\z" (index $parts 3)))
+				(not (reFind "\\A\\d+\\z" (index $parts 4))) }}
+				{{ sendResponse nil (complexMessage
+					"content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true) }}
+			{{ else }}
+				{{ $titleInput := "" }}
+				{{ if eq $mode "t" }}
+					{{ $titleInput = .ModalValues.prompt_title.value }}
+				{{ end }}
+				{{ $body := .ModalValues.prompt_body.value }}
+				{{ $content := $body }}
+				{{ if ne $roleID 0 }}
+					{{ $content = joinStr " " (mentionRoleID $roleID) $body }}
+				{{ end }}
+				{{/* Discord's client caps the fields, but the role mention is added here,
+					so the final content gets its own check — never clamped */}}
+				{{ $bodyLen := len (toRune $body) }}
+				{{ $contentLen := len (toRune $content) }}
+				{{ if gt $bodyLen 2000 }}
+					{{ sendResponse nil (complexMessage "content" (print
+						"⚠️ The prompt is " $bodyLen " characters — the limit is 2000.")
+						"ephemeral" true) }}
+				{{ else if gt $contentLen 2000 }}
+					{{ sendResponse nil (complexMessage "content" (print
+						"⚠️ The role ping puts the prompt at " $contentLen
+						" characters — the limit is 2000. Shorten the prompt or drop the role.")
+						"ephemeral" true) }}
+				{{ else }}
+					{{ $offset := -4 }}
+					{{ $globalDict := (dbGet 0 "Global").Value }}
+					{{ if $globalDict }}
+						{{ if $globalDict.HasKey "Timezone Offset" }}
+							{{ $offset = toInt ($globalDict.Get "Timezone Offset") }}
+						{{ end }}
+					{{ end }}
+					{{ $local := currentTime.Add (toInt64 (mult $offset 3600000000000)) }}
+					{{ $date := $local.Format "2006-01-02" }}
+					{{ if eq $mode "t" }}
+						{{ $title := print $date ": " $titleInput }}
+						{{ $titleLen := len (toRune $title) }}
+						{{ if gt $titleLen 100 }}
+							{{ sendResponse nil (complexMessage "content" (print
+								"⚠️ The thread title is " $titleLen
+								" characters — the limit is 100.") "ephemeral" true) }}
+						{{ else }}
+							{{/* the target ID, never the channel object: createForumPost
+								reads snowflakes only, and an unknown channel comes back nil
+								with no error (the empty string is the "no post" sentinel:
+								a nil literal can't seed a variable) */}}
+							{{ $post := "" }}
+							{{ try }}
+								{{ if ne $roleID 0 }}
+									{{ $post = createForumPost $targetID $title (complexMessage
+										"content" $content
+										"allowed_mentions" (sdict "parse" (cslice "users" "roles"))) }}
+								{{ else }}
+									{{ $post = createForumPost $targetID $title (complexMessage
+										"content" $body) }}
+								{{ end }}
+							{{ catch }}
+							{{ end }}
+							{{ if not $post }}
+								{{ sendResponse nil (complexMessage
+									"content" "⚠️ Couldn't create the post." "ephemeral" true) }}
+							{{ else }}
+								{{ sendResponse nil (complexMessage "content" (print
+									"✅ Posted " $title ": https://discord.com/channels/"
+									.Guild.ID "/" $post.ID) "ephemeral" true) }}
+							{{ end }}
+						{{ end }}
+					{{ else }}
+						{{ try }}
+							{{ $msgID := 0 }}
+							{{ if ne $roleID 0 }}
+								{{ $msgID = sendMessageRetID $targetID (complexMessage
+									"content" $content
+									"allowed_mentions" (sdict "parse" (cslice "users" "roles"))) }}
+							{{ else }}
+								{{ $msgID = sendMessageRetID $targetID (complexMessage
+									"content" $body) }}
+							{{ end }}
+							{{ sendResponse nil (complexMessage "content" (print
+								"✅ Sent: https://discord.com/channels/" .Guild.ID "/"
+								$targetID "/" $msgID) "ephemeral" true) }}
+						{{ catch }}
+							{{ sendResponse nil (complexMessage
+								"content" "⚠️ Couldn't send the prompt there — check the channel."
+								"ephemeral" true) }}
+						{{ end }}
+					{{ end }}
+				{{ end }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+{{ else }}
+Reached by submitting a /prompt form; use /prompt as a slash command.
+{{ end }}

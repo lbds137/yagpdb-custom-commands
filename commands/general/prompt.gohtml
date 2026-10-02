@@ -1,0 +1,59 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `prompt`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  Opens the /prompt form for a channel: the staff member types the prompt, and
+  submitting it (prompt_post) posts it — a new thread titled `YYYY-MM-DD: ...` in a
+  forum channel or with the thread toggle, else a plain message. Defer None is
+  mandatory, not a choice: sendModal IS the interaction's one response, and a
+  deferral would eat the slot.
+
+  Slash option: `channel channel where the prompt goes (default: this channel)`
+  Slash option: `thread boolean post as a new thread (forced on for forum channels)`
+  Slash option: `role role a role to ping at the top`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $rolesDict := (dbGet 0 "Roles").Value }}
+	{{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
+	{{ if not (hasRoleID $staffRoleID) }}
+		{{ sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true) }}
+	{{ else }}
+		{{/* the option resolves to the channel object, the fallback to the invocation
+			channel; both carry .ID and .Type, so only the ID is passed on (a channel
+			object would silently resolve to channel 0 in createForumPost) */}}
+		{{ $target := or .Options.channel .Channel }}
+		{{ $asThread := or (eq $target.Type 15) .Options.thread }}
+		{{ $roleID := 0 }}
+		{{ if .Options.role }}
+			{{ $roleID = .Options.role.ID }}
+		{{ end }}
+		{{ $mode := "i" }}
+		{{ if $asThread }}
+			{{ $mode = "t" }}
+		{{ end }}
+		{{/* the custom ID is the form's whole state: one mode letter + snowflakes only,
+			since prompt_post splits it on ":" */}}
+		{{ $customID := print "prompt:post:" $mode ":" $target.ID ":" $roleID }}
+		{{ $bodyField := sdict "label" "Prompt" "custom_id" "prompt_body"
+			"style" 2 "required" true "max_length" 2000 }}
+		{{ $fields := cslice $bodyField }}
+		{{ if $asThread }}
+			{{/* the title budget is 88: the writer prepends the 12-character date
+				prefix before its own 100 check, so a field capped at 100 would strand
+				89-100 character titles in a server-side refusal that loses the text */}}
+			{{ $fields = cslice (sdict "label" "Title" "custom_id" "prompt_title"
+				"style" 1 "required" true "max_length" 88) $bodyField }}
+		{{ end }}
+		{{ try }}
+			{{ sendModal (cmodal "title" "New prompt" "custom_id" $customID "fields" $fields) }}
+		{{ catch }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ Couldn't open the prompt form — try again." "ephemeral" true) }}
+		{{ end }}
+	{{ end }}
+{{ else }}
+Use /prompt as a slash command: an optional channel, thread toggle, and role to ping.
+{{ end }}

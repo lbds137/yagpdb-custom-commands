@@ -1,0 +1,72 @@
+'prompt: a forum channel forces thread mode, both fields, the forum ID in the custom ID':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: New prompt
+          custom_id: prompt:post:t:333333333333333333:0
+          fields:
+            - prompt_title
+            - prompt_body
+    db:
+        - user_id: 0
+          key: Roles
+          value: '{"Helper":"222222222222222222","Staff":"111111111111111111"}'
+'prompt: no options targets this channel, inline mode, the body field alone':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: New prompt
+          custom_id: prompt:post:i:123456789012345678:0
+          fields:
+            - prompt_body
+    db:
+        - user_id: 0
+          key: Roles
+          value: '{"Helper":"222222222222222222","Staff":"111111111111111111"}'
+'prompt: the thread toggle turns a text channel into thread mode':
+    output: ""
+    interaction_responses:
+        - kind: modal
+          title: New prompt
+          custom_id: prompt:post:t:123456789012345678:0
+          fields:
+            - prompt_title
+            - prompt_body
+    db:
+        - user_id: 0
+          key: Roles
+          value: '{"Helper":"222222222222222222","Staff":"111111111111111111"}'
+'prompt_post: inline mode sends to the target channel and links the message':
+    output: ""
+    messages:
+        - channel_id: 444444444444444444
+          content: <@&222222222222222222> standup notes
+        - channel_id: 123456789012345678
+          content: '✅ Sent: https://discord.com/channels/462036216909398026/444444444444444444/1100000000000000001'
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000002
+          content: '✅ Sent: https://discord.com/channels/462036216909398026/444444444444444444/1100000000000000001'
+    db:
+        - user_id: 0
+          key: Roles
+          value: '{"Helper":"222222222222222222","Staff":"111111111111111111"}'
+'prompt_post: thread mode posts mention-first into the created thread and links it':
+    output: ""
+    messages:
+        - channel_id: 1200000000000000000
+          content: <@&222222222222222222> hello
+        - channel_id: 123456789012345678
+          content: '✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000'
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000002
+          content: '✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000'
+    db:
+        - user_id: 0
+          key: Roles
+          value: '{"Helper":"222222222222222222","Staff":"111111111111111111"}'

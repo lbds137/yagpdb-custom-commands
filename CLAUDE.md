@@ -29,7 +29,7 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
   message_pointer), `knowledge/` (define), `general/` (avatar_menu, avatar_viewer,
-  dismiss, emoji_menu, hugemoji, timestamp), `plumbing/` (embed_exec, message_link, log_user,
+  dismiss, emoji_menu, hugemoji, prompt, prompt_post, timestamp), `plumbing/` (embed_exec, message_link, log_user,
   ticket_clean, bootstrap, config_sync).
 - `config_sync` (hourly) writes every command's panel id into the `Commands` dict; it is
   generated from `deploy/panel.json` by `make config-sync` (never edit it by hand), and
