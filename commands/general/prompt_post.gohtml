@@ -125,7 +125,7 @@
 												returned ID is captured, not printed: leftover
 												template output becomes a followup message */}}
 											{{ $pingID := sendMessageRetID nil (complexMessage
-												"content" (print "🔔 New prompt from "
+												"content" (print "🔔 New prompt for "
 												(mentionRoleID $roleID) ": " $link)
 												"allowed_mentions" (sdict "roles" (cslice $roleID))) }}
 										{{ catch }}
@@ -174,7 +174,7 @@
 													returned ID is captured, not printed: leftover
 													template output becomes a followup message */}}
 												{{ $pingID := sendMessageRetID nil (complexMessage
-													"content" (print "🔔 New prompt from "
+													"content" (print "🔔 New prompt for "
 													(mentionRoleID $roleID) ": " $link)
 													"allowed_mentions" (sdict "roles" (cslice $roleID))) }}
 											{{ catch }}

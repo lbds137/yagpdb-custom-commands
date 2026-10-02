@@ -59,7 +59,7 @@
         - channel_id: 1200000000000000000
           content: hello
         - channel_id: 123456789012345678
-          content: "\U0001F514 New prompt from <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001"
+          content: "\U0001F514 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001"
         - channel_id: 123456789012345678
           content: '✅ Created 2026-01-01: A Text Topic: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001'
           ephemeral: true
@@ -78,7 +78,7 @@
         - channel_id: 1200000000000000000
           content: hello
         - channel_id: 123456789012345678
-          content: "\U0001F514 New prompt from <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000"
+          content: "\U0001F514 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000"
         - channel_id: 123456789012345678
           content: '✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000'
           ephemeral: true
