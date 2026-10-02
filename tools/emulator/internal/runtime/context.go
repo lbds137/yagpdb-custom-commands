@@ -119,7 +119,9 @@ type ExecutionContext struct {
 	// Messages that exist, for getMessage; Members, if set, are the only users in the server
 	Messages []types.CtxMessage
 	sentIDs  *int64 // see sentMessageIDs
-	Members  []int64
+	// createdThreads counts the threads createForumPost created this run (nextThreadID)
+	createdThreads int
+	Members        []int64
 	// MemberRoles are other members' roles; the triggering user's are UserRoles
 	MemberRoles map[int64][]int64
 	// MemberNicks and MemberJoinedAgo give members' nicknames and how long before the run
@@ -571,6 +573,17 @@ func (ctx *ExecutionContext) RecordSentMessage(channelID int64, content string, 
 
 // Sent messages get IDs from here up, clear of the IDs tests declare.
 const firstSentMessageID = 1_100_000_000_000_000_000
+
+// Threads createForumPost creates get IDs from here up, clear of the IDs tests declare,
+// the messages the run sends and the interactions (firstSentMessageID's space is below).
+const firstThreadID = 1_200_000_000_000_000_000
+
+// nextThreadID is the deterministic ID of the next thread createForumPost creates, so a
+// test can name the channel the post's first message landed in.
+func (ctx *ExecutionContext) nextThreadID() int64 {
+	ctx.createdThreads++
+	return firstThreadID + int64(ctx.createdThreads-1)
+}
 
 // sentMessageIDs is the count of messages sent so far, shared with execCC children so every
 // message in a run gets its own ID.
