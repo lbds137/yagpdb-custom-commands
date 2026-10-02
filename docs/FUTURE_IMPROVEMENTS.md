@@ -491,12 +491,31 @@ gets a failing test first.
   header syntax and the emulator's parser don't express it, so the runtime forum-type
   check stays the guard; (d) the port records a first message's file upload and
   reply-lookup against the forum channel rather than the created thread (reviewer
-  NIT — visible only if a test uploads or replies in a post's first message).
+  NIT — visible only if a test uploads or replies in a post's first message); (e)
+  prompt_post's two mid-flow failure acks ARE pinnable — declare a channel at the
+  deterministic first-thread ID (1200000000000000000) with `bot_cannot_send` and
+  exactly the followup send refuses (createForumPost/createThread check the
+  parent's id, the send checks the thread's own); both cases live at the end of
+  prompt_tests.yaml; (f) a hand-made mode-t custom_id without a prompt_title
+  field errors the run outside any try (.ModalValues access in prompt_post) —
+  staff-gated so only staff can trip it, but the submitter gets no response; a
+  field guard would close it.
 - Command headers record `Slash option:` descriptions but not the top-level slash
   command's description (the panel's slash_command_description field,
   customcommands.go:233/619/649) — so the panel and the repo can drift. Candidate: a
   `Slash description:` header line the linter cross-checks; meanwhile /prompt's
   panel description lives in this unit's deploy report (2026-10-01).
+- PRODUCTION FINDING (smoke 2026-10-01/02): a forum post's FIRST message never
+  notifies its mentions, even with allowed_mentions transmitted — the payload
+  provably rode along (restapi.go:2634-2637 nests MessageSend; message.go:340
+  marshals the field), the same bot/role/allowlist pinged fine via sendMessage,
+  and the owner's manual flow (bot ping message inside a thread) delivers.
+  Conclusion: the thread-start endpoint's first message is a notification dead
+  zone; regular thread messages notify. /prompt now works around it (post
+  without the mention; bare mention as a second message in the thread) and the
+  emulator records no pings on a forum first message. Candidate upstream issue
+  for botlabs (runtime behavior, not a code bug in YAGPDB) — owner's call per
+  the upstream stance memory; likely unfixable client-side.
 - Upstream stance research (2026-10-01, for any future submission): botlabs-gg/yagpdb
   CONTRIBUTING.md says NOTHING about AI-assisted contributions (silent, not hostile);
   MIT license; PRs target `dev`, not master. No known upstream issue/PR covers forum

@@ -21,9 +21,9 @@ const maxThreadNameRunes = 100
 // context_funcs.go:1479-1531): a public thread in a forum channel, its first message
 // sent with it. The thread is registered in Threads/ThreadOrder (resolvable by
 // ChannelArg and getChannelOrThread, absent from .Guild.Channels and getChannel, as
-// YAGPDB's state tracker keeps it) and its message recorded as a send, pings and all.
-// The create_thread counter is taken by withLimits (limitedFuncs), as YAGPDB's
-// IncreaseCheckCallCounterPremium call does there.
+// YAGPDB's state tracker keeps it) and its message recorded as a send that pings no
+// one (see the send below). The create_thread counter is taken by withLimits
+// (limitedFuncs), as YAGPDB's IncreaseCheckCallCounterPremium call does there.
 func (e *Engine) createForumPost(channel, name, content interface{}, optional ...interface{}) (*types.CtxChannel, error) {
 
 	if content == nil {
@@ -83,7 +83,13 @@ func (e *Engine) createForumPost(channel, name, content interface{}, optional ..
 	}
 
 	// The first message goes through the path sendMessage takes: Discord's message
-	// limits (checkSend) and the mentions its allowed mentions let ping
+	// limits (checkSend). What it does not take is the pings. Production smoke
+	// 2026-10-02: the thread-start endpoint's first message carried allowed_mentions
+	// (lib/discordgo/restapi.go:2634-2637 nests the MessageSend, message.go:340
+	// marshals the field) yet never notified, while the same bot's regular messages
+	// did. Discord doesn't notify on it (the content still renders), so it records as
+	// pinging no one; a caller who wants the ping sends it as a second message (the
+	// /prompt form's writer does).
 	if e.ctx.ChannelsCannotSend[cID] {
 		return nil, e.ctx.discordRefuses("createForumPost", errMissingPerms,
 			fmt.Sprintf("the bot lacks permission to send messages in channel %d", cID))
@@ -99,7 +105,6 @@ func (e *Engine) createForumPost(channel, name, content interface{}, optional ..
 	if msgData.HasFile {
 		e.ctx.RecordFileUpload(cID, msgData.Filename, msgData.File)
 	}
-	pings := e.ctx.pings(contentText, msgData.AllowedMentions, cID, msgData.ReplyTo)
 
 	threadID := e.ctx.nextThreadID()
 	if e.ctx.ChannelDetails == nil {
@@ -112,7 +117,7 @@ func (e *Engine) createForumPost(channel, name, content interface{}, optional ..
 		ParentID:    cID,
 		AppliedTags: *partialThreaad.AppliedTags}
 
-	e.ctx.RecordSentMessage(threadID, contentText, embeds, components, pings)
+	e.ctx.RecordSentMessage(threadID, contentText, embeds, components, Pings{})
 
 	thread := e.ctx.channelState(threadID)
 	return &thread, nil

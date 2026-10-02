@@ -6,11 +6,13 @@
   Defer mode: `None`
 
   The /prompt form's writer (prompt opens it): posts the submitted prompt where the
-  form's custom ID points — a new thread titled `YYYY-MM-DD: ...` (thread mode) or a
-  plain message (inline). The date is local time by the Global dict's
-  `Timezone Offset` in hours (default -4 = ET). A role in the form leads the content
-  mention-first. Everything the staff member sees is ephemeral; the post is the
-  public artifact.
+  form's custom ID points. Thread mode: in a forum channel, a post titled
+  `YYYY-MM-DD: ...` whose role ping — if the form has one — goes in as a second
+  message (the thread-start endpoint's first message never notifies); anywhere else,
+  a createThread thread with the prompt sent into it mention-first. Inline mode: a
+  plain message. The date is local time by the Global dict's `Timezone Offset` in
+  hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
+  is the public artifact.
 */ -}}
 {{ if .IsModal }}
 	{{ $rolesDict := (dbGet 0 "Roles").Value }}
@@ -45,15 +47,35 @@
 				{{ if ne $roleID 0 }}
 					{{ $content = joinStr " " (mentionRoleID $roleID) $body }}
 				{{ end }}
+				{{/* thread mode's path is the target's type: a forum channel (type 15)
+					takes createForumPost, anything else a createThread thread. The probe
+					passes the target ID, never a channel object — the create functions
+					read snowflakes only, and an unknown channel comes back nil with no
+					error (the empty string is the "no channel" sentinel: a nil literal
+					can't seed a variable) */}}
+				{{ $isForum := false }}
+				{{ if eq $mode "t" }}
+					{{ $ch := "" }}
+					{{ try }}
+						{{ $ch = getChannelOrThread $targetID }}
+					{{ catch }}
+					{{ end }}
+					{{ if $ch }}
+						{{ $isForum = eq $ch.Type 15 }}
+					{{ end }}
+				{{ end }}
 				{{/* Discord's client caps the fields, but the role mention is added here,
-					so the final content gets its own check — never clamped */}}
+					so the content that is actually sent gets its own check — never
+					clamped. The forum post is the one exception: it carries the bare body
+					(its ping is a second message), so the role ping's share of the budget
+					applies everywhere but there */}}
 				{{ $bodyLen := len (toRune $body) }}
 				{{ $contentLen := len (toRune $content) }}
 				{{ if gt $bodyLen 2000 }}
 					{{ sendResponse nil (complexMessage "content" (print
 						"⚠️ The prompt is " $bodyLen " characters — the limit is 2000.")
 						"ephemeral" true) }}
-				{{ else if gt $contentLen 2000 }}
+				{{ else if and (gt $contentLen 2000) (not $isForum) }}
 					{{ sendResponse nil (complexMessage "content" (print
 						"⚠️ The role ping puts the prompt at " $contentLen
 						" characters — the limit is 2000. Shorten the prompt or drop the role.")
@@ -76,29 +98,79 @@
 								"⚠️ The thread title is " $titleLen
 								" characters — the limit is 100.") "ephemeral" true) }}
 						{{ else }}
-							{{/* the target ID, never the channel object: createForumPost
-								reads snowflakes only, and an unknown channel comes back nil
-								with no error (the empty string is the "no post" sentinel:
-								a nil literal can't seed a variable) */}}
-							{{ $post := "" }}
-							{{ try }}
-								{{ if ne $roleID 0 }}
-									{{ $post = createForumPost $targetID $title (complexMessage
-										"content" $content
-										"allowed_mentions" (sdict "parse" (cslice "users" "roles"))) }}
-								{{ else }}
+							{{ if $isForum }}
+								{{/* the post carries the bare body: the thread-start
+									endpoint's first message never notifies (2026-10-02
+									smoke), so the role ping goes in as a second message —
+									the shape that does */}}
+								{{ $post := "" }}
+								{{ try }}
 									{{ $post = createForumPost $targetID $title (complexMessage
 										"content" $body) }}
+								{{ catch }}
 								{{ end }}
-							{{ catch }}
-							{{ end }}
-							{{ if not $post }}
-								{{ sendResponse nil (complexMessage
-									"content" "⚠️ Couldn't create the post." "ephemeral" true) }}
+								{{ if not $post }}
+									{{ sendResponse nil (complexMessage
+										"content" "⚠️ Couldn't create the post." "ephemeral" true) }}
+								{{ else }}
+									{{ $pingOK := true }}
+									{{ if ne $roleID 0 }}
+										{{ try }}
+											{{/* the returned ID is captured, not printed: leftover
+												template output becomes a followup message */}}
+											{{ $pingID := sendMessageRetID $post.ID (complexMessage
+												"content" (mentionRoleID $roleID)
+												"allowed_mentions" (sdict "parse" (cslice "users" "roles"))) }}
+										{{ catch }}
+											{{/* the post landed; only the ping failed */}}
+											{{ $pingOK = false }}
+										{{ end }}
+									{{ end }}
+									{{ $ack := print "✅ Posted " $title
+										": https://discord.com/channels/" .Guild.ID "/" $post.ID }}
+									{{ if not $pingOK }}
+										{{ $ack = print $ack " (couldn't send the ping message)" }}
+									{{ end }}
+									{{ sendResponse nil (complexMessage "content" $ack
+										"ephemeral" true) }}
+								{{ end }}
 							{{ else }}
-								{{ sendResponse nil (complexMessage "content" (print
-									"✅ Posted " $title ": https://discord.com/channels/"
-									.Guild.ID "/" $post.ID) "ephemeral" true) }}
+								{{/* a text channel or thread target: Discord is two calls —
+									the thread, then the prompt into it. A refusal in the
+									second leaves the empty thread behind; that is Discord's
+									two-call reality, not a lost post */}}
+								{{ $post := "" }}
+								{{ try }}
+									{{ $post = createThread $targetID 0 $title }}
+								{{ catch }}
+								{{ end }}
+								{{ if not $post }}
+									{{ sendResponse nil (complexMessage
+										"content" "⚠️ Couldn't create the post." "ephemeral" true) }}
+								{{ else }}
+									{{ $msgID := 0 }}
+									{{ try }}
+										{{ if ne $roleID 0 }}
+											{{ $msgID = sendMessageRetID $post.ID (complexMessage
+												"content" $content
+												"allowed_mentions" (sdict "parse" (cslice "users" "roles"))) }}
+										{{ else }}
+											{{ $msgID = sendMessageRetID $post.ID (complexMessage
+												"content" $body) }}
+										{{ end }}
+									{{ catch }}
+									{{ end }}
+									{{ if $msgID }}
+										{{ sendResponse nil (complexMessage "content" (print
+											"✅ Created " $title ": https://discord.com/channels/"
+											.Guild.ID "/" $post.ID "/" $msgID) "ephemeral" true) }}
+									{{ else }}
+										{{ sendResponse nil (complexMessage "content" (print
+											"✅ Created " $title
+											" but the prompt couldn't be sent into it — check the channel.")
+											"ephemeral" true) }}
+									{{ end }}
+								{{ end }}
 							{{ end }}
 						{{ end }}
 					{{ else }}
