@@ -471,19 +471,27 @@ gets a failing test first.
 
 ## Tooling defects
 
-- Forum prompts are POSSIBLE with the vendored YAGPDB (CORRECTED 2026-10-01 evening —
-  an earlier entry here claimed the vendor was stale and `createForumPost` absent; that
-  was a grep miss: the absence grep's `head -8` truncated before
-  context_funcs.go:1532). Facts: `createForumPost` is registered in our vendor
-  (context.go:916) and posts a forum thread WITH a first message
-  (`ForumThreadStartComplex`, context_funcs.go:1532); content can be a complexMessage,
-  so `allowed_mentions` rides on the message. Whether forum first-messages actually
-  NOTIFY is still to be runtime-verified at /prompt's smoke (the same
-  content-vs-pings lesson as the role ping). What's actually missing: the EMULATOR
-  knows the name (yagpdb_funcs.go known-funcs list) but has no implementation — a
-  /prompt unit ports `tmplCreateForumPost` from the vendor first (fidelity rule: copy,
-  don't reimplement). `make vendor-drift` (added 2026-10-01) guards vendor-vs-upstream
-  drift; its first run is what exposed the false staleness claim.
+- Forum prompts SHIPPED (2026-10-01): `createForumPost` is ported into the emulator
+  (faithful copy of tmplCreateForumPost, context_funcs.go:1479-1531; the earlier
+  "vendor stale" claim here was a grep miss — `head -8` truncated before :1532), and
+  /prompt ships as a modal flow: /prompt (panel 101) opens the form, prompt_post
+  (panel 102, `^prompt:post:`) posts it — a `YYYY-MM-DD: title` thread in forum
+  channels (or via the thread toggle), role ping mention-first through
+  allowed_mentions. Pings and the date prefix are emulator-pinned
+  (prompt_tests.yaml); whether a forum first-message actually NOTIFIES is still to
+  be runtime-verified in Lila's deploy smoke (the content-vs-pings lesson).
+  Filed from the unit: (a) the emulator stores a modal field's max_length but never
+  enforces it (Discord enforces client-side; prompt_post re-checks server-side and
+  the 2100-char test pins that) — emulator submissions could validate it; (b) thread
+  dates use the Global dict's `Timezone Offset` hours (default -4) because
+  tmplCurrentTime is UTC (general.go:1495) and templates have no tz math; DST is NOT
+  automated — during EST the derived date runs 1h fast, wrong only for runs between
+  00:00-00:59 ET in Nov-Mar (fix then: set the key to -5, or automate the DST table);
+  (c) upstream SlashCommandOption.ChannelTypes exists but the repo's `Slash option:`
+  header syntax and the emulator's parser don't express it, so the runtime forum-type
+  check stays the guard; (d) the port records a first message's file upload and
+  reply-lookup against the forum channel rather than the created thread (reviewer
+  NIT — visible only if a test uploads or replies in a post's first message).
 - Upstream stance research (2026-10-01, for any future submission): botlabs-gg/yagpdb
   CONTRIBUTING.md says NOTHING about AI-assisted contributions (silent, not hostile);
   MIT license; PRs target `dev`, not master. No known upstream issue/PR covers forum

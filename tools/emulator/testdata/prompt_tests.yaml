@@ -1,0 +1,262 @@
+name: "prompt (/prompt opens the form; the form posts it)"
+
+# The role_ping_slash world: Mod 111111111111111111 is the Staff role, the invoker
+# 500000000000000001 (staff tests give them Mod), 555555555555555555 is a non-staff
+# member, Helper 222222222222222222 is the role being pinged. The clock is frozen at
+# 2026-01-02T03:04:05Z, where the default -4 offset's date (2026-01-01) differs from
+# UTC's (2026-01-02) — that is the point of the offset. The guild is the main server,
+# so the success links are exact; channels: prompts (forum), staff-chat (text),
+# a-thread (a thread the inline mode posts straight into).
+
+defaults:
+  user: { id: 500000000000000001, username: "Invoker" }
+  channel: { id: 123456789012345678 }
+  clock: 2026-01-02T03:04:05Z
+  guild:
+    id: 462036216909398026
+    name: "Gay Night House"
+    roles:
+      - { id: 111111111111111111, name: "Mod" }
+      - { id: 222222222222222222, name: "Helper" }
+    channels:
+      - { id: 333333333333333333, name: "prompts", type: 15 }
+      - { id: 444444444444444444, name: "staff-chat" }
+      - { id: 555555555555555559, name: "a-thread", type: 11 }
+
+setup_db:
+  - user_id: 0
+    key: "Roles"
+    value: { Staff: "111111111111111111", Helper: "222222222222222222" }
+
+tests:
+  # ---------- panel 101: the form /prompt opens ----------
+  - name: "prompt: a forum channel forces thread mode, both fields, the forum ID in the custom ID"
+    template: "../../../commands/general/prompt.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111111111111] }
+      interaction: { type: slash, options: { channel: 333333333333333333 } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "New prompt", custom_id: "prompt:post:t:333333333333333333:0",
+            fields: ["prompt_title", "prompt_body"] }
+
+  - name: "prompt: no options targets this channel, inline mode, the body field alone"
+    template: "../../../commands/general/prompt.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111111111111] }
+      interaction: { type: slash }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "New prompt", custom_id: "prompt:post:i:123456789012345678:0",
+            fields: ["prompt_body"] }
+
+  - name: "prompt: the thread toggle turns a text channel into thread mode"
+    template: "../../../commands/general/prompt.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111111111111] }
+      interaction: { type: slash, options: { thread: true } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "New prompt", custom_id: "prompt:post:t:123456789012345678:0",
+            fields: ["prompt_title", "prompt_body"] }
+
+  - name: "prompt: a non-staff run is refused ephemerally, no modal opens"
+    template: "../../../commands/general/prompt.gohtml"
+    context:
+      user: { id: 555555555555555555, username: "Other" }
+      interaction: { type: slash }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "⚠️ Staff only." }
+
+  # ---------- panel 102: the form's writer ----------
+  - name: "prompt_post: thread mode posts mention-first into the created thread and links it"
+    template: "../../../commands/general/prompt_post.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields: { prompt_title: "A Cool Topic", prompt_body: "hello" }
+    assertions:
+      # the post is the created thread's first message, mention leading, role pinging
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_contains: "<@&222222222222222222> hello"
+          pings: { roles: [222222222222222222] }
+        - channel_id: 123456789012345678
+          ephemeral: true
+      # the date-prefixed title and the post link, ephemerally (clock 2026-01-02T03:04Z
+      # at the default -4 offset is the evening of 2026-01-01)
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains:
+              "✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000" }
+
+  - name: "prompt_post: inline mode sends to the target channel and links the message"
+    template: "../../../commands/general/prompt_post.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:444444444444444444:222222222222222222"
+        fields: { prompt_body: "standup notes" }
+    assertions:
+      sent_messages:
+        - channel_id: 444444444444444444
+          content_contains: "<@&222222222222222222> standup notes"
+          pings: { roles: [222222222222222222] }
+        - channel_id: 123456789012345678
+          ephemeral: true
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains:
+              "✅ Sent: https://discord.com/channels/462036216909398026/444444444444444444/1100000000000000001" }
+
+  - name: "prompt_post: with no role, a typed role mention renders but never pings; a user does"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:444444444444444444:0"
+        fields: { prompt_body: "ping <@555555555555555555> not <@&111111111111111111>" }
+    assertions:
+      sent_messages:
+        - channel_id: 444444444444444444
+          content_contains: "ping <@555555555555555555> not <@&111111111111111111>"
+          pings: { users: [555555555555555555] }
+
+  - name: "prompt_post: a non-staff submission is refused ephemerally, nothing posted"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { id: 555555555555555555, username: "Other" }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:444444444444444444:0"
+        fields: { prompt_body: "hi" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "⚠️ Staff only." }
+      sent_messages:
+        - channel_id: 123456789012345678
+          ephemeral: true
+
+  - name: "prompt_post: a body over 2000 characters is refused ephemerally, nothing posted"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:444444444444444444:0"
+        fields:
+          prompt_body: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "the limit is 2000." }
+      sent_messages:
+        - channel_id: 123456789012345678
+          ephemeral: true
+
+  - name: "prompt_post: an unknown thread target creates nothing; the refusal is bare"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:987654321000000000:0"
+        fields: { prompt_title: "Ghost", prompt_body: "hello" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "the post." }
+      # bare: the nil return carries no error detail, and the message pins that
+      sent_messages:
+        - channel_id: 123456789012345678
+          ephemeral: true
+          content_equals: "⚠️ Couldn't create the post."
+
+  - name: "prompt_post: inline mode posts straight into a thread target"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:555555555555555559:0"
+        fields: { prompt_body: "straight into the thread" }
+    assertions:
+      sent_messages:
+        - channel_id: 555555555555555559
+          content_contains: "straight into the thread"
+        - channel_id: 123456789012345678
+          ephemeral: true
+
+  - name: "prompt_post: the Global Timezone Offset drives the date prefix (0 = UTC here)"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:0"
+        fields: { prompt_title: "Later Topic", prompt_body: "hi" }
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { Timezone Offset: 0 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains:
+              "✅ Posted 2026-01-02: Later Topic: https://discord.com/channels/462036216909398026/1200000000000000000" }
+
+  - name: "prompt_post: a hand-made over-length title is refused server-side (the field caps at 88)"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:0"
+        fields:
+          prompt_title: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          prompt_body: "hi"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "the limit is 100." }
+      sent_messages:
+        - channel_id: 123456789012345678
+          ephemeral: true
+
+  - name: "prompt_post: a malformed custom ID fails soft"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:x:444444444444444444:0"
+        fields: { prompt_body: "hi" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Malformed prompt form" }
+      sent_messages:
+        - channel_id: 123456789012345678
+          ephemeral: true
+
+  - name: "prompt_post: the role ping can push the content over the limit"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:444444444444444444:222222222222222222"
+        fields:
+          prompt_body: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Shorten the prompt or drop the role." }
+      sent_messages:
+        - channel_id: 123456789012345678
+          ephemeral: true

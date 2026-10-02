@@ -17,6 +17,8 @@
     "commands/members/staff_roles_pick.gohtml": {"main": 97},
     "commands/members/inactivity_prune_pick.gohtml": {"main": 99},
     "commands/members/role_ping_slash.gohtml": {"main": 100},
+    "commands/general/prompt.gohtml": {"main": 101},
+    "commands/general/prompt_post.gohtml": {"main": 102},
     "commands/color/hex_to_int.gohtml": {"main": 18, "lotv": 6},
     "commands/db/db_get_embed.gohtml": {"main": 22, "lotv": 5},
     "commands/plumbing/ticket_clean.gohtml": {"main": 29},
