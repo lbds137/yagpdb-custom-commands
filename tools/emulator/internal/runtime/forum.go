@@ -118,6 +118,108 @@ func (e *Engine) createForumPost(channel, name, content interface{}, optional ..
 	return &thread, nil
 }
 
+// createThread is YAGPDB's tmplCreateThread (vendor common/templates/context_funcs.go:
+// 1239-1314): an empty thread of a text, announcement or forum channel — no first message,
+// which is the observable difference from createForumPost. Its optionals are positional,
+// not a dict: private, auto_archive_duration, invitable. The thread is registered in
+// Threads/ThreadOrder (resolvable by ChannelArg and getChannelOrThread, absent from
+// .Guild.Channels and getChannel, as YAGPDB's state tracker keeps it) and the create_thread
+// counter is taken by withLimits (limitedFuncs), as YAGPDB's IncreaseCheckCallCounterPremium
+// call does there. Not modeled: the thread's metadata (the auto_archive_duration and
+// invitable it was created with — ChannelDetails carries neither, and no template surface
+// reads them back).
+func (e *Engine) createThread(channel, msgID, name interface{}, optionals ...interface{}) (*types.CtxChannel, error) {
+
+	cID := e.channelArg(channel)
+	if cID == 0 {
+		return nil, nil //dont send an error, a nil output would indicate invalid/unknown channel
+	}
+
+	// GS.GetChannel knows channels only: a resolved thread is "not in state" (vendor
+	// context_funcs.go tmplCreateThread's cstate lookup)
+	if _, isThread := e.ctx.Threads[cID]; isThread {
+		return nil, errors.New("channel not in state")
+	}
+
+	cstate := e.ctx.channelState(cID)
+
+	// vendor's ThreadStart: type public thread; the optionals are positional
+	threadType := channelTypeGuildPublicThread
+	mID := funcs.ToInt64(msgID)
+	for index, opt := range optionals {
+		switch index {
+		case 0:
+			switch opt := opt.(type) {
+			case bool:
+				if opt {
+					threadType = channelTypeGuildPrivateThread
+				}
+			default:
+				return nil, errors.New("createThread 'private' must be a boolean")
+			}
+		case 1:
+			// discordgo.AutoArchiveDuration OneHour, OneDay, ThreeDays, OneWeek; parsed and
+			// validated, then not modeled (see the function comment)
+			switch yagstd.ToIntTmpl(opt) {
+			case 60, 1440, 4320, 10080:
+			default:
+				return nil, errors.New("createThread 'auto_archive_duration' must be 60, 1440, 4320, or 10080")
+			}
+		case 2:
+			// invitable is parsed and validated, then not modeled (see the function comment)
+			switch opt.(type) {
+			case bool:
+			default:
+				return nil, errors.New("createThread 'invitable' must be a boolean")
+			}
+		default:
+			return nil, errors.New("createThread: Too many arguments")
+		}
+	}
+
+	if cstate.Type == channelTypeNews {
+		threadType = channelTypeGuildNewsThread
+	}
+
+	// This is where the ThreadStartComplex call goes: Discord's refusals are modelled
+	// here, and YAGPDB checks for neither. A message to attach to that isn't known to
+	// exist is 10008 (the reactions precedent; the route resolves the message before it
+	// validates the body), and an empty or over-100-character name is 50035 Invalid Form
+	// Body.
+	if mID > 0 && !e.ctx.messageExists(cID, mID) {
+		if err := e.ctx.discordRefuses("createThread", errUnknownMessage,
+			fmt.Sprintf("no message %d in channel %d (a test's messages, a sent one or the run's message)", mID, cID)); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+	title := funcs.ToString(name)
+	if n := len([]rune(title)); n == 0 || n > maxThreadNameRunes {
+		detail := fmt.Sprintf("the thread name is %d characters (max %d)", n, maxThreadNameRunes)
+		if n == 0 {
+			detail = "the thread name is empty"
+		}
+		if err := e.ctx.discordRefuses("createThread", errInvalidFormBody, detail); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	threadID := e.ctx.nextThreadID()
+	if e.ctx.ChannelDetails == nil {
+		e.ctx.ChannelDetails = make(map[int64]types.CtxChannel)
+	}
+	e.ctx.Threads[threadID] = title
+	e.ctx.ThreadOrder = append(e.ctx.ThreadOrder, threadID)
+	e.ctx.ChannelDetails[threadID] = types.CtxChannel{ID: threadID, Name: title,
+		Type:     threadType,
+		ParentID: cID}
+
+	// no first message goes out with it: the thread is created empty
+	thread := e.ctx.channelState(threadID)
+	return &thread, nil
+}
+
 // tagIDFromName is vendor's (context_funcs.go:1544-1558): the available tag with that
 // name or ID (as a string), or 0.
 func tagIDFromName(c *types.CtxChannel, tagName string) int64 {
