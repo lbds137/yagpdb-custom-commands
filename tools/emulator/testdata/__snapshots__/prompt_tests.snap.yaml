@@ -53,18 +53,37 @@
         - user_id: 0
           key: Roles
           value: '{"Helper":"222222222222222222","Staff":"111111111111111111"}'
-'prompt_post: thread mode posts mention-first into the created thread and links it':
+'prompt_post: the thread toggle in a text channel creates a thread and sends the prompt into it':
     output: ""
     messages:
         - channel_id: 1200000000000000000
           content: <@&222222222222222222> hello
+        - channel_id: 123456789012345678
+          content: '✅ Created 2026-01-01: A Text Topic: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001'
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000002
+          content: '✅ Created 2026-01-01: A Text Topic: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001'
+    db:
+        - user_id: 0
+          key: Roles
+          value: '{"Helper":"222222222222222222","Staff":"111111111111111111"}'
+'prompt_post: thread mode posts the bare body into the created thread and pings as a second message':
+    output: ""
+    messages:
+        - channel_id: 1200000000000000000
+          content: hello
+        - channel_id: 1200000000000000000
+          content: <@&222222222222222222>
         - channel_id: 123456789012345678
           content: '✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000'
           ephemeral: true
     interaction_responses:
         - kind: message
           ephemeral: true
-          message_id: 1100000000000000002
+          message_id: 1100000000000000003
           content: '✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000'
     db:
         - user_id: 0

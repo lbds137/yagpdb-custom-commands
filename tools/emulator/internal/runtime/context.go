@@ -578,8 +578,8 @@ const firstSentMessageID = 1_100_000_000_000_000_000
 // the messages the run sends and the interactions (firstSentMessageID's space is below).
 const firstThreadID = 1_200_000_000_000_000_000
 
-// nextThreadID is the deterministic ID of the next thread createForumPost creates, so a
-// test can name the channel the post's first message landed in.
+// nextThreadID is the deterministic ID of the next thread createForumPost or
+// createThread creates, so a test can name the channel a post's first message landed in.
 func (ctx *ExecutionContext) nextThreadID() int64 {
 	ctx.createdThreads++
 	return firstThreadID + int64(ctx.createdThreads-1)

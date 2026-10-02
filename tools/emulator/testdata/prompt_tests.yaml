@@ -73,7 +73,7 @@ tests:
         - { kind: message, ephemeral: true, content_contains: "⚠️ Staff only." }
 
   # ---------- panel 102: the form's writer ----------
-  - name: "prompt_post: thread mode posts mention-first into the created thread and links it"
+  - name: "prompt_post: thread mode posts the bare body into the created thread and pings as a second message"
     template: "../../../commands/general/prompt_post.gohtml"
     snapshot: true
     context:
@@ -83,19 +83,50 @@ tests:
         custom_id: "prompt:post:t:333333333333333333:222222222222222222"
         fields: { prompt_title: "A Cool Topic", prompt_body: "hello" }
     assertions:
-      # the post is the created thread's first message, mention leading, role pinging
+      # the post is the created thread's first message, the bare body, pinging no one:
+      # the thread-start endpoint's first message never notifies (2026-10-02 smoke), so
+      # the role ping is a second message — the shape that does
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "hello"
+          pings: {}
+        - channel_id: 1200000000000000000
+          nth: 2
+          content_equals: "<@&222222222222222222>"
+          pings: { roles: [222222222222222222] }
+        - channel_id: 123456789012345678
+          ephemeral: true
+      # the date-prefixed title and the post link, ephemerally (clock 2026-01-02T03:04Z
+      # at the default -4 offset is the evening of 2026-01-01); the ack still links the
+      # POST
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains:
+              "✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000" }
+
+  - name: "prompt_post: the thread toggle in a text channel creates a thread and sends the prompt into it"
+    template: "../../../commands/general/prompt_post.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:222222222222222222"
+        fields: { prompt_title: "A Text Topic", prompt_body: "hello" }
+    assertions:
+      # not a forum: createThread (public, not attached to a message), then the prompt
+      # mention-first INTO it — a regular thread message, so it pings
       sent_messages:
         - channel_id: 1200000000000000000
           content_contains: "<@&222222222222222222> hello"
           pings: { roles: [222222222222222222] }
         - channel_id: 123456789012345678
           ephemeral: true
-      # the date-prefixed title and the post link, ephemerally (clock 2026-01-02T03:04Z
-      # at the default -4 offset is the evening of 2026-01-01)
+      # the ack links the MESSAGE (first send in a modal run is +1)
       interaction_responses:
         - { kind: message, ephemeral: true,
             content_contains:
-              "✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000" }
+              "✅ Created 2026-01-01: A Text Topic: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001" }
 
   - name: "prompt_post: inline mode sends to the target channel and links the message"
     template: "../../../commands/general/prompt_post.gohtml"
@@ -260,3 +291,57 @@ tests:
       sent_messages:
         - channel_id: 123456789012345678
           ephemeral: true
+
+  # The two mid-flow failure acks, pinned with the ghost-thread trick: declaring a
+  # channel at the deterministic first-thread ID with bot_cannot_send fails exactly
+  # the followup send — createForumPost/createThread check the PARENT's id, the send
+  # checks the thread's own.
+
+  - name: "prompt_post: a ping message that cannot send is acknowledged honestly (forum path)"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      guild:
+        id: 462036216909398026
+        name: "Gay Night House"
+        roles:
+          - { id: 111111111111111111, name: "Mod" }
+          - { id: 222222222222222222, name: "Helper" }
+        channels:
+          - { id: 333333333333333333, name: "prompts", type: 15 }
+          - { id: 1200000000000000000, name: "ghost", bot_cannot_send: true }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields: { prompt_title: "Pinged", prompt_body: "hello" }
+    assertions:
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "hello"
+          pings: {}
+        - channel_id: 123456789012345678
+          ephemeral: true
+          content_contains: "(couldn't send the ping message)"
+
+  - name: "prompt_post: a prompt that cannot send into the new thread is acknowledged honestly"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      guild:
+        id: 462036216909398026
+        name: "Gay Night House"
+        roles:
+          - { id: 111111111111111111, name: "Mod" }
+          - { id: 222222222222222222, name: "Helper" }
+        channels:
+          - { id: 123456789012345678, name: "general" }
+          - { id: 1200000000000000000, name: "ghost", bot_cannot_send: true }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:0"
+        fields: { prompt_title: "Ghosty", prompt_body: "hi" }
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          ephemeral: true
+          content_contains: "but the prompt couldn't be sent into it"

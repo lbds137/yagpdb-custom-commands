@@ -75,26 +75,26 @@ func TestCreateForumPostCreatesResolvableThread(t *testing.T) {
 	}
 }
 
-// The post's message pings by its allowed mentions: a complexMessage parsing roles lets
-// a typed role mention ping, while plain string content (YAGPDB's users-only default)
-// pings only users
-func TestCreateForumPostPings(t *testing.T) {
+// The post's first message pings no one, allowed_mentions or not: production smoke
+// 2026-10-02 showed the thread-start endpoint's first message never notifies (see the
+// createForumPost comment), so it records with types.Pings{}. A caller who wants the
+// ping sends a second message into the thread — that one notifies normally.
+func TestCreateForumPostFirstMessagePingsNoOne(t *testing.T) {
 	ctx := forumCtx(true)
 	if _, err := run(t, ctx, `{{createForumPost 77 "t" (complexMessage "content" "<@&111> hi"`+
 		` "allowed_mentions" (sdict "parse" (cslice "roles")))}}`); err != nil {
 		t.Fatal(err)
 	}
-	if p := ctx.SentMessages[0].Pings; len(p.Roles) != 1 || p.Roles[0] != 111 || len(p.Users) != 0 {
-		t.Errorf("parse roles: got pings %s, want role 111 only", p)
+	if p := ctx.SentMessages[0].Pings; !p.Empty() {
+		t.Errorf("allowed mentions parse roles: got pings %s, want none", p)
 	}
 
 	ctx = forumCtx(true)
 	if _, err := run(t, ctx, `{{createForumPost 77 "t" "<@&111> hi <@222>"}}`); err != nil {
 		t.Fatal(err)
 	}
-	// the notify lesson: a typed role mention alone pings no one without allowed_mentions
-	if p := ctx.SentMessages[0].Pings; len(p.Roles) != 0 || len(p.Users) != 1 || p.Users[0] != 222 {
-		t.Errorf("plain content: got pings %s, want user 222 only", p)
+	if p := ctx.SentMessages[0].Pings; !p.Empty() {
+		t.Errorf("plain content: got pings %s, want none", p)
 	}
 }
 
