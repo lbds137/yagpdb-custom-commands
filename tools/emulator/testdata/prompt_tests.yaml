@@ -73,7 +73,7 @@ tests:
         - { kind: message, ephemeral: true, content_contains: "⚠️ Staff only." }
 
   # ---------- panel 102: the form's writer ----------
-  - name: "prompt_post: thread mode posts the bare body into the created thread and pings as a second message"
+  - name: "prompt_post: thread mode posts the bare body into the created thread and pings the run channel"
     template: "../../../commands/general/prompt_post.gohtml"
     snapshot: true
     context:
@@ -84,17 +84,18 @@ tests:
         fields: { prompt_title: "A Cool Topic", prompt_body: "hello" }
     assertions:
       # the post is the created thread's first message, the bare body, pinging no one:
-      # the thread-start endpoint's first message never notifies (2026-10-02 smoke), so
-      # the role ping is a second message — the shape that does
+      # a bot-created thread's messages don't notify until a human has spoken in it
+      # (2026-10-02 probe), so the role ping goes to the RUN channel, whose normal
+      # messages always notify
       sent_messages:
         - channel_id: 1200000000000000000
           content_equals: "hello"
           pings: {}
-        - channel_id: 1200000000000000000
-          nth: 2
-          content_equals: "<@&222222222222222222>"
+        - channel_id: 123456789012345678
+          content_contains: "🔔 New prompt from <@&222222222222222222>"
           pings: { roles: [222222222222222222] }
         - channel_id: 123456789012345678
+          nth: 2
           ephemeral: true
       # the date-prefixed title and the post link, ephemerally (clock 2026-01-02T03:04Z
       # at the default -4 offset is the evening of 2026-01-01); the ack still links the
@@ -104,7 +105,7 @@ tests:
             content_contains:
               "✅ Posted 2026-01-01: A Cool Topic: https://discord.com/channels/462036216909398026/1200000000000000000" }
 
-  - name: "prompt_post: the thread toggle in a text channel creates a thread and sends the prompt into it"
+  - name: "prompt_post: the thread toggle in a text channel creates a thread and pings the run channel"
     template: "../../../commands/general/prompt_post.gohtml"
     snapshot: true
     context:
@@ -114,13 +115,19 @@ tests:
         custom_id: "prompt:post:t:123456789012345678:222222222222222222"
         fields: { prompt_title: "A Text Topic", prompt_body: "hello" }
     assertions:
-      # not a forum: createThread (public, not attached to a message), then the prompt
-      # mention-first INTO it — a regular thread message, so it pings
+      # not a forum: createThread (public, not attached to a message), then the bare
+      # body into it — a bot-created thread's messages don't notify until a human has
+      # spoken in it (2026-10-02 probe), so a mention there would be silently dead;
+      # the role ping goes to the run channel instead
       sent_messages:
         - channel_id: 1200000000000000000
-          content_contains: "<@&222222222222222222> hello"
+          content_equals: "hello"
+          pings: {}
+        - channel_id: 123456789012345678
+          content_contains: "🔔 New prompt from <@&222222222222222222>"
           pings: { roles: [222222222222222222] }
         - channel_id: 123456789012345678
+          nth: 2
           ephemeral: true
       # the ack links the MESSAGE (first send in a modal run is +1)
       interaction_responses:
@@ -292,12 +299,14 @@ tests:
         - channel_id: 123456789012345678
           ephemeral: true
 
-  # The two mid-flow failure acks, pinned with the ghost-thread trick: declaring a
-  # channel at the deterministic first-thread ID with bot_cannot_send fails exactly
-  # the followup send — createForumPost/createThread check the PARENT's id, the send
-  # checks the thread's own.
+  # Two mid-flow failure acks, with two levers. The ghost-thread trick (a channel
+  # declared at the deterministic first-thread ID with bot_cannot_send) fails only the
+  # in-thread prompt send — createThread checks the PARENT's id, the send checks the
+  # thread's own. The run channel declared bot_cannot_send fails only the ping —
+  # createForumPost checks the forum's id, so the post lands, while the ping's send
+  # there refuses; the ephemeral ack is an interaction response, not a send.
 
-  - name: "prompt_post: a ping message that cannot send is acknowledged honestly (forum path)"
+  - name: "prompt_post: a run-channel ping that cannot send is acknowledged honestly (forum path)"
     template: "../../../commands/general/prompt_post.gohtml"
     context:
       user: { roles: [111111111111111111] }
@@ -309,7 +318,7 @@ tests:
           - { id: 222222222222222222, name: "Helper" }
         channels:
           - { id: 333333333333333333, name: "prompts", type: 15 }
-          - { id: 1200000000000000000, name: "ghost", bot_cannot_send: true }
+          - { id: 123456789012345678, name: "general", bot_cannot_send: true }
       interaction:
         type: modal
         custom_id: "prompt:post:t:333333333333333333:222222222222222222"
@@ -321,7 +330,7 @@ tests:
           pings: {}
         - channel_id: 123456789012345678
           ephemeral: true
-          content_contains: "(couldn't send the ping message)"
+          content_contains: "(couldn't send the ping)"
 
   - name: "prompt_post: a prompt that cannot send into the new thread is acknowledged honestly"
     template: "../../../commands/general/prompt_post.gohtml"
@@ -345,3 +354,30 @@ tests:
         - channel_id: 123456789012345678
           ephemeral: true
           content_contains: "but the prompt couldn't be sent into it"
+
+  # The length refusal keys on INLINE only: the thread paths send the bare body, so a
+  # body whose content plus the role mention crosses 2000 is legal there (1990 + the
+  # 22-character Helper mention = 2012; the old `(not $isForum)` check refused it).
+  - name: "prompt_post: a body plus the role over 2000 refuses only in inline mode"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:222222222222222222"
+        fields: { prompt_title: "Long But Legal", prompt_body: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+    assertions:
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          pings: {}
+        - channel_id: 123456789012345678
+          content_contains: "🔔 New prompt from <@&222222222222222222>"
+          pings: { roles: [222222222222222222] }
+        - channel_id: 123456789012345678
+          nth: 2
+          ephemeral: true
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains:
+              "✅ Created 2026-01-01: Long But Legal: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001" }

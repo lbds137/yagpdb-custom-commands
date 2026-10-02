@@ -468,6 +468,14 @@ gets a failing test first.
 - A join message's `ctx.Msg` isn't modelled (a blank message from the joining member,
   which an execCC from it would inherit). (Component and modal triggers now are, with
   YAGPDB's `.Message`: the interaction's message with the clicker as author.)
+- Not modelled (filed 2026-10-02, /prompt's run-channel ping unit): Discord's
+  human-speech gate — a bot mention in a bot-created thread doesn't notify until a human
+  has spoken in it (the 2026-10-02 probe: /role_ping silent in a fresh thread; after the
+  owner typed one message, the same ping reached her alt). No command sends mentions
+  into fresh threads any more (prompt_post pings the run channel), so nothing pins it.
+  Promote when a command must mention inside a bot-created thread: model the gate on the
+  mocks (a `human_spoke` flag on created threads, thread-message pings suppressed until
+  it is set) and a fixture knob to set it.
 
 ## Tooling defects
 
