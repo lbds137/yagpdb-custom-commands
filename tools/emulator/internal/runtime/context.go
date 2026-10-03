@@ -269,6 +269,10 @@ type ExecutionContext struct {
 	ExecCCDepth     int    // Current nesting depth
 	MaxExecCCDepth  int    // Maximum allowed depth (default 2)
 	TemplateBaseDir string // Base directory for resolving template paths
+	// TemplateRoot, when set, re-reads every path under commands/ (a test's template:,
+	// setup_templates and command_map entries) from this root instead. yagmin's
+	// equivalence proof runs the suite against minified copies this way
+	TemplateRoot string
 }
 
 // NewExecutionContext creates a new execution context with default values.

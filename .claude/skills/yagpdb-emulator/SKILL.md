@@ -12,7 +12,8 @@ Run from the repo root. Needs Go (mise pins 1.27 on the dev machine).
 ```bash
 make test              # template tests in tools/emulator/testdata/, with db_schema.yaml
 make test-go           # go vet + Go unit tests
-make ci                # everything CI runs (.github/workflows/test.yml): test-go, test, lint, gofmt
+make ci                # everything CI runs (.github/workflows/test.yml): test-go, test,
+                       # test-templates, lint, test-deploy, minify-check, test-minified, gofmt
 make watch             # rerun template tests on changes
 make update-snapshots  # accept an intended change in snapshot output (also prunes)
 make prune-snapshots   # only remove the entries of renamed/deleted tests (make ci and CI

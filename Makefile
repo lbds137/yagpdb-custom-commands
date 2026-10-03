@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync vendor-drift
+.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync vendor-drift minify minify-check test-minified
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -52,13 +52,33 @@ watch: build-emulator ## Rerun template tests whenever a command or test changes
 # As on GitHub (which sets CI): a missing or stale snapshot fails instead of being written
 # or only warned about
 ci: export CI := true
-ci: test-go test test-templates lint test-deploy ## Everything CI runs
+ci: test-go test test-templates lint test-deploy minify-check test-minified ## Everything CI runs
 	@echo "🔍 Checking Go formatting..."
 	@test -z "$$(gofmt -l tools/emulator)" || (gofmt -l tools/emulator && echo "❌ Run: gofmt -w tools/emulator" && exit 1)
 	@echo "✅ All checks passed"
 
 test-templates: build-emulator ## Smoke test: run every command once with no arguments
 	@./scripts/test-all-templates.sh
+
+# Free-tier minified copies: a command over 10,000 runes (the free-server cap) gets a
+# minified form in dist/free/ under the same path. The threshold is a rule, so the set
+# grows when a command grows; nothing is ever deleted (a stale copy that no longer
+# belongs there fails minify-check and is removed by hand).
+minify: ## Write minified copies of every command over the free-tier cap into dist/free/
+	@cd tools/emulator && go run ./cmd/yagmin batch -src ../../commands -dst ../../dist/free -over 10000
+
+minify-check: ## Fail when dist/free/ doesn't match what make minify would write
+	@tmp=$$(mktemp -d) && \
+	cd tools/emulator && go run ./cmd/yagmin batch -src ../../commands -dst $$tmp/commands -over 10000 >/dev/null && cd ../.. && \
+	if ! diff -ru dist/free $$tmp/commands >/dev/null 2>&1; then \
+		echo "❌ dist/free is stale or missing entries"; \
+		echo "   Fix: make minify   (and remove any file it no longer writes; it never deletes)"; \
+		echo "   Diff:"; diff -ru dist/free $$tmp/commands | head -30; exit 1; \
+	fi && echo "✅ dist/free is up to date"
+
+test-minified: ## Equivalence proof: the whole YAML suite passes on minified copies
+	@cd tools/emulator && go run ./cmd/yagmin prove \
+		-commands ../../commands -testdata testdata -schema ../../db_schema.yaml
 
 analyze: ## Analyze templates for missing emulator functions
 	@./scripts/find-missing-functions.sh

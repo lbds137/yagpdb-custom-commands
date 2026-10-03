@@ -294,6 +294,8 @@ This repository includes a Go-based YAGPDB template emulator for testing command
 make test          # all template tests (tools/emulator/testdata/), checked against db_schema.yaml
 make watch         # rerun them whenever a command or test file changes
 make ci            # everything CI runs: Go vet + unit tests, template tests, linter, gofmt
+make minify        # write minified copies of over-cap commands into dist/free/ (free tier: 10k)
+make test-minified # equivalence proof: the whole suite passes on the minified copies
 
 ./bin/yagtest run commands/general/timestamp.gohtml         # run one command
 ./bin/yagtest run -args "get,Global" -verbose retired/db.gohtml
