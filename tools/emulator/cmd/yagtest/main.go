@@ -93,6 +93,8 @@ Test Options:
                       or fails when CI is set)
     -prune-snapshots  Only remove the snapshots of renamed or deleted tests (a run
                       without either flag lists them; with CI set they fail it)
+    -template-root <dir> Read templates under commands/ from this dir instead
+                      (yagmin's minified copies; other paths resolve as normal)
 
 Watch Options:
     Same as test, plus:
@@ -529,6 +531,7 @@ type testOptions struct {
 	schemaFile      string
 	updateSnapshots bool
 	pruneSnapshots  bool
+	templateRoot    string
 }
 
 func addTestFlags(fs *flag.FlagSet, opts *testOptions) {
@@ -539,6 +542,7 @@ func addTestFlags(fs *flag.FlagSet, opts *testOptions) {
 	fs.StringVar(&opts.schemaFile, "schema", "", "Schema file with expected database value types")
 	fs.BoolVar(&opts.updateSnapshots, "update-snapshots", false, "Rewrite snapshots, and remove those of renamed or deleted tests")
 	fs.BoolVar(&opts.pruneSnapshots, "prune-snapshots", false, "Remove only the snapshots of renamed or deleted tests")
+	fs.StringVar(&opts.templateRoot, "template-root", "", "Read templates under commands/ from this root (minified copies)")
 }
 
 func testCommand(args []string) {
@@ -639,6 +643,7 @@ func runTests(opts testOptions) int {
 		Schema:          sch,
 		UpdateSnapshots: opts.updateSnapshots,
 		CI:              os.Getenv("CI") != "",
+		TemplateRoot:    opts.templateRoot,
 	})
 
 	// Run tests

@@ -295,6 +295,9 @@ runs `make ci` and commits. This repo's gates, ceilings and landmines are in
 
 1. **Testing Commands**:
    - Run `make ci` (emulator tests, Go tests, linter); `make lint` alone runs the linter
+   - `make minify` regenerates `dist/free/` (minified copies of commands over the
+     free-tier 10k cap); `make ci` fails when it is stale, and `make test-minified`
+     proves the suite passes on the minified copies
    - Test in a development server before production
    - Check character count stays within limits
    - Verify database operations don't conflict

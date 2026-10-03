@@ -950,7 +950,9 @@ func (e *Engine) findCC(fn string, ccID int64) (path string, source []byte, mapp
 	if !mapped {
 		return "", nil, false, nil
 	}
-	if e.ctx.TemplateBaseDir != "" && !filepath.IsAbs(path) {
+	if remapped, ok := RemapTemplateRoot(e.ctx.TemplateRoot, path); ok {
+		path = remapped
+	} else if e.ctx.TemplateBaseDir != "" && !filepath.IsAbs(path) {
 		path = filepath.Join(e.ctx.TemplateBaseDir, path)
 	}
 	source, err = os.ReadFile(path)

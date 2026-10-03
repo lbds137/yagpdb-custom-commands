@@ -42,6 +42,10 @@ type RunnerConfig struct {
 	Schema          *schema.Schema // Expected database value types
 	UpdateSnapshots bool           // Rewrite snapshots instead of comparing
 	CI              bool           // A missing snapshot fails instead of being written
+	// TemplateRoot, when set, reads every template under commands/ from this root
+	// instead of the repository's tree (yagmin's equivalence proof). Paths that aren't
+	// under commands/ still resolve against BaseDir
+	TemplateRoot string
 }
 
 // Runner executes test cases.
@@ -55,6 +59,20 @@ func NewRunner(config RunnerConfig) *Runner {
 	return &Runner{config: config}
 }
 
+// getTemplateSource reads the test's template, honoring TemplateRoot: a path under
+// commands/ is read from the root instead, so the minified copy runs in its place.
+// Source names and the paths error messages quote stay the test's own.
+func (r *Runner) getTemplateSource(tc *TestCase) (string, error) {
+	if remapped, ok := runtime.RemapTemplateRoot(r.config.TemplateRoot, tc.Template); ok {
+		data, err := os.ReadFile(remapped)
+		if err != nil {
+			return "", fmt.Errorf("reading template %s: %w", tc.Template, err)
+		}
+		return string(data), nil
+	}
+	return tc.GetTemplateSource(r.config.BaseDir)
+}
+
 // RunTest executes a single test case.
 func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	result := &TestResult{
@@ -62,7 +80,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	}
 
 	// Get template source
-	source, err := tc.GetTemplateSource(r.config.BaseDir)
+	source, err := r.getTemplateSource(tc)
 	if err != nil {
 		result.Error = err
 		return result
@@ -309,6 +327,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		ctx.CommandIDMap = tc.CommandMap
 	}
 	ctx.TemplateBaseDir = r.config.BaseDir
+	ctx.TemplateRoot = r.config.TemplateRoot
 	return ctx
 }
 
@@ -423,7 +442,9 @@ func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContex
 // context and on its database, and discards what it sends.
 func (r *Runner) runSetupTemplate(tc *TestCase, db *state.MockDB, path string) error {
 	full := path
-	if !filepath.IsAbs(full) {
+	if remapped, ok := runtime.RemapTemplateRoot(r.config.TemplateRoot, path); ok {
+		full = remapped
+	} else if !filepath.IsAbs(full) {
 		full = filepath.Join(r.config.BaseDir, path)
 	}
 	source, err := os.ReadFile(full)

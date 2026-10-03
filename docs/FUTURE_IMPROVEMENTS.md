@@ -175,12 +175,16 @@ picks, then the minifier.
 
 Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 (vendor tmplextensions.go:184/394, customcommands.go:164-176, 357-360).
-- Planned: a parser-based minifier (drop comments, rename variables per scope, re-print),
-  proven equivalent by running the whole emulator suite on the minified output; output
-  committed as `dist/free/`, used by the deploy manifest only for commands over a free
-  server's limit (panel.json gets a per-server tier). Needed by db (17,538) and gematria
-  (11,514): comment/indent stripping alone leaves them at ~10.5k/10.8k; variable renaming
-  gets both to ~7.7k (measured 2026-09-27).
+- Shipped (part 1, 2026-10-02): the parser-based minifier `tools/emulator/cmd/yagmin`
+  (drops comments and whitespace-only text nodes, keeps the header block, renames
+  every variable, re-prints the tree; `make minify` writes the over-cap commands into
+  `dist/free/`, `make minify-check` fails CI on stale dist, `make test-minified` runs
+  the whole YAML suite on minified copies of every command and compares — only
+  error/warning texts quoting variable names or line:col positions may differ).
+  db_slash 18,532 → 9,188, gematria 11,533 → 6,910, edit_slash 10,548 → 7,217 runes.
+- Planned (part 2): the deploy manifest picks the minified form for commands over a
+  free server's limit (panel.json gets a per-server tier); dist/free/ is not used by
+  deploys yet.
 - Known defect (found in the config_sync review 2026-09-27): bootstrap makes 18 DB calls
   (9 dbGets, 9 dbSets), so on a free server it dies at the 11th, the Rules dbSet, and
   never writes Roles, Channels, Admin, Knowledge, Directory, Inactivity Prune or Staff
