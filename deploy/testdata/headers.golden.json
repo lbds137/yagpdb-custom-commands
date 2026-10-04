@@ -542,11 +542,6 @@
       "slashDescription": null,
       "slash": null
     },
-    "commands/knowledge/define.gohtml": {
-      "deferMode": 0,
-      "slashDescription": null,
-      "slash": null
-    },
     "commands/knowledge/define_slash.gohtml": {
       "deferMode": 0,
       "slashDescription": "Link a Night House glossary term",
@@ -644,11 +639,6 @@
       "slash": null
     },
     "commands/plumbing/ticket_clean.gohtml": {
-      "deferMode": 0,
-      "slashDescription": null,
-      "slash": null
-    },
-    "commands/rules/rule.gohtml": {
       "deferMode": 0,
       "slashDescription": null,
       "slash": null

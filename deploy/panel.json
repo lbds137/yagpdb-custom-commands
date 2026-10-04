@@ -5,7 +5,6 @@
     "rose": {"name": "The Rose", "guild": "616105024367624212"}
   },
   "commands": {
-    "commands/rules/rule.gohtml": {"main": 1},
     "commands/plumbing/embed_exec.gohtml": {"main": 3, "lotv": 2, "rose": 2},
     "commands/channels/channel_link.gohtml": {"main": 14, "lotv": 10, "rose": 5},
     "commands/db/db_slash.gohtml": {"main": 90},
@@ -39,7 +38,7 @@
     "commands/gematria/gematria.gohtml": {"main": 52, "lotv": 9, "rose": 10},
     "commands/bump/bump_reset.gohtml": {"main": 54},
     "commands/color/contrast.gohtml": {"lotv": 18, "rose": 17},
-    "commands/general/timestamp.gohtml": {"main": 64, "lotv": 13, "rose": 12},
+    "commands/general/timestamp.gohtml": {"lotv": 13, "rose": 12},
     "commands/hebrew/rand_hebrew.gohtml": {"rose": 22},
     "commands/color/rand_color.gohtml": {"lotv": 16, "rose": 15},
     "commands/hebrew/atbash.gohtml": {"lotv": 17, "rose": 16},
@@ -56,7 +55,6 @@
     "commands/members/hiatus.gohtml": {"main": 81},
     "commands/members/unhiatus.gohtml": {"main": 82},
     "commands/hebrew/alefbet.gohtml": {"lotv": 14, "rose": 13},
-    "commands/knowledge/define.gohtml": {"main": 84},
     "commands/rules/rule_slash.gohtml": {"main": 106, "rose": 28},
     "commands/general/timestamp_slash.gohtml": {"main": 107, "rose": 29},
     "commands/knowledge/define_slash.gohtml": {"main": 108, "rose": 30},

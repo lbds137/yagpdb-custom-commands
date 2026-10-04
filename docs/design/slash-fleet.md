@@ -183,13 +183,17 @@ Emulator support (this unit): `scheduled_runs` takes `interaction: none|pending|
 Files: `commands/rules/rule_slash.gohtml` (`/rule`, 2,890 runes),
 `commands/general/timestamp_slash.gohtml` (`/timestamp`, 2,852),
 `commands/knowledge/define_slash.gohtml` (`/define`, 2,480; the slug and kb-alias block is
-copied from define.gohtml, identical modulo leading whitespace, and the header keeps the
-note that it must match the-night-house's `slugify`), and `commands/rules/rules_pager.gohtml`
+copied from define.gohtml (since retired), identical modulo leading whitespace, and the
+header keeps the note that it must match the-night-house's `slugify`), and `commands/rules/rules_pager.gohtml`
 (9,528 runes, was 8,689). All three roots:
 Utility, Defer `None`, single option, no subcommands. Every new file is under the free 10k
-cap. The text twins (rule, timestamp, define) are untouched; their retirement is a later step
-after the live check. panel.json gets no ids until the panel commands are created (DISABLED),
-then `make config-sync`.
+cap. panel.json gets no ids until the panel commands are created (DISABLED), then
+`make config-sync`.
+
+After Lila's live check (2026-10-04) the text twins rule and define were retired
+(`retired/rule.gohtml`, `retired/define.gohtml`; neither exists on another server) and
+timestamp was disabled on main (its id dropped from panel.json); timestamp.gohtml stays on
+lotv and The Rose, where it also got the `\d{16,19}` snowflake fix.
 
 Results are public: ONE execCC to embed_exec with `Respond`. Refusals are ephemeral
 sendResponses of the root with no execCC; the root prints nothing on an execCC path. Each

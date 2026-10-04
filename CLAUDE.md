@@ -20,7 +20,7 @@ This repository contains a comprehensive suite of custom commands for the YAGPDB
 Every deployed command lives in one tree, `commands/<topic>/`, with a folder per topic
 (the planned slash-command roots); a folder mixes both panel groups:
 
-- `bump/` (bump_check, bump_remind, bump_reset), `rules/` (rule, rules),
+- `bump/` (bump_check, bump_remind, bump_reset), `rules/` (rule_slash, rules, rules_pager),
   `gematria/` (gematria, gematria_bootstrap), `hebrew/` (alefbet, atbash, pyramid,
   rand_hebrew), `color/` (color_slash, hex_to_int; contrast and rand_color
   disabled on main, kept for lotv), `db/`
@@ -29,8 +29,9 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   inactivity_prune_pick, staff_roles, staff_roles_pick, role_ping_slash,
   batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
-  message_pointer), `knowledge/` (define), `general/` (avatar_menu, avatar_viewer,
-  dismiss, emoji_menu, hugemoji, prompt, prompt_post, timestamp), `plumbing/` (embed_exec, message_link, log_user,
+  message_pointer), `knowledge/` (define_slash), `general/` (avatar_menu, avatar_viewer,
+  dismiss, emoji_menu, hugemoji, prompt, prompt_post, timestamp_slash; timestamp is
+  disabled on main, kept for lotv and The Rose), `plumbing/` (embed_exec, message_link, log_user,
   ticket_clean, bootstrap, config_sync).
 - `config_sync` (hourly) writes every command's panel id into the `Commands` dict; it is
   generated from `deploy/panel.json` by `make config-sync` (never edit it by hand), and

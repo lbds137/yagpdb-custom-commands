@@ -1,7 +1,7 @@
 name: "define_slash (/define)"
 
 # The slash root of define: ONE execCC to embed_exec with Respond (public). The slug logic
-# is copied from define.gohtml (command_tests.yaml covers the text twin's slug cases).
+# is copied from retired/define.gohtml (command_tests.yaml covers the text twin's slug cases).
 
 defaults:
   user: { id: 500000000000000001, username: "Invoker" }

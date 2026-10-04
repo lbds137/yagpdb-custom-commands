@@ -488,7 +488,7 @@ tests:
       args: ["FAQ"]
 
   - name: "define - Simple term slugifies to lowercase-hyphenated"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Chaos Magick"]
     assertions:
@@ -501,7 +501,7 @@ tests:
         ]
 
   - name: "define - Multi-word term with internal spaces"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Right hand path"]
     assertions:
@@ -514,7 +514,7 @@ tests:
         ]
 
   - name: "define - All-caps term lowercases in the slug"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["UPG"]
     assertions:
@@ -527,7 +527,7 @@ tests:
         ]
 
   - name: "define - Existing hyphen in the term is kept as one hyphen"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Clair-senses"]
     assertions:
@@ -540,7 +540,7 @@ tests:
         ]
 
   - name: "define - Accented letters fold to their base letter"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Ásatrú"]
     assertions:
@@ -553,7 +553,7 @@ tests:
         ]
 
   - name: "define - Another accented term folds correctly"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Santería"]
     assertions:
@@ -566,7 +566,7 @@ tests:
         ]
 
   - name: "define - Punctuation runs collapse and edges trim"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["  --Foo!!  Bar-- "]
     assertions:
@@ -579,7 +579,7 @@ tests:
         ]
 
   - name: "define - No argument links the bare glossary page"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: []
     assertions:
@@ -592,7 +592,7 @@ tests:
         ]
 
   - name: "define - All-punctuation term has no slug, so links the bare glossary page"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["!!!"]
     assertions:
@@ -605,7 +605,7 @@ tests:
         ]
 
   - name: "define - Unquoted multi-token args rejoin into one term"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Chaos", "Magick"]
     assertions:
@@ -618,7 +618,7 @@ tests:
         ]
 
   - name: "define - Macron vowel folds to its base letter"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Ātman"]
     assertions:
@@ -631,7 +631,7 @@ tests:
         ]
 
   - name: "define - Retired kb entry 'The Seven Tenets' aliases to the glossary's Seven Tenets"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["The Seven Tenets"]
     assertions:
@@ -644,7 +644,7 @@ tests:
         ]
 
   - name: "define - Retired kb entry 'Seven Satanic Tenets' aliases to the glossary's Seven Tenets"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Seven Satanic Tenets"]
     assertions:
@@ -657,7 +657,7 @@ tests:
         ]
 
   - name: "define - Retired kb entry 'The Seven Satanic Tenets' aliases to the glossary's Seven Tenets"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["The Seven Satanic Tenets"]
     assertions:
@@ -670,7 +670,7 @@ tests:
         ]
 
   - name: "define - 'Seven Tenets' itself already works"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["Seven Tenets"]
     assertions:
@@ -788,18 +788,18 @@ tests:
 
   - name: "rule - View rule 1"
     snapshot: true
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     context:
       args: ["1"]
 
   - name: "rule - View rule 2"
     snapshot: true
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     context:
       args: ["2"]
 
   - name: "rule - Reads a rule past a gap"
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     context:
       args: ["3"]
     setup_db:
@@ -2142,7 +2142,7 @@ tests:
       sent_messages: [{ embed_title: "Profile", embed_contains: "hello" }]
 
   - name: "define - A 300-character term truncates the embed title and keeps the URL"
-    template: "../../../commands/knowledge/define.gohtml"
+    template: "../../../retired/define.gohtml"
     context:
       args: ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"]
     assertions:

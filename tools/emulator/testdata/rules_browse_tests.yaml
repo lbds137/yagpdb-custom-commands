@@ -1,6 +1,7 @@
 name: "rules browse (rule browse + rules_pager)"
 description: >
-  The member-facing browse view: `rule browse` execCCs rules_pager for page 1 (one rule
+  The member-facing browse view: `rule browse` (the retired text rule, kept here as a pager
+  test driver; `/rule` replaced it) execCCs rules_pager for page 1 (one rule
   per page, a summary line, a jump select), and Component clicks — `rules:<page>` buttons
   and the `rules:jump` select — rebuild the page in place. rules_pager is in the Utility
   group on purpose: members click it (the panel group gates every run).
@@ -50,7 +51,7 @@ command_map:
 tests:
   # the entry path
   - name: "rule browse: opens page 1 (lowest rule) via the pager, trigger deleted"
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     snapshot: true
     context:
       args: ["browse"]
@@ -64,7 +65,7 @@ tests:
         - { of: trigger, channel_id: 123456789012345678, delay: 5s }
 
   - name: "rule browse: rules_pager missing from Commands says so instead of execCC 0"
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     context:
       args: ["browse"]
     setup_db:
@@ -77,7 +78,7 @@ tests:
 
   # the number path is unchanged by the browse keyword
   - name: "rule 2 still views rule 2 through embed_exec"
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     context:
       args: ["2"]
     assertions:
@@ -87,14 +88,14 @@ tests:
         - { of: trigger, channel_id: 123456789012345678, delay: 5s }
 
   - name: "rule: a non-number still fails with the old usage text (the second parse)"
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     context:
       args: ["abc"]
     expected:
       error_contains: "Please enter a valid rule number (1-3)."
 
   - name: "rule: no argument fails with the old usage text"
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     expected:
       error_contains: "Please enter a valid rule number (1-3)."
 
@@ -145,7 +146,7 @@ tests:
   # gaps and degenerate dicts
   - name: "rules_pager: a deleted middle rule leaves a 2-page book (browse opens the lowest)"
     # snapshot pins the select offering exactly Rule #1 and Rule #3 (no gap phantom)
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     snapshot: true
     context:
       args: ["browse"]
@@ -181,7 +182,7 @@ tests:
 
   - name: "rules_pager: no rules at all is one informational page with only a dismiss button"
     # snapshot pins the near-component-less message: embed + the dismiss row, no select/pager
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     snapshot: true
     context:
       args: ["browse"]
@@ -265,7 +266,7 @@ tests:
   # one stored huge number must not break the rulebook (no `seq` over 1..max: it errors
   # past 10,000 elements)
   - name: "rules_pager: a stray huge Rule #1000000 does not break the browser (page 1 opens)"
-    template: "../../../commands/rules/rule.gohtml"
+    template: "../../../retired/rule.gohtml"
     context:
       args: ["browse"]
     setup_db:

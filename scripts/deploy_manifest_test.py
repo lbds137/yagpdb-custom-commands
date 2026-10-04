@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 DIRECT_CHECK_FILES = [
-    "commands/knowledge/define.gohtml",
+    "commands/knowledge/define_slash.gohtml",
     "commands/rules/rules.gohtml",
 ]
 
