@@ -21,7 +21,19 @@ import (
 var (
 	headerSlashOption     = regexp.MustCompile("(?i:Slash option): `([^`]*)`")
 	headerSlashSubcommand = regexp.MustCompile("(?i:Slash subcommand): `([^`]*)`")
+	// "Slash description: `Color tools`" is the command's own description (the panel's
+	// slash_command_description); the browser deploy writes it, the emulator ignores it.
+	headerSlashDescription = regexp.MustCompile("(?i:Slash description): `([^`]*)`")
 )
+
+// ReadSlashDescription is the header's slash command description, and whether the header
+// has the line (without it the deploy leaves the panel's description alone).
+func ReadSlashDescription(source string) (string, bool) {
+	if m := headerSlashDescription.FindStringSubmatch(headerComment(source)); m != nil {
+		return m[1], true
+	}
+	return "", false
+}
 
 // Panel limits and name rules (customcommands.go:179-190).
 const (
@@ -102,6 +114,13 @@ func ReadSlashCommand(source string) (SlashCommandDef, error) {
 	}
 	if ReadDeferMode(source) == DeferModeUpdate {
 		return def, fmt.Errorf("\"Update message\" defer mode is not valid for slash commands")
+	}
+	// validateSlashCommandData, customcommands.go:652-654
+	if d, ok := ReadSlashDescription(source); ok {
+		if l := utf8.RuneCountInString(d); l < 1 || l > maxSlashCommandDescription {
+			return def, fmt.Errorf("Slash command description must be between 1 and %d characters",
+				maxSlashCommandDescription)
+		}
 	}
 
 	header := headerComment(source)
@@ -233,6 +252,39 @@ func validateSlashOptionList(options []SlashOption) error {
 		}
 	}
 	return nil
+}
+
+// validateDeployableSlashDef rejects two header shapes the emulator reads but the panel
+// stores differently, so the browser deploy could never read them back as written. It runs
+// from ValidateHeader only (a test fixture may use either shape).
+//   - an optional option before a required one: the panel stores required options first
+//     (parseSlashOptionForms' sort.SliceStable, customcommands.go:396-398);
+//   - a *_menu type: a header can't carry choices, and the panel shows a menu option
+//     without choices back as its base type (slashFormTypeKey, customcommands.go:308-324).
+func validateDeployableSlashDef(def SlashCommandDef) error {
+	check := func(options []SlashOption) error {
+		seenOptional := false
+		for _, opt := range options {
+			if base, isMenu := strings.CutSuffix(opt.FormType, "_menu"); isMenu {
+				return fmt.Errorf("Option %q: type %q is a choices menu, which a header can't express "+
+					"(the panel shows it back as %q): use %q", opt.Name, opt.FormType, base, base)
+			}
+			if opt.Required && seenOptional {
+				return fmt.Errorf("Option %q is required but follows an optional one: write the "+
+					"required options first (the panel stores them that way)", opt.Name)
+			}
+			if !opt.Required {
+				seenOptional = true
+			}
+		}
+		return nil
+	}
+	for _, sub := range def.Subcommands {
+		if err := check(sub.Options); err != nil {
+			return fmt.Errorf("Subcommand %q: %w", sub.Name, err)
+		}
+	}
+	return check(def.Options)
 }
 
 // validateContextMenuHeader is the panel's check of a context menu command's name

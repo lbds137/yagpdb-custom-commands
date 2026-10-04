@@ -42,6 +42,7 @@ type Trigger struct {
 var (
 	headerTriggerType = regexp.MustCompile("(?i:Trigger type): `([^`]*)`")
 	headerTrigger     = regexp.MustCompile("(?i:Trigger): `([^`]*)`")
+	headerGroup       = regexp.MustCompile("(?i:Group): `([^`]*)`")
 	headerCase        = regexp.MustCompile("(?i:Case sensitive): `([^`]*)`")
 	headerShowErrors  = regexp.MustCompile("(?i:Show errors): `([^`]*)`")
 	headerRedirect    = regexp.MustCompile("(?i:Redirect errors): `([^`]*)`")
@@ -119,7 +120,14 @@ func ValidateHeader(source string) error {
 	t, ok := ReadTrigger(source)
 	switch {
 	case ok && t.SlashTriggered():
-		if _, err := ReadSlashCommand(source); err != nil {
+		def, err := ReadSlashCommand(source)
+		// Only a header that names a panel group is a deployable command (the linter
+		// requires `Group:` on every commands/ file); a test fixture without one may use
+		// either shape (testdata/templates/slash_probe.gohtml uses *_menu types).
+		if _, deployable := headerValue(headerGroup, source); err == nil && deployable {
+			err = validateDeployableSlashDef(def)
+		}
+		if err != nil {
 			return fmt.Errorf("header: %w", err)
 		}
 	case ok && t.IsContextMenu():
@@ -131,6 +139,9 @@ func ValidateHeader(source string) error {
 		header := headerComment(source)
 		if headerSlashOption.MatchString(header) || headerSlashSubcommand.MatchString(header) {
 			return fmt.Errorf("header: Slash option and Slash subcommand lines need a Slash Command trigger")
+		}
+		if headerSlashDescription.MatchString(header) {
+			return fmt.Errorf("header: Slash description needs a Slash Command trigger")
 		}
 	}
 	return nil

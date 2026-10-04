@@ -36,8 +36,8 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   `make ci` fails when it is stale. After changing an id in panel.json, regenerate it.
 - The YAGPDB control-panel group (the permission scope) is the header's `Group:` line:
   `Utility` (everyone) or `Staff Utility` (staff). The linter requires it on every
-  command file, and the deploy tool reports a mismatch with the panel's selected group as
-  drift, like trigger and type.
+  command file, and the browser deploy sets the panel's group from it (like trigger and
+  type), showing any difference in its dry run.
 - `unhiatus` is in the `Utility` group on purpose: a staff member on hiatus has lost the
   staff roles the `Staff Utility` group requires, so `Utility` is the only group it can
   run in.
@@ -254,7 +254,10 @@ The following tools are generally safe to use without explicit permission:
 YAGPDB has no API for custom commands. The primary path is `.claude/skills/yagpdb-deploy/SKILL.md`:
 Claude drives a Claude-in-Chrome browser tab in the owner's logged-in session and pastes each
 command's exact committed bytes via a form POST, verified by hash before and after. Use it
-when Claude-in-Chrome is available.
+when Claude-in-Chrome is available. Panel structure (command name, trigger type and text,
+group, defer mode, slash description and rows), creating a command (disabled) and enabling or disabling
+one are part of the browser deploy, driven by the command's header; the manual path needs
+them by hand.
 
 Fallback (also what the skill's dry run reports for the owner to review): the owner copies
 each changed `.gohtml` file into the YAGPDB control panel by hand. `make changed-since-deploy`

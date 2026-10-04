@@ -14,7 +14,7 @@ role_ping…), channels/ (channel_activity + pager, channel_tracker, directory,
 channel_link, message_pointer), plumbing/ (embed_exec, message_link, log_user,
 ticket_clean, bootstrap)… — final placement of the rest decided in the unit's spec, with
 folders matching the planned slash roots. The panel group moves into each header as a
-`Group:` line, checked by CI and reported as drift by the deploy tool like the trigger.
+`Group:` line, checked by CI and set from the header by the browser deploy like the trigger.
 Everything that names paths moves with it: panel.json, test YAML template:/command_map
 paths, snapshots' keys if path-based, Makefile/scripts (COMMAND_DIRS), deploy manifest,
 README, CLAUDE.md, skills, docs. Tell the Night House site session when it lands.

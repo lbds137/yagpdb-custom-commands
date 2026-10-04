@@ -20,6 +20,16 @@ const kvHeader = "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `kv`\n" +
 	"  Slash option: `get.key string! the key`\n  Slash option: `set.key string! the key`\n" +
 	"  Slash option: `set.ttl integer seconds`\n*/}}"
 
+// deployableProbeHeader is probeHeader with its required options first and no *_menu type:
+// the shape the browser deploy can read back (see validateDeployableSlashDef).
+const deployableProbeHeader = "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `probe`\n" +
+	"  Slash option: `text string! the text`\n" +
+	"  Slash option: `who user! a member`\n" +
+	"  Slash option: `count integer how many`\n" +
+	"  Slash option: `where channel a channel`\n" +
+	"  Slash option: `rank role a role`\n" +
+	"  Slash option: `whom mentionable a role or a user`\n*/}}"
+
 func TestReadSlashCommand(t *testing.T) {
 	def, err := ReadSlashCommand(probeHeader)
 	if err != nil {
@@ -53,10 +63,62 @@ func TestReadSlashCommand(t *testing.T) {
 // TestSlashHeaderValidation checks the panel's rejections (customcommands.go:610-615,
 // 641-741) with its texts, and the header's own shape errors.
 func TestSlashHeaderValidation(t *testing.T) {
-	slash := func(name, rows string) string {
-		return "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `" + name + "`\n" + rows + "*/}}"
+	slash := slashHeaderSource
+	for _, c := range slashHeaderErrorCases() {
+		err := ValidateHeader(c.src)
+		if err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: want an error containing %q, got %v", c.name, c.want, err)
+		}
 	}
-	cases := []struct{ name, src, want string }{
+	for name, src := range map[string]string{
+		"a valid slash header":     deployableProbeHeader,
+		"subcommands":              kvHeader,
+		"a context menu entry":     "{{/*\n  Trigger type: `User Context Menu`\n  Trigger: `View avatar`\n*/}}",
+		"unicode option name":      slash("x", "  Slash option: `מפתח string the key`\n"),
+		"an ephemeral slash defer": slash("x", "  Defer mode: `Ephemeral Message Response`\n"),
+		"a slash description":      slash("x", "  Slash description: `Color tools`\n"),
+		// no Group: a test fixture, not a deployable command
+		"optional-first rows without a Group": probeHeader,
+		"a menu type without a Group":         slash("x", "  Slash option: `f string_menu a menu`\n"),
+	} {
+		if err := ValidateHeader(src); err != nil {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+// slashHeaderSource is a slash command's header with the given extra rows.
+func slashHeaderSource(name, rows string) string {
+	return "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `" + name + "`\n" + rows + "*/}}"
+}
+
+// slashHeaderErrorCases are the headers the panel (or the header grammar) rejects, with a
+// fragment of ValidateHeader's message. The header golden (headers_golden_test.go) records
+// each one's full message for deploy.js's parser to match.
+func slashHeaderErrorCases() []struct{ name, src, want string } {
+	slash := slashHeaderSource
+	return []struct{ name, src, want string }{
+		{"required option after an optional one",
+			slash("x", "  Group: `Utility`\n  Slash option: `a string first`\n  Slash option: `b user! second`\n"),
+			`Option "b" is required but follows an optional one`},
+		{"required subcommand option after an optional one",
+			slash("x", "  Group: `Utility`\n  Slash subcommand: `get read`\n  Slash option: `get.a string first`\n"+
+				"  Slash option: `get.b user! second`\n"),
+			`Subcommand "get": Option "b" is required but follows an optional one`},
+		{"menu option type", slash("x", "  Group: `Utility`\n  Slash option: `flavor string_menu! the flavor`\n"),
+			`Option "flavor": type "string_menu" is a choices menu`},
+		{"long slash description", slash("x", "  Slash description: `"+strings.Repeat("d", 101)+"`\n"),
+			"Slash command description must be between 1 and 100 characters"},
+		{"empty slash description", slash("x", "  Slash description: ``\n"),
+			"Slash command description must be between 1 and 100 characters"},
+		{"slash description on a message trigger",
+			"{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Slash description: `d`\n*/}}",
+			"Slash description needs a Slash Command trigger"},
+		{"unknown defer mode", "{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Defer mode: `Later`\n*/}}",
+			"isn't one of the panel's"},
+		{"case sensitive not a boolean",
+			"{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Case sensitive: `yes`\n*/}}",
+			"isn't true or false"},
 		{"uppercase name", slash("Probe", ""), "Slash command name must be lowercase"},
 		{"name with a space", slash("my cmd", ""), "Slash command name must be 1-32 characters"},
 		{"update defer", slash("x", "  Defer mode: `Update Message Response`\n"),
@@ -88,23 +150,6 @@ func TestSlashHeaderValidation(t *testing.T) {
 			`"Update message" defer mode is not valid for context menu commands`},
 		{"context menu bad name", "{{/*\n  Trigger type: `Message Context Menu`\n  Trigger: `Quote!`\n*/}}",
 			"Context menu command name must be 1-32 characters"},
-	}
-	for _, c := range cases {
-		err := ValidateHeader(c.src)
-		if err == nil || !strings.Contains(err.Error(), c.want) {
-			t.Errorf("%s: want an error containing %q, got %v", c.name, c.want, err)
-		}
-	}
-	for name, src := range map[string]string{
-		"a valid slash header":     probeHeader,
-		"subcommands":              kvHeader,
-		"a context menu entry":     "{{/*\n  Trigger type: `User Context Menu`\n  Trigger: `View avatar`\n*/}}",
-		"unicode option name":      slash("x", "  Slash option: `מפתח string the key`\n"),
-		"an ephemeral slash defer": slash("x", "  Defer mode: `Ephemeral Message Response`\n"),
-	} {
-		if err := ValidateHeader(src); err != nil {
-			t.Errorf("%s: %v", name, err)
-		}
 	}
 }
 
