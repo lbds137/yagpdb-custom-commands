@@ -192,11 +192,13 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 - Planned (part 2): the deploy manifest picks the minified form for commands over a
   free server's limit (panel.json gets a per-server tier); dist/free/ is not used by
   deploys yet.
-- Known gap (slash-fleet unit 2, 2026-10-04): `/hebrew` (hebrew_slash) minifies to ~11.1k
-  runes, still over the free 10k cap, so lotv can't take it as one root (atbash's dict
-  alone is ~7k). Options when lotv adopts /hebrew: move the atbash dict into the DB
-  (Gematria dict, like Final Letters), or split atbash into its own root. Trigger: the
-  lotv /color + /hebrew adoption step.
+- Known gap (slash-fleet unit 2, 2026-10-04): `/hebrew` (hebrew_slash) minifies to ~11.3k
+  runes, still over the free 10k cap, so a FREE server can't take it as one root
+  (atbash's dict alone is ~7k). Options: move the atbash dict into the DB (Gematria dict,
+  like Final Letters), or split atbash into its own root. PREMISE IN QUESTION (checked
+  2026-10-04): the yagpdb.xyz/premium page shows Patreon slot #4 assigned to Lure of the
+  Void (and #3 to The Rose), so lotv may be premium and this gap moot; confirm with Lila
+  before acting. Trigger: the lotv /color + /hebrew adoption step.
 - Known defect (found in the config_sync review 2026-09-27): bootstrap makes 18 DB calls
   (9 dbGets, 9 dbSets), so on a free server it dies at the 11th, the Rules dbSet, and
   never writes Roles, Channels, Admin, Knowledge, Directory, Inactivity Prune or Staff

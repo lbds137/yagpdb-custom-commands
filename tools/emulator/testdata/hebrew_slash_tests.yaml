@@ -104,6 +104,19 @@ tests:
         - { embed_contains: "Word" }
       scheduled_runs: []
 
+  - name: "hebrew_slash pyramid: a line of 2+ letters ends in its final form, values unchanged"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: "מסמאל" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Pyramid Gematria"
+          embed_contains: 'מ\nמס\nמסם\nמסמא\nמסמאל'
+      sent_messages:
+        - { embed_contains: "`[ 40 | 100 | 140 | 141 | 171 ]`" }
+
   - name: "hebrew_slash pyramid: a word with no gematria letter is an ephemeral refusal"
     template: "../../../commands/hebrew/hebrew_slash.gohtml"
     context:
