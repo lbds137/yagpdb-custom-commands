@@ -111,8 +111,10 @@ def main() -> int:
         if path.startswith("retired/"):
             print(f"warning: {path} is retired but mapped in panel.json", file=sys.stderr)
             continue
+        # Not on this server by design (panel.json is the map; deploy_panel_check.py
+        # fails a file with no id on any server), so no warning: the skill treats one as
+        # a stop.
         if server not in ids:
-            print(f"warning: {path} has no id for server {server}", file=sys.stderr)
             continue
         if not skip_dirty_check and not working_tree_matches_head(path):
             print(

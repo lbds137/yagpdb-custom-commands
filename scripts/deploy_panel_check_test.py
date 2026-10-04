@@ -7,8 +7,8 @@ runs the real check (via its `--panel` option) against it -- not a reimplementat
 
 - a file listed in "commands" that is also listed as "unmanaged" (mapped AND unmanaged)
 - an "unmanaged" path that does not exist in the working tree
-- a normal file with no "main" id in panel.json (the pre-existing branch, checked here too
-  so unmanaged-filtering doesn't accidentally swallow it)
+- a normal file with no id on any server in panel.json (checked here too so
+  unmanaged-filtering doesn't accidentally swallow it); a file with only a lotv id passes
 """
 import json
 import os
@@ -42,11 +42,14 @@ def main() -> int:
     write("commands/general/normal.gohtml", "normal content\n")
     # Mapped in "commands" AND listed as "unmanaged" -> triggers that branch.
     write("commands/general/dual.gohtml", "dual content\n")
+    # An id on a server other than main only -> fine (a lotv-only command).
+    write("commands/general/lotv_only.gohtml", "lotv content\n")
 
     panel = {
-        "servers": ["main"],
+        "servers": ["main", "lotv"],
         "commands": {
             "commands/general/dual.gohtml": {"main": "1"},
+            "commands/general/lotv_only.gohtml": {"lotv": "2"},
         },
         "unmanaged": [
             "commands/general/dual.gohtml",
@@ -73,12 +76,14 @@ def main() -> int:
     expected_substrings = [
         "commands/general/dual.gohtml: mapped in commands but also listed as unmanaged",
         "commands/general/missing.gohtml: unmanaged but does not exist in the working tree",
-        "commands/general/normal.gohtml: no 'main' id in panel.json",
-        "commands/general/untracked.gohtml: no 'main' id in panel.json",
+        "commands/general/normal.gohtml: no server id in panel.json",
+        "commands/general/untracked.gohtml: no server id in panel.json",
     ]
     for substr in expected_substrings:
         if substr not in proc.stderr:
             errors.append(f"missing expected error: {substr!r}")
+    if "lotv_only.gohtml" in proc.stderr:
+        errors.append("a command with only a lotv id was reported; any server's id is enough")
 
     if errors:
         print(f"deploy_panel_check test failed ({len(errors)} problem(s)):", file=sys.stderr)

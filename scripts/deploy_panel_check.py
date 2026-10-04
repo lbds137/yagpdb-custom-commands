@@ -2,7 +2,7 @@
 """Sanity-check deploy/panel.json against the command tree, run in `make ci`.
 
 - Every mapped path exists (tracked in the working tree) and isn't under retired/.
-- Every non-retired, non-unmanaged command file (commands/**) has a "main" id.
+- Every non-retired, non-unmanaged command file (commands/**) has an id on at least one server.
 - Ids are unique per server.
 - Every "unmanaged" path exists in the working tree and does NOT also appear in "commands"
   (an unmanaged file has no id and is never touched by the deploy tooling).
@@ -58,10 +58,12 @@ def main() -> int:
         if path not in all_files:
             errors.append(f"{path}: unmanaged but does not exist in the working tree")
 
+    # A command may run on only some servers (contrast and rand_color are lotv-only once
+    # /color replaced them on main), but every file needs an id on at least one of them.
     for path in sorted(all_files - unmanaged):
-        ids = mapped.get(path)
-        if ids is None or "main" not in ids:
-            errors.append(f"{path}: no 'main' id in panel.json")
+        ids = mapped.get(path) or {}
+        if not any(server in ids for server in panel["servers"]):
+            errors.append(f"{path}: no server id in panel.json")
 
     for server in panel["servers"]:
         seen = {}
