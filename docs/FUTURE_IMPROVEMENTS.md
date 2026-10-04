@@ -289,13 +289,13 @@ gets a failing test first.
   row (userID 0); get/delete/set/add/remove need the explicit `operation:0` form (db.gohtml
   63-73, 161-169). Deliberate shape left as is: for destructive operations, naming the row
   is the safety catch; dump defaults to 0 because it only reads. Documented here so nobody
-  "fixes" it into a fat-fingered global delete.
-- Deferred (found in the rules browse review 2026-09-30, pre-existing pattern shared with
-  rules.gohtml): the rules family scans `seq 1..maxRuleNumber` linearly, so a pathological
-  key like "Rule #1000000" (rule_edit's number argument is free-form) would exhaust the
-  ops budget on the next `rule`/`rules`/browse run. Bound the number in rule_edit —
-  natural home: the planned /edit modal unit (validate 1..9999 there). Trigger: that
-  unit, or a real typo incident.
+  "fixes" it into a fat-fingered global delete. Applies to the retired text /db only:
+  slash /db deliberately differs (30ab6ef, Lila's call 2026-10-01) — staff without
+  `user` default to row 0 on EVERY subcommand, since a user picker can't express row 0.
+- Shipped (2026-10-04, GLM-week audit A-F1): rule numbers. `/edit` refuses rule numbers
+  outside 1..9999 (slash and modal; `/edit delete` stays unbounded as the repair path),
+  and `rules`/browse no longer scan `seq 0..max` (YAGPDB's seq refuses > 10,000
+  entries, so one "Rule #1000000" broke both): they sort the existing numbers instead.
 - Stale key noted 2026-09-30 (config_sync verification dump): the Commands dict still
   held `ticket_adduser_exec` "45" from the command retired 2026-09-25 — config_sync
   merges without owning the dict, so pre-existing keys survive. Inert (nothing deployed
@@ -315,6 +315,12 @@ gets a failing test first.
   errors on any command file whose panel count exceeds 20,000.
 
 ### Remaining emulator gaps
+- Found 2026-10-04 (GLM audit B-F3 fix): `exec_responses` can only declare an exec's
+  returned TEXT, not an exec ERROR. In YAGPDB a built-in that returns an error (kick's
+  hierarchy/permission/KickUser failures) makes `exec` itself error ("exec/execadmin,
+  run", vendor commands/tmplexec.go), so inactivity_prune_pick's `catch` branch has no
+  test. Add an error form to `exec_responses` and a prune test for it. Trigger: the next
+  exec-touching unit, or any change to that catch.
 - Deferred, unverified: embed_exec cuts titles and descriptions by code point, and the
   emulator's limit checks count code points too (limits.go, `utf8.RuneCountInString`). The
   PR 7 review suggested that Discord may count characters outside the BMP (many emoji) as

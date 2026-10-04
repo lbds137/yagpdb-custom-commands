@@ -71,10 +71,10 @@ Retired commands (`retired/`) are kept for reference and never deployed.
 
 2. **Service Commands**
    - `embed_exec` - Universal embed creation service
-   - `db` - Database operations interface
+   - `db_slash` (`/db`) - Database operations interface; inactivity execCCs it
    - `message_link` - Message reference and linking service, called by log_user
      (commands/plumbing/, unmanaged: never deployed, the live copy holds the real watched ID)
-   - `simple_db_edit` / `simple_db_lookup` - Database management utilities
+   - `simple_db_lookup` - Database lookup utility; editing is `/edit` (edit_slash)
 
 3. **Command Structure**
    - Input validation using regex patterns

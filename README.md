@@ -6,7 +6,7 @@ A comprehensive suite of custom commands for the [YAGPDB Discord bot](https://gi
 
 ## Overview
 
-This repository contains `.gohtml` template files that implement custom commands using YAGPDB's templating system. The commands are organized into two main categories, each serving different operational needs for Discord server administration, plus a `retired/` folder for commands no longer deployed.
+This repository contains `.gohtml` template files that implement custom commands using YAGPDB's templating system. The commands are organized into one folder per topic under `commands/`, plus a `retired/` folder for commands no longer deployed.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ The system uses YAGPDB's database functionality with a centralized configuration
 Most commands depend on two foundational utilities:
 
 1. **`embed_exec`** - Centralized embed creation and message handling
-2. **`db`** - Database operations interface
+2. **`db_slash`** (`/db`) - Database operations interface
 
 ## Command Categories
 
@@ -44,7 +44,14 @@ folder mixes both. Staff-group commands are marked below.
 #### Rules (`commands/rules/`)
 - **`rule.gohtml`** - Display specific rules
 - **`rules.gohtml`** (staff) - Display all server rules
-- **`rule_edit.gohtml`** (staff) - Server rule editing interface
+- **`rules_pager.gohtml`** - The `rule browse` view (Message Component trigger `^rules:`):
+  one rule per page, paging buttons, a jump menu and an opener-only Dismiss
+
+#### Edit (`commands/edit/`)
+- **`edit_slash.gohtml`** (staff) - `/edit`: edit a rule or a database entry in a
+  prefilled modal, or delete one behind a confirm
+- **`edit_modal.gohtml`** (staff) - The `/edit` modal's submit handler
+- **`edit_confirm.gohtml`** (staff) - The `/edit delete` confirm's buttons
 
 #### Gematria (`commands/gematria/`)
 - **`gematria.gohtml`** - Advanced gematria calculator with tarot associations
@@ -63,10 +70,10 @@ folder mixes both. Staff-group commands are marked below.
 - **`rand_color.gohtml`** - Generate random colors
 
 #### Database (`commands/db/`)
-- **`db.gohtml`** - Advanced database operations interface
+- **`db_slash.gohtml`** - `/db`: view, browse, set, add, remove, delete and export
+  database entries (ephemeral; members their own row, staff any row)
 - **`db_get_embed.gohtml`** - Retrieve database values as embeds
 - **`db_get_text.gohtml`** - Retrieve database values as text
-- **`simple_db_edit.gohtml`** (staff) - Simple database editing
 - **`simple_db_lookup.gohtml`** (staff) - Simple database lookup
 
 #### Members (`commands/members/`)
@@ -74,7 +81,9 @@ folder mixes both. Staff-group commands are marked below.
 - **`unhiatus.gohtml`** - Remove user hiatus status (in the `Utility` group on purpose:
   a staff member on hiatus has lost the staff roles the `Staff Utility` group requires)
 - **`inactivity.gohtml`** (staff) - Inactivity tracking and management
+- **`inactivity_prune_pick.gohtml`** (staff) - The prune picker and its kick confirm
 - **`staff_roles.gohtml`** (staff) - Staff role management
+- **`staff_roles_pick.gohtml`** (staff) - The Staff Roles panel's role select
 - **`role_ping_slash.gohtml`** (staff) - `/role_ping`: ping any role, with an
   optional message (text role_ping and the quick-ping panel retired 2026-10-01)
 - **`batch_delrep.gohtml`** (staff) - Batch delete and reputation management
@@ -97,7 +106,14 @@ folder mixes both. Staff-group commands are marked below.
 
 #### General (`commands/general/`)
 - **`avatar_viewer.gohtml`** - View user avatars
+- **`avatar_menu.gohtml`** - The same as a user context menu (Apps → View Avatar)
 - **`hugemoji.gohtml`** - Display large emoji
+- **`emoji_menu.gohtml`** - Enlarge a message's emoji, as a message context menu
+  (Apps → Expand Emoji)
+- **`dismiss.gohtml`** - Dismiss button handler for spawned UI (spawner or staff)
+- **`prompt.gohtml`** (staff) - `/prompt`: post a writing prompt to a forum, thread or
+  channel through a modal
+- **`prompt_post.gohtml`** (staff) - The `/prompt` modal's submit handler
 - **`timestamp.gohtml`** - Parse Discord snowflake timestamps
 
 #### Plumbing (`commands/plumbing/`)
@@ -260,18 +276,21 @@ now; a minified build is planned.
 
 ### Staff Commands
 ```
-/simple_db_edit Admin "Welcome Message" "Welcome to our server!"
+/edit entry category:Admin key:Welcome Message   # edit in a prefilled modal
+/edit rule rule:3                                # edit rule 3's text
+/edit delete rule:3                              # delete behind a confirm
 ```
 
 ### Database Operations
+Real slash commands; staff act on the global row (0) unless they pick a `user`.
 ```
-/db get:0 Global                                    # Get global configuration
-/db set:0 Admin:Welcome "Hi there!"                 # Set welcome message
-/db keys:0 Roles                                    # List all role mappings
-/db add:0 "Directory:Exclude Categories" "Archive"  # Append to array
-/db remove:0 "Directory:Exclude Categories" "Old"   # Remove from array
-/db dump                                            # Export config as JSON file
-/db dump Global                                     # Export specific key only
+/db view key:Global                                   # Show global configuration
+/db set key:Admin:Welcome value:Hi there!             # Set welcome message
+/db browse key:Roles                                  # List all role mappings
+/db add key:Directory:Exclude Categories value:Archive  # Append to array
+/db remove key:Directory:Exclude Categories value:Old   # Remove from array
+/db export                                            # Export entries as a JSON file
+/db export key:Global                                 # Export one key only
 ```
 
 ## Error Handling
