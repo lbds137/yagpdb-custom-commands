@@ -7,9 +7,13 @@
 */ -}}
 {{- /* Browse view for the rulebook: one rule per page. `rule browse` execCCs this with
   ExecData {Page: 1}; a click rebuilds the page in place — the ◀/▶ buttons carry the page
-  in the custom ID (rules:<page>) and the jump select (rules:jump) carries the rule number
-  in .Values. Utility, NOT Staff Utility: members click these buttons (the panel group
-  gates every run — the reason unhiatus sits in Utility too). Defer mode stays None, as on
+  in the custom ID (rules:<page>:<opener>), the jump select (rules:jump:<opener>) carries
+  the rule number in .Values, and Dismiss is rules:close:<opener>. <opener> is the
+  snowflake of the member who ran `rule browse`; it rides through every re-render so
+  Dismiss stays theirs however many members page the browser. A click on an old id
+  without it (rules:<page>, rules:jump) falls back to the clicker, as before. Utility,
+  NOT Staff Utility: members click these buttons (the panel group gates every run — the
+  reason unhiatus sits in Utility too). Defer mode stays None, as on
   channel_activity_pager: an updateMessage under Update Message Response is refused
   (Discord 40060). */ -}}
 
@@ -20,24 +24,20 @@
 
 {{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
 
-{{/* existing rule numbers ascending (a deleted middle rule leaves a gap); the same scan
-  rules.gohtml does for its max */}}
-{{ $maxRule := 0 }}
+{{/* existing rule numbers ascending (a deleted middle rule leaves a gap): collected from
+  the keys, then ordered with `sort` — never a `seq` over 1..max, which errors past
+  10,000 and so lets one stored "Rule #1000000" break the whole browser */}}
+{{ $unsorted := cslice }}
 {{- range $k, $v := $rulesDict -}}
     {{- if reFind "\\ARule #(\\d+)\\z" $k -}}
         {{- $ruleN := toInt (reReplace "\\ARule #" $k "") -}}
-        {{- if gt $ruleN $maxRule -}}
-            {{- $maxRule = $ruleN -}}
+        {{- $canonical := $rulesDict.HasKey (joinStr "" "Rule #" $ruleN) -}}
+        {{- if and (ge $ruleN 1) $canonical (not (in $unsorted $ruleN)) -}}
+            {{- $unsorted = $unsorted.Append $ruleN -}}
         {{- end -}}
     {{- end -}}
 {{- end -}}
-{{ $nums := cslice }}
-{{- range $i := seq 0 $maxRule -}}
-    {{- $n := add 1 $i -}}
-    {{- if $rulesDict.HasKey (joinStr "" "Rule #" $n) -}}
-        {{- $nums = $nums.Append $n -}}
-    {{- end -}}
-{{- end -}}
+{{ $nums := sort $unsorted }}
 {{ $count := len $nums }}
 
 {{/* the guild author, the same block rules.gohtml puts on every rule embed */}}
@@ -54,14 +54,20 @@
 {{ $author := sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
 
 {{/* which page: a button carries it in the custom ID, the select the rule number in
-  .Values, `rule` in ExecData; the dismiss button carries its opener's user id */}}
+  .Values, `rule` in ExecData; every id's third segment is the opener's user id */}}
 {{ $page := 1 }}
 {{ $jumpN := 0 }}
 {{ $action := "" }}
 {{ $parts := cslice }}
+{{ $opener := toString .User.ID }}
 {{- if .Interaction -}}
     {{- $parts = split .CustomID ":" -}}
     {{- $action = index $parts 1 -}}
+    {{- if ge (len $parts) 3 -}}
+        {{- if reFind "\\A\\d+\\z" (index $parts 2) -}}
+            {{- $opener = index $parts 2 -}}
+        {{- end -}}
+    {{- end -}}
     {{- if eq $action "jump" -}}
         {{- $jumpN = toInt (index .Values 0) -}}
     {{- else if ne $action "close" -}}
@@ -72,9 +78,10 @@
 {{- end -}}
 
 {{/* the dismiss button: only the member who opened the browser may use it (the opener's
-  id rides in the custom ID; a clicker is .User on a component run). In an execCC child
-  .User is the caller — the member who ran `rule browse` */}}
-{{ $closeID := printf "rules:close:%d" .User.ID }}
+  id rides in every custom ID, parsed above; a clicker is .User on a component run). On
+  the first render, an execCC child, .User is the caller — the member who ran `rule
+  browse` — and an old id without an opener falls back to the clicker */}}
+{{ $closeID := printf "rules:close:%s" $opener }}
 {{/* Tzurot design language (consult 2026-09-30): every button carries text, and red is
   reserved for deleting entities — closing a UI the user spawned is a non-action, so
   Dismiss is secondary-styled with a label, not danger-styled */}}
@@ -160,15 +167,16 @@
             {{- $options = $options.Append $opt -}}
         {{- end -}}
     {{- end -}}
-    {{ $row1 := cslice (cmenu "custom_id" "rules:jump" "placeholder" "Jump to rule" "options" $options) }}
+    {{ $row1 := cslice (cmenu "custom_id" (printf "rules:jump:%s" $opener)
+        "placeholder" "Jump to rule" "options" $options) }}
     {{/* the trailing "noop" keeps the indicator's ID distinct from every page number */}}
     {{ $row2 := cslice
         (cbutton "emoji" (sdict "name" "◀") "style" "secondary"
-            "custom_id" (printf "rules:%d" (sub $page 1)) "disabled" (le $page 1))
+            "custom_id" (printf "rules:%d:%s" (sub $page 1) $opener) "disabled" (le $page 1))
         (cbutton "label" (printf "Page %d/%d" $page $count) "style" "secondary"
             "custom_id" "rules:noop" "disabled" true)
         (cbutton "emoji" (sdict "name" "▶") "style" "secondary"
-            "custom_id" (printf "rules:%d" (add $page 1)) "disabled" (ge $page $count))
+            "custom_id" (printf "rules:%d:%s" (add $page 1) $opener) "disabled" (ge $page $count))
         $closeButton
     }}
     {{ $msg := complexMessage

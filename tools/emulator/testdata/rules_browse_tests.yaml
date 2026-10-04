@@ -59,7 +59,7 @@ tests:
         - channel_id: 123456789012345678
           embed_title: "Rule #1"
           embed_contains: 'Be respectful to all members.'
-          components_contains: '"custom_id": "templates-rules:jump"'
+          components_contains: '"custom_id": "templates-rules:jump:987654321098765432"'
       deletions:
         - { of: trigger, channel_id: 123456789012345678, delay: 5s }
 
@@ -112,7 +112,7 @@ tests:
       interaction_responses:
         - kind: update
           embed_contains: 'No spamming or flooding the chat.'
-          components_contains: "\"disabled\": false,\n      \"emoji\": {\n        \"name\": \"◀\"\n      },\n      \"custom_id\": \"templates-rules:1\""
+          components_contains: "\"disabled\": false,\n      \"emoji\": {\n        \"name\": \"◀\"\n      },\n      \"custom_id\": \"templates-rules:1:987654321098765432\""
       edited_messages:
         - { channel_id: 123456789012345678, embed_title: "Rule #2" }
 
@@ -127,7 +127,7 @@ tests:
       interaction_responses:
         - kind: update
           embed_contains: 'Keep discussions on topic.'
-          components_contains: "\"disabled\": true,\n      \"emoji\": {\n        \"name\": \"▶\"\n      },\n      \"custom_id\": \"templates-rules:4\""
+          components_contains: "\"disabled\": true,\n      \"emoji\": {\n        \"name\": \"▶\"\n      },\n      \"custom_id\": \"templates-rules:4:987654321098765432\""
 
   - name: "rules_pager: the jump select opens the chosen rule and marks its option default"
     template: "../../../commands/rules/rules_pager.gohtml"
@@ -261,3 +261,189 @@ tests:
         - kind: update
           embed_title: "Rules"
           embed_contains: '€€…'
+
+  # one stored huge number must not break the rulebook (no `seq` over 1..max: it errors
+  # past 10,000 elements)
+  - name: "rules_pager: a stray huge Rule #1000000 does not break the browser (page 1 opens)"
+    template: "../../../commands/rules/rule.gohtml"
+    context:
+      args: ["browse"]
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: { "Rule #1": "a", "Rule #1000000": "typo" }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Rule #1", embed_contains: "a" }
+
+  - name: "rules_pager: with a stray Rule #1000000, page 2 shows it"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:2:987654321098765432", message_id: 7 }
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: { "Rule #1": "a", "Rule #1000000": "typo" }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          embed_title: "Rule #1000000"
+          embed_contains: "typo"
+
+  - name: "rules: with a stray Rule #1000000 the no-argument listing prints both rules"
+    template: "../../../commands/rules/rules.gohtml"
+    context:
+      args: []
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: { "Rule #1": "a", "Rule #1000000": "typo" }
+    assertions:
+      sent_messages:
+        - { embed_title: "Rule #1" }
+        - { embed_title: "Rule #1000000" }
+
+  # the snapshot pins Rule #1000000's absence (embed matchers match ANY embed, so
+  # sent_messages alone can't assert it is missing)
+  - name: "rules: with a stray Rule #1000000, `rules 1 5` prints only rule 1"
+    template: "../../../commands/rules/rules.gohtml"
+    snapshot: true
+    context:
+      args: ["1", "5"]
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: { "Rule #1": "a", "Rule #1000000": "typo" }
+    assertions:
+      sent_messages:
+        - { embed_title: "Rule #1" }
+
+  # a stored "Rule #0" is not a rule: both readers start at 1, as the old seq scan did
+  - name: "rules_pager: a stored Rule #0 is skipped, page 1 is Rule #1"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:1:987654321098765432", message_id: 7 }
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: { "Rule #0": "zero", "Rule #1": "a", "Rule #2": "b" }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          embed_title: "Rule #1"
+          components_contains: "Page 1/2"
+
+  - name: "rules: a stored Rule #0 is not listed"
+    template: "../../../commands/rules/rules.gohtml"
+    snapshot: true
+    context:
+      args: []
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value: { "Rule #0": "zero", "Rule #1": "a" }
+    assertions:
+      sent_messages:
+        - { embed_title: "Rule #1" }
+
+  # Dismiss stays the opener's however many members page the browser
+  - name: "rules_pager: another member paging keeps the opener's Dismiss and paging ids"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      user: { id: 111222333444555001 }
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:2:987654321098765432", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          embed_contains: 'No spamming or flooding the chat.'
+          components_contains: '"custom_id": "templates-rules:close:987654321098765432"'
+
+  - name: "rules_pager: another member paging keeps the opener in the next button id"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      user: { id: 111222333444555001 }
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:2:987654321098765432", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          components_contains: '"custom_id": "templates-rules:3:987654321098765432"'
+
+  - name: "rules_pager: another member paging keeps the opener in the jump select id"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      user: { id: 111222333444555001 }
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:2:987654321098765432", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          components_contains: '"custom_id": "templates-rules:jump:987654321098765432"'
+
+  - name: "rules_pager: the jump select keeps the opener too"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      user: { id: 111222333444555001 }
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:jump:987654321098765432", message_id: 7, component: string_menu, values: ["3"] }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          embed_contains: 'Keep discussions on topic.'
+          components_contains: '"custom_id": "templates-rules:close:987654321098765432"'
+
+  - name: "rules_pager: after B paged A's browser, B's Dismiss is refused (the id names A)"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      user: { id: 111222333444555001 }
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:close:987654321098765432", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Only the person who opened this browser can dismiss it." }
+
+  # messages already in production carry the old ids (no opener): the clicker is the
+  # opener, as before
+  - name: "rules_pager: a legacy rules:2 id still pages, Dismiss falls back to the clicker"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:2", message_id: 7 }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          embed_contains: 'No spamming or flooding the chat.'
+          components_contains: '"custom_id": "templates-rules:close:987654321098765432"'
+
+  - name: "rules_pager: a legacy rules:jump id still jumps, Dismiss falls back to the clicker"
+    template: "../../../commands/rules/rules_pager.gohtml"
+    context:
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Rules" }] }]
+      interaction: { type: component, custom_id: "rules:jump", message_id: 7, component: string_menu, values: ["3"] }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: update
+          embed_contains: 'Keep discussions on topic.'
+          components_contains: '"custom_id": "templates-rules:close:987654321098765432"'
