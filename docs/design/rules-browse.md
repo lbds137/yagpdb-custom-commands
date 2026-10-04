@@ -11,7 +11,8 @@ House /commands/ page plans to list it).
   Stays unchanged — the public rulebook posting.
 - `rule` (Utility, main 1): one rule by number via embed_exec. Members' current entry.
 - Rules live in the `Rules` dict, keys `Rule #N` (N ≥ 1, gaps allowed: rule_edit deletes
-  by key; rules.gohtml walks `seq(start..end)` with HasKey checks).
+  by key; rules.gohtml walked `seq(start..end)` with HasKey checks — since 2026-10-04
+  both readers collect the existing N ≥ 1 and `sort` them, as `seq` refuses > 10,000).
 
 ## Design
 
@@ -27,9 +28,14 @@ House /commands/ page plans to list it).
   ID, like channel_activity_pager.
 - Custom IDs (all explicit and distinct — Discord refuses a message whose components
   share one, and the emulator enforces it too):
-  - `rules:<page>` — ◀ / ▶ buttons
+  - `rules:<page>:<opener>` — ◀ / ▶ buttons
   - `rules:noop` — the disabled "Page X/Y" indicator button
-  - `rules:jump` — the select menu; `.Values` holds the chosen rule number as a string
+  - `rules:jump:<opener>` — the select menu; `.Values` holds the chosen rule number as a
+    string
+  - `rules:close:<opener>` — Dismiss, honored only for the opener
+  - `<opener>` (added 2026-10-04, GLM audit A-F3) is the snowflake of the member who ran
+    `rule browse`, carried through every re-render so paging by others can't take over
+    Dismiss; old ids without it (`rules:<page>`, `rules:jump`) fall back to the clicker.
 - Defer mode None (channel_activity_pager's rationale applies: an updateMessage under
   Update Message Response is refused, 40060).
 - No .Interaction (entry via execCC) → sendMessage the page normally; with
@@ -48,8 +54,8 @@ One rule per page (rules are long; single-embed scope). Embed:
   - row 1: the jump select (cmenu): options `Rule #1` … `Rule #N` in numeric order,
     value = N. Discord caps a select at 25 options; the server has 13. A 26th rule is
     the trigger to switch to range-grouped selects (filed, out of scope).
-  - row 2: ◀ (`rules:<page-1>`, disabled on page 1) · Page X/Y (`rules:noop`, disabled)
-    · ▶ (`rules:<page+1>`, disabled on last page).
+  - row 2: ◀ (`rules:<page-1>:<opener>`, disabled on page 1) · Page X/Y (`rules:noop`,
+    disabled) · ▶ (`rules:<page+1>:<opener>`, disabled on last page) · Dismiss.
 - Pages enumerate EXISTING keys sorted numerically (skipping deleted middles), NOT
   seq(1..max): the page count and the select options come from the real key list.
 - An out-of-range or missing page (rule deleted between renders) clamps to the nearest

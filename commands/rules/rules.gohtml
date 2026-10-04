@@ -25,14 +25,23 @@
     (carg "int" "ending rule")
 }}
 
-{{ $maxRule := 0 }}
+{{/* the rule numbers ascending: collected from the keys and ordered with `sort`, never a
+  `seq` over 1..max (it errors past 10,000, so one stored "Rule #1000000" would break
+  the command) */}}
+{{ $unsorted := cslice }}
 {{- range $k, $v := $rulesDict -}}
     {{- if reFind "\\ARule #(\\d+)\\z" $k -}}
         {{- $ruleN := toInt (reReplace "\\ARule #" $k "") -}}
-        {{- if gt $ruleN $maxRule -}}
-            {{- $maxRule = $ruleN -}}
+        {{- $canonical := $rulesDict.HasKey (joinStr "" "Rule #" $ruleN) -}}
+        {{- if and (ge $ruleN 1) $canonical (not (in $unsorted $ruleN)) -}}
+            {{- $unsorted = $unsorted.Append $ruleN -}}
         {{- end -}}
     {{- end -}}
+{{- end -}}
+{{ $nums := sort $unsorted }}
+{{ $maxRule := 0 }}
+{{- if gt (len $nums) 0 -}}
+    {{- $maxRule = index $nums (sub (len $nums) 1) -}}
 {{- end -}}
 {{ $channelID := .Channel.ID }}
 {{ if gt $maxRule 0 }}
@@ -74,10 +83,9 @@
       per-embed limits (lines 47-68 there), plus its packed length (title + description +
       author name, what counts toward Discord's 6,000-per-message total) */}}
     {{ $items := cslice }}
-    {{- range $i := seq (sub $startingRule 1) $endingRule -}}
-        {{- $iHuman := add 1 $i -}}
+    {{- range $iHuman := $nums -}}
         {{- $key := joinStr "" "Rule #" $iHuman -}}
-        {{- if $rulesDict.HasKey $key -}}
+        {{- if and (ge $iHuman $startingRule) (le $iHuman $endingRule) -}}
             {{- $title := $key -}}
             {{- if $singleRuleTitle -}}
                 {{- $title = "Rules" -}}
