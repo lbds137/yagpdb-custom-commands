@@ -1,9 +1,10 @@
 // Package main implements yagmin, the parser-based minifier for free-tier command
 // size. A command on a free YAGPDB server may be at most 10,000 runes; yagmin drops
 // the comments (except the header block, which carries the command's panel
-// settings), renames every variable to a short name and re-prints the parse tree.
-// The emulator's YAML suite runs against the minified copies (yagmin prove) to show
-// the output is the same.
+// settings), renames every variable to a short name, drops the whitespace that
+// cannot reach the response (whitespace.go) and re-prints the parse tree. The
+// emulator's YAML suite runs against the minified copies (yagmin prove) to show the
+// output is the same.
 package main
 
 import (
@@ -54,7 +55,7 @@ func minify(name, source string) (string, error) {
 		return "", err
 	}
 	newRenamer(trees).apply(trees)
-	stripWhitespaceNodes(trees)
+	dropWhitespace(trees)
 
 	var b strings.Builder
 	for _, t := range trees {
@@ -250,99 +251,6 @@ func shortName(i int) string {
 	// two letters: 52*52 slots, "aa", "ab", ..., "aZ", "ba", ...
 	i -= base
 	return nameAlphabet[i/base:i/base+1] + nameAlphabet[i%base:i%base+1]
-}
-
-// stripWhitespaceNodes removes every text node that is entirely whitespace. Those
-// nodes are the indentation and newlines between actions; they only add whitespace
-// to the command's output. The equivalence proof (yagmin prove) is the oracle for
-// that: if any test's output turns out to depend on them, it shows up as a real
-// difference. Text nodes with any non-whitespace content are kept verbatim, and
-// string literals live in actions, untouched by this pass.
-func stripWhitespaceNodes(trees []*orderedTree) {
-	for _, t := range trees {
-		stripList(t.root)
-	}
-}
-
-// strip follows a node that can hold further lists, pipes or command arguments.
-func strip(n parse.Node) {
-	switch node := n.(type) {
-	case *parse.ActionNode:
-		stripPipe(node.Pipe)
-	case *parse.IfNode:
-		stripBranch(&node.BranchNode)
-	case *parse.WithNode:
-		stripBranch(&node.BranchNode)
-	case *parse.RangeNode:
-		stripBranch(&node.BranchNode)
-	case *parse.WhileNode:
-		stripBranch(&node.BranchNode)
-	case *parse.TryNode:
-		stripList(node.List)
-		stripList(node.CatchList)
-	case *parse.ReturnNode:
-		stripPipe(node.Pipe)
-	case *parse.TemplateNode:
-		stripPipe(node.Pipe)
-	case *parse.CommandNode:
-		for _, arg := range node.Args {
-			stripArg(arg)
-		}
-	case *parse.PipeNode:
-		stripPipe(node)
-	case *parse.ChainNode:
-		stripArg(node)
-	}
-}
-
-func stripPipeCmd(c *parse.CommandNode) {
-	for _, arg := range c.Args {
-		stripArg(arg)
-	}
-}
-
-// stripArg follows the node types that can hold further lists (a parenthesized
-// pipeline argument, or a chain on one).
-func stripArg(arg parse.Node) {
-	switch a := arg.(type) {
-	case *parse.PipeNode:
-		stripPipe(a)
-	case *parse.ChainNode:
-		stripArg(a.Node)
-	}
-}
-
-// stripPipe walks a pipe's commands' arguments (declarations hold no lists).
-func stripPipe(p *parse.PipeNode) {
-	if p == nil {
-		return
-	}
-	for _, cmd := range p.Cmds {
-		stripPipeCmd(cmd)
-	}
-}
-
-func stripBranch(b *parse.BranchNode) {
-	stripPipe(b.Pipe)
-	stripList(b.List)
-	stripList(b.ElseList)
-}
-
-// stripList walks a list, dropping whitespace-only text nodes on the way.
-func stripList(n *parse.ListNode) {
-	if n == nil {
-		return
-	}
-	kept := n.Nodes[:0]
-	for _, child := range n.Nodes {
-		if t, ok := child.(*parse.TextNode); ok && len(t.Text) > 0 &&
-			len(strings.TrimSpace(string(t.Text))) == 0 {
-			continue
-		}
-		strip(child)
-		kept = append(kept, child)
-	}
-	n.Nodes = kept
 }
 
 // printNodes prints a list of nodes. It mirrors the nodes' own String methods

@@ -21,6 +21,8 @@ func main() {
 	switch args[0] {
 	case "batch":
 		batch(args[1:])
+	case "check":
+		check(args[1:])
 	case "prove":
 		prove(args[1:])
 	case "help", "-h", "--help":
@@ -36,20 +38,23 @@ func usage() {
 Usage:
     yagmin [-o <out>] <file.gohtml>   Minify one file; print to stdout, or write to <out>
     yagmin batch <flags>              Minify a tree of commands
+    yagmin check <flags>              Fail when a tree of copies is not what batch
+                                      would write (stale, missing or extra files)
     yagmin prove <flags>              Equivalence proof: run the whole YAML suite on
                                       minified copies of every command, and compare
 
-Batch flags:
+Batch and check flags:
     -src <dir>   Tree to minify (default commands)
-    -dst <dir>   Where to write the copies (required); mirrors src's layout
+    -dst <dir>   Where the copies go (batch writes there, check reads; required);
+                 mirrors src's layout
     -over <n>    Only files over n runes (0 = every file)
 
 Prove flags:
     -commands <dir>  Command tree (default commands)
     -testdata <dir>  YAML suite directory (default tools/emulator/testdata)
     -schema <file>   Type schema for stored values (default db_schema.yaml)
-    -scratch <dir>   Where to put the minified copies (default: a fresh temp dir,
-                     kept; yagmin never deletes)
+    -scratch <dir>   Where to put the minified copies (default: a temp dir, removed
+                     when the run ends; a directory given here is kept)
 `)
 }
 
@@ -109,21 +114,109 @@ func batch(args []string) {
 
 // batchRun is batch's body, separate so prove and tests can reuse it.
 func batchRun(src, dst string, over int) error {
-	var files []string
-	err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
+	written := 0
+	err := eachMinified(src, over, func(rel, path string, source, minified []byte) error {
+		target := filepath.Join(dst, rel)
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return err
 		}
-		if !d.IsDir() && strings.HasSuffix(path, ".gohtml") {
-			files = append(files, path)
+		if err := os.WriteFile(target, minified, 0o644); err != nil {
+			return err
 		}
+		written++
+		fmt.Printf("%s: %d -> %d runes\n", path, utf8.RuneCount(source), utf8.RuneCount(minified))
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-	sort.Strings(files)
-	written := 0
+	fmt.Printf("minified %d file(s) into %s\n", written, dst)
+	return nil
+}
+
+// check handles: yagmin check -src DIR -dst DIR [-over N], the freshness check behind
+// make minify-check. Nothing is written: every file batch would write is minified in
+// memory and compared with dst's copy, and any other file under dst is reported as
+// extra (batch never deletes). Exit 1 lists each problem with the fix.
+func check(args []string) {
+	fs := flag.NewFlagSet("check", flag.ExitOnError)
+	src := fs.String("src", "commands", "Tree to minify")
+	dst := fs.String("dst", "", "Tree of copies to check (required)")
+	over := fs.Int("over", 0, "Only files over this many runes (0 = every file)")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	if *dst == "" {
+		fmt.Fprintln(os.Stderr, "check: -dst is required")
+		os.Exit(1)
+	}
+	problems, err := checkRun(*src, *dst, *over)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "check: %v\n", err)
+		os.Exit(1)
+	}
+	if len(problems) > 0 {
+		fmt.Printf("❌ %s is out of date\n", *dst)
+		for _, p := range problems {
+			fmt.Printf("   %s\n", p)
+		}
+		fmt.Println("   Fix: make minify   (and remove any file it no longer writes; it never deletes)")
+		os.Exit(1)
+	}
+	fmt.Printf("✅ %s is up to date\n", *dst)
+}
+
+// checkRun is check's body: one line per stale, missing or extra file under dst, or
+// one line when dst itself is missing.
+func checkRun(src, dst string, over int) ([]string, error) {
+	if info, err := os.Stat(dst); os.IsNotExist(err) || (err == nil && !info.IsDir()) {
+		return []string{fmt.Sprintf("missing: %s is not a directory; nothing minified yet", dst)}, nil
+	} else if err != nil {
+		return nil, err
+	}
+	var problems []string
+	expected := map[string]bool{}
+	err := eachMinified(src, over, func(rel, path string, source, minified []byte) error {
+		expected[rel] = true
+		current, err := os.ReadFile(filepath.Join(dst, rel))
+		switch {
+		case os.IsNotExist(err):
+			problems = append(problems, fmt.Sprintf("missing: %s (from %s)", filepath.Join(dst, rel), path))
+		case err != nil:
+			return err
+		case string(current) != string(minified):
+			problems = append(problems, fmt.Sprintf("stale: %s (from %s)", filepath.Join(dst, rel), path))
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	copies, err := listFiles(dst, func(string) bool { return true })
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range copies {
+		rel, err := filepath.Rel(dst, path)
+		if err != nil {
+			return nil, err
+		}
+		if !expected[rel] {
+			problems = append(problems,
+				fmt.Sprintf("extra: %s (no command over the threshold writes it)", path))
+		}
+	}
+	return problems, nil
+}
+
+// eachMinified minifies every .gohtml under src over the threshold, in path order,
+// and hands each one to visit with its path relative to src.
+func eachMinified(src string, over int,
+	visit func(rel, path string, source, minified []byte) error) error {
+	files, err := commandFiles(src)
+	if err != nil {
+		return err
+	}
 	for _, path := range files {
 		source, err := os.ReadFile(path)
 		if err != nil {
@@ -140,16 +233,33 @@ func batchRun(src, dst string, over int) error {
 		if err != nil {
 			return err
 		}
-		target := filepath.Join(dst, rel)
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		if err := visit(rel, path, source, []byte(minified)); err != nil {
 			return err
 		}
-		if err := os.WriteFile(target, []byte(minified), 0o644); err != nil {
-			return err
-		}
-		written++
-		fmt.Printf("%s: %d -> %d runes\n", path, utf8.RuneCount(source), utf8.RuneCount([]byte(minified)))
 	}
-	fmt.Printf("minified %d file(s) into %s\n", written, dst)
 	return nil
+}
+
+// commandFiles lists the .gohtml files under root, sorted.
+func commandFiles(root string) ([]string, error) {
+	return listFiles(root, func(path string) bool { return strings.HasSuffix(path, ".gohtml") })
+}
+
+// listFiles lists the files under root that keep says, sorted.
+func listFiles(root string, keep func(path string) bool) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && keep(path) {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(files)
+	return files, nil
 }

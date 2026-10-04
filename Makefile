@@ -68,13 +68,7 @@ minify: ## Write minified copies of every command over the free-tier cap into di
 	@cd tools/emulator && go run ./cmd/yagmin batch -src ../../commands -dst ../../dist/free -over 10000
 
 minify-check: ## Fail when dist/free/ doesn't match what make minify would write
-	@tmp=$$(mktemp -d) && \
-	cd tools/emulator && go run ./cmd/yagmin batch -src ../../commands -dst $$tmp/commands -over 10000 >/dev/null && cd ../.. && \
-	if ! diff -ru dist/free $$tmp/commands >/dev/null 2>&1; then \
-		echo "❌ dist/free is stale or missing entries"; \
-		echo "   Fix: make minify   (and remove any file it no longer writes; it never deletes)"; \
-		echo "   Diff:"; diff -ru dist/free $$tmp/commands | head -30; exit 1; \
-	fi && echo "✅ dist/free is up to date"
+	@cd tools/emulator && go run ./cmd/yagmin check -src ../../commands -dst ../../dist/free -over 10000
 
 test-minified: ## Equivalence proof: the whole YAML suite passes on minified copies
 	@cd tools/emulator && go run ./cmd/yagmin prove \
