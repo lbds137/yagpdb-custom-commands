@@ -17,6 +17,38 @@ type ScheduledRun struct {
 	Delay     time.Duration
 	Key       *string     // scheduleUniqueCC's key; nil for execCC
 	ExecData  interface{} // as the run gets it, after YAGPDB's msgpack round trip
+	// Interaction is the state of the scheduling run's interaction when it was scheduled:
+	// YAGPDB stores the caller's CurrentFrame (Interaction and RespondedTo) with the run
+	// (customcommands/tmplextensions.go:256-282 for execCC, :344 for scheduleUniqueCC),
+	// and the delayed run restores it (handle_timed.go:102-117).
+	Interaction ScheduledInteraction
+}
+
+// ScheduledInteraction is what a scheduled run carries of its scheduler's interaction.
+type ScheduledInteraction string
+
+const (
+	// ScheduledNoInteraction: the scheduling run had no interaction (a message, a reaction...)
+	ScheduledNoInteraction ScheduledInteraction = "none"
+	// ScheduledInteractionPending: it had one, not yet responded to; the delayed run's
+	// response would be the interaction's first (and the token has long expired, in
+	// practice: Discord gives 3 seconds)
+	ScheduledInteractionPending ScheduledInteraction = "pending"
+	// ScheduledInteractionResponded: it had one that was already responded to (or
+	// deferred), so the delayed run's response is a followup
+	ScheduledInteractionResponded ScheduledInteraction = "responded"
+)
+
+// scheduledInteraction reads the run's interaction state, as the CurrentFrame stored at
+// schedule time would hold it.
+func (ctx *ExecutionContext) scheduledInteraction() ScheduledInteraction {
+	switch {
+	case ctx.Interaction == nil:
+		return ScheduledNoInteraction
+	case ctx.Interaction.RespondedTo:
+		return ScheduledInteractionResponded
+	}
+	return ScheduledInteractionPending
 }
 
 // ccMaxDataLimit is YAGPDB's CCMaxDataLimit, execCC's cap on encoded data.
@@ -44,6 +76,8 @@ func (ctx *ExecutionContext) schedule(ccID, channelID int64, delay interface{}, 
 		ChannelID: channelID,
 		Delay:     time.Second * time.Duration(yagstd.ToInt64(delay)),
 		Key:       key,
+
+		Interaction: ctx.scheduledInteraction(),
 	}
 	if data != nil {
 		decoded, size, err := state.RoundTripExecData(data)

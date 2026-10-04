@@ -1,0 +1,28 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `gematria`
+  Group: `Utility`
+  Slash description: `Gematria of Hebrew text`
+  Defer mode: `None`
+  Dependencies: `gematria`
+
+  The slash version of the gematria command. ONE execCC to gematria with `Respond`: gematria
+  passes it on to embed_exec, which answers the interaction (public), so this run prints
+  nothing on that path (an empty run sends no response). The chain is this command (0),
+  gematria (1), embed_exec (2), within YAGPDB's depth of 2.
+
+  Slash option: `text string! the text to calculate`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $commandsDict := (dbGet 0 "Commands").Value }}
+	{{ $gematria := toInt ($commandsDict.Get "gematria") }}
+	{{ execCC $gematria .Channel.ID 0 (sdict
+		"AuthorID" .User.ID
+		"ChannelID" .Channel.ID
+		"Description" .Options.text
+		"Respond" true
+	) }}
+{{ else }}
+Use /gematria as a slash command with the text to calculate
+{{ end }}

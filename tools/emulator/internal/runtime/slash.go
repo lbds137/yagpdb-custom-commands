@@ -831,3 +831,35 @@ func (ctx *ExecutionContext) targetMember(userID int64) *types.CtxTargetMember {
 		},
 	}
 }
+
+// SetInteractionDelayed makes the run the delayed half of a slash command: a run that
+// execCC with a delay or scheduleUniqueCC scheduled while answering the interaction of
+// the slash command `name`. YAGPDB restores the scheduler's CurrentFrame (handle_timed.go:
+// 102-117, DelayedRunCCData.CurrentFrame: tmplextensions.go:256-282), so `.Interaction`
+// is the stored one with the RespondedTo it had when the run was scheduled, and
+// `.ExecData` is the data. The handler's other keys are NOT restored: no
+// `.IsSlashCommand`, `.SubCommand`, `.Options`, `.InteractionData` (those are set only by
+// handle_slashcommand.go:118-164). The panel's defer mode doesn't apply either. The
+// run's sendResponse then takes tokenArg's path (context_interactions.go:414-450): a
+// followup when respondedTo, else the interaction's first response.
+func (ctx *ExecutionContext) SetInteractionDelayed(name string, respondedTo bool) {
+	data := types.ApplicationCommandInteractionData{
+		ID:          applicationCommandInteractionID - 1,
+		Name:        strings.ToLower(strings.TrimSpace(name)),
+		CommandType: types.ChatApplicationCommand,
+		GuildID:     ctx.GuildID,
+	}
+	member := ctx.member(ctx.UserID)
+	ctx.InteractionDelayed = true
+	ctx.Interaction = &types.CustomCommandInteraction{Interaction: &types.Interaction{
+		ID:          applicationCommandInteractionID,
+		Type:        types.InteractionApplicationCommand,
+		Data:        data,
+		DataCommand: &data,
+		GuildID:     ctx.GuildID,
+		ChannelID:   ctx.ChannelID,
+		Member:      &member,
+		Token:       interactionToken(applicationCommandInteractionID),
+		Version:     1,
+	}, RespondedTo: respondedTo}
+}

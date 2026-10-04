@@ -367,6 +367,21 @@
       "slashDescription": null,
       "slash": null
     },
+    "commands/gematria/gematria_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "Gematria of Hebrew text",
+      "slash": {
+        "subcommands": [],
+        "options": [
+          {
+            "name": "text",
+            "type": "string",
+            "description": "the text to calculate",
+            "required": true
+          }
+        ]
+      }
+    },
     "commands/general/avatar_menu.gohtml": {
       "deferMode": 0,
       "slashDescription": null,
@@ -438,6 +453,69 @@
       "deferMode": 0,
       "slashDescription": null,
       "slash": null
+    },
+    "commands/hebrew/hebrew_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "Hebrew tools",
+      "slash": {
+        "subcommands": [
+          {
+            "name": "atbash",
+            "description": "atbash cipher of Hebrew, Greek, Arabic, Latin, runes and digits",
+            "options": [
+              {
+                "name": "text",
+                "type": "string",
+                "description": "the text to encipher",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "alefbet",
+            "description": "Paleo-Hebrew and Arabic letters converted to Hebrew",
+            "options": [
+              {
+                "name": "text",
+                "type": "string",
+                "description": "the text to convert",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "pyramid",
+            "description": "gematria of a word's pyramid, one embed per word",
+            "options": [
+              {
+                "name": "text",
+                "type": "string",
+                "description": "one or more words",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "random",
+            "description": "random Hebrew letters, with their gematria",
+            "options": [
+              {
+                "name": "letters",
+                "type": "integer",
+                "description": "letters per group",
+                "required": true
+              },
+              {
+                "name": "groups",
+                "type": "integer",
+                "description": "how many groups (default 1)",
+                "required": false
+              }
+            ]
+          }
+        ],
+        "options": []
+      }
     },
     "commands/hebrew/pyramid.gohtml": {
       "deferMode": 0,

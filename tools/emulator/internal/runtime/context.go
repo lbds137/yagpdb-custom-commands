@@ -139,6 +139,10 @@ type ExecutionContext struct {
 	// children, as YAGPDB shares it (tmplextensions.go:240-243), so a child's response
 	// counts as the interaction's
 	Interaction *types.CustomCommandInteraction
+	// InteractionDelayed marks the delayed half of a slash command (SetInteractionDelayed):
+	// the run's .Message and trigger message are the scheduler's blank slash message
+	// (handle_timed.go:102-107) and .Interaction is the inner *Interaction (:114-116)
+	InteractionDelayed bool
 	// Component is the click's data as the Component handler exposes it (.CustomID, .Cmd,
 	// .CmdArgs...); nil for an execCC child, which only inherits .Interaction
 	Component *ComponentTrigger
@@ -501,6 +505,15 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 		// tmplRunCC passes the pointer to a child (tmplextensions.go:242); the handler's
 		// other keys are the handler's alone
 		data["Interaction"] = ctx.Interaction
+		if ctx.InteractionDelayed {
+			// handle_timed.go:114-116 sets the frame's inner *discordgo.Interaction
+			data["Interaction"] = ctx.Interaction.Interaction
+		}
+	}
+	if ctx.InteractionDelayed {
+		// the scheduler's message is restored (handle_timed.go:102-107): the blank
+		// message the slash handler built when it scheduled the run
+		data["Message"] = ctx.slashMessage()
 	}
 	if ctx.Component != nil {
 		ctx.Component.setData(data)
@@ -762,7 +775,7 @@ func (ctx *ExecutionContext) triggerMsg() types.CtxMessage {
 	case ctx.Component != nil:
 		// the component's message with the clicker as author (handle_component.go:311-316)
 		return ctx.componentMessage()
-	case ctx.Slash != nil:
+	case ctx.Slash != nil || ctx.InteractionDelayed:
 		// the blank message the slash handler builds (handle_slashcommand.go:166-173)
 		return ctx.slashMessage()
 	case ctx.Modal != nil:

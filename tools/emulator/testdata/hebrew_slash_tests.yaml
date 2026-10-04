@@ -1,0 +1,288 @@
+name: "hebrew_slash (/hebrew atbash, alefbet, pyramid, random)"
+
+# The slash root of atbash, alefbet, pyramid and rand_hebrew: a result answers publicly
+# through ONE execCC to gematria (Respond), which passes it to embed_exec; a refusal is an
+# ephemeral sendResponse of the root. A pyramid of several words answers itself first and
+# schedules one delayed run of the root per word (cc 3, the Commands key hebrew_slash);
+# each delayed run's stored interaction is responded to, so its embed is a followup.
+# The gematria tables come from gematria_bootstrap, as in gematria_tests.
+
+setup_templates: ["../../../commands/gematria/gematria_bootstrap.gohtml"]
+
+defaults:
+  user: { id: 500000000000000001, username: "Invoker" }
+  channel: { id: 123456789012345678 }
+  guild:
+    id: 333333333333333333
+    name: "Test Server"
+    channels:
+      - { id: 900000000000000001, name: "yagpdb" }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Embed Color: 9807270, ExecCC Limit: 10 }
+  - user_id: 0
+    key: "Commands"
+    value: { gematria: "1", embed_exec: "2", hebrew_slash: "3" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 900000000000000001 }
+
+command_map:
+  1: "../../../commands/gematria/gematria.gohtml"
+  2: "../../../commands/plumbing/embed_exec.gohtml"
+  3: "../../../commands/hebrew/hebrew_slash.gohtml"
+
+tests:
+  - name: "hebrew_slash atbash: a Hebrew word answers publicly with the cipher and the plaintext"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: atbash, options: { text: "אמת" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Atbash Ciphertext"
+          embed_contains: "תיא"
+      sent_messages:
+        - { embed_contains: "Plaintext" }
+        - { embed_contains: "אמת" }
+      scheduled_runs: []
+
+  - name: "hebrew_slash atbash: a multi-word text keeps its spacing and a sofit ends each word"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: atbash, options: { text: "ab  גד" } }
+    assertions:
+      interaction_responses:
+        # a<->z, b<->y; ג<->ר, ד<->ק (ק is no final letter)
+        - { kind: message, ephemeral: false, embed_title: "Atbash Ciphertext", embed_contains: "zy  רק" }
+
+  - name: "hebrew_slash atbash: nothing to encipher is an ephemeral refusal and no execCC"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: atbash, options: { text: "!!! ??" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "There was nothing to encipher" }
+      scheduled_runs: []
+
+  - name: "hebrew_slash alefbet: Paleo-Hebrew becomes Hebrew, with a final letter at the word's end"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: alefbet, options: { text: "𐤀𐤌 𐤍" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Hebrew Converter"
+          embed_contains: "אם ן"
+      sent_messages:
+        - { embed_contains: "Original Text" }
+
+  - name: "hebrew_slash alefbet: no convertible letter is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: alefbet, options: { text: "hello" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "does not contain any valid text for conversion to Hebrew" }
+
+  - name: "hebrew_slash pyramid: one word answers publicly with its pyramid and the word's gematria"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: "אמת" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Pyramid Gematria"
+          embed_contains: "אמ"
+      sent_messages:
+        - { embed_contains: "`[ 1 | 41 | 441 ]`" }
+        - { embed_contains: "Word" }
+      scheduled_runs: []
+
+  - name: "hebrew_slash pyramid: a word with no gematria letter is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: "!?." } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "no letters with a gematria value" }
+      scheduled_runs: []
+
+  - name: "hebrew_slash pyramid: several words answer first with the count, then schedule one run per word"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: " אמת שלום  בית " } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          content_contains: "Pyramid gematria of **3** words follows, one embed per word."
+      scheduled_runs:
+        # the response went first, so every stored frame is responded to
+        - { cc_id: 3, delay: 1s, interaction: responded, exec_data_contains: '"Description":"אמת"' }
+        - { cc_id: 3, delay: 1s, interaction: responded, exec_data_contains: '"Description":"שלום"' }
+        - { cc_id: 3, delay: 1s, interaction: responded, exec_data_contains: '"Description":"בית"' }
+
+  - name: "hebrew_slash pyramid: scheduled runs carry the invoker and the channel"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: "אמת בית" } }
+    assertions:
+      scheduled_runs:
+        - { cc_id: 3, channel_id: 123456789012345678, delay: 1s, exec_data_contains: '"AuthorID":500000000000000001' }
+        - { cc_id: 3, channel_id: 123456789012345678, delay: 1s, exec_data_contains: '"ChannelID":123456789012345678' }
+
+  - name: "hebrew_slash pyramid: words past the ExecCC limit are skipped with a warning line"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { Embed Color: 9807270, ExecCC Limit: 2 }
+      - user_id: 0
+        key: "Commands"
+        value: { gematria: "1", embed_exec: "2", hebrew_slash: "3" }
+      - user_id: 0
+        key: "Channels"
+        value: { YAGPDB: 900000000000000001 }
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: "אמת שלום בית דלת" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          content_contains: "Pyramid gematria of **2** words follows, one embed per word.\n⚠️ Warning: 2 words were not processed because only 2 words can be processed at a time."
+      scheduled_runs:
+        - { cc_id: 3, interaction: responded }
+        - { cc_id: 3, interaction: responded }
+
+  - name: "hebrew_slash pyramid: one skipped word is singular"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { Embed Color: 9807270, ExecCC Limit: 1 }
+      - user_id: 0
+        key: "Commands"
+        value: { gematria: "1", embed_exec: "2", hebrew_slash: "3" }
+      - user_id: 0
+        key: "Channels"
+        value: { YAGPDB: 900000000000000001 }
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: "אמת שלום" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, content_contains: "Pyramid gematria of **1** word follows, one embed per word.\n⚠️ Warning: 1 word was not processed because only 1 word can be processed at a time." }
+
+  - name: "hebrew_slash pyramid: the delayed half answers with a followup embed"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      exec_data: { Description: "אמת", AuthorID: 500000000000000001, ChannelID: 123456789012345678 }
+      interaction: { type: slash, delayed: true, responded_to: true }
+    assertions:
+      interaction_responses:
+        - kind: followup
+          ephemeral: false
+          embed_title: "Pyramid Gematria"
+          embed_contains: "אמ"
+      sent_messages:
+        - { embed_contains: "`[ 1 | 41 | 441 ]`" }
+      scheduled_runs: []
+
+  - name: "hebrew_slash pyramid: a delayed word with no gematria letter is an ephemeral followup refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      exec_data: { Description: "!?.", AuthorID: 500000000000000001, ChannelID: 123456789012345678 }
+      interaction: { type: slash, delayed: true, responded_to: true }
+    assertions:
+      interaction_responses:
+        - { kind: followup, ephemeral: true, content_contains: "no letters with a gematria value" }
+
+  - name: "hebrew_slash random: one letters-only group answers publicly as Hebrew Generator"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      seed: 1
+      interaction: { type: slash, subcommand: random, options: { letters: 5 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Hebrew Generator" }
+      scheduled_runs: []
+    snapshot: true
+
+  - name: "hebrew_slash random: groups give space-separated groups with no leading space"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      seed: 2
+      interaction: { type: slash, subcommand: random, options: { letters: 3, groups: 4 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Hebrew Generator" }
+      sent_messages:
+        # four groups of three letters, the gematria counts them as four words
+        - { embed_contains: "Word Count" }
+        - { embed_contains: "`4`" }
+    snapshot: true
+
+  - name: "hebrew_slash random: a single letter has no sofit"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      seed: 3
+      interaction: { type: slash, subcommand: random, options: { letters: 1, groups: 1 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Hebrew Generator" }
+      sent_messages:
+        - { embed_contains: "Letter Gematria" }
+
+  - name: "hebrew_slash random: zero letters is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: random, options: { letters: 0 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "at least 1" }
+
+  - name: "hebrew_slash random: zero groups is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: random, options: { letters: 3, groups: 0 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "at least 1" }
+
+  - name: "hebrew_slash random: more than 1000 letters in all is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: random, options: { letters: 101, groups: 10 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "no more than 1000 letters" }
+
+  - name: "hebrew_slash random: huge letters and groups whose product wraps to 0 are refused"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: random, options: { letters: 4294967296, groups: 4294967296 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "no more than 1000 letters" }
+
+  - name: "hebrew_slash random: exactly 1000 letters in all is allowed"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: random, options: { letters: 100, groups: 10 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Hebrew Generator" }
+
+  # A Slash Command trigger takes an interaction, so the bare run rides the execCC path
+  # (no trigger check there), as the smoke's plain-message run does
+  - name: "hebrew_slash: a bare run prints the usage hint"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      exec_data: { probe: true }
+    expected:
+      output_contains: "Use /hebrew as a slash command"

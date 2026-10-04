@@ -142,10 +142,13 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     deletions: [{ of: trigger, delay: 5s }, { of: message, channel_id: 9, message_id: 7 }]
     # exactly the deletions asked for, in order ([] for none): of = trigger|message|response;
     # unset fields match anything, delay: 0s = at once. Snapshots record deletions too
-    scheduled_runs: [{ cc_id: 5, channel_id: 9, delay: 90s, key: "k", exec_data_contains: '"n":1' }]
+    scheduled_runs: [{ cc_id: 5, channel_id: 9, delay: 90s, key: "k", exec_data_contains: '"n":1', interaction: responded }]
     # exactly the runs execCC with a delay / scheduleUniqueCC left, in the order scheduled
     # (a replaced one moves last; [] for none). They aren't run: test that command separately
-    # (its exec_data there is a plain map; the real run gets an *sdict)
+    # (its exec_data there is a plain map; the real run gets an *sdict). interaction: = the
+    # state of the scheduling run's interaction when it scheduled (YAGPDB stores the caller's
+    # CurrentFrame with the run): none | pending (not responded to) | responded (a followup
+    # later); unset = any. The delayed half: see Delayed runs of a slash command
     interaction_responses: [{ kind: update, embed_contains: "Page 2" }, { kind: followup, ephemeral: true }]
     # exactly the run's answers to its interaction, in order ([] for none): kind =
     # message|followup|deferred_edit|update|modal, ephemeral, and content_contains/embed_title/
@@ -253,7 +256,8 @@ or `.IsMenu` + `.MenuType` (`string`/`user`/`role`/`mentionable`/`channel`) + `.
 the clicker as `.Author`/`.Member`, like `.Interaction.Message`, the same message
 (getMessage of it still shows the bot). `.User`/
 `.Member` are the clicker. A non-matching custom ID is a `no_trigger` case, like a
-message. `interaction:` can't combine with args, message_content, reaction or exec_data.
+message. `interaction:` can't combine with args, message_content or reaction, nor with
+exec_data except as the delayed shape of a slash command (Delayed runs of a slash command).
 
 An interaction takes ONE response (vendor context_interactions.go): `updateMessage`
 (edits the clicked message in place: content, embeds AND components are replaced, so a
@@ -319,6 +323,30 @@ message (ID 0) with the invoker as `.Author`/`.Member`, and `.User`/`.Member` = 
 invoker. The printed output, `sendResponse`, `ephemeralResponse` and `Defer mode:`
 work as for a click; `updateMessage` is refused (no message to update). An execCC child
 inherits `.Interaction` and the blank `.Message`.
+
+## Delayed runs of a slash command
+
+A slash run that answered its interaction can schedule a delayed run of itself (execCC
+with a delay, or scheduleUniqueCC): YAGPDB stores the caller's CurrentFrame with it
+(customcommands/tmplextensions.go:256-282, :344) and the delayed run restores it
+(handle_timed.go:102-117): `.Interaction` is set with the RespondedTo it had at schedule
+time, `.ExecData` is the data, and NONE of the handler's keys (`.IsSlashCommand`,
+`.SubCommand`, `.Options`, `.InteractionData`). Test the scheduling run with
+`scheduled_runs: [{ interaction: responded }]` (respond BEFORE scheduling, or the stored
+frame is `pending`), and the delayed half with the one interaction + exec_data shape:
+
+```yaml
+  context:
+    exec_data: { Description: "word", AuthorID: 1, ChannelID: 9 }
+    interaction: { type: slash, delayed: true, responded_to: true }   # responded_to default false
+  assertions:
+    interaction_responses: [{ kind: followup, embed_title: "Pyramid Gematria" }]
+```
+
+`delayed` takes `type: slash` only, no subcommand or options, and needs exec_data; any
+other interaction + exec_data combination is a load error. The run's response is a followup
+when `responded_to`, else the interaction's first response (tokenArg,
+context_interactions.go:414-450). The trigger check is bypassed as for any exec_data run.
 
 ## Context menus
 
