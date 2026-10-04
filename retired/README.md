@@ -50,6 +50,12 @@ replaced by `/rule` (rule_slash, panel 106) and `/define` (define_slash, 108); n
 existed on another server. `rule browse` was rule's browse entry; `/rule` with no number
 replaces it. Their tests stay, repointed to `retired/`.
 
+`hiatus.gohtml` (text, main 81) and `unhiatus.gohtml` (text, main 82) retired 2026-10-04:
+replaced by `/hiatus` (hiatus_slash, panel 109) and `/unhiatus` (unhiatus_slash, 110);
+neither existed on another server. Two flaws retire with them: text `hiatus` replaced an
+earlier hiatus record instead of merging into it, and text `unhiatus` restored recorded
+roles no longer in Staff.Roles. Their tests stay, repointed to `retired/`.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
 `make changed-since-deploy` (all three scan only `commands/`). `make lint`

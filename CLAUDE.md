@@ -25,7 +25,7 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   rand_hebrew), `color/` (color_slash, hex_to_int; contrast and rand_color
   disabled on main, kept for lotv), `db/`
   (db_get_embed, db_get_text, db_slash, simple_db_lookup), `edit/` (edit_slash,
-  edit_modal, edit_confirm), `members/` (hiatus, unhiatus, hiatus_slash, unhiatus_slash, inactivity,
+  edit_modal, edit_confirm), `members/` (hiatus_slash, unhiatus_slash, inactivity,
   inactivity_prune_pick, staff_roles, staff_roles_pick, role_ping_slash,
   batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
@@ -40,7 +40,7 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   `Utility` (everyone) or `Staff Utility` (staff). The linter requires it on every
   command file, and the browser deploy sets the panel's group from it (like trigger and
   type), showing any difference in its dry run.
-- `unhiatus` is in the `Utility` group on purpose: a staff member on hiatus has lost the
+- `unhiatus_slash` (`/unhiatus`) is in the `Utility` group on purpose: a staff member on hiatus has lost the
   staff roles the `Staff Utility` group requires, so `Utility` is the only group it can
   run in.
 - `channel_activity_pager` is a Message Component trigger (`^ca:`), the button handler
