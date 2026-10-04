@@ -141,7 +141,8 @@ tests:
             embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
       exec_responses:
-        'kick 700000000000000001 "pruned due to inactivity"': ""
+        # moderation GenericCmdResp(MAKick, ...): "<emoji> <prefix> `<user>`"
+        'kick 700000000000000001 "pruned due to inactivity"': "👢 Kicked `Target#0`"
     assertions:
       execs:
         - { line: 'kick 700000000000000001 "pruned due to inactivity"' }
@@ -154,6 +155,29 @@ tests:
         - channel_id: 123456789012345678
           embed_title: "Inactivity Prune"
           embed_contains: "has been kicked!"
+
+  # exec returns failure as text in these cases (moderation/commands.go Kick RunFunc:
+  # "Member not found"; commands/tmplexec.go execCmd: "Error: "+err, "Unknown command").
+  # Errors the kick command RETURNS (hierarchy, perms) make exec itself error, which
+  # the template catches; the emulator can only declare response text, not an error,
+  # so that branch has no test.
+  - name: "inactivity_prune_pick: a kick that comes back as failure text is reported, not 'kicked'"
+    template: "../../../commands/members/inactivity_prune_pick.gohtml"
+    context:
+      member_roles: { 700000000000000001: [444444444444444444] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
+            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+      interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
+      exec_responses:
+        'kick 700000000000000001 "pruned due to inactivity"': "Member not found"
+    assertions:
+      execs:
+        - { line: 'kick 700000000000000001 "pruned due to inactivity"' }
+      sent_messages:
+        - channel_id: 123456789012345678
+          embed_title: "Inactivity Prune"
+          embed_contains: "Couldn't kick"
 
   - name: "inactivity_prune_pick: Kick on a member who left shows the verdict, no exec"
     template: "../../../commands/members/inactivity_prune_pick.gohtml"

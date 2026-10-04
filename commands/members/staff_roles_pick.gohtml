@@ -8,8 +8,10 @@
   The Staff Roles panel's select. Staff pick the staff roles; a submit saves
   Staff.Roles (snowflake strings, parity with the text path's regex strings) and
   rebuilds the panel in place with the new defaults — the visible confirmation is the
-  panel change, no extra ack. Non-staff get an ephemeral refusal (dismiss idiom).
-  Defer mode stays None, as on the pager and dismiss.
+  panel change, no extra ack. The configured Staff role always rides along (appended
+  when the pick lacks it), as on the text path, so hiatus can always take it.
+  Non-staff get an ephemeral refusal (dismiss idiom). Defer mode stays None, as on the
+  pager and dismiss.
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
@@ -19,7 +21,20 @@
 {{ $staffRoleID := toInt ($rolesDict.Get "Staff") }}
 
 {{ if hasRoleID $staffRoleID }}
-    {{ $values := or .Values cslice }}
+    {{/* the text path's rule: the configured Staff role rides along when missing, so a
+      panel submit never drops staff access (.Values are snowflake strings; copied
+      into a cslice because a plain string slice has no Append) */}}
+    {{ $values := cslice }}
+    {{ $hasStaff := false }}
+    {{- range $roleID := .Values -}}
+        {{- $values = $values.Append (toString $roleID) -}}
+        {{- if eq (toInt $roleID) $staffRoleID -}}
+            {{- $hasStaff = true -}}
+        {{- end -}}
+    {{- end -}}
+    {{ if and $staffRoleID (not $hasStaff) }}
+        {{ $values = $values.Append (toString $staffRoleID) }}
+    {{ end }}
     {{ $staffDict := or (dbGet 0 "Staff").Value sdict }}
     {{ $staffDict.Set "Roles" $values }}
     {{ dbSet 0 "Staff" $staffDict }}

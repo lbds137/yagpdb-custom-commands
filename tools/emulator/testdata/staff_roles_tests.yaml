@@ -197,3 +197,45 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "⚠️ Only staff can configure staff roles." }
       edited_messages: []
+
+  # The Staff role is the gate, so a staffer's submit always has Roles.Staff set; the
+  # unset branch in the template (no configured Staff role: nothing to append) is
+  # unreachable through the gate, which refuses everyone when the role is unset.
+  - name: "staff_roles_pick: a submit without the Staff role keeps it (rides along)"
+    template: "../../../commands/members/staff_roles_pick.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Roles", value: { Staff: "111111111111111111" } }
+      - { user_id: 0, key: "Staff", value: { Roles: ["333333333333333333"] } }
+    context:
+      user: { id: 500000000000000001, roles: [111111111111111111] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Staff Roles Configuration" }] }
+      interaction:
+        { type: component, custom_id: "sr:500000000000000001", message_id: 7,
+          component: role_menu, values: ["222222222222222222"] }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: ["222222222222222222", "111111111111111111"] } }
+      interaction_responses:
+        - kind: update
+          embed_contains: "<@&111111111111111111>"
+      edited_messages:
+        - channel_id: 123456789012345678
+          embed_contains: "<@&222222222222222222>"
+          components_contains: '"id": "111111111111111111"'
+
+  - name: "staff_roles_pick: a submit that already has the Staff role gets no duplicate"
+    template: "../../../commands/members/staff_roles_pick.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Roles", value: { Staff: "111111111111111111" } }
+      - { user_id: 0, key: "Staff", value: { Roles: ["333333333333333333"] } }
+    context:
+      user: { id: 500000000000000001, roles: [111111111111111111] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Staff Roles Configuration" }] }
+      interaction:
+        { type: component, custom_id: "sr:500000000000000001", message_id: 7,
+          component: role_menu, values: ["111111111111111111", "222222222222222222"] }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: ["111111111111111111", "222222222222222222"] } }

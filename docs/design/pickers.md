@@ -50,7 +50,9 @@ select rendering in snapshots (snapshot_test.go:261), select submit simulation
 - Spawn: **bare `staff_roles`** (no role IDs) posts the panel instead of today's
   append-and-save [Staff-role] clobber (DECIDED Lila 2026-10-01: panel replaces the
   clobber; reverses the 2026-09-27 fix-spec line "keep today's behavior" — the
-  reset-to-Staff-role semantic survives via the panel: pick only the Staff role, save.
+  reset-to-Staff-role semantic survives via the panel: pick any role (or only the Staff
+  role) and save; the configured Staff role always rides along on both paths, appended
+  when the list lacks it, so hiatus can always take it.
   Write the reversal back into .claude/dispatch/staff-roles-fixes.md). Text path with
   IDs byte-identical.
 - Panel: embed "Staff Roles Configuration" (current roles listed) + role select
@@ -59,9 +61,10 @@ select rendering in snapshots (snapshot_test.go:261), select submit simulation
 - Handler `^sr:\d+$` → commands/members/staff_roles_pick.gohtml, panel **97**,
   Staff Utility, Defer None.
 - Gate: staff only (Roles dict "Staff"; non-staff → ephemeral ⚠️, dismiss idiom).
-- Submit: `Staff.Roles` = `.Data.Values` (strings in, strings stored — parity with
-  today's regex strings) → updateMessage (embed + refreshed default_values). The
-  visible panel change is the confirmation; no extra ack.
+- Submit: `Staff.Roles` = `.Data.Values` plus the configured Staff role when missing
+  (strings in, strings stored — parity with today's regex strings) → updateMessage
+  (embed + refreshed default_values). The visible panel change is the confirmation; no
+  extra ack.
 
 ## 2. role_ping → Role Ping panel (string select)
 
