@@ -296,6 +296,17 @@ gets a failing test first.
   outside 1..9999 (slash and modal; `/edit delete` stays unbounded as the repair path),
   and `rules`/browse no longer scan `seq 0..max` (YAGPDB's seq refuses > 10,000
   entries, so one "Rule #1000000" broke both): they sort the existing numbers instead.
+- Shipped (2026-10-04, GLM-week audit A-F5): over-long keys, categories and values can
+  no longer push a /db or /edit reply past Discord's limits (displayed copies are cut;
+  stored data never is; a prefill over a text input's 4,000 is skipped, not cut).
+- Owner's call, deferred (2026-10-04, found in the A-F5 unit; recommendation: leave
+  it): YAGPDB cuts every DB key to 256 bytes
+  (vendor customcommands/tmplextensions.go limitString; the emulator models it,
+  internal/funcs/database.go), so a /edit category or /db key over 256 bytes is stored
+  under its first 256, and two such names sharing that prefix would share one entry.
+  Consistent on read and write, reachable only by typing two 256-byte names that agree
+  for 256 bytes. The fix would be a refusal branch (category/key over 256 bytes) in
+  /edit and /db. Trigger: Lila's word, or any real >256-byte name.
 - Stale key noted 2026-09-30 (config_sync verification dump): the Commands dict still
   held `ticket_adduser_exec` "45" from the command retired 2026-09-25 — config_sync
   merges without owning the dict, so pre-existing keys survive. Inert (nothing deployed

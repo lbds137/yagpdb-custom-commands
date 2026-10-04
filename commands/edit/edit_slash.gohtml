@@ -72,10 +72,12 @@
 		{{ $valueField := sdict "label" "Value" "custom_id" "value" "style" 2 "required" true
 			"placeholder" "the new text" }}
 		{{/* fields echo the raw input: transformation at store time shows up in the ack */}}
-		{{ if $categoryArg }}
+		{{/* a text input holds 4000: past that the prefill is skipped, never cut (a cut
+			prefill would save the truncation) */}}
+		{{ if and $categoryArg (le (len (toRune $categoryArg)) 4000) }}
 			{{ $catField.Set "value" $categoryArg }}
 		{{ end }}
-		{{ if $keyArg }}
+		{{ if and $keyArg (le (len (toRune $keyArg)) 4000) }}
 			{{ $keyField.Set "value" $keyArg }}
 		{{ end }}
 		{{ $isNew := reFind "(?i)\\Anew:" $categoryArg }}
@@ -189,6 +191,11 @@
 				{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
 			{{ end }}
 			{{ $category := title $categoryName }}
+			{{/* the refusals quote them in a 2000-character message: show cut copies */}}
+			{{ $catShown := $category }}
+			{{ if gt (len (toRune $catShown)) 500 }}
+				{{ $catShown = joinStr "" (slice (split $catShown "") 0 499) "…" }}
+			{{ end }}
 			{{ $refused := "" }}
 			{{ if and $isNew (not $categoryName) }}
 				{{ $refused = "⚠️ Give a category name after `new:`." }}
@@ -197,8 +204,8 @@
 			{{ if not $refused }}
 				{{ $categoryEntry = dbGet 0 $category }}
 				{{ if and (not $isNew) (not $categoryEntry) }}
-					{{ $refused = joinStr "" "⚠️ There is no `" $category
-						"` category. Check the spelling, or use `new:" $category "` to create it." }}
+					{{ $refused = joinStr "" "⚠️ There is no `" $catShown
+						"` category. Check the spelling, or use `new:" $catShown "` to create it." }}
 				{{ end }}
 			{{ end }}
 			{{ $categoryDict := sdict }}
@@ -209,7 +216,7 @@
 				{{ else if eq "map" (kindOf $categoryValue true) }}
 					{{ $categoryDict = $categoryValue }}
 				{{ else }}
-					{{ $refused = joinStr "" "⚠️ The `" $category
+					{{ $refused = joinStr "" "⚠️ The `" $catShown
 						"` category doesn't hold a dictionary of entries." }}
 				{{ end }}
 			{{ end }}
@@ -219,7 +226,11 @@
 					{{ $key = title $keyArg }}
 				{{ end }}
 				{{ if not ($categoryDict.HasKey $key) }}
-					{{ $refused = joinStr "" "⚠️ There is no `" $key "` entry in `" $category
+					{{ $keyShown := $key }}
+					{{ if gt (len (toRune $keyShown)) 500 }}
+						{{ $keyShown = joinStr "" (slice (split $keyShown "") 0 499) "…" }}
+					{{ end }}
+					{{ $refused = joinStr "" "⚠️ There is no `" $keyShown "` entry in `" $catShown
 						"` to remove." }}
 				{{ end }}
 			{{ end }}
@@ -256,8 +267,13 @@
 					(cbutton "label" "Dismiss" "style" "secondary"
 						"custom_id" (print "editdel:" $uid ":" $stamp ":no"))
 				}}
+				{{/* the title holds 256: "Delete " and "?" take 8 of them */}}
+				{{ $label := joinStr " › " $category $key }}
+				{{ if gt (len (toRune $label)) 248 }}
+					{{ $label = joinStr "" (slice (split $label "") 0 247) "…" }}
+				{{ end }}
 				{{ sendResponse nil (complexMessage "ephemeral" true
-					"embed" (cembed "title" (joinStr "" "Delete " $category " › " $key "?")
+					"embed" (cembed "title" (joinStr "" "Delete " $label "?")
 						"color" $embedColor "description" $description)
 					"components" (cslice $row)) }}
 			{{ end }}
