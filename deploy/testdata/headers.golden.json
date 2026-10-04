@@ -45,6 +45,27 @@
       "slashDescription": null,
       "slash": null
     },
+    "commands/channels/pointer_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "Post a pointer to a message",
+      "slash": {
+        "subcommands": [],
+        "options": [
+          {
+            "name": "link",
+            "type": "string",
+            "description": "the message link",
+            "required": true
+          },
+          {
+            "name": "comment",
+            "type": "string",
+            "description": "a note to post with it",
+            "required": false
+          }
+        ]
+      }
+    },
     "commands/color/color_slash.gohtml": {
       "deferMode": 0,
       "slashDescription": "Color tools",
@@ -610,6 +631,103 @@
       "deferMode": 0,
       "slashDescription": null,
       "slash": null
+    },
+    "commands/members/staff_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "Staff tools",
+      "slash": {
+        "subcommands": [
+          {
+            "name": "roles",
+            "description": "set the staff roles (or open the role picker)",
+            "options": [
+              {
+                "name": "roles",
+                "type": "string",
+                "description": "staff role IDs or mentions (omit for the role picker)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "inactivity",
+            "description": "inactivity prune announcements, date and review",
+            "options": [
+              {
+                "name": "action",
+                "type": "string",
+                "description": "start, end, remind, date or prune",
+                "required": true
+              },
+              {
+                "name": "date",
+                "type": "string",
+                "description": "the next prune date (for date)",
+                "required": false
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "the member to review (for prune; omit for the picker)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "activity",
+            "description": "channel activity, oldest first",
+            "options": []
+          },
+          {
+            "name": "rules",
+            "description": "post the server rules",
+            "options": [
+              {
+                "name": "from",
+                "type": "integer",
+                "description": "first rule to post",
+                "required": false
+              },
+              {
+                "name": "to",
+                "type": "integer",
+                "description": "last rule to post",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "bump_reset",
+            "description": "clear the last bump time",
+            "options": []
+          },
+          {
+            "name": "delrep",
+            "description": "delete members' reputation",
+            "options": [
+              {
+                "name": "users",
+                "type": "string",
+                "description": "user IDs or mentions, up to 5",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "bootstrap",
+            "description": "initialize the server's configuration",
+            "options": [
+              {
+                "name": "staff_role",
+                "type": "role",
+                "description": "the staff role (omit to keep the current one)",
+                "required": false
+              }
+            ]
+          }
+        ],
+        "options": []
+      }
     },
     "commands/members/unhiatus_slash.gohtml": {
       "deferMode": 2,

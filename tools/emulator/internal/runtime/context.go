@@ -258,6 +258,9 @@ type ExecutionContext struct {
 	// ChannelDetails are the declared channels' (and threads') type, parent, position,
 	// topic and NSFW
 	ChannelDetails map[int64]types.CtxChannel
+	// ChannelOverwrites are the declared channels' permission overwrites (a test's
+	// guild.channels permission_overwrites), which getTargetPermissionsIn applies
+	ChannelOverwrites map[int64][]types.PermissionOverwrite
 	// ChannelOrder is the channels in YAGPDB's order (.Guild.Channels, name lookups):
 	// sorted by position as its state tracker sorts them (SortChannels)
 	ChannelOrder []int64

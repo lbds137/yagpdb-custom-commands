@@ -16,7 +16,21 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
-{{ $userIDs := reFindAll "\\d{16,}" .Message.Content }}
+{{/* the /staff path (staff_slash execCCs this with ExecData.Staff): the IDs come from
+  ExecData.Users, the embed answers the inherited interaction (embed_exec Respond; the
+  refusal's DeleteResponse makes it ephemeral), and there is no trigger to delete */}}
+{{ $staff := false }}
+{{ $input := "" }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Staff -}}
+        {{- $staff = true -}}
+        {{- $input = toString (or .ExecData.Users "") -}}
+    {{- end -}}
+{{- end -}}
+{{ if not $staff }}
+    {{ $input = .Message.Content }}
+{{ end }}
+{{ $userIDs := reFindAll "\\d{16,}" $input }}
 {{ $count := len $userIDs }}
 {{ $result := "The following users have been purged from the Reputation leaderboard: " }}
 
@@ -39,6 +53,7 @@
     "Title" "Batch Reputation Deletion"
     "Description" $result
     "AuthorID" .Member.User.ID
+    "Respond" $staff
   ) }}
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
@@ -47,7 +62,10 @@
       "Description" "⚠️ You must provide at least one user ID!"
       "DeleteResponse" true
       "DeleteDelay" $deleteResponseDelay
+      "Respond" $staff
     ) }}
 {{ end }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+{{ if not $staff }}
+    {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}

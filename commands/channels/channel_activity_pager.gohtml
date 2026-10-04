@@ -122,7 +122,18 @@
 {{ $action := "" }}
 {{ $bucket := "stale" }}
 {{ $page := 1 }}
-{{- if .Interaction -}}
+{{/* an ExecData entry wins first: a /staff run inherits its slash interaction, which is
+  not a click (no CustomID). `and` doesn't short-circuit, so the checks nest */}}
+{{ $isExec := false }}
+{{- if .ExecData -}}
+  {{- if .ExecData.Bucket -}}
+    {{- $isExec = true -}}
+  {{- end -}}
+{{- end -}}
+{{- if $isExec -}}
+  {{- $bucket = toString .ExecData.Bucket -}}
+  {{- $page = toInt (or .ExecData.Page 1) -}}
+{{- else if .Interaction -}}
   {{- $parts := split .CustomID ":" -}}
   {{- $action = index $parts 1 -}}
   {{- if ge (len $parts) 3 -}}
@@ -227,7 +238,13 @@
     "embed" (cembed "title" "Channel activity" "color" $embedColor "description" (joinStr "\n" $desc))
     "components" (cslice $row1 $row2)
   }}
-  {{- if .Interaction -}}
+  {{- if $isExec -}}
+    {{- if .Interaction -}}
+      {{- sendResponse nil $msg -}}
+    {{- else -}}
+      {{- sendMessage nil $msg -}}
+    {{- end -}}
+  {{- else if .Interaction -}}
     {{- updateMessage $msg -}}
   {{- else -}}
     {{- sendMessage nil $msg -}}

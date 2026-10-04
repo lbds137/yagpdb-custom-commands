@@ -8,16 +8,31 @@
   The Commands dict (command IDs) is config_sync's: it fills it from deploy/panel.json.
 */ -}}
 
-{{ $args := parseArgs 0 "Usage: [staff role ID]"
-    (carg "string" "staff role ID")
-}}
+{{- /* the /staff path (staff_slash execCCs this with ExecData.Staff): the staff role is
+    ExecData.StaffRole ("" keeps the current one), the completion embed answers the
+    inherited interaction, and there is no trigger message to parse or delete */ -}}
+{{ $staff := false }}
+{{ $staffRole := "" }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Staff -}}
+        {{- $staff = true -}}
+        {{- $staffRole = toString (or .ExecData.StaffRole "") -}}
+    {{- end -}}
+{{- end -}}
 
-{{- /* the old `bootstrap <embed_exec> <db> <role>` would fold all three into this one
-    argument (parseArgs gives the last one the rest of the line): refuse, change nothing */ -}}
-{{ if $args.IsSet 0 }}
-    {{ if not (reFind `^\d+$` ($args.Get 0)) }}
-        {{ sendMessage nil "Usage: [staff role ID] (one role ID, digits only)" }}
-        {{ return }}
+{{ if not $staff }}
+    {{ $args := parseArgs 0 "Usage: [staff role ID]"
+        (carg "string" "staff role ID")
+    }}
+
+    {{- /* the old `bootstrap <embed_exec> <db> <role>` would fold all three into this one
+        argument (parseArgs gives the last one the rest of the line): refuse, change nothing */ -}}
+    {{ if $args.IsSet 0 }}
+        {{ if not (reFind `^\d+$` ($args.Get 0)) }}
+            {{ sendMessage nil "Usage: [staff role ID] (one role ID, digits only)" }}
+            {{ return }}
+        {{ end }}
+        {{ $staffRole = $args.Get 0 }}
     {{ end }}
 {{ end }}
 
@@ -62,8 +77,8 @@
 {{ end }}
 
 {{- /* only when given: without it, a rerun keeps the Staff role already set */ -}}
-{{ if $args.IsSet 0 }}
-    {{ $rolesDict.Set "Staff" ($args.Get 0) }}
+{{ if $staffRole }}
+    {{ $rolesDict.Set "Staff" $staffRole }}
 {{ end }}
 
 {{ $channelsDict.Set "YAGPDB" $yagpdbChannelID }}
@@ -80,10 +95,14 @@
 
 {{- /* sent directly: embed_exec's ID comes from the Commands dict, which config_sync may
     not have filled yet on a new server */ -}}
-{{ sendMessage nil (cembed
+{{ $done := cembed
     "title" "Bootstrap Execution Complete"
     "description" "The bootstrapping process completed successfully!"
     "color" (toInt ($globalDict.Get "Embed Color"))
-) }}
-
-{{ deleteTrigger 5 }}
+}}
+{{ if $staff }}
+    {{ sendResponse nil (complexMessage "embed" $done) }}
+{{ else }}
+    {{ sendMessage nil $done }}
+    {{ deleteTrigger 5 }}
+{{ end }}

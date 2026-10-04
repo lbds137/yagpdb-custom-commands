@@ -387,6 +387,22 @@ func (g CtxGuild) GetRole(roleID interface{}) *CtxRole {
 	return nil
 }
 
+// PermissionOverwrite is discordgo's PermissionOverwrite (vendor lib/discordgo/structs.go):
+// a channel's allow and deny bits for a role or a member.
+type PermissionOverwrite struct {
+	ID    int64
+	Type  int // PermissionOverwriteTypeRole or PermissionOverwriteTypeMember
+	Allow int64
+	Deny  int64
+}
+
+// discordgo.PermissionOverwriteTypeRole and PermissionOverwriteTypeMember (vendor
+// lib/discordgo/structs.go:368-369)
+const (
+	PermissionOverwriteTypeRole   = 0
+	PermissionOverwriteTypeMember = 1
+)
+
 // CtxRole represents a Discord role.
 type CtxRole struct {
 	ID          int64

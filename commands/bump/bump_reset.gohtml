@@ -13,7 +13,20 @@
 {{ $globalDict.Del "Last Bump" }}
 {{ dbSet 0 "Global" $globalDict }}
 
-{{ $messageID := sendMessageRetID .Channel.ID "`Last Bump` reset!" }}
+{{/* the /staff path (staff_slash execCCs this with ExecData.Staff): the reply answers the
+  inherited interaction, ephemeral (the text path deletes its reply after a delay), and
+  there is no trigger message to delete */}}
+{{ $staff := false }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Staff -}}
+        {{- $staff = true -}}
+    {{- end -}}
+{{- end -}}
+{{ if $staff }}
+    {{ sendResponse nil (complexMessage "content" "`Last Bump` reset!" "ephemeral" true) }}
+{{ else }}
+    {{ $messageID := sendMessageRetID .Channel.ID "`Last Bump` reset!" }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
-{{ deleteMessage .Channel.ID $messageID $deleteResponseDelay }}
+    {{ deleteTrigger $deleteTriggerDelay }}
+    {{ deleteMessage .Channel.ID $messageID $deleteResponseDelay }}
+{{ end }}

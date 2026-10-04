@@ -58,6 +58,8 @@
     "commands/knowledge/define_slash.gohtml": {"main": 108, "rose": 30},
     "commands/members/hiatus_slash.gohtml": {"main": 109, "rose": 31},
     "commands/members/unhiatus_slash.gohtml": {"main": 110, "rose": 32},
+    "commands/members/staff_slash.gohtml": {"main": 111, "rose": 33},
+    "commands/channels/pointer_slash.gohtml": {"main": 112, "rose": 34},
     "commands/plumbing/message_link.gohtml": {"main": 32, "lotv": 11, "rose": 4}
   },
   "unmanaged": ["commands/plumbing/log_user.gohtml"]

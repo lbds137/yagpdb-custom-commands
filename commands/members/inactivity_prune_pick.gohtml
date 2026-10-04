@@ -30,11 +30,25 @@
 {{ $nextDate := $pruneDict.Get "Next Date" }}
 
 {{/* mode and targets: a click carries them in the custom ID, the text path in
-  ExecData (no .Interaction there — pager idiom) */}}
+  ExecData (no .Interaction there on the text path — pager idiom; the /staff path inherits
+  the slash interaction, so the ExecData entry is checked first and answers it with
+  sendResponse, public) */}}
 {{ $spawner := "" }}
 {{ $targetID := 0 }}
 {{ $mode := "select" }}
-{{ if .Interaction }}
+{{/* an ExecData entry wins first: a /staff run inherits its interaction, which is not a
+  click (no CustomID); the entry is told apart by the Spawner inactivity passes */}}
+{{ $isExec := false }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Spawner -}}
+        {{- $isExec = true -}}
+    {{- end -}}
+{{- end -}}
+{{ if $isExec }}
+    {{ $mode = "exec" }}
+    {{ $targetID = toInt (or .ExecData.User 0) }}
+    {{ $spawner = toString (or .ExecData.Spawner "") }}
+{{ else if .Interaction }}
     {{ $parts := split .CustomID ":" }}
     {{ $spawner = index $parts 1 }}
     {{ if eq (len $parts) 3 }}
@@ -47,6 +61,7 @@
     {{ $targetID = toInt (or .ExecData.User 0) }}
     {{ $spawner = toString (or .ExecData.Spawner "") }}
 {{ end }}
+{{ $click := and .Interaction (not $isExec) }}
 
 {{/* the confirm state carries its target as the mention in the embed, so the Kick
   button can recover it (the custom ID holds only the spawner) */}}
@@ -165,14 +180,18 @@
         {{ updateMessage $verdictMsg }}
     {{ end }}
 {{ else if $needsKick }}
-    {{- if .Interaction -}}
+    {{- if $click -}}
         {{- updateMessage $confirmMsg -}}
+    {{- else if .Interaction -}}
+        {{- sendResponse nil $confirmMsg -}}
     {{- else -}}
         {{- sendMessage nil $confirmMsg -}}
     {{- end -}}
 {{ else }}
-    {{- if .Interaction -}}
+    {{- if $click -}}
         {{- updateMessage $verdictMsg -}}
+    {{- else if .Interaction -}}
+        {{- sendResponse nil $verdictMsg -}}
     {{- else -}}
         {{- sendMessage nil $verdictMsg -}}
     {{- end -}}

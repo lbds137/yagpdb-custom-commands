@@ -6,10 +6,35 @@
   Dependencies: `embed_exec`, `db_slash`
 */ -}}
 
-{{ $args := parseArgs 1 "Please specify an action: `date`, `end`, `prune`, `remind`, or `start`."
-    (carg "string" "action")
-    (carg "string" "param (optional)")
-}}
+{{/* the /staff path (staff_slash execCCs this with ExecData.Staff and Action, Date, User):
+  the options come from ExecData instead of parseArgs, refusals answer the inherited
+  interaction ephemerally, the announcements stay real channel posts with an ephemeral ack,
+  and there is no trigger message to delete */}}
+{{ $staff := false }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Staff -}}
+        {{- $staff = true -}}
+    {{- end -}}
+{{- end -}}
+{{ $action := "" }}
+{{ $param := "" }}
+{{ if $staff }}
+    {{ $action = toString (or .ExecData.Action "") }}
+    {{ if eq $action "date" }}
+        {{ $param = toString (or .ExecData.Date "") }}
+    {{ else if eq $action "prune" }}
+        {{ $param = toString (or .ExecData.User "") }}
+    {{ end }}
+{{ else }}
+    {{ $args := parseArgs 1 "Please specify an action: `date`, `end`, `prune`, `remind`, or `start`."
+        (carg "string" "action")
+        (carg "string" "param (optional)")
+    }}
+    {{ $action = $args.Get 0 }}
+    {{ if $args.IsSet 1 }}
+        {{ $param = $args.Get 1 }}
+    {{ end }}
+{{ end }}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
@@ -31,12 +56,6 @@
 {{ $nextDate := $pruneDict.Get "Next Date" }}
 {{ $messageThreshold := $pruneDict.Get "Message Threshold" }}
 {{ $minuteThreshold := $pruneDict.Get "Minute Threshold" }}
-
-{{ $action := $args.Get 0 }}
-{{ $param := "" }}
-{{ if $args.IsSet 1 }}
-    {{ $param = $args.Get 1 }}
-{{ end }}
 
 {{ $isDate := eq $action "date" }}
 {{ $isEnd := eq $action "end" }}
@@ -72,18 +91,54 @@
             "Description" $result
         ) }}
 
-        {{ mentionRoleID $roleID }}
+        {{ if $staff }}
+            {{/* printed output would become the interaction response here, so the ping is
+              an explicit send whose allowed_mentions carry the role (sendMessage keeps a
+              complexMessage's allowed mentions); then the ephemeral ack */}}
+            {{ $ping := mentionRoleID $roleID }}
+            {{ if $ping }}
+                {{ sendMessage nil (complexMessage
+                    "content" $ping
+                    "allowed_mentions" (sdict "roles" (cslice $roleID))) }}
+            {{ end }}
+            {{ sendResponse nil (complexMessage
+                "content" (print "Posted the " $heading ".")
+                "ephemeral" true) }}
+        {{ else }}
+            {{ mentionRoleID $roleID }}
+        {{ end }}
     {{ else if $isDate }}
         {{ if $param }}
             {{ $heading = "Inactivity Prune Date Editing" }}
-            {{ execCC $db $yagpdbChannelID 0 (sdict
-                "ChannelID" .Channel.ID
-                "UserID" 0
-                "Operation" "add"
-                "Key" $pruneCategory
-                "Value" (sdict "Previous Date" $nextDate "Next Date" $param)
-                "Title" (joinStr " " $pruneCategory $heading)
-            ) }}
+            {{ if $staff }}
+                {{/* the dict is written here: root, inactivity, db_slash, embed_exec would
+                  be depth 3, which YAGPDB refuses. The reply is db_slash's "add" embed */}}
+                {{ $newPrune := sdict (or $pruneDict (sdict)) }}
+                {{ $_ := $newPrune.Set "Previous Date" $nextDate }}
+                {{ $_ := $newPrune.Set "Next Date" $param }}
+                {{ dbSet 0 $pruneCategory $newPrune }}
+                {{ $shown := sdict "Previous Date" $nextDate "Next Date" $param }}
+                {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+                    "ChannelID" .Channel.ID
+                    "Title" (joinStr " " $pruneCategory $heading)
+                    "Description" (joinStr "" "```\n" (json $shown true) "\n```")
+                    "Fields" (cslice
+                        (sdict "name" "User ID" "value" "```\n0```" "inline" true)
+                        (sdict "name" "Key" "value" (joinStr "" "```\n" $pruneCategory "```") "inline" true)
+                        (sdict "name" "Result" "value" "```\n✅ Value successfully added!```" "inline" false)
+                    )
+                    "Respond" true
+                ) }}
+            {{ else }}
+                {{ execCC $db $yagpdbChannelID 0 (sdict
+                    "ChannelID" .Channel.ID
+                    "UserID" 0
+                    "Operation" "add"
+                    "Key" $pruneCategory
+                    "Value" (sdict "Previous Date" $nextDate "Next Date" $param)
+                    "Title" (joinStr " " $pruneCategory $heading)
+                ) }}
+            {{ end }}
         {{ else }}
             {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
                 "ChannelID" .Channel.ID
@@ -91,6 +146,7 @@
                 "Description" "⚠️ You must enter a non-empty date parameter!"
                 "DeleteResponse" true
                 "DeleteDelay" $deleteResponseDelay
+                "Respond" $staff
             ) }}
         {{ end }}
     {{ else if $isPrune }}
@@ -110,6 +166,7 @@
                     "Description" "⚠️ You must enter a valid user parameter!"
                     "DeleteResponse" true
                     "DeleteDelay" $deleteResponseDelay
+                    "Respond" $staff
                 ) }}
             {{ end }}
         {{ else }}
@@ -128,6 +185,7 @@
                         "custom_id" (print "ip:" .Member.User.ID)
                         "max_values" 1
                         "placeholder" "Pick a member to prune…"))
+                "Respond" $staff
             ) }}
         {{ end }}
     {{ end }}
@@ -138,7 +196,10 @@
         "Description" "⚠️ You must enter a valid action parameter!"
         "DeleteResponse" true
         "DeleteDelay" $deleteResponseDelay
+        "Respond" $staff
     ) }}
 {{ end }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+{{ if not $staff }}
+    {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}

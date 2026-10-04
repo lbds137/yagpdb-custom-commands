@@ -247,11 +247,29 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- Found 2026-10-04 (unit 5a review), deferred: `/staff bootstrap` goes through the router,
+  which needs `Commands.bootstrap`, and only config_sync fills Commands (hourly, for the
+  servers in panel.json). So on a brand-new server the slash path can't bootstrap; only
+  the text `bootstrap` can. Trigger: unit 5's twin retirement — keep bootstrap's text
+  trigger (or give the router a fallback) before switching it to type None.
+- Found 2026-10-04 (unit 5), DECIDED (Lila, 2026-10-04): message_pointer (Utility, open
+  to everyone) fetches the linked message with the bot's access and shows the channel's
+  NAME, so a member can link a message in a channel they can't see and learn its name.
+  /pointer now refuses unless the invoker has View Channel there (a thread: its parent,
+  as YAGPDB computes it), with the invalid-link text. The text message_pointer keeps the
+  hole until it retires after the /pointer live check. Residual, deferred: a PRIVATE
+  thread needs membership, not just the parent's View Channel, so a member who sees the
+  parent can still point into a private thread they aren't in (its name shows). Trigger:
+  if private threads carry anything sensitive on a server (check with Lila), add a
+  thread-membership check (vendor has no template function for it today: check first).
 - Found 2026-10-04 (unit 3 review), deferred: /color, /hebrew and /gematria execCC
   embed_exec (or gematria) without checking the Commands id is > 0, so on a server
   missing the key the interaction gets no answer. Unit 3's roots refuse ephemerally
   ("This command isn't set up on this server yet."). Trigger: the next change to any
-  of those roots, or a new server without config_sync.
+  of those roots, or a new server without config_sync. Same class (unit 5 review): the
+  /staff handlers execCC embed_exec, inactivity_prune_pick or channel_activity_pager
+  without that check; the error is in the handler (a goroutine), so the router's
+  try/catch can't answer for it. Same trigger, plus the /staff twin retirement.
 - Found 2026-10-04 (unit 2 review), deferred: a multi-word `/hebrew pyramid` answers
   "N words follows" and then schedules N delayed runs, but YAGPDB rate-limits delayed runs
   per channel (vendor customcommands/bot.go:48, burst 10, 0.1/s) and DROPS a refused run
@@ -363,6 +381,18 @@ gets a failing test first.
   errors on any command file whose panel count exceeds 20,000.
 
 ### Remaining emulator gaps
+- Found 2026-10-04 (unit 5): an execCC to an id outside the test's command_map only warns
+  (`[execcc]`) and runs nothing, so no test can make execCC ERROR the way YAGPDB does for
+  a missing command ("Couldn't find custom command") or a disabled one
+  (tmplextensions.go:189-201). /staff's `try`/`catch` around its execCC (the ephemeral
+  "isn't set up" answer) is therefore verified by code reading only. Fix: a test-level
+  way to declare an id missing or disabled, then pin that catch.
+- Found 2026-10-04 (unit 5b): `make test-minified` reports a real difference for a slash
+  root -> channel_activity -> pager chain because the static loop-db warning attached to
+  an execCC child carries the file's ABSOLUTE path, which differs between the checkout and
+  the prove copy (/tmp/yagmin-prove-*); prove's position normalizing covers only line:col.
+  So `/staff activity` has no end-to-end router test (its halves are tested apart). Fix:
+  normalize paths in the prove diff (or report child warnings repo-relative), then add it.
 - Found 2026-10-04 (unit 2 review): the delayed-interaction test shape
   (`interaction: {type: slash, delayed: true, responded_to}`) can't express a DEFERRED
   stored interaction. YAGPDB sends such a run's plain output as an edit of the original
@@ -455,10 +485,11 @@ gets a failing test first.
   isn't reachable, and `printf "%T"` and printing differ. `.Channel` and `.Guild` are
   pointers already. Promote when a command calls such a method or prints one of them.
 - Channels: a declared channel has a type, parent, position, topic and NSFW flag, and no
-  DMs (getMessage/editMessage refuse them) or permission overwrites. A test that declares
-  no channels treats any channel ID as existing, with a `[channel]` warning per ID, and
-  its .Guild.Channels is empty. getTargetPermissionsIn and sendTemplate ignore their
-  channel (YAGPDB's sendTemplate errors "unknown channel"). Threads (a `guild.channels`
+  DMs (getMessage/editMessage refuse them); its `permission_overwrites` feed
+  getTargetPermissionsIn only (`.Channel.PermissionOverwrites` is still unreadable). A
+  test that declares no channels treats any channel ID as existing, with a `[channel]`
+  warning per ID, and its .Guild.Channels is empty. sendTemplate ignores its channel
+  (YAGPDB's sendTemplate errors "unknown channel"). Threads (a `guild.channels`
   entry of type 10/11/12): resolved by ChannelArg/getChannelOrThread and by name
   (text-like channels tried first, then threads), the way baseChannelArg does
   (vendor common/templates/context_funcs.go); absent from .Guild.Channels/ChannelOrder,
@@ -656,12 +687,14 @@ gets a failing test first.
   execCC/scheduleUniqueCC also refuse Role-trigger CCs with the new error text
   (tmplextensions.go:202-210, 309-317), runtime/yagpdb_funcs.go regenerated from c579722
   (run scripts/gen-yagpdb-funcs.sh from the main checkout: worktrees have no vendor/); (3) new
-  functions hasAnyPermissions/targetHasAnyPermissions (need a real permission model; the
-  permission family is a stub today) and memberAbove/memberAboveRole (context_funcs.go
-  771-847, 1051-1087) — DEFERRED 2026-09-27, promote when a command calls any of
-  hasPermissions/targetHasPermissions/hasAnyPermissions/targetHasAnyPermissions/
-  getTargetPermissionsIn/memberAbove/memberAboveRole (`git grep` over everyone/ staff/
-  found none; the emulator never implemented hasPermissions either). Not modelled, record only: pin/pin-count limits, editChannel* 10-min
+  functions hasAnyPermissions/targetHasAnyPermissions (need a permission model: only
+  getTargetPermissionsIn has one, 2026-10-04: runtime/permissions.go copies dstate's
+  CalculatePermissions and GetMemberPermissions, with guild.roles' `permissions` and
+  guild.channels' `permission_overwrites` as fixtures) and memberAbove/memberAboveRole
+  (context_funcs.go 771-847, 1051-1087) — DEFERRED 2026-09-27, promote when a command
+  calls any of hasPermissions/targetHasPermissions/hasAnyPermissions/
+  targetHasAnyPermissions/memberAbove/memberAboveRole (the emulator never implemented
+  hasPermissions either; they can reuse memberPermissions). Not modelled, record only: pin/pin-count limits, editChannel* 10-min
   cooldown, createThread/createForumPost raw errors, exec cooldown text, group
   RedirectErrorsChannel, nil ChannelOrThreadParent when the parent isn't in state.
 - Deferred (found 2026-09-27): `scripts/lint-all.sh` passes a positional file argument to

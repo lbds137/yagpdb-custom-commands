@@ -1,0 +1,531 @@
+'channel_activity_pager: a slash root''s execCC (the /staff chain) answers the inherited interaction, public':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "description": "3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>",
+                "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (2)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (1)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/1",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "color": 3447003,
+                "description": "3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>",
+                "title": "Channel activity"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Active (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:active:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Quiet (0)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:quiet:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Stale (2)",
+                    "style": 1,
+                    "disabled": false,
+                    "custom_id": "templates-ca:stale:1:b",
+                    "type": 2
+                  },
+                  {
+                    "label": "Never seen (1)",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ca:never:1:b",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "◀"
+                    },
+                    "custom_id": "templates-ca:stale:0",
+                    "type": 2
+                  },
+                  {
+                    "label": "Page 1/1",
+                    "style": 2,
+                    "disabled": true,
+                    "custom_id": "templates-ca:noop",
+                    "type": 2
+                  },
+                  {
+                    "label": "",
+                    "style": 2,
+                    "disabled": true,
+                    "emoji": {
+                      "name": "▶"
+                    },
+                    "custom_id": "templates-ca:stale:2",
+                    "type": 2
+                  },
+                  {
+                    "label": "CSV",
+                    "style": 2,
+                    "disabled": false,
+                    "emoji": {
+                      "name": "⬇"
+                    },
+                    "custom_id": "templates-ca:csv",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity":"21","channel_activity_pager":"22","embed_exec":"1","inactivity":"20","inactivity_prune_pick":"24","rules":"23"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
+        - user_id: 11
+          key: Last Active
+          value: "2000"
+        - user_id: 12
+          key: Last Active
+          value: "5000"
+'staff_slash inactivity date: no date is an ephemeral refusal, nothing written':
+    output: ""
+    messages:
+        - channel_id: 999999999
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "⚠️ You must enter a non-empty date parameter!",
+                "image": {},
+                "thumbnail": {},
+                "title": "Missing Date Parameter"
+              }
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "⚠️ You must enter a non-empty date parameter!",
+                "image": {},
+                "thumbnail": {},
+                "title": "Missing Date Parameter"
+              }
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity":"21","channel_activity_pager":"22","embed_exec":"1","inactivity":"20","inactivity_prune_pick":"24","rules":"23"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
+'staff_slash inactivity prune (no user): the picker panel is the public response':
+    output: ""
+    messages:
+        - channel_id: 999999999
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Staffer#0001",
+                  "url": "https://discordapp.com/users/600000000000000001"
+                },
+                "description": "Previous prune: 2026-09-01\nNext prune: 2026-10-01\n\nPick a member to review for pruning.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Inactivity Prune"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "custom_id": "templates-ip:600000000000000001",
+                    "placeholder": "Pick a member to prune…",
+                    "max_values": 1,
+                    "disabled": false,
+                    "required": false,
+                    "type": 5
+                  }
+                ],
+                "type": 1
+              }
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Staffer#0001",
+                  "url": "https://discordapp.com/users/600000000000000001"
+                },
+                "description": "Previous prune: 2026-09-01\nNext prune: 2026-10-01\n\nPick a member to review for pruning.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Inactivity Prune"
+              }
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "custom_id": "templates-ip:600000000000000001",
+                    "placeholder": "Pick a member to prune…",
+                    "max_values": 1,
+                    "disabled": false,
+                    "required": false,
+                    "type": 5
+                  }
+                ],
+                "type": 1
+              }
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity":"21","channel_activity_pager":"22","embed_exec":"1","inactivity":"20","inactivity_prune_pick":"24","rules":"23"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
+'staff_slash inactivity prune <inactive user>: the confirm panel is the public interaction response':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - "{\n  \"color\": 3447003,\n  \"description\": \"\U0001F97E <@700000000000000001> will be kicked!\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Kick",
+                    "style": 4,
+                    "disabled": false,
+                    "custom_id": "templates-ip:600000000000000001:kick",
+                    "type": 2
+                  },
+                  {
+                    "label": "Cancel",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ip:600000000000000001:cancel",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          embeds:
+            - "{\n  \"color\": 3447003,\n  \"description\": \"\U0001F97E <@700000000000000001> will be kicked!\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/1.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
+          components:
+            - |-
+              {
+                "components": [
+                  {
+                    "label": "Kick",
+                    "style": 4,
+                    "disabled": false,
+                    "custom_id": "templates-ip:600000000000000001:kick",
+                    "type": 2
+                  },
+                  {
+                    "label": "Cancel",
+                    "style": 2,
+                    "disabled": false,
+                    "custom_id": "templates-ip:600000000000000001:cancel",
+                    "type": 2
+                  }
+                ],
+                "type": 1
+              }
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity":"21","channel_activity_pager":"22","embed_exec":"1","inactivity":"20","inactivity_prune_pick":"24","rules":"23"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
+'staff_slash rules: no range posts every rule as channel messages, ephemeral ack':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "Be kind.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Rule #1"
+              }
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "No spam.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Rule #2"
+              }
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "Stay on topic.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Rule #3"
+              }
+        - channel_id: 123456789012345678
+          content: Posted rules 1-3.
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000002
+          content: Posted rules 1-3.
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity":"21","channel_activity_pager":"22","embed_exec":"1","inactivity":"20","inactivity_prune_pick":"24","rules":"23"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
+'staff_slash rules: no rules configured is an ephemeral refusal, nothing posted':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ No rules configured in the server!
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ No rules configured in the server!
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"channel_activity":"21","channel_activity_pager":"22","embed_exec":"1","inactivity":"20","inactivity_prune_pick":"24","rules":"23"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{}'

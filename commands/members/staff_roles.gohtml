@@ -21,7 +21,20 @@
 
 {{ $staffDict := or (dbGet 0 "Staff").Value sdict }}
 
-{{ $trigger := .Message.Content }}
+{{/* the /staff path (staff_slash execCCs this with ExecData.Staff): the roles come from
+  ExecData.Roles, every reply answers the inherited interaction (embed_exec Respond;
+  DeleteResponse makes it ephemeral), and there is no trigger message to delete */}}
+{{ $staff := false }}
+{{ $trigger := "" }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Staff -}}
+        {{- $staff = true -}}
+        {{- $trigger = toString (or .ExecData.Roles "") -}}
+    {{- end -}}
+{{- end -}}
+{{ if not $staff }}
+    {{ $trigger = .Message.Content }}
+{{ end }}
 {{ $roleIDs := reFindAll "\\d{16,}" $trigger }}
 {{ if gt (len $roleIDs) 0 }}
     {{/* the text path: the configured Staff role rides along when missing, so a
@@ -69,6 +82,7 @@
                 "Title" "Staff Roles Configuration"
                 "Description" $result
                 "AuthorID" .Member.User.ID
+                "Respond" $staff
             ) }}
         {{ else }}
             {{ $result := "⚠️ None of the provided role IDs were valid: " }}
@@ -82,6 +96,7 @@
                 "Description" $result
                 "DeleteResponse" true
                 "DeleteDelay" $deleteResponseDelay
+                "Respond" $staff
             ) }}
         {{ end }}
     {{ end }}
@@ -117,7 +132,10 @@
                 "max_values" 25
                 "placeholder" "Pick the staff roles…"
                 "default_values" $defaults))
+        "Respond" $staff
     ) }}
 {{ end }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+{{ if not $staff }}
+    {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}

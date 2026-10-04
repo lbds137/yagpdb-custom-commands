@@ -616,8 +616,23 @@ func (e *Engine) userArg(arg interface{}) interface{} {
 	return &types.DiscordUser{ID: id, Username: "MockUser", Discriminator: "0"}
 }
 
-func (e *Engine) getTargetPermissionsIn(userID, channelID interface{}) int64 {
-	return 0
+// getTargetPermissionsIn is YAGPDB's tmplGetTargetPermissionsIn (vendor
+// common/templates/context_funcs.go:852-873): 0 for an unresolvable user or channel, the
+// REST error for a user who isn't in the server (bot.GetMember), else the member's
+// permissions in the channel (memberPermissions).
+func (e *Engine) getTargetPermissionsIn(userID, channelID interface{}) (int64, error) {
+	id := targetUserID(userID)
+	if id == 0 {
+		return 0, nil
+	}
+	channel := e.channelArg(channelID)
+	if channel == 0 {
+		return 0, nil
+	}
+	if !e.ctx.isMember(id) {
+		return 0, errUnknownMember
+	}
+	return e.ctx.memberPermissions(channel, id, e.ctx.rolesOf(id))
 }
 
 // Channel functions
