@@ -163,13 +163,13 @@ tests:
 
   - name: "contrasts - Multiple colors"
     snapshot: true
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       args: ["FF0000 00FF00 0000FF"]
 
   - name: "contrasts - Colors separated by a comma"
     snapshot: true
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       args: ["#ff0000,", "00ff00"]
     assertions:
@@ -178,7 +178,7 @@ tests:
         - { embed_title: "Contrast Ratios for `#00ff00`", nth: 2 }
 
   - name: "contrasts - Colors in a sentence"
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       args: ["#ff0000;#00ff00 and 0000ff."]
     assertions:
@@ -189,7 +189,7 @@ tests:
 
   - name: "contrasts - A role ID"
     snapshot: true
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       args: ["876543210987654321"]
       guild:
@@ -200,7 +200,7 @@ tests:
 
   - name: "contrasts - A role ID and a color"
     snapshot: true
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       args: ["876543210987654321", "#ff0000"]
       guild:
@@ -212,14 +212,14 @@ tests:
         - { embed_title: "Contrast Ratios for `#ff0000`", nth: 2 }
 
   - name: "contrasts - Only invalid words"
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       args: ["red", "12345678901234567"]
     assertions:
       sent_messages: [{ embed_title: "Invalid Argument" }]
 
   - name: "contrasts - Extra colors beyond the execCC limit get a warning"
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       # ExecCC Limit is 10 (shared Global); 11 valid colors drop 1
       args:
@@ -239,7 +239,7 @@ tests:
         ]
 
   - name: "contrasts - ExecCC Limit 1 uses singular grammar for the limit itself"
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       # 2 valid colors, limit 1: 1 dropped, and the limit itself is singular
       args: ["#000000 #111111"]
@@ -258,7 +258,7 @@ tests:
         ]
 
   - name: "contrasts - ExecCC Limit above 10 still clamps to YAGPDB's per-run cap"
-    template: "../../../commands/color/contrasts.gohtml"
+    template: "../../../retired/contrasts.gohtml"
     context:
       # 12 valid colors; unclamped (limit 20) all 12 would be attempted and the 11th
       # execCC would hit YAGPDB's real 10-per-run cap and error out the whole command

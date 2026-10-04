@@ -106,11 +106,6 @@
       "slashDescription": null,
       "slash": null
     },
-    "commands/color/contrasts.gohtml": {
-      "deferMode": 0,
-      "slashDescription": null,
-      "slash": null
-    },
     "commands/color/hex_to_int.gohtml": {
       "deferMode": 0,
       "slashDescription": null,
