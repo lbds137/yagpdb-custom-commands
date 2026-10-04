@@ -1,0 +1,76 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `unhiatus`
+  Group: `Utility`
+  Slash description: `Return from a staff hiatus (restores your staff roles)`
+  Defer mode: `Ephemeral Message Response`
+  Dependencies: `embed_exec`
+
+  The slash version of unhiatus. In the Utility group on purpose: a staff member on hiatus
+  has lost the roles the Staff Utility group requires. Every reply is ephemeral: the
+  deferred ack goes out before the role calls, and the reply is the run's printed output, which
+  fills the deferred response. The record goes to Mod Log (the current channel when
+  unset) through ONE execCC to embed_exec without `Respond`.
+*/ -}}
+{{- if .IsSlashCommand -}}
+	{{- $globalDict := (dbGet 0 "Global").Value -}}
+	{{- $defaultAvatar := $globalDict.Get "Default Avatar" -}}
+
+	{{- $commandsDict := (dbGet 0 "Commands").Value -}}
+	{{- $embed_exec := toInt ($commandsDict.Get "embed_exec") -}}
+
+	{{- $channelsDict := (dbGet 0 "Channels").Value -}}
+	{{- $modLogChannelID := toInt ($channelsDict.Get "Mod Log") -}}
+	{{- $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") -}}
+
+	{{- $staffDict := (dbGet 0 "Staff").Value -}}
+	{{- $staffRoleIDs := or ($staffDict.Get "Roles") cslice -}}
+	{{- $hiatusDict := or ($staffDict.Get "Hiatus") sdict -}}
+
+	{{- $userID := .User.ID -}}
+	{{- $userHiatusSlice := $hiatusDict.Get (toString $userID) -}}
+
+	{{- if le $embed_exec 0 -}}
+		{{- print "⚠️ This command isn't set up on this server yet." -}}
+	{{- else if eq (len $staffRoleIDs) 0 -}}
+		{{- print "⚠️ Staff role IDs must be defined before using this command!" -}}
+	{{- else if not $userHiatusSlice -}}
+		{{- print "⚠️ You are not a staff member on hiatus!" -}}
+	{{- else -}}
+		{{- $mentions := cslice -}}
+		{{- range $roleID := $userHiatusSlice -}}
+			{{- giveRoleID $userID $roleID -}}
+			{{- $mentions = $mentions.Append (print "<@&" $roleID ">") -}}
+		{{- end -}}
+		{{- $hiatusDict.Del (toString $userID) -}}
+		{{- $staffDict.Set "Hiatus" $hiatusDict -}}
+		{{- /* lint:ignore permission-conditional-staff implicit-via-hiatus-dict */ -}}
+		{{- /* lint:ignore database-global-write intentional-staff-hiatus-tracking */ -}}
+		{{- dbSet 0 "Staff" $staffDict -}}
+
+		{{- $userAvatar := .User.AvatarURL "128" -}}
+		{{- $title := "Staff Unhiatus Record" -}}
+		{{- $description := (joinStr ""
+			"👋 Staff member **" .User.String "** (ID: " .User.ID ") has elected to return from hiatus and resume staff duties."
+		) -}}
+		{{- $modLogTarget := $modLogChannelID -}}
+		{{- if not $modLogTarget -}}
+			{{- $modLogTarget = .Channel.ID -}}
+		{{- end -}}
+		{{- $execChannel := $yagpdbChannelID -}}
+		{{- if not $execChannel -}}
+			{{- $execChannel = .Channel.ID -}}
+		{{- end -}}
+		{{- execCC $embed_exec $execChannel 0 (sdict
+			"ChannelID" $modLogTarget
+			"Title" $title
+			"Description" $description
+			"ThumbnailURL" (or $userAvatar $defaultAvatar)
+		) -}}
+
+		{{- print (joinStr "" "👋 Welcome back! Restored: " (joinStr ", " $mentions.StringSlice) ".") -}}
+	{{- end -}}
+{{ else }}
+Use /unhiatus as a slash command
+{{ end }}

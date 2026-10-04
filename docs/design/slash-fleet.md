@@ -253,3 +253,39 @@ Title/Description as define.
 | `/rule` | View a server rule, or browse them all | number | integer | — | the rule to view (omit to browse all) |
 | `/timestamp` | When a Discord ID was created (default: you) | id | string | — | a Discord ID or mention (default: you) |
 | `/define` | Link a Night House glossary term | term | string | — | the term to look up (omit for the whole glossary) |
+
+## Unit 4: /hiatus, /unhiatus
+
+Files: `commands/members/hiatus_slash.gohtml` (`/hiatus`, Staff Utility) and
+`commands/members/unhiatus_slash.gohtml` (`/unhiatus`, Utility, for the reason in the root
+map). No options. The text twins stay until Lila's live check, then retire (policy).
+
+Every reply is to the invoker alone, so both roots use Defer mode `Ephemeral Message
+Response` (customcommands/handle_component.go:172-174), the fleet's first: the ack goes
+out before any work, so the role calls (one GuildMemberRoleRemove/Add HTTP call per role,
+context_funcs.go:2465-2520 and 2580-2612) never race the 3 s window, and the reply is
+written only after the work is done. The reply is the run's PRINTED OUTPUT, which a
+deferred run sends as the edit of the deferred response (context.go:604-607, 684-692:
+EditOriginalInteractionResponse, ephemeral from the defer; the emulator records
+`deferred_edit`). Not `sendResponse`: after a defer that is a followup
+(context_interactions.go:350-363, 446-448), which leaves the "thinking..." message unfilled.
+
+Success order: refusal checks; roles taken (hiatus, held roles from `hasRoleID`, the
+interaction member's own roles, no API call) or given (unhiatus); `Staff` dict written;
+ONE execCC to embed_exec WITHOUT `Respond` posting the record to Mod Log (the current
+channel when Mod Log is unset, as today); then the ephemeral reply naming the roles
+removed or restored (`<@&id>` mentions; an ephemeral message notifies nobody). Refusals (no staff roles configured, holds
+none of them, not on hiatus, embed_exec not in Commands) are ephemeral replies with no
+execCC and no writes. The execCC child runs in a goroutine sharing the interaction (tmplextensions.go:240-248),
+so the parent's reply is safe only while embed_exec's non-`Respond` path prints nothing
+(its whitespace is trimmed and dropped, bot.go:762, context.go:648); a `print` there
+would race the parent for the deferred edit. YAGPDB swallows role-call failures (giveRole/takeRole return "" on
+every error path), so a failure can't be detected or reported; the text twins behave the
+same.
+
+### Panel rows
+
+| root | slash description |
+|---|---|
+| `/hiatus` | Step away from staff duties (removes your staff roles) |
+| `/unhiatus` | Return from a staff hiatus (restores your staff roles) |

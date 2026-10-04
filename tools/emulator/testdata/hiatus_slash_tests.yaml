@@ -1,0 +1,372 @@
+name: "hiatus_slash / unhiatus_slash (/hiatus, /unhiatus)"
+
+# The slash roots of hiatus and unhiatus: Ephemeral Message Response defer, every reply is
+# the run's printed output (the edit of the deferred response), ONE execCC to embed_exec
+# without Respond for the Mod Log record. An ephemeral response counts as a sent message in the
+# emulator, so the refusal tests use snapshot: true to pin "no stray channel message".
+
+defaults:
+  user:
+    id: 987654321098765432
+    username: "StaffMember"
+  channel:
+    id: 123456789012345678
+    name: "staff-chat"
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    roles:
+      - { id: 111111111, name: "Moderator" }
+      - { id: 222222222, name: "Helper" }
+    channels:
+      - { id: 999999999, name: "yagpdb" }
+      - { id: 888888888, name: "mod-log" }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Default Avatar: "https://example.com/a.png" }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "123" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 999999999, Mod Log: 888888888 }
+  - user_id: 0
+    key: "Staff"
+    value:
+      Roles: [111111111, 222222222]
+
+command_map:
+  123: "../../../commands/plumbing/embed_exec.gohtml"
+
+tests:
+  - name: "hiatus_slash: success removes the held roles, records in Mod Log, replies ephemerally"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [111111111, 222222222] }
+      interaction: { type: slash }
+    expected:
+      output_equals: "💤 You're on hiatus. Removed: <@&111111111>, <@&222222222>. Use /unhiatus to return."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "remove" }
+        - { user_id: 987654321098765432, role_id: 222222222, action: "remove" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111, 222222222] } } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Hiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "<@&111111111>, <@&222222222>" }
+
+  - name: "hiatus_slash: only the staff roles the invoker holds are removed and recorded"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [222222222] }
+      interaction: { type: slash }
+    expected:
+      output_equals: "💤 You're on hiatus. Removed: <@&222222222>. Use /unhiatus to return."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 222222222, action: "remove" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [222222222] } } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Hiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Removed: <@&222222222>." }
+
+  - name: "hiatus_slash: a second hiatus adds to the earlier record instead of replacing it"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [222222222] } # re-granted Helper while still on hiatus from Moderator
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111] }
+    expected:
+      output_equals: "💤 You're on hiatus. Removed: <@&222222222>. Use /unhiatus to return."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 222222222, action: "remove" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111, 222222222] } } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Hiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Removed: <@&222222222>." }
+
+  - name: "hiatus_slash: a role already in the earlier record is not recorded twice"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [111111111] } # re-granted Moderator while still on hiatus from it
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111] }
+    expected:
+      output_equals: "💤 You're on hiatus. Removed: <@&111111111>. Use /unhiatus to return."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "remove" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Hiatus Record" }
+
+  - name: "hiatus_slash: a role listed twice in Staff.Roles is removed and recorded once"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [111111111] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value: { Roles: [111111111, 111111111] }
+    expected:
+      output_equals: "💤 You're on hiatus. Removed: <@&111111111>. Use /unhiatus to return."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "remove" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 111111111], Hiatus: { "987654321098765432": [111111111] } } }
+
+  - name: "hiatus_slash: an unset YAGPDB channel still changes the roles, posts the record and replies"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [111111111] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Channels"
+        value: { Mod Log: 888888888 } # no YAGPDB
+    expected:
+      output_equals: "💤 You're on hiatus. Removed: <@&111111111>. Use /unhiatus to return."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "remove" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Hiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Removed: <@&111111111>." }
+
+  - name: "unhiatus_slash: an unset YAGPDB channel still restores the roles, posts the record and replies"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Channels"
+        value: { Mod Log: 888888888 } # no YAGPDB
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111] }
+    expected:
+      output_equals: "👋 Welcome back! Restored: <@&111111111>."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "add" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: {} } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Unhiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Restored: <@&111111111>." }
+
+  - name: "hiatus_slash: an unset Mod Log posts the record in the current channel"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [111111111] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Channels"
+        value: { YAGPDB: 999999999 } # no Mod Log
+    expected:
+      output_equals: "💤 You're on hiatus. Removed: <@&111111111>. Use /unhiatus to return."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "remove" }
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Staff Hiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "<@&111111111>" }
+
+  - name: "hiatus_slash: holding none of the staff roles is an ephemeral refusal"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    assertions:
+      no_role_changes: true
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222] } }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "You don't hold any of the staff roles" }
+
+  - name: "hiatus_slash: no staff role IDs defined is an ephemeral refusal"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value: { }
+    assertions:
+      no_role_changes: true
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { } }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Staff role IDs must be defined" }
+
+  - name: "hiatus_slash: without embed_exec in Commands is an ephemeral refusal"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { }
+    assertions:
+      no_role_changes: true
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222] } }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "isn't set up on this server yet" }
+
+  - name: "hiatus_slash: a bare run prints the usage hint"
+    template: "../../../commands/members/hiatus_slash.gohtml"
+    context:
+      user: { roles: [111111111] }
+      exec_data: { probe: true }
+    expected:
+      output_contains: "Use /hiatus as a slash command"
+    assertions:
+      no_role_changes: true
+
+  - name: "unhiatus_slash: success restores the recorded roles, records in Mod Log, replies ephemerally"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111, 222222222] }
+    expected:
+      output_equals: "👋 Welcome back! Restored: <@&111111111>, <@&222222222>."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "add" }
+        - { user_id: 987654321098765432, role_id: 222222222, action: "add" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: {} } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Unhiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Welcome back! Restored: <@&111111111>, <@&222222222>." }
+
+  - name: "unhiatus_slash: an unset Mod Log posts the record in the current channel"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Channels"
+        value: { YAGPDB: 999999999 } # no Mod Log
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111] }
+    expected:
+      output_equals: "👋 Welcome back! Restored: <@&111111111>."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "add" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: {} } }
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_title: "Staff Unhiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "<@&111111111>" }
+
+  - name: "unhiatus_slash: not on hiatus is an ephemeral refusal"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [111111111] }
+      interaction: { type: slash }
+    assertions:
+      no_role_changes: true
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222] } }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "You are not a staff member on hiatus" }
+
+  - name: "unhiatus_slash: no staff role IDs defined is an ephemeral refusal"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value: { }
+    assertions:
+      no_role_changes: true
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { } }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Staff role IDs must be defined" }
+
+  - name: "unhiatus_slash: without embed_exec in Commands is an ephemeral refusal"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { }
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111] }
+    assertions:
+      no_role_changes: true
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "isn't set up on this server yet" }
+
+  - name: "unhiatus_slash: a bare run prints the usage hint"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    context:
+      exec_data: { probe: true }
+    expected:
+      output_contains: "Use /unhiatus as a slash command"
+    assertions:
+      no_role_changes: true

@@ -25,7 +25,7 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   rand_hebrew), `color/` (color_slash, hex_to_int; contrast and rand_color
   disabled on main, kept for lotv), `db/`
   (db_get_embed, db_get_text, db_slash, simple_db_lookup), `edit/` (edit_slash,
-  edit_modal, edit_confirm), `members/` (hiatus, unhiatus, inactivity,
+  edit_modal, edit_confirm), `members/` (hiatus, unhiatus, hiatus_slash, unhiatus_slash, inactivity,
   inactivity_prune_pick, staff_roles, staff_roles_pick, role_ping_slash,
   batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
