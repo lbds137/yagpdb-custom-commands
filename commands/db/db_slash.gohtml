@@ -393,6 +393,12 @@
     {{ $value = joinStr "" (slice (split $value "") 0 $embedDescriptionLimit) "…" }}
 {{ end }}
 
+{{/* the Key field holds 1024: cut the key before fencing (fence 7, "…" 1) */}}
+{{ $keyShown := or $key $nil }}
+{{ if gt (len (toRune $keyShown)) 1017 }}
+    {{ $keyShown = joinStr "" (slice (split $keyShown "") 0 1016) "…" }}
+{{ end }}
+
 {{ if $isSlash }}
     {{/* export answered with the file already; others reply with the embed */}}
     {{ if not $isDump }}
@@ -403,7 +409,7 @@
             "description" (joinStr "" "```\n" (or $value $nil) "\n```")
             "fields" (cslice
                 (sdict "name" "User ID" "value" (joinStr "" "```\n" $displayUserID "```") "inline" true)
-                (sdict "name" "Key" "value" (joinStr "" "```\n" (or $key $nil) "```") "inline" true)
+                (sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
                 (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
             )
         }}
@@ -421,7 +427,7 @@
         "AuthorID" $displayUserID
         "Fields" (cslice
             (sdict "name" "User ID" "value" (joinStr "" "```\n" $displayUserID "```") "inline" true)
-            (sdict "name" "Key" "value" (joinStr "" "```\n" (or $key $nil) "```") "inline" true)
+            (sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
             (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
         )
     ) }}

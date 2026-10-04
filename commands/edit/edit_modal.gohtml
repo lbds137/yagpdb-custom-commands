@@ -101,6 +101,11 @@
 				{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
 			{{ end }}
 			{{ $category := title $categoryName }}
+			{{/* the refusals quote it in a 2000-character message: show a cut copy */}}
+			{{ $catShown := $category }}
+			{{ if gt (len (toRune $catShown)) 500 }}
+				{{ $catShown = joinStr "" (slice (split $catShown "") 0 499) "…" }}
+			{{ end }}
 			{{ $refused := "" }}
 			{{ if and $isNew (not $categoryName) }}
 				{{ $refused = "⚠️ Give a category name after `new:`." }}
@@ -109,8 +114,8 @@
 			{{ if not $refused }}
 				{{ $categoryEntry = dbGet 0 $category }}
 				{{ if and (not $isNew) (not $categoryEntry) }}
-					{{ $refused = joinStr "" "⚠️ There is no `" $category
-						"` category. Check the spelling, or use `new:" $category "` to create it." }}
+					{{ $refused = joinStr "" "⚠️ There is no `" $catShown
+						"` category. Check the spelling, or use `new:" $catShown "` to create it." }}
 				{{ end }}
 			{{ end }}
 			{{ $categoryDict := sdict }}
@@ -122,7 +127,7 @@
 					{{ else if eq "map" (kindOf $categoryValue true) }}
 						{{ $categoryDict = $categoryValue }}
 					{{ else }}
-						{{ $refused = joinStr "" "⚠️ The `" $category
+						{{ $refused = joinStr "" "⚠️ The `" $catShown
 							"` category doesn't hold a dictionary of entries." }}
 					{{ end }}
 				{{ end }}
@@ -147,7 +152,11 @@
 				{{ if $oldIsString }}
 					{{ $isUnchanged = eq $old $value }}
 				{{ end }}
+				{{/* the title holds 256: the longest suffix, " unchanged", takes 10 of them */}}
 				{{ $label := joinStr " › " $category $key }}
+				{{ if gt (len (toRune $label)) 246 }}
+					{{ $label = joinStr "" (slice (split $label "") 0 245) "…" }}
+				{{ end }}
 				{{ $storedAs := $key }}
 				{{ if gt (len (toRune $storedAs)) 1024 }}
 					{{ $kept := slice (split $storedAs "") 0 1023 }}
@@ -196,6 +205,17 @@
 					{{ if $storedKeyDiffers }}
 						{{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
 					{{ end }}
+				{{ end }}
+				{{/* the whole embed holds 6000: the fields and title come first, the
+					description (up to 4000 here) takes what is left */}}
+				{{ $otherLen := len (toRune $title) }}
+				{{ range $fields }}
+					{{ $otherLen = add $otherLen (len (toRune .name)) (len (toRune .value)) }}
+				{{ end }}
+				{{ $descriptionMax := toInt (min 4096 (sub 6000 $otherLen)) }}
+				{{ if gt (len (toRune $description)) $descriptionMax }}
+					{{ $kept := slice (split $description "") 0 (sub $descriptionMax 1) }}
+					{{ $description = joinStr "" $kept "…" }}
 				{{ end }}
 				{{ sendResponse nil (complexMessage "ephemeral" true
 					"embed" (cembed "title" $title "color" $embedColor

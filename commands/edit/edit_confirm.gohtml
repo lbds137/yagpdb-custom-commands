@@ -96,8 +96,13 @@
 					{{ end }}
 				{{ end }}
 				{{ if not ($categoryDict.HasKey $key) }}
+					{{/* the message holds 2000: show a cut copy of the key */}}
+					{{ $keyShown := $key }}
+					{{ if gt (len (toRune $keyShown)) 1500 }}
+						{{ $keyShown = joinStr "" (slice (split $keyShown "") 0 1499) "…" }}
+					{{ end }}
 					{{ updateMessage (complexMessage
-						"content" (joinStr "" "⚠️ `" $key "` not found — already gone.")) }}
+						"content" (joinStr "" "⚠️ `" $keyShown "` not found — already gone.")) }}
 				{{ else }}
 					{{ $old := $categoryDict.Get $key }}
 					{{ $description := "" }}
@@ -122,8 +127,13 @@
 					{{ dbSet 0 $category $categoryDict }}
 					{{ dbDel $uid "Edit Pending" }}
 					{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
+					{{/* the title holds 256: " removed" takes 8 of them */}}
+					{{ $label := joinStr " › " $category $key }}
+					{{ if gt (len (toRune $label)) 248 }}
+						{{ $label = joinStr "" (slice (split $label "") 0 247) "…" }}
+					{{ end }}
 					{{ updateMessage (complexMessage
-						"embed" (cembed "title" (joinStr "" (joinStr " › " $category $key) " removed")
+						"embed" (cembed "title" (joinStr "" $label " removed")
 							"color" $embedColor "description" $description)) }}
 				{{ end }}
 			{{ end }}
