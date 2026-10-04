@@ -64,6 +64,11 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    hash matches, the header's structure matches (`failed: read-back structure <fields>`
    otherwise), and `is_enabled` is what was asked (`failed: read-back enabled ...`).
 9. If `SERVER=main` and everything came back clean, `make mark-deployed`.
+10. Every round deploys to BOTH `main` and `rose` (Lila, 2026-10-04: The Rose, her private
+    server, stays in sync with the latest commands; she uses gematria there heavily). The
+    `deployed` tag tracks main only, so run the rose manifest's dry run too and deploy
+    whatever comes back `would-update`. A new command that should exist on both gets a
+    `create` on each. lotv is deployed only when Lila asks.
 
 ## New commands, enabling, retiring
 
