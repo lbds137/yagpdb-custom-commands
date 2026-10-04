@@ -45,54 +45,85 @@
     {{ $authorColor = $dbEmbedColor }}
 {{ end }}
 
-{{/* Discord allows 256 characters for the title, 4096 for the description, and 6000 for
-  the title, description, field names and values and author name together: cut the
-  title and description to fit all three */}}
-{{ $title := print (or .ExecData.Title "") }}
-{{ if gt (len (toRune $title)) 256 }}
-    {{ $kept := slice (split $title "") 0 255 }}
-    {{ $title = joinStr "" $kept "…" }}
+{{/* ExecData is one embed's keys (Title, Description, Fields, Color, ImageURL,
+  ThumbnailURL); a caller may instead pass Embeds, a list of such sdicts: each is built
+  below exactly as the single embed is, and all go out as ONE message (Discord keeps
+  the first 10) */}}
+{{ $specs := cslice (or .ExecData (sdict)) }}
+{{ if .ExecData.Embeds }}
+    {{ $specs = .ExecData.Embeds }}
 {{ end }}
-{{ $otherLen := add
-    (len (toRune $title))
-    (len (toRune (print (or $author.name ""))))
-}}
-{{- range .ExecData.Fields -}}
-    {{- $otherLen = add $otherLen
-        (len (toRune (print (or .name ""))))
-        (len (toRune (print (or .value "")))) -}}
+{{ $built := cslice }}
+{{/* Discord's 6000 covers every embed of a message together: $builtLen is what the
+  embeds built so far already take */}}
+{{ $builtLen := 0 }}
+{{- range $spec := $specs -}}
+    {{- /* Discord allows 256 characters for the title, 4096 for the description, and 6000
+      for the title, description, field names and values and author name together: cut
+      the title and description to fit all three */ -}}
+    {{- $title := print (or $spec.Title "") -}}
+    {{- if gt (len (toRune $title)) 256 -}}
+        {{- $kept := slice (split $title "") 0 255 -}}
+        {{- $title = joinStr "" $kept "…" -}}
+    {{- end -}}
+    {{- $otherLen := add (len (toRune $title))
+        (len (toRune (print (or $author.name "")))) -}}
+    {{- range $spec.Fields -}}
+        {{- $otherLen = add $otherLen
+            (len (toRune (print (or .name ""))))
+            (len (toRune (print (or .value "")))) -}}
+    {{- end -}}
+    {{- $descriptionMaxLen := toInt (min 4096 (sub 6000 (add $builtLen $otherLen))) -}}
+    {{- $description := $spec.Description -}}
+    {{- if $description -}}
+        {{- if gt (len (toRune $description)) $descriptionMaxLen -}}
+            {{- $description = "" -}}
+            {{- if ge $descriptionMaxLen 1 -}}
+                {{- $kept := slice (split $spec.Description "") 0 (sub $descriptionMaxLen 1) -}}
+                {{- $description = joinStr "" $kept "…" -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+    {{- $builtLen = add $builtLen $otherLen (len (toRune (print (or $description "")))) -}}
+    {{- $built = $built.Append (cembed
+        "title" $title
+        "description" $description
+        "fields" $spec.Fields
+        "color" (or $spec.Color $authorColor)
+        "author" $author
+        "image" (sdict "url" $spec.ImageURL)
+        "thumbnail" (sdict "url" $spec.ThumbnailURL)
+    ) -}}
 {{- end -}}
-{{ $descriptionMaxLen := toInt (min 4096 (sub 6000 $otherLen)) }}
-{{ $description := .ExecData.Description }}
-{{ if $description }}
-    {{ if gt (len (toRune $description)) $descriptionMaxLen }}
-        {{ $description = "" }}
-        {{ if ge $descriptionMaxLen 1 }}
-            {{ $kept := slice (split .ExecData.Description "") 0 (sub $descriptionMaxLen 1) }}
-            {{ $description = joinStr "" $kept "…" }}
-        {{ end }}
-    {{ end }}
+{{/* one embed stays a bare embed, so callers that pass no Embeds send as before */}}
+{{ $embed := index $built 0 }}
+{{ if .ExecData.Embeds }}
+    {{ $embed = $built }}
 {{ end }}
-{{ $embed := cembed
-    "title" $title
-    "description" $description
-    "fields" .ExecData.Fields
-    "color" (or .ExecData.Color $authorColor)
-    "author" $author
-    "image" (sdict "url" .ExecData.ImageURL)
-    "thumbnail" (sdict "url" .ExecData.ThumbnailURL)
-}}
 
 {{ $targetChannel := or .ExecData.ChannelID .Channel.ID }}
-{{/* callers that pass no Components keep the bare-embed send, byte for byte */}}
-{{ $messageID := "" }}
+{{ $message := sdict "embed" $embed }}
 {{ if .ExecData.Components }}
-    {{ $messageID = sendMessageRetID $targetChannel (complexMessage
-        "embed" $embed
-        "components" .ExecData.Components) }}
-{{ else }}
-    {{ $messageID = sendMessageRetID $targetChannel $embed }}
+    {{ $message.Set "components" .ExecData.Components }}
 {{ end }}
-{{ if .ExecData.DeleteResponse }}
-    {{ deleteMessage $targetChannel $messageID (or .ExecData.DeleteDelay $deleteResponseDelay) }}
+{{ if .ExecData.Respond }}
+    {{/* answer the interaction this run inherited (a slash root's execCC): public, or
+      ephemeral for DeleteResponse, which then deletes nothing: an interaction
+      response's delete caps at 10 seconds */}}
+    {{ if .ExecData.DeleteResponse }}
+        {{ $message.Set "ephemeral" true }}
+    {{ end }}
+    {{ sendResponse nil (complexMessage $message) }}
+{{ else }}
+    {{/* callers that pass neither Components nor Embeds keep the bare-embed send, byte
+      for byte (sendMessage takes a list of embeds only inside a complexMessage) */}}
+    {{ $messageID := "" }}
+    {{ if or .ExecData.Components .ExecData.Embeds }}
+        {{ $messageID = sendMessageRetID $targetChannel (complexMessage $message) }}
+    {{ else }}
+        {{ $messageID = sendMessageRetID $targetChannel $embed }}
+    {{ end }}
+    {{ if .ExecData.DeleteResponse }}
+        {{ deleteMessage $targetChannel $messageID (or .ExecData.DeleteDelay $deleteResponseDelay) }}
+    {{ end }}
 {{ end }}

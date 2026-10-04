@@ -1,0 +1,220 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `color`
+  Group: `Utility`
+  Defer mode: `None`
+  Dependencies: `embed_exec`
+
+  The slash version of contrast, contrasts, rand_color and hex_to_int's conversion, one
+  root with four subcommands. The logic is inlined from them, and the results (public)
+  are ONE execCC to embed_exec with `Respond`: the child inherits the interaction and
+  answers it, so this run prints nothing on that path (an empty run sends no response).
+  Errors and usage refusals are ephemeral sendResponses of this run, never alongside
+  the execCC (an interaction takes one response, and free servers one execCC per run).
+
+  Slash subcommand: `contrast WCAG contrast of a color or role against dark and light`
+  Slash option: `contrast.color string hex code, # optional (use this OR role)`
+  Slash option: `contrast.role role a role whose color to check (use this OR color)`
+  Slash subcommand: `contrasts contrast of up to 10 colors or roles at once`
+  Slash option: `contrasts.colors string! hex codes and/or role IDs or mentions, up to 10`
+  Slash subcommand: `random a random color`
+  Slash subcommand: `hex a hex code's integer value`
+  Slash option: `hex.color string! hex code, # optional`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $commandsDict := (dbGet 0 "Commands").Value }}
+	{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+	{{ $colorRegex := "\\A#?[0-9A-Fa-f]{6}\\z" }}
+	{{ $discordIDRegex := "\\A\\d{16,}\\z" }}
+	{{ $maxColors := 10 }}
+	{{ $hexDict := sdict
+		"0" 0 "1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
+		"a" 10 "b" 11 "c" 12 "d" 13 "e" 14 "f" 15
+	}}
+	{{ $colorPositions := cslice "R" "R" "G" "G" "B" "B" }}
+	{{ $lumCoefficients := dict "R" 0.2126 "G" 0.7152 "B" 0.0722 }}
+	{{ $comparisons := cslice
+		(sdict "Name" "AMOLED Dark" "Hex" "000000")
+		(sdict "Name" "Dark" "Hex" "36393f")
+		(sdict "Name" "Light" "Hex" "ffffff")
+	}}
+	{{ $invalidColorText := "⚠️ That isn't a color in the required format (e.g. `#ff0000` for red)!" }}
+
+	{{/* the colors to show, as six lowercase hex digits without the #, or why not */}}
+	{{ $subcommand := .SubCommand }}
+	{{ $items := cslice }}
+	{{ $droppedCount := 0 }}
+	{{ $refusal := "" }}
+	{{ if eq $subcommand "contrast" }}
+		{{ $colorOption := .Options.color }}
+		{{ $roleOption := .Options.role }}
+		{{ if and $colorOption $roleOption }}
+			{{ $refusal = "⚠️ Give a `color` **OR** a `role`, not both." }}
+		{{ else if not (or $colorOption $roleOption) }}
+			{{ $refusal = "⚠️ Give a `color` (e.g. `#ff0000` for red) **OR** a `role`." }}
+		{{ else if $roleOption }}
+			{{ $items = $items.Append (printf "%06x" $roleOption.Color) }}
+		{{ else }}
+			{{ $hex := lower (reFind $colorRegex (trimSpace $colorOption)) }}
+			{{ if $hex }}
+				{{ $items = $items.Append (reReplace "#" $hex "") }}
+			{{ else }}
+				{{ $refusal = $invalidColorText }}
+			{{ end }}
+		{{ end }}
+	{{ else if eq $subcommand "hex" }}
+		{{ $hex := lower (reFind $colorRegex (trimSpace .Options.color)) }}
+		{{ if $hex }}
+			{{ $items = $items.Append (reReplace "#" $hex "") }}
+		{{ else }}
+			{{ $refusal = $invalidColorText }}
+		{{ end }}
+	{{ else if eq $subcommand "random" }}
+		{{ $items = $items.Append (printf "%06x" (randInt 0 16777216)) }}
+	{{ else if eq $subcommand "contrasts" }}
+		{{/* each word (split on anything but # and hex digits) that is a color or a role
+			ID, up to the cap; extras beyond it are counted for the warning below */}}
+		{{- range $word := reSplit "[^#0-9A-Fa-f]+" .Options.colors -}}
+			{{- $hex := "" -}}
+			{{- if reFind $colorRegex $word -}}
+				{{- $hex = reReplace "#" (lower $word) "" -}}
+			{{- else if reFind $discordIDRegex $word -}}
+				{{- $role := $.Guild.GetRole (toInt $word) -}}
+				{{- if $role -}}
+					{{- $hex = printf "%06x" $role.Color -}}
+				{{- end -}}
+			{{- end -}}
+			{{- if $hex -}}
+				{{- if lt (len $items) $maxColors -}}
+					{{- $items = $items.Append $hex -}}
+				{{- else -}}
+					{{- $droppedCount = add 1 $droppedCount -}}
+				{{- end -}}
+			{{- end -}}
+		{{- end -}}
+		{{ if not $items }}
+			{{ $refusal = "⚠️ You must enter one or more role IDs or mentions **OR** colors in the required format (e.g. `#ff0000` for red)!" }}
+		{{ end }}
+	{{ else }}
+		{{ $refusal = "⚠️ Unknown subcommand." }}
+	{{ end }}
+
+	{{ if $refusal }}
+		{{ sendResponse nil (complexMessage "content" $refusal "ephemeral" true) }}
+	{{ else }}
+		{{/* the int value and the luminance (the formulas at https://planetcalc.com/7779/)
+			of every color shown and every color it is compared with */}}
+		{{ $allHex := cslice }}
+		{{- range $items -}}
+			{{- $allHex = $allHex.Append . -}}
+		{{- end -}}
+		{{- range $comparisons -}}
+			{{- $allHex = $allHex.Append .Hex -}}
+		{{- end -}}
+		{{ $ints := sdict }}
+		{{ $lums := sdict }}
+		{{- range $hex := $allHex -}}
+			{{- $intVal := 0 -}}
+			{{- $curDict := dict "R" 0 "G" 0 "B" 0 -}}
+			{{- range $j, $digit := split $hex "" -}}
+				{{- $digitVal := index $hexDict $digit -}}
+				{{- $intVal = add (mult $intVal 16) $digitVal -}}
+				{{- $curDictKey := index $colorPositions $j -}}
+				{{- $curPower := mod (add $j 1) 2 -}}
+				{{- $curDict.Set $curDictKey (add (index $curDict $curDictKey) (mult (pow 16 $curPower) $digitVal)) -}}
+			{{- end -}}
+			{{- $luminance := 0 -}}
+			{{- range $k, $v := $curDict -}}
+				{{- $realVal := fdiv $v 255 -}}
+				{{- $linearVal := 0 -}}
+				{{- if gt $realVal 0.03928 -}}
+					{{- $linearVal = pow (fdiv (add $realVal 0.055) 1.055) 2.4 -}}
+				{{- else -}}
+					{{- $linearVal = fdiv $realVal 12.92 -}}
+				{{- end -}}
+				{{- $luminance = add (mult (index $lumCoefficients $k) $linearVal) $luminance -}}
+			{{- end -}}
+			{{- $ints.Set $hex $intVal -}}
+			{{- $lums.Set $hex $luminance -}}
+		{{- end -}}
+
+		{{/* one embed per color, with the same titles and fields as the text commands */}}
+		{{ $specs := cslice }}
+		{{- range $item := $items -}}
+			{{- $spec := sdict "Color" (index $ints $item) -}}
+			{{- if or (eq $subcommand "hex") (eq $subcommand "random") -}}
+				{{- $title := "Color Inspector" -}}
+				{{- if eq $subcommand "random" -}}
+					{{- $title = "Color Generator" -}}
+				{{- end -}}
+				{{- $spec.Set "Title" $title -}}
+				{{- $spec.Set "Description" (joinStr "" "`#" $item "`") -}}
+				{{- $spec.Set "Fields" (cslice
+					(sdict "name" "Integer Value" "value" (joinStr "" "`" (index $ints $item) "`") "inline" false)
+				) -}}
+			{{- else -}}
+				{{- $lumUser := index $lums $item -}}
+				{{- $rows := cslice -}}
+				{{- $ratioSum := 0.0 -}}
+				{{- range $comparisons -}}
+					{{- $lum1 := add 0.05 $lumUser -}}
+					{{- $lum2 := add 0.05 (index $lums .Hex) -}}
+					{{- $ratio := 0 -}}
+					{{- if gt $lum1 $lum2 -}}
+						{{- $ratio = fdiv $lum1 $lum2 -}}
+					{{- else -}}
+						{{- $ratio = fdiv $lum2 $lum1 -}}
+					{{- end -}}
+					{{- $ratioSum = add $ratioSum $ratio -}}
+					{{- $rows = $rows.Append (sdict "Name" (joinStr "" .Name ": `#" .Hex "`") "Ratio" $ratio) -}}
+				{{- end -}}
+				{{- $rows = $rows.Append (sdict "Name" "Average" "Ratio" (fdiv $ratioSum (len $comparisons))) -}}
+				{{- $fields := cslice -}}
+				{{- range $rows -}}
+					{{- $ratio := div (round (mult .Ratio 100)) 100 -}}
+					{{- $emoji := "⚫" -}}
+					{{- if ge $ratio 7.0 -}}
+						{{- $emoji = "🟢" -}}
+					{{- else if ge $ratio 4.5 -}}
+						{{- $emoji = "🟡" -}}
+					{{- else if ge $ratio 3.0 -}}
+						{{- $emoji = "🟠" -}}
+					{{- else if ge $ratio 2.5 -}}
+						{{- $emoji = "🔴" -}}
+					{{- end -}}
+					{{- $fields = $fields.Append (sdict
+						"name" .Name
+						"value" (joinStr "" $emoji " Ratio: `" $ratio "`")
+						"inline" false
+					) -}}
+				{{- end -}}
+				{{- $spec.Set "Title" (joinStr "" "Contrast Ratios for `#" $item "`") -}}
+				{{- $spec.Set "Fields" $fields -}}
+			{{- end -}}
+			{{- $specs = $specs.Append $spec -}}
+		{{- end -}}
+
+		{{/* the dropped-colors warning, as a line on the first embed */}}
+		{{ if gt $droppedCount 0 }}
+			{{ $subjectAndVerb := "color was" }}
+			{{ if gt $droppedCount 1 }}
+				{{ $subjectAndVerb = "colors were" }}
+			{{ end }}
+			{{ (index $specs 0).Set "Description" (joinStr " "
+				"⚠️ Warning:" $droppedCount $subjectAndVerb "not analyzed because only" $maxColors "colors can be analyzed at a time."
+			) }}
+		{{ end }}
+
+		{{/* each subcommand matches its text twin: hex and random (hex_to_int) carry the
+			invoker as the author, contrast and contrasts the server line */}}
+		{{ $execData := sdict "Respond" true "Embeds" $specs }}
+		{{ if or (eq $subcommand "hex") (eq $subcommand "random") }}
+			{{ $execData.Set "AuthorID" .User.ID }}
+		{{ end }}
+		{{ execCC $embed_exec .Channel.ID 0 $execData }}
+	{{ end }}
+{{ else }}
+Use /color as a slash command: contrast, contrasts, random or hex
+{{ end }}
