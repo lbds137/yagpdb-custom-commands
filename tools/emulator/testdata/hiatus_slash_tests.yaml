@@ -284,6 +284,48 @@ tests:
       interaction_responses:
         - { kind: deferred_edit, ephemeral: true, content_contains: "Welcome back! Restored: <@&111111111>, <@&222222222>." }
 
+  - name: "unhiatus_slash: a recorded role no longer in Staff.Roles is not restored"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [111111111, 333333333] }
+    expected:
+      output_equals: "👋 Welcome back! Restored: <@&111111111>. Not restored (no longer staff roles): <@&333333333>."
+    assertions:
+      role_changes:
+        - { user_id: 987654321098765432, role_id: 111111111, action: "add" }
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: {} } }
+      sent_messages:
+        - { channel_id: 888888888, embed_title: "Staff Unhiatus Record" }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "Not restored (no longer staff roles): <@&333333333>." }
+
+  - name: "unhiatus_slash: no recorded role still staff is an ephemeral refusal and keeps the entry"
+    template: "../../../commands/members/unhiatus_slash.gohtml"
+    snapshot: true
+    context:
+      user: { roles: [] }
+      interaction: { type: slash }
+    setup_db:
+      - user_id: 0
+        key: "Staff"
+        value:
+          Roles: [111111111, 222222222]
+          Hiatus: { "987654321098765432": [333333333] }
+    assertions:
+      no_role_changes: true
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [333333333] } } }
+      interaction_responses:
+        - { kind: deferred_edit, ephemeral: true, content_contains: "None of your recorded roles are staff roles anymore, so nothing was restored." }
+
   - name: "unhiatus_slash: an unset Mod Log posts the record in the current channel"
     template: "../../../commands/members/unhiatus_slash.gohtml"
     context:

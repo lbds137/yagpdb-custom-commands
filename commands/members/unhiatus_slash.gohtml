@@ -8,8 +8,9 @@
   Dependencies: `embed_exec`
 
   The slash version of unhiatus. In the Utility group on purpose: a staff member on hiatus
-  has lost the roles the Staff Utility group requires. Every reply is ephemeral: the
-  deferred ack goes out before the role calls, and the reply is the run's printed output, which
+  has lost the roles the Staff Utility group requires, so only recorded roles still in
+  Staff.Roles come back (Lila, 2026-10-04). Every reply is ephemeral: the deferred ack
+  goes out before the role calls, and the reply is the run's printed output, which
   fills the deferred response. The record goes to Mod Log (the current channel when
   unset) through ONE execCC to embed_exec without `Respond`.
 */ -}}
@@ -31,17 +32,38 @@
 	{{- $userID := .User.ID -}}
 	{{- $userHiatusSlice := $hiatusDict.Get (toString $userID) -}}
 
+	{{- /* toString keys: `in` doesn't match across int/uint kinds (msgpack IDs) */ -}}
+	{{- $staffSet := sdict -}}
+	{{- range $staffRoleIDs -}}
+		{{- $staffSet.Set (toString .) true -}}
+	{{- end -}}
+	{{- $restore := cslice -}}
+	{{- $dropped := cslice -}}
+	{{- range $userHiatusSlice -}}
+		{{- if $staffSet.Get (toString .) -}}
+			{{- $restore = $restore.Append . -}}
+		{{- else -}}
+			{{- $dropped = $dropped.Append . -}}
+		{{- end -}}
+	{{- end -}}
+
 	{{- if le $embed_exec 0 -}}
 		{{- print "⚠️ This command isn't set up on this server yet." -}}
 	{{- else if eq (len $staffRoleIDs) 0 -}}
 		{{- print "⚠️ Staff role IDs must be defined before using this command!" -}}
 	{{- else if not $userHiatusSlice -}}
 		{{- print "⚠️ You are not a staff member on hiatus!" -}}
+	{{- else if eq (len $restore) 0 -}}
+		{{- print "⚠️ None of your recorded roles are staff roles anymore, so nothing was restored." -}}
 	{{- else -}}
 		{{- $mentions := cslice -}}
-		{{- range $roleID := $userHiatusSlice -}}
+		{{- range $roleID := $restore -}}
 			{{- giveRoleID $userID $roleID -}}
 			{{- $mentions = $mentions.Append (print "<@&" $roleID ">") -}}
+		{{- end -}}
+		{{- $droppedMentions := cslice -}}
+		{{- range $roleID := $dropped -}}
+			{{- $droppedMentions = $droppedMentions.Append (print "<@&" $roleID ">") -}}
 		{{- end -}}
 		{{- $hiatusDict.Del (toString $userID) -}}
 		{{- $staffDict.Set "Hiatus" $hiatusDict -}}
@@ -69,7 +91,11 @@
 			"ThumbnailURL" (or $userAvatar $defaultAvatar)
 		) -}}
 
-		{{- print (joinStr "" "👋 Welcome back! Restored: " (joinStr ", " $mentions.StringSlice) ".") -}}
+		{{- $reply := joinStr "" "👋 Welcome back! Restored: " (joinStr ", " $mentions.StringSlice) "." -}}
+		{{- if $droppedMentions -}}
+			{{- $reply = joinStr "" $reply " Not restored (no longer staff roles): " (joinStr ", " $droppedMentions.StringSlice) "." -}}
+		{{- end -}}
+		{{- print $reply -}}
 	{{- end -}}
 {{ else }}
 Use /unhiatus as a slash command

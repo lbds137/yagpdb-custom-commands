@@ -252,12 +252,13 @@ gets a failing test first.
   record of the others (unhiatus never restores them). `/hiatus` merges instead (test
   "a second hiatus adds to the earlier record"). Trigger: obsolete when the text twins
   retire after Lila's live check of /hiatus; fix the twin only if it stays.
-- Found 2026-10-04 (unit 4 review), LILA'S CALL (permissions): `unhiatus`/`/unhiatus`
-  (Utility, so anyone can run it) restore whatever the Hiatus record holds, with no
-  re-check against Staff.Roles. Someone removed from staff while on hiatus can still
-  /unhiatus their roles back unless their Hiatus entry is deleted by hand. Options:
-  restore only IDs still in Staff.Roles, or have staff removal clear the entry. Trigger:
-  her decision.
+- Found 2026-10-04 (unit 4 review), DECIDED (Lila, 2026-10-04): `/unhiatus` (Utility, so
+  anyone can run it) restored whatever the Hiatus record held, so someone removed from
+  staff while on hiatus could restore their roles. Decision: restore only the recorded
+  roles still in Staff.Roles (shipped in /unhiatus; design doc unit 4). The text twin
+  `unhiatus` keeps the hole until it retires after the live check of /unhiatus. By design,
+  a refusal keeps the entry: someone whose recorded roles all left Staff.Roles stays "on
+  hiatus" until a role is re-added or staff delete the entry with /db.
 - Found 2026-10-04 (unit 3 review), deferred: /color, /hebrew and /gematria execCC
   embed_exec (or gematria) without checking the Commands id is > 0, so on a server
   missing the key the interaction gets no answer. Unit 3's roots refuse ephemerally
