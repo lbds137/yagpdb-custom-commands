@@ -444,6 +444,21 @@
       "slashDescription": null,
       "slash": null
     },
+    "commands/general/timestamp_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "When a Discord ID was created (default: you)",
+      "slash": {
+        "subcommands": [],
+        "options": [
+          {
+            "name": "id",
+            "type": "string",
+            "description": "a Discord ID or mention (default: you)",
+            "required": false
+          }
+        ]
+      }
+    },
     "commands/hebrew/alefbet.gohtml": {
       "deferMode": 0,
       "slashDescription": null,
@@ -531,6 +546,21 @@
       "deferMode": 0,
       "slashDescription": null,
       "slash": null
+    },
+    "commands/knowledge/define_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "Link a Night House glossary term",
+      "slash": {
+        "subcommands": [],
+        "options": [
+          {
+            "name": "term",
+            "type": "string",
+            "description": "the term to look up (omit for the whole glossary)",
+            "required": false
+          }
+        ]
+      }
     },
     "commands/members/batch_delrep.gohtml": {
       "deferMode": 0,
@@ -622,6 +652,21 @@
       "deferMode": 0,
       "slashDescription": null,
       "slash": null
+    },
+    "commands/rules/rule_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "View a server rule, or browse them all",
+      "slash": {
+        "subcommands": [],
+        "options": [
+          {
+            "name": "number",
+            "type": "integer",
+            "description": "the rule to view (omit to browse all)",
+            "required": false
+          }
+        ]
+      }
     },
     "commands/rules/rules.gohtml": {
       "deferMode": 0,

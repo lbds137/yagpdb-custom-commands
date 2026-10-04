@@ -1,0 +1,72 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `define`
+  Group: `Utility`
+  Slash description: `Link a Night House glossary term`
+  Defer mode: `None`
+  Dependencies: `embed_exec`
+  The slug this builds must match the-night-house's `src/lib/glossary.ts` `slugify`.
+
+  The slash version of define. ONE execCC to embed_exec with `Respond`: the child inherits
+  the interaction and answers it (public), so this run prints nothing.
+
+  Slash option: `term string the term to look up (omit for the whole glossary)`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $commandsDict := (dbGet 0 "Commands").Value }}
+	{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+	{{ $term := trimSpace (or .Options.term "") }}
+
+	{{ $title := "Glossary" }}
+	{{ $description := "https://thenighthouse.org/glossary/" }}
+
+	{{ if ne $term "" }}
+		{{ $title = joinStr "" "Glossary: " $term }}
+
+		{{/* Match the-night-house's slugify: NFD + strip combining marks in JS, done here as
+		  lowercase then per-base-letter accent folding (Go template regex has no NFD) */}}
+		{{ $slug := lower $term }}
+		{{ $slug = reReplace "[àáâãäåā]" $slug "a" }}
+		{{ $slug = reReplace "[èéêëē]" $slug "e" }}
+		{{ $slug = reReplace "[ìíîïī]" $slug "i" }}
+		{{ $slug = reReplace "[òóôõöō]" $slug "o" }}
+		{{ $slug = reReplace "[ùúûūü]" $slug "u" }}
+		{{ $slug = reReplace "[ñ]" $slug "n" }}
+		{{ $slug = reReplace "[ç]" $slug "c" }}
+		{{ $slug = reReplace "[ýÿ]" $slug "y" }}
+		{{ $slug = reReplace "[^a-z0-9]+" $slug "-" }}
+		{{ $slug = reReplace "\\A-+|-+\\z" $slug "" }}
+
+		{{/* The retired kb command's two entries moved to the website glossary as one
+		  combined entry, "Seven Tenets"; alias their old slugs to it. */}}
+		{{ $kbAliases := sdict
+			"the-seven-tenets" "seven-tenets"
+			"seven-satanic-tenets" "seven-tenets"
+			"the-seven-satanic-tenets" "seven-tenets"
+		}}
+		{{ if $kbAliases.Get $slug }}
+			{{ $slug = $kbAliases.Get $slug }}
+		{{ end }}
+
+		{{ if ne $slug "" }}
+			{{ $description = joinStr "" "https://thenighthouse.org/glossary/#" $slug }}
+		{{ end }}
+	{{ end }}
+
+	{{ if le $embed_exec 0 }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ This command isn't set up on this server yet."
+			"ephemeral" true) }}
+	{{ else }}
+		{{ execCC $embed_exec .Channel.ID 0 (sdict
+			"ChannelID" .Channel.ID
+			"Title" $title
+			"Description" $description
+			"Respond" true
+		) }}
+	{{ end }}
+{{ else }}
+Use /define as a slash command with the term to look up
+{{ end }}

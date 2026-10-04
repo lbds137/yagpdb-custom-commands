@@ -177,3 +177,75 @@ Emulator support (this unit): `scheduled_runs` takes `interaction: none|pending|
   because lotv and The Rose still run them. gematria (52) stays: it is the roots' renderer,
   and its text trigger is the one Lila uses most. A pyramid line of 2+ letters now ends in
   its final form (display only: the Gematria Values give final letters their plain values).
+
+## Unit 3: /rule, /timestamp, /define
+
+Files: `commands/rules/rule_slash.gohtml` (`/rule`, 2,890 runes),
+`commands/general/timestamp_slash.gohtml` (`/timestamp`, 2,852),
+`commands/knowledge/define_slash.gohtml` (`/define`, 2,480; the slug and kb-alias block is
+copied from define.gohtml, identical modulo leading whitespace, and the header keeps the
+note that it must match the-night-house's `slugify`), and `commands/rules/rules_pager.gohtml`
+(9,528 runes, was 8,689). All three roots:
+Utility, Defer `None`, single option, no subcommands. Every new file is under the free 10k
+cap. The text twins (rule, timestamp, define) are untouched; their retirement is a later step
+after the live check. panel.json gets no ids until the panel commands are created (DISABLED),
+then `make config-sync`.
+
+Results are public: ONE execCC to embed_exec with `Respond`. Refusals are ephemeral
+sendResponses of the root with no execCC; the root prints nothing on an execCC path. Each
+root that execCCs embed_exec checks first that its Commands id is above 0 (config_sync
+hasn't picked it up otherwise) and refuses ephemerally with `⚠️ This command isn't set up
+on this server yet.` The refusal tests are snapshotted: an ephemeral response is itself a
+sent message in the emulator, so `sent_messages: []` can't pin "no stray channel message",
+and the snapshot lists every sent message.
+
+### /rule: Lila's decision (2026-10-04)
+
+`/rule` with no number opens the browse view; with a number it shows that rule. A number
+with no such rule (or 0, or any number when no rules exist) is an ephemeral refusal
+(`Could not find rule N. Use /rule without a number to browse the rules.`, or `No rules are
+configured yet.`; no range of valid numbers, since a deleted middle rule would make it
+lie). The check is `HasKey
+"number"`, not truthiness, so a given 0 refuses instead of opening the browse view. Without
+`rules_pager` in the Commands dict the browse path refuses ephemerally.
+
+### rules_pager answers a slash first render
+
+An immediate execCC child inherits the caller's Interaction pointer (customcommands/
+tmplextensions.go:223-247), and a slash run has no CustomID, so rules_pager's old
+`{{ if .Interaction }}` branch would have split an empty CustomID and updateMessage'd a slash
+interaction. The first render is now identified by `.ExecData.Page` (set only by `rule` and
+`rule_slash`), not by `.Interaction`:
+
+| caller | `.Interaction` | `.ExecData.Page` | parse | send |
+|---|---|---|---|---|
+| `rule browse` (text) | none | 1 | ExecData | `sendMessage` (byte-identical) |
+| `/rule` (slash) | set | 1 | ExecData | `sendResponse nil $msg`: public, components ride through |
+| button or select click | set | unset | CustomID | `updateMessage` (unchanged) |
+
+`sendResponse` carries components: common/templates/context_interactions.go:307-368
+(parseMessageInput) into lib/discordgo/message.go:722-734 (ToInteractionResponseData copies
+Components). The opener stays `.User.ID`, the invoker. Existing rules_browse tests and
+snapshots are unchanged; the slash first render is tested in `rule_slash_tests.yaml`.
+
+### /timestamp
+
+`id` omitted decodes the invoker. Given: trimmed, then a bare snowflake (`\A\d{16,19}\z`: a 20-digit
+number would overflow int64 and decode as MaxInt64) or a mention (`<@id>`, `<@!id>`,
+`<@&id>`, `<#id>`, same bound, digits extracted); anything else is an ephemeral refusal
+that echoes the input with backticks turned into `'` (so it can't break the code span),
+cut to 100 characters (the text twin silently falls back to the user; design language:
+errors are ephemeral).
+
+### /define
+
+`term` omitted links the whole glossary; otherwise the same slug, kb aliases and
+Title/Description as define.
+
+### Panel rows (Lila at the panel, header lines' text)
+
+| root | slash description | option | type | required | description |
+|---|---|---|---|---|---|
+| `/rule` | View a server rule, or browse them all | number | integer | — | the rule to view (omit to browse all) |
+| `/timestamp` | When a Discord ID was created (default: you) | id | string | — | a Discord ID or mention (default: you) |
+| `/define` | Link a Night House glossary term | term | string | — | the term to look up (omit for the whole glossary) |

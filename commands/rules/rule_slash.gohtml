@@ -1,0 +1,78 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `rule`
+  Group: `Utility`
+  Slash description: `View a server rule, or browse them all`
+  Defer mode: `None`
+  Dependencies: `embed_exec`, `rules_pager`
+
+  The slash version of rule. With a `number` it shows that rule (ONE execCC to embed_exec
+  with `Respond`: the child inherits the interaction and answers it, publicly). Without
+  one it opens the browse view (ONE execCC to rules_pager, whose first render answers
+  the interaction with its buttons). Both paths print nothing. A rule that doesn't exist
+  and a missing browse view are ephemeral refusals of this run, never alongside an
+  execCC (an interaction takes one response).
+
+  Slash option: `number integer the rule to view (omit to browse all)`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $commandsDict := (dbGet 0 "Commands").Value }}
+	{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+	{{ $rules_pager := toInt ($commandsDict.Get "rules_pager") }}
+
+	{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+
+	{{ $max := 0 }}
+	{{- range $k, $v := $rulesDict -}}
+		{{- if reFind "\\ARule #(\\d+)\\z" $k -}}
+			{{- $ruleN := toInt (reReplace "\\ARule #" $k "") -}}
+			{{- if gt $ruleN $max -}}
+				{{- $max = $ruleN -}}
+			{{- end -}}
+		{{- end -}}
+	{{- end -}}
+
+	{{ $n := toInt .Options.number }}
+	{{ $key := joinStr "" "Rule #" $n }}
+
+	{{/* HasKey, not truthiness: a given 0 is a lookup that fails, not an omitted number */}}
+	{{ if .Options.HasKey "number" }}
+		{{ if and (ge $n 1) ($rulesDict.HasKey $key) }}
+			{{ if gt $embed_exec 0 }}
+				{{ $title := $key }}
+				{{ if eq (len $rulesDict) 1 }}
+					{{ $title = "Rules" }}
+				{{ end }}
+				{{ execCC $embed_exec .Channel.ID 0 (sdict
+					"ChannelID" .Channel.ID
+					"Title" $title
+					"Description" ($rulesDict.Get $key)
+					"Respond" true
+				) }}
+			{{ else }}
+				{{ sendResponse nil (complexMessage
+					"content" "⚠️ This command isn't set up on this server yet."
+					"ephemeral" true) }}
+			{{ end }}
+		{{ else }}
+			{{/* no range of valid numbers: a deleted middle rule would make it lie */}}
+			{{ $text := "No rules are configured yet." }}
+			{{ if gt $max 0 }}
+				{{ $text = joinStr "" "⚠️ Could not find rule `" $n
+					"`. Use /rule without a number to browse the rules." }}
+			{{ end }}
+			{{ sendResponse nil (complexMessage "content" $text "ephemeral" true) }}
+		{{ end }}
+	{{ else if gt $rules_pager 0 }}
+		{{/* the browse view: rules_pager owns the message. An id of 0 means it isn't in
+			the Commands dict yet (config_sync hasn't picked it up) */}}
+		{{ execCC $rules_pager .Channel.ID 0 (sdict "Page" 1) }}
+	{{ else }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ The rules browse view isn't set up on this server yet."
+			"ephemeral" true) }}
+	{{ end }}
+{{ else }}
+Use /rule as a slash command with a rule number, or alone to browse the rules
+{{ end }}

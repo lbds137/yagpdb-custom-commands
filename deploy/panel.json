@@ -57,6 +57,9 @@
     "commands/members/unhiatus.gohtml": {"main": 82},
     "commands/hebrew/alefbet.gohtml": {"lotv": 14, "rose": 13},
     "commands/knowledge/define.gohtml": {"main": 84},
+    "commands/rules/rule_slash.gohtml": {"main": 106, "rose": 28},
+    "commands/general/timestamp_slash.gohtml": {"main": 107, "rose": 29},
+    "commands/knowledge/define_slash.gohtml": {"main": 108, "rose": 30},
     "commands/plumbing/message_link.gohtml": {"main": 32, "lotv": 11, "rose": 4}
   },
   "unmanaged": ["commands/plumbing/log_user.gohtml"]

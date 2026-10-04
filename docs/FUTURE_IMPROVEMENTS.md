@@ -240,6 +240,17 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- Found 2026-10-04 (unit 3 review), deferred: the text twins keep flaws unit 3 fixed in
+  the slash roots. timestamp.gohtml takes `\d{16,}`, so a 20+ digit ID decodes as
+  MaxInt64 (tmplToInt ignores the range error, general.go:1233); rule.gohtml's usage text
+  says "(1-<max>)", which a deleted middle rule makes wrong, and its max scan counts
+  non-canonical keys ("Rule #07"). Trigger: their
+  retirement after Lila's live check (then moot), or a fix to either before it.
+- Found 2026-10-04 (unit 3 review), deferred: /color, /hebrew and /gematria execCC
+  embed_exec (or gematria) without checking the Commands id is > 0, so on a server
+  missing the key the interaction gets no answer. Unit 3's roots refuse ephemerally
+  ("This command isn't set up on this server yet."). Trigger: the next change to any
+  of those roots, or a new server without config_sync.
 - Found 2026-10-04 (unit 2 review), deferred: a multi-word `/hebrew pyramid` answers
   "N words follows" and then schedules N delayed runs, but YAGPDB rate-limits delayed runs
   per channel (vendor customcommands/bot.go:48, burst 10, 0.1/s) and DROPS a refused run

@@ -3,10 +3,12 @@
   Trigger type: `Message Component`
   Trigger: `^rules:`
   Group: `Utility`
-  Dependencies: none (`rule` execCCs this for the first page)
+  Dependencies: none (`rule` and `rule_slash` execCC this for the first page)
 */ -}}
-{{- /* Browse view for the rulebook: one rule per page. `rule browse` execCCs this with
-  ExecData {Page: 1}; a click rebuilds the page in place — the ◀/▶ buttons carry the page
+{{- /* Browse view for the rulebook: one rule per page. `rule browse` and `/rule`
+  (rule_slash) execCC this with ExecData {Page: 1}; on `/rule` the child inherits the
+  slash interaction, so the first render answers it with sendResponse (public) instead
+  of sendMessage; a click rebuilds the page in place — the ◀/▶ buttons carry the page
   in the custom ID (rules:<page>:<opener>), the jump select (rules:jump:<opener>) carries
   the rule number in .Values, and Dismiss is rules:close:<opener>. <opener> is the
   snowflake of the member who ran `rule browse`; it rides through every re-render so
@@ -60,7 +62,22 @@
 {{ $action := "" }}
 {{ $parts := cslice }}
 {{ $opener := toString .User.ID }}
+{{/* the first render is identified by ExecData.Page (set only by `rule` and `rule_slash`),
+  not by .Interaction: an execCC child of a slash run inherits the interaction and has no
+  CustomID. `and` doesn't short-circuit, so the checks nest */}}
+{{ $firstRender := false }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Page -}}
+        {{- $firstRender = true -}}
+    {{- end -}}
+{{- end -}}
+{{ $isClick := false }}
 {{- if .Interaction -}}
+    {{- if not $firstRender -}}
+        {{- $isClick = true -}}
+    {{- end -}}
+{{- end -}}
+{{- if $isClick -}}
     {{- $parts = split .CustomID ":" -}}
     {{- $action = index $parts 1 -}}
     {{- if ge (len $parts) 3 -}}
@@ -107,8 +124,10 @@
             "image" (sdict "url" "")
             "thumbnail" (sdict "url" ""))
         "components" (cslice (cslice $closeButton)) -}}
-    {{- if .Interaction -}}
+    {{- if $isClick -}}
         {{- updateMessage $msg -}}
+    {{- else if .Interaction -}}
+        {{- sendResponse nil $msg -}}
     {{- else -}}
         {{- sendMessage nil $msg -}}
     {{- end -}}
@@ -184,8 +203,10 @@
             "author" $author "image" (sdict "url" "") "thumbnail" (sdict "url" ""))
         "components" (cslice $row1 $row2)
     }}
-    {{- if .Interaction -}}
+    {{- if $isClick -}}
         {{- updateMessage $msg -}}
+    {{- else if .Interaction -}}
+        {{- sendResponse nil $msg -}}
     {{- else -}}
         {{- sendMessage nil $msg -}}
     {{- end -}}
