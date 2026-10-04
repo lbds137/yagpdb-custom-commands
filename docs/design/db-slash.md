@@ -6,6 +6,10 @@ ephemeral replies, 7 subcommands. Vocabulary and interaction design per the Tzur
 consult of 2026-09-30 (design language of record). Staff-only → no Night House
 /commands/ change.
 
+Shipped (panel 90). The text `/db` this spec describes as current was retired on
+2026-10-01 (9c7fd87): its engine now lives at `retired/db.gohtml`, and "Current
+behavior" below is the pre-slash state, kept as the record.
+
 ## Current behavior
 
 - Text `/db` (`commands/db/db.gohtml`, main 15, lotv 3 dead): Command trigger, Group

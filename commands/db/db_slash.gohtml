@@ -6,9 +6,9 @@
   Defer mode: `None`
   Dependencies: `embed_exec` (the ExecData path only)
 
-  The slash version of db.gohtml (the text command stays): same engine, ephemeral
-  sendResponse instead of embed_exec. inactivity's "date" execCC still arrives on
-  the ExecData path, which keeps db.gohtml's behavior, embed_exec included.
+  The slash version of retired/db.gohtml (text /db retired 2026-10-01): same engine,
+  ephemeral sendResponse instead of embed_exec. inactivity's "date" execCC still
+  arrives on the ExecData path, which keeps db.gohtml's behavior, embed_exec included.
 
   Slash subcommand: `view show one value`
   Slash option: `view.key string! database key, nest with :`
@@ -120,7 +120,7 @@
     {{ $key = "all" }}
 {{ end }}
 {{ if and $operationCheck $key $valueCheck }}
-    {{/* the engine below is db.gohtml's verbatim; its explanatory comments live there
+    {{/* the engine below is retired/db.gohtml's verbatim; its comments live there
         (kept out here: YAGPDB's panel double-counts newlines against the 20k limit) */}}
     {{ $existingValue := "" }}
     {{ $found := false }}
@@ -183,7 +183,7 @@
             {{ end }}
         {{ else }}
             {{/* build from dbGetPattern's own entries (1 interaction, 100/call max);
-                rationale in db.gohtml's copy of this loop */}}
+                rationale in retired/db.gohtml's copy of this loop */}}
             {{- range $entry := dbGetPattern $dumpUserID "%" 100 0 -}}
                 {{- if $entry.Value -}}
                     {{- $dumpData.Set $entry.Key $entry.Value -}}
