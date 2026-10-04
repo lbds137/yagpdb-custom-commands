@@ -115,6 +115,13 @@ picks, then the minifier.
   logic (10k/20k-char cap) or dispatches each subcommand to the existing command by
   execCC (one execCC per run on free: fine, a run is one subcommand). Grouping also
   saves slash slots (10 free), so it helps the free-tier top 10.
+  IN PROGRESS since 2026-10-04: design docs/design/slash-fleet.md; unit 1 /color live on
+  main (contrasts retired; contrast and rand_color disabled on main).
+- Deferred (2026-10-04), trigger: the next deploy to Lure of the Void (lotv), or Lila
+  asking for slash there: give lotv `/color` (color_slash is 8.7k runes, under the free
+  cap; create() it there, deploy embed_exec's Respond/Embeds version first), then retire
+  contrast.gohtml and rand_color.gohtml fully (lotv 18, 16; they stay in commands/color/
+  only for lotv). The other fleet roots follow the same per-server step.
 - Prerequisite (met by unit 4, 2026-09-27): the emulator models interactions: Slash
   (.Options, .CmdArgs, subcommands), Component and Modal triggers (.CustomID, .Values,
   .IsButton/.IsMenu), context-menu (.TargetUser/.TargetMember/.Message), sendResponse/

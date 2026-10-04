@@ -22,7 +22,8 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
 
 - `bump/` (bump_check, bump_remind, bump_reset), `rules/` (rule, rules),
   `gematria/` (gematria, gematria_bootstrap), `hebrew/` (alefbet, atbash, pyramid,
-  rand_hebrew), `color/` (contrast, contrasts, hex_to_int, rand_color), `db/`
+  rand_hebrew), `color/` (color_slash, hex_to_int; contrast and rand_color
+  disabled on main, kept for lotv), `db/`
   (db_get_embed, db_get_text, db_slash, simple_db_lookup), `edit/` (edit_slash,
   edit_modal, edit_confirm), `members/` (hiatus, unhiatus, inactivity,
   inactivity_prune_pick, staff_roles, staff_roles_pick, role_ping_slash,

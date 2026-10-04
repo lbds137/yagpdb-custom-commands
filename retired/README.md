@@ -40,6 +40,11 @@ retired 2026-10-01: replaced by the `/role_ping` slash command (role_ping_slash,
 mapping and the picker panel both lost their reason to exist. Their tests stay,
 repointed to `retired/`.
 
+`contrasts.gohtml` (panel 69, main only) retired 2026-10-04: replaced by `/color contrasts`
+(color_slash, panel 103, live 2026-10-04), disabled in the panel by the deploy for the
+owner to delete. contrast and rand_color are disabled on main too but stay in
+`commands/color/`: Lure of the Void still runs them until it gets `/color`.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
 `make changed-since-deploy` (all three scan only `commands/`). `make lint`

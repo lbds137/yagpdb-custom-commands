@@ -80,10 +80,11 @@ needed before lotv gets any root over 10k runes).
 - Tests: emulator slash interaction per subcommand, error paths ephemeral, text paths of
   embed_exec unchanged (existing suites green, snapshots unchanged).
 - panel.json: new id (Lila creates the panel command DISABLED); config_sync regen.
-- Retire LAST, after the live slash works: contrast, contrasts, rand_color move to
-  retired/ (Lila deletes them in the panel). hex_to_int stays (chat regex, and /color hex
-  shares no code with it after inlining).
-- Size: ~13k runes estimated → premium fine; lotv waits for minifier part 2.
+- Retired 2026-10-04 after Lila's live check: all three disabled on main by the deploy;
+  contrasts moved to retired/; contrast and rand_color stay in commands/color/ because
+  lotv still runs them (FUTURE: lotv /color, then retire them). hex_to_int stays (chat
+  regex, and /color hex shares no code with it after inlining).
+- Size: 8.7k runes as built → under the free cap, so lotv needs no minifier for it.
 
 ### /color panel rows (command 103, Lila at the panel, 2026-10-04)
 

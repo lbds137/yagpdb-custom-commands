@@ -40,7 +40,6 @@
     "commands/hebrew/rand_hebrew.gohtml": {"main": 65},
     "commands/color/rand_color.gohtml": {"main": 67, "lotv": 16},
     "commands/hebrew/atbash.gohtml": {"main": 68, "lotv": 17},
-    "commands/color/contrasts.gohtml": {"main": 69},
     "commands/gematria/gematria_bootstrap.gohtml": {"main": 73, "lotv": 20},
     "commands/channels/message_pointer.gohtml": {"main": 74, "lotv": 21},
     "commands/hebrew/pyramid.gohtml": {"main": 75, "lotv": 22},
