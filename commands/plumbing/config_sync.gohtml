@@ -17,8 +17,6 @@
 {{- if eq .Guild.ID 462036216909398026 -}}
     {{- /* main */ -}}
     {{- $ids = sdict
-        "alefbet" "83"
-        "atbash" "68"
         "avatar_menu" "94"
         "avatar_viewer" "31"
         "batch_delrep" "76"
@@ -56,8 +54,6 @@
         "message_pointer" "74"
         "prompt" "101"
         "prompt_post" "102"
-        "pyramid" "75"
-        "rand_hebrew" "65"
         "role_ping_slash" "100"
         "rule" "1"
         "rules" "48"
@@ -89,6 +85,29 @@
         "pyramid" "22"
         "rand_color" "16"
         "timestamp" "13" -}}
+{{- else if eq .Guild.ID 616105024367624212 -}}
+    {{- /* rose */ -}}
+    {{- $ids = sdict
+        "alefbet" "13"
+        "atbash" "16"
+        "avatar_viewer" "11"
+        "bootstrap" "8"
+        "channel_link" "5"
+        "contrast" "17"
+        "db_get_embed" "6"
+        "db_get_text" "7"
+        "embed_exec" "2"
+        "gematria" "10"
+        "gematria_bootstrap" "18"
+        "hex_to_int" "3"
+        "hugemoji" "9"
+        "message_link" "4"
+        "message_pointer" "19"
+        "pyramid" "20"
+        "rand_color" "15"
+        "rand_hebrew" "22"
+        "simple_db_lookup" "23"
+        "timestamp" "12" -}}
 {{- end -}}
 
 {{- if $ids -}}

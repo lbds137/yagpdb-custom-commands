@@ -103,7 +103,7 @@ Slash description `Color tools`; tick "use subcommands"; then (header lines' tex
 
 ## Unit 2: /hebrew + /gematria
 
-Files: `commands/hebrew/hebrew_slash.gohtml` (`/hebrew`, 14,862 runes; minified 11,236 in
+Files: `commands/hebrew/hebrew_slash.gohtml` (`/hebrew`, 15,201 runes; minified 11,319 in
 `dist/free/`, still over the free 10k cap: a free server can't take it),
 `commands/gematria/gematria_slash.gohtml` (`/gematria`, 963 runes), and `gematria.gohtml`
 (11,784 runes) grows by passing `Respond` through (set only when the caller passed it, so
@@ -170,3 +170,8 @@ cut words), THEN schedules one delayed self-execCC (delay 1) per kept word to it
 Emulator support (this unit): `scheduled_runs` takes `interaction: none|pending|responded`
 (the state at schedule time), and a test runs the delayed half with
 `interaction: { type: slash, delayed: true, responded_to: true }` plus `exec_data`.
+- Retired on main 2026-10-04 after Lila's live check: atbash (68), alefbet (83), pyramid
+  (75) and rand_hebrew (65) disabled by the deploy; the files stay in commands/hebrew/
+  because lotv and The Rose still run them. gematria (52) stays: it is the roots' renderer,
+  and its text trigger is the one Lila uses most. A pyramid line of 2+ letters now ends in
+  its final form (display only: the Gematria Values give final letters their plain values).

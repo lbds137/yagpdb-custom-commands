@@ -267,7 +267,14 @@
 		{{- range $letter := split (index $words 0) "" -}}
 			{{- if $valuesDict.Get $letter -}}
 				{{- $curLine := joinStr "" $prevLine $letter -}}
-				{{- $pyramidString = joinStr "\n" $pyramidString $curLine -}}
+				{{- /* a line of 2+ letters ends in its final form, as atbash's words do; the
+					next line builds on the plain letter */ -}}
+				{{- $shownLine := $curLine -}}
+				{{- $sofitLetter := index $sofitDict $letter -}}
+				{{- if and $prevLine $sofitLetter -}}
+					{{- $shownLine = joinStr "" $prevLine $sofitLetter -}}
+				{{- end -}}
+				{{- $pyramidString = joinStr "\n" $pyramidString $shownLine -}}
 				{{- $prevLine = $curLine -}}
 			{{- end -}}
 		{{- end -}}
