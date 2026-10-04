@@ -5,7 +5,7 @@
   Group: `Staff Utility`
   Defer mode: `None`
 
-  The /edit forms' writer (edit_slash opens them): the engines are rule_edit's and
+  The /edit forms' writer (edit_slash opens them): the engines are retired/rule_edit's and
   simple_db_edit's, copied minus their `(nil)` delete branches — deletes go through
   /edit delete's confirm (edit_confirm). Acks are ephemeral sendResponses, no public
   embed_exec post.
@@ -26,9 +26,9 @@
 	{{ else if eq $kind "rule" }}
 		{{ $n := toInt (index $parts 2) }}
 		{{ $text := .ModalValues.rule_text.value }}
-		{{ if lt $n 1 }}
+		{{ if or (lt $n 1) (gt $n 9999) }}
 			{{ sendResponse nil (complexMessage
-				"content" "⚠️ You must provide an integer greater than zero!" "ephemeral" true) }}
+				"content" "⚠️ Rule numbers run from 1 to 9999." "ephemeral" true) }}
 		{{ else if eq $text "(nil)" }}
 			{{ sendResponse nil (complexMessage
 				"content" "⚠️ To delete, use `/edit delete`." "ephemeral" true) }}

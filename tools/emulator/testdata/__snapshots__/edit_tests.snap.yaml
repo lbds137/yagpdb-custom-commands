@@ -81,7 +81,7 @@
           value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
         - user_id: 111111111111111111
           key: Edit Pending
-          value: '{"category":"Admin","key":"Greeting","kind":"entry"}'
+          value: '{"category":"Admin","key":"Greeting","kind":"entry","stamp":1767366245}'
 'edit delete rule: a seeded rule gets a danger confirm, record written':
     output: ""
     messages:
@@ -165,7 +165,7 @@
           value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
         - user_id: 111111111111111111
           key: Edit Pending
-          value: '{"kind":"rule","rule":3}'
+          value: '{"kind":"rule","rule":3,"stamp":1767366245}'
 'edit entry: a known category and key open the entry modal':
     output: ""
     interaction_responses:

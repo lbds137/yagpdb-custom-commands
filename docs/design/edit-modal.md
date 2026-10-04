@@ -15,7 +15,8 @@ language of 2026-09-30. Staff-only → no Night House /commands/ change.
 
 Nothing execCCs INTO either command (checked: no `execCC` references to their ids;
 `embed_exec` is their dependency, not the reverse), so both can retire cleanly when
-Lila calls it. Until then the text commands stay live, untouched.
+Lila calls it. Until then the text commands stay live, untouched. (Retired 2026-10-01,
+9c7fd87: both now live in `retired/`.)
 
 ## Design
 
@@ -43,9 +44,15 @@ delete confirm's buttons to a Message Component trigger. A CC has one trigger ty
   vendor components.go:1102-1117). The prefix is stripped before trigger matching,
   so trigger regexes are written against the bare ids (the `^ca:` pattern).
 - **Delete record**: `/edit delete` writes `dbSet <uid> "Edit Pending" (sdict
-  "kind" "rule"|"entry" "rule" <n> "category" <cat> "key" <key>)`. Both buttons
-  consume it (`go` and `no` both `dbDel` it). Abandoned records linger on the
-  spawner's row, one per user, overwritten by the next delete — bounded, harmless.
+  "kind" "rule"|"entry" "rule" <n> "category" <cat> "key" <key> "stamp" <stamp>)`,
+  where `<stamp>` is the same value as the buttons' id stamp (computed once). One record
+  per user, overwritten by the next delete, so the confirm acts only when the button's
+  stamp matches the record's: an older confirm's `go` is refused ("a newer /edit delete
+  replaced this confirm"), and a record without a stamp (written before this) never
+  matches. `go` on a match deletes and `dbDel`s the record. `no` (Dismiss) always closes
+  the message ("Dismissed.", even with nothing pending) and `dbDel`s the record only on a
+  match, so dismissing a stale confirm leaves the newer pending one alone. Abandoned
+  records linger on the spawner's row until overwritten.
   The rule number could ride inline in the id, but one record shape keeps the
   confirm handler a single code path.
 
@@ -82,8 +89,12 @@ Flow, every branch:
 2. Bare-run guard (`make test-templates` smoke): `{{if .IsSlashCommand}} …
    {{else}}` prints `Use /edit as a slash command: rule · entry · delete`.
 
-**`/edit rule <n>`** — validate `n ≥ 1` (ephemeral refusal otherwise, wording from
-rule_edit: "⚠️ You must provide an integer greater than zero!"). Look up
+**`/edit rule <n>`** — validate `1 ≤ n ≤ 9999` (ephemeral refusal otherwise: "⚠️ Rule
+numbers run from 1 to 9999."; the rulebook is meant to hold small numbers, and the
+readers once `seq`ed over them — they sort the existing numbers since 2026-10-04, so the
+bound is hygiene, not their only guard; `/edit entry` and `/db set` can still write any
+`Rule #N` key. edit_modal bounds the same, and `/edit delete` stays unbounded so an
+out-of-range rule can be repaired away). Look up
 `Rule #<n>` in the Rules dict (`or (dbGet 0 "Rules").Value sdict`). sendModal a
 cmodal:
 
@@ -194,13 +205,20 @@ Defer None like the pager's: under a defer, updateMessage is Discord's 40060.
 
 1. Bare guard (`{{if .Interaction}} … {{else}}` one line).
 2. Gates: staff; freshness ≤ 1h; then `dbGet <uid> "Edit Pending"` — segments:
-   [1] uid, [2] stamp, [3] go/no. No record → ephemeral-style refusal
-   ("⚠️ Nothing pending — already handled or expired. Run /edit again."). Use
-   sendResponse for refusals (a non-actor shouldn't rewrite the confirm).
-3. `no` (Dismiss): `dbDel` the record, `updateMessage "Dismissed."` — replaces
-   the confirm in place, removing the buttons.
+   [1] uid, [2] stamp, [3] go/no. `go` with no record → ephemeral-style refusal
+   ("⚠️ Nothing pending — already handled or expired. Run /edit again."); `go` whose
+   stamp differs from the record's → "⚠️ A newer /edit delete replaced this confirm —
+   use that one." Use sendResponse for refusals (a non-actor shouldn't rewrite the
+   confirm).
+3. `no` (Dismiss): `updateMessage "Dismissed."` always — replaces the confirm in
+   place, removing the buttons — and `dbDel` the record only when its stamp matches.
+   The stamp is whole seconds: two `/edit delete` runs by one staffer within the same
+   second would share it. Accepted (2026-10-04 review): that takes one person
+   submitting two slash commands inside one second. If it ever matters, a millisecond
+   stamp (currentTime.UnixMilli, expiry divided by 1000) still fits the `\d+` trigger.
+   A pre-stamp record's button reads "replaced" for at most the 1h expiry.
 4. `go`: re-check the target (it may have changed since the confirm was spawned —
-   text commands still live):
+   `/db` and `/edit entry` still write the same dicts):
    - rule: Rules fetch; missing → ack "Rule #<n> not found" (already gone).
      Found → Del + dbSet, `dbDel` record, `updateMessage` the ack embed
      (title `Rule #<n> removed`, description the old value, truncation block

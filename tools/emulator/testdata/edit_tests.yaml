@@ -91,7 +91,46 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "You must provide an integer greater than zero!" }
+            content_contains: "Rule numbers run from 1 to 9999." }
+
+  - name: "edit rule: 10000 is over the bound and refused"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: rule, options: { rule: 10000 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "Rule numbers run from 1 to 9999." }
+
+  - name: "edit rule: 9999 is the last accepted number"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: rule, options: { rule: 9999 } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit rule 9999", custom_id: "edit:rule:9999:1767366245",
+            fields: ["rule_text"] }
+
+  - name: "edit delete rule: 10000 is not bounded (the repair path)"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value:
+          "Rule #3": "be kind"
+          "Rule #10000": "out of range"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: delete, options: { rule: 10000 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Delete rule #10000?",
+            components_contains: "editdel:111111111111111111:1767366245:go" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: rule, rule: 10000, stamp: 1767366245 } }
 
   - name: "edit entry: a known category and key open the entry modal"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -140,7 +179,7 @@ tests:
             components_contains: "editdel:111111111111111111:1767366245:go" }
       db_checks:
         - { user_id: 111111111111111111, key: "Edit Pending",
-            value_equals: { kind: rule, rule: 3 } }
+            value_equals: { kind: rule, rule: 3, stamp: 1767366245 } }
 
   - name: "edit delete entry: a seeded entry gets a danger confirm, record written"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -155,7 +194,8 @@ tests:
             components_contains: "editdel:111111111111111111:1767366245:go" }
       db_checks:
         - { user_id: 111111111111111111, key: "Edit Pending",
-            value_equals: { kind: entry, category: "Admin", key: "Greeting" } }
+            value_equals: { kind: entry, category: "Admin", key: "Greeting",
+                            stamp: 1767366245 } }
 
   - name: "edit delete rule: an unknown rule is refused"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -321,7 +361,41 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "You must provide an integer greater than zero!" }
+            content_contains: "Rule numbers run from 1 to 9999." }
+
+  - name: "submit rule: 10000 is over the bound, refused, nothing written"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:10000:1767366245",
+                     fields: { rule_text: "text" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "Rule numbers run from 1 to 9999." }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+
+  - name: "submit rule: 9999 is accepted and stored"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:rule:9999:1767366245",
+                     fields: { rule_text: "the last one" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Rule #9999 added" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+            "Rule #9999": "the last one"
 
   - name: "submit entry: a new key adds the entry, Stored as when the casing differs"
     template: "../../../commands/edit/edit_modal.gohtml"
@@ -492,7 +566,8 @@ tests:
   - name: "confirm go: a rule is deleted, record consumed, ack replaces the confirm"
     template: "../../../commands/edit/edit_confirm.gohtml"
     setup_db:
-      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 3 } }
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: rule, rule: 3, stamp: 1767366245 } }
     context:
       user: { roles: [888888888] }
       interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
@@ -514,7 +589,8 @@ tests:
     template: "../../../commands/edit/edit_confirm.gohtml"
     setup_db:
       - { user_id: 111111111111111111, key: "Edit Pending",
-          value: { kind: entry, category: "Admin", key: "Greeting" } }
+          value: { kind: entry, category: "Admin", key: "Greeting",
+                   stamp: 1767366245 } }
     context:
       user: { roles: [888888888] }
       interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
@@ -532,7 +608,8 @@ tests:
   - name: "confirm go: an already-deleted rule acks not found"
     template: "../../../commands/edit/edit_confirm.gohtml"
     setup_db:
-      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 9 } }
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: rule, rule: 9, stamp: 1767366245 } }
     context:
       user: { roles: [888888888] }
       interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
@@ -549,12 +626,13 @@ tests:
             "Rule #3": "be kind"
             "Rule #4": { note: "a dict, not text" }
         - { user_id: 111111111111111111, key: "Edit Pending",
-            value_equals: { kind: rule, rule: 9 } }
+            value_equals: { kind: rule, rule: 9, stamp: 1767366245 } }
 
   - name: "confirm no: dismiss consumes the record and changes nothing"
     template: "../../../commands/edit/edit_confirm.gohtml"
     setup_db:
-      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 3 } }
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: rule, rule: 3, stamp: 1767366245 } }
     context:
       user: { roles: [888888888] }
       interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:no",
@@ -632,3 +710,120 @@ tests:
       interaction: { type: component, custom_id: "editdel:1:2:maybe", message_id: 7 }
     expected:
       no_trigger: true
+
+  # ---------- a confirm acts only on the record its button belongs to ----------
+  # Two spawns: the record holds the newer one (rule 5, stamp 1767366245); the older
+  # message's buttons carry stamp 1767366200. Rules holds Rule #5 as well as #3.
+  - name: "confirm go: an older spawn's button is refused, the newer target survives"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value:
+          "Rule #3": "be kind"
+          "Rule #5": "be curious"
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: rule, rule: 5, stamp: 1767366245 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366200:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "A newer /edit delete replaced this confirm" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #5": "be curious"
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: rule, rule: 5, stamp: 1767366245 } }
+
+  - name: "confirm go: the matching stamp deletes the record's target"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Rules"
+        value:
+          "Rule #3": "be kind"
+          "Rule #5": "be curious"
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: rule, rule: 5, stamp: 1767366245 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, embed_title: "Rule #5 removed" }
+      db_checks:
+        - { user_id: 0, key: "Rules", value_equals: { "Rule #3": "be kind" } }
+        - { user_id: 111111111111111111, key: "Edit Pending", not_exists: true }
+
+  - name: "confirm go: a record without a stamp (pre-fix) is refused"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending", value: { kind: rule, rule: 3 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:go",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "A newer /edit delete replaced this confirm" }
+      db_checks:
+        - user_id: 0
+          key: "Rules"
+          value_equals:
+            "Rule #3": "be kind"
+            "Rule #4": { note: "a dict, not text" }
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: rule, rule: 3 } }
+
+  - name: "confirm no: a stale Dismiss closes its message and keeps the newer record"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: rule, rule: 5, stamp: 1767366245 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366200:no",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, content_contains: "Dismissed." }
+      edited_messages:
+        - { channel_id: 222222222222222222, content_equals: "Dismissed." }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Edit Pending",
+            value_equals: { kind: rule, rule: 5, stamp: 1767366245 } }
+
+  - name: "confirm no: the matching Dismiss clears the record"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    setup_db:
+      - { user_id: 111111111111111111, key: "Edit Pending",
+          value: { kind: rule, rule: 5, stamp: 1767366245 } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:no",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, content_contains: "Dismissed." }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Edit Pending", not_exists: true }
+
+  - name: "confirm no: Dismiss with nothing pending still closes the message"
+    template: "../../../commands/edit/edit_confirm.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: component, custom_id: "editdel:111111111111111111:1767366245:no",
+                     message_id: 7 }
+    assertions:
+      interaction_responses:
+        - { kind: update, content_contains: "Dismissed." }
+      edited_messages:
+        - { channel_id: 222222222222222222, content_equals: "Dismissed." }
