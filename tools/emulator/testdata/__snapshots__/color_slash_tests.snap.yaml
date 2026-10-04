@@ -1,0 +1,108 @@
+'color_slash contrasts: an unknown role ID is skipped silently beside a valid hex':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          embeds:
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 65280,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"\U0001F7E2 Ratio: `15.3`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"\U0001F7E2 Ratio: `8.44`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"⚫ Ratio: `1.37`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `8.37`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#00ff00`\"\n}"
+    db:
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+'color_slash contrasts: over 10 colors analyzes 10 in one response, with the warning line':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 1,\n  \"description\": \"⚠️ Warning: 2 colors were not analyzed because only 10 colors can be analyzed at a time.\",\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.99`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000001`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 2,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.98`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000002`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 3,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.97`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000003`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 4,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.96`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000004`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 5,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.95`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.92`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000005`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 6,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.94`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.92`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000006`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 7,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.94`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.92`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000007`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 8,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.93`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.91`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000008`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 9,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.92`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.91`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000009`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 10,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.91`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.91`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#00000a`\"\n}"
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          embeds:
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 1,\n  \"description\": \"⚠️ Warning: 2 colors were not analyzed because only 10 colors can be analyzed at a time.\",\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.99`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000001`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 2,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.98`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000002`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 3,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.97`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000003`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 4,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.96`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.93`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000004`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 5,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.95`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.92`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000005`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 6,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.94`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.92`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000006`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 7,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.94`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.92`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000007`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 8,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.93`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.91`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000008`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 9,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.92`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.91`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#000009`\"\n}"
+            - "{\n  \"author\": {\n    \"name\": \"Test Server\"\n  },\n  \"color\": 10,\n  \"fields\": [\n    {\n      \"name\": \"AMOLED Dark: `#000000`\",\n      \"value\": \"⚫ Ratio: `1`\"\n    },\n    {\n      \"name\": \"Dark: `#36393f`\",\n      \"value\": \"⚫ Ratio: `1.81`\"\n    },\n    {\n      \"name\": \"Light: `#ffffff`\",\n      \"value\": \"\U0001F7E2 Ratio: `20.91`\"\n    },\n    {\n      \"name\": \"Average\",\n      \"value\": \"\U0001F7E2 Ratio: `7.91`\"\n    }\n  ],\n  \"image\": {},\n  \"thumbnail\": {},\n  \"title\": \"Contrast Ratios for `#00000a`\"\n}"
+    db:
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'
+'color_slash random: a fixed seed answers publicly with the Color Generator embed':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Invoker#0001",
+                  "url": "https://discordapp.com/users/500000000000000001"
+                },
+                "color": 16579922,
+                "description": "`#fcfd52`",
+                "fields": [
+                  {
+                    "name": "Integer Value",
+                    "value": "`16579922`"
+                  }
+                ],
+                "image": {},
+                "thumbnail": {},
+                "title": "Color Generator"
+              }
+    interaction_responses:
+        - kind: message
+          message_id: 1100000000000000001
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Invoker#0001",
+                  "url": "https://discordapp.com/users/500000000000000001"
+                },
+                "color": 16579922,
+                "description": "`#fcfd52`",
+                "fields": [
+                  {
+                    "name": "Integer Value",
+                    "value": "`16579922`"
+                  }
+                ],
+                "image": {},
+                "thumbnail": {},
+                "title": "Color Generator"
+              }
+    db:
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Embed Color":9807270}'

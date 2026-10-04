@@ -1,0 +1,212 @@
+name: "color_slash (/color contrast, contrasts, random, hex)"
+
+# The slash root of the color commands: results answer publicly through ONE execCC to
+# embed_exec (Respond), errors and refusals are ephemeral sendResponses of the root.
+# Role 222... is red (16711680), 333... has no color (0), 444... is #36393f (3553599).
+
+defaults:
+  user: { id: 500000000000000001, username: "Invoker" }
+  channel: { id: 123456789012345678 }
+  guild:
+    id: 333333333333333333
+    name: "Test Server"
+    roles:
+      - { id: 222222222222222222, name: "Red", color: 16711680 }
+      - { id: 333333333333333334, name: "Plain", color: 0 }
+      - { id: 444444444444444444, name: "Slate", color: 3553599 }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Embed Color: 9807270 }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "123" }
+
+command_map:
+  123: "../../../commands/plumbing/embed_exec.gohtml"
+
+tests:
+  - name: "color_slash contrast: a hex code answers publicly with the three ratios and the average"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrast, options: { color: "#FFFFFF" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Contrast Ratios for `#ffffff`"
+          embed_contains: "AMOLED Dark: `#000000`"
+      sent_messages:
+        - embed_contains: "🟢 Ratio: `21`"
+        - embed_contains: "Dark: `#36393f`"
+        - embed_contains: "Light: `#ffffff`"
+        - embed_contains: "⚫ Ratio: `1`"
+        - embed_contains: "Average"
+
+  - name: "color_slash contrast: the # is optional and the case is folded"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrast, options: { color: "FF0000" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Contrast Ratios for `#ff0000`" }
+
+  - name: "color_slash contrast: a role answers with the ratios of its color"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrast, options: { role: 222222222222222222 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Contrast Ratios for `#ff0000`" }
+      sent_messages:
+        # red against black: (0.2126 + 0.05) / 0.05 = 5.25
+        - embed_contains: "🟡 Ratio: `5.25`"
+
+  - name: "color_slash contrast: a role with no color shows #000000"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrast, options: { role: 333333333333333334 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Contrast Ratios for `#000000`" }
+
+  - name: "color_slash contrasts: an unknown role ID is skipped silently beside a valid hex"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: contrasts
+        options: { colors: "999999999999999999 00ff00" }
+    snapshot: true
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Contrast Ratios for `#00ff00`" }
+
+  - name: "color_slash contrast: both a color and a role is an ephemeral refusal"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: contrast
+        options: { color: "#ff0000", role: 222222222222222222 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "not both" }
+
+  - name: "color_slash contrast: neither a color nor a role is an ephemeral refusal"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrast }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "**OR** a `role`" }
+
+  - name: "color_slash contrast: an invalid hex code is an ephemeral refusal"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrast, options: { color: "#ff00" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "required format" }
+
+  - name: "color_slash contrasts: hex codes and role IDs or mentions each get an embed in ONE response"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: contrasts
+        options: { colors: "#ffffff 222222222222222222, <@&444444444444444444> 00ff00" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Contrast Ratios for `#ffffff`" }
+      sent_messages:
+        - embed_title: "Contrast Ratios for `#ff0000`"
+        - embed_title: "Contrast Ratios for `#36393f`"
+        - embed_title: "Contrast Ratios for `#00ff00`"
+
+  # the snapshot pins the whole response: 10 embeds (not 11) in one message
+  - name: "color_slash contrasts: over 10 colors analyzes 10 in one response, with the warning line"
+    snapshot: true
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: contrasts
+        options: { colors: "000001 000002 000003 000004 000005 000006 000007 000008 000009 00000a 00000b 00000c" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_contains: "⚠️ Warning: 2 colors were not analyzed because only 10 colors can be analyzed at a time."
+      # the 10th color is analyzed, the 11th is not
+      sent_messages:
+        - embed_title: "Contrast Ratios for `#000001`"
+        - embed_title: "Contrast Ratios for `#00000a`"
+
+  - name: "color_slash contrasts: exactly one color over the cap says 'color was'"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: contrasts
+        options: { colors: "000001 000002 000003 000004 000005 000006 000007 000008 000009 00000a 00000b" }
+    assertions:
+      interaction_responses:
+        - { kind: message, embed_contains: "1 color was not analyzed" }
+
+  - name: "color_slash contrasts: no valid color is an ephemeral refusal"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrasts, options: { colors: "nope 12345" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "one or more role IDs" }
+
+  - name: "color_slash random: a fixed seed answers publicly with the Color Generator embed"
+    snapshot: true
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      seed: 1
+      interaction: { type: slash, subcommand: random }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Color Generator", embed_contains: "Integer Value" }
+
+  - name: "color_slash hex: a hex code answers publicly with its integer value"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: hex, options: { color: "#ff0000" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Color Inspector"
+          embed_contains: "`16711680`"
+      sent_messages:
+        - embed_contains: "`#ff0000`"
+
+  - name: "color_slash hex: a bare code and a mixed-case code convert too"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: hex, options: { color: "00FF00" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_contains: "`65280`" }
+
+  - name: "color_slash hex: an invalid code is an ephemeral refusal"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: hex, options: { color: "ggg000" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "required format" }
+
+  # A Slash Command trigger takes an interaction, so the bare run rides the execCC
+  # path (no trigger check there) — the smoke's plain-message run, which lands here
+  - name: "color_slash: a bare run prints the usage hint"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      exec_data: { probe: true }
+    expected:
+      output_contains: "Use /color as a slash command"
