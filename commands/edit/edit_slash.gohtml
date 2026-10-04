@@ -5,7 +5,7 @@
   Group: `Staff Utility`
   Defer mode: `None`
 
-  The modal front end for rule_edit and simple_db_edit (the text commands stay): /edit
+  The modal front end for rule_edit and simple_db_edit (both in retired/ now): /edit
   opens a prefilled modal (the engines live in edit_modal, the delete confirm's buttons
   in edit_confirm). Defer None is mandatory, not a choice: sendModal IS the interaction's
   one response, and a deferral would eat the slot.
@@ -27,9 +27,9 @@
 		{{ sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true) }}
 	{{ else if eq .SubCommand "rule" }}
 		{{ $n := toInt (or .Options.rule 0) }}
-		{{ if lt $n 1 }}
+		{{ if or (lt $n 1) (gt $n 9999) }}
 			{{ sendResponse nil (complexMessage
-				"content" "⚠️ You must provide an integer greater than zero!" "ephemeral" true) }}
+				"content" "⚠️ Rule numbers run from 1 to 9999." "ephemeral" true) }}
 		{{ else }}
 			{{ $key := joinStr "" "Rule #" $n }}
 			{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
@@ -136,6 +136,7 @@
 				"ephemeral" true) }}
 		{{ else if $ruleGiven }}
 			{{ $n := toInt (or .Options.rule 0) }}
+			{{/* no upper bound here: deleting an existing out-of-range rule is the repair path */}}
 			{{ if lt $n 1 }}
 				{{ sendResponse nil (complexMessage
 					"content" "⚠️ You must provide an integer greater than zero!" "ephemeral" true) }}
@@ -166,13 +167,14 @@
 						{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
 					{{ end }}
 					{{ $uid := .Member.User.ID }}
-					{{ dbSet $uid "Edit Pending" (sdict "kind" "rule" "rule" $n) }}
+					{{ $stamp := currentTime.Unix }}
+					{{ dbSet $uid "Edit Pending" (sdict "kind" "rule" "rule" $n "stamp" $stamp) }}
 					{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
 					{{ $row := cslice
 						(cbutton "label" (joinStr "" "Delete rule " $n) "style" "danger"
-							"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":go"))
+							"custom_id" (print "editdel:" $uid ":" $stamp ":go"))
 						(cbutton "label" "Dismiss" "style" "secondary"
-							"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":no"))
+							"custom_id" (print "editdel:" $uid ":" $stamp ":no"))
 					}}
 					{{ sendResponse nil (complexMessage "ephemeral" true
 						"embed" (cembed "title" (joinStr "" "Delete rule #" $n "?")
@@ -244,14 +246,15 @@
 					{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
 				{{ end }}
 				{{ $uid := .Member.User.ID }}
+				{{ $stamp := currentTime.Unix }}
 				{{ dbSet $uid "Edit Pending"
-					(sdict "kind" "entry" "category" $category "key" $key) }}
+					(sdict "kind" "entry" "category" $category "key" $key "stamp" $stamp) }}
 				{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
 				{{ $row := cslice
 					(cbutton "label" "Delete entry" "style" "danger"
-						"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":go"))
+						"custom_id" (print "editdel:" $uid ":" $stamp ":go"))
 					(cbutton "label" "Dismiss" "style" "secondary"
-						"custom_id" (print "editdel:" $uid ":" currentTime.Unix ":no"))
+						"custom_id" (print "editdel:" $uid ":" $stamp ":no"))
 				}}
 				{{ sendResponse nil (complexMessage "ephemeral" true
 					"embed" (cembed "title" (joinStr "" "Delete " $category " › " $key "?")

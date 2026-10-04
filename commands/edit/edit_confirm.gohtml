@@ -6,8 +6,10 @@
   Defer mode: `None`
 
   The /edit delete confirm's buttons (edit_slash spawns it, the record on the spawner's
-  row under "Edit Pending"). Defer None like the pager's: under a deferral an
-  updateMessage is Discord's 40060.
+  row under "Edit Pending"). The record carries the spawn's "stamp", the same number as
+  the buttons' custom id: Delete acts only when the two match (a newer /edit delete
+  replaced the record), Dismiss always closes the message but clears the record only on a
+  match. Defer None like the pager's: under a deferral an updateMessage is Discord's 40060.
 */ -}}
 {{ if .Interaction }}
 	{{ $rolesDict := (dbGet 0 "Roles").Value }}
@@ -23,13 +25,26 @@
 			"ephemeral" true) }}
 	{{ else }}
 		{{ $pending := dbGet $uid "Edit Pending" }}
-		{{ if not $pending }}
+		{{/* the record belongs to ONE confirm: a later /edit delete overwrites it with a new
+			stamp, and this button only acts while its own stamp is the record's (a record
+			written before stamps existed has none, so it never matches) */}}
+		{{ $matches := false }}
+		{{ if $pending }}
+			{{ $matches = eq $stamp (toInt ($pending.Value.Get "stamp")) }}
+		{{ end }}
+		{{ if eq (index $parts 3) "no" }}
+			{{ if $matches }}
+				{{ dbDel $uid "Edit Pending" }}
+			{{ end }}
+			{{ updateMessage "Dismissed." }}
+		{{ else if not $pending }}
 			{{ sendResponse nil (complexMessage
 				"content" "⚠️ Nothing pending — already handled or expired. Run /edit again."
 				"ephemeral" true) }}
-		{{ else if eq (index $parts 3) "no" }}
-			{{ dbDel $uid "Edit Pending" }}
-			{{ updateMessage "Dismissed." }}
+		{{ else if not $matches }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ A newer /edit delete replaced this confirm — use that one."
+				"ephemeral" true) }}
 		{{ else }}
 			{{ $record := $pending.Value }}
 			{{ if eq ($record.Get "kind") "rule" }}
