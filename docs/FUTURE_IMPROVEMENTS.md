@@ -180,6 +180,9 @@ picks, then the minifier.
 
 ## Free-tier compatibility (Lila 2026-09-27: the suite should work on free servers too)
 
+As of 2026-10-04 every deployed server (main, lotv, The Rose) is PREMIUM (the panel's
+premium page; Lila: authoritative), so this section serves a future free server only.
+
 Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 (vendor tmplextensions.go:184/394, customcommands.go:164-176, 357-360).
 - Shipped (part 1, 2026-10-02): the parser-based minifier `tools/emulator/cmd/yagmin`
@@ -195,10 +198,10 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 - Known gap (slash-fleet unit 2, 2026-10-04): `/hebrew` (hebrew_slash) minifies to ~11.3k
   runes, still over the free 10k cap, so a FREE server can't take it as one root
   (atbash's dict alone is ~7k). Options: move the atbash dict into the DB (Gematria dict,
-  like Final Letters), or split atbash into its own root. PREMISE IN QUESTION (checked
-  2026-10-04): the yagpdb.xyz/premium page shows Patreon slot #4 assigned to Lure of the
-  Void (and #3 to The Rose), so lotv may be premium and this gap moot; confirm with Lila
-  before acting. Trigger: the lotv /color + /hebrew adoption step.
+  like Final Letters), or split atbash into its own root. No deployed server is free:
+  the yagpdb.xyz/premium page assigns Patreon slots to main (#1), The Rose (#3) and Lure
+  of the Void (#4) (checked 2026-10-04; Lila: the panel is authoritative). Trigger: a FREE
+  server adopting /hebrew.
 - Known defect (found in the config_sync review 2026-09-27): bootstrap makes 18 DB calls
   (9 dbGets, 9 dbSets), so on a free server it dies at the 11th, the Rules dbSet, and
   never writes Roles, Channels, Admin, Knowledge, Directory, Inactivity Prune or Staff
@@ -527,6 +530,14 @@ gets a failing test first.
 
 ## Tooling defects
 
+- Found 2026-10-04 (The Rose's config_sync, #24): the browser deploy can't finish a NEW
+  interval command. create() leaves `time_trigger_interval` 0, deploy.js doesn't manage
+  it (the header's `Interval:` line is ignored), and YAGPDB refuses an hourly interval
+  under 1 (vendor customcommands/customcommands.go:503-504), so the update is rejected
+  (`failed: read-back mismatch`, still type Command, disabled). Fix: deploy.js posts
+  `time_trigger_interval` from the header for interval types (golden + JS test). The
+  context channel stays manual. Workaround used: Lila sets type, interval and channel in
+  the panel, then the deploy reruns. Trigger: the next interval command created.
 - Forum prompts SHIPPED (2026-10-01): `createForumPost` is ported into the emulator
   (faithful copy of tmplCreateForumPost, context_funcs.go:1479-1531; the earlier
   "vendor stale" claim here was a grep miss — `head -8` truncated before :1532), and
