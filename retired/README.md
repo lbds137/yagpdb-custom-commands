@@ -45,6 +45,11 @@ repointed to `retired/`.
 owner to delete. contrast and rand_color are disabled on main too but stay in
 `commands/color/`: Lure of the Void still runs them until it gets `/color`.
 
+`rule.gohtml` (text, main 1) and `define.gohtml` (text, main 84) retired 2026-10-04:
+replaced by `/rule` (rule_slash, panel 106) and `/define` (define_slash, 108); neither
+existed on another server. `rule browse` was rule's browse entry; `/rule` with no number
+replaces it. Their tests stay, repointed to `retired/`.
+
 They aren't smoke-tested by `scripts/test-all-templates.sh`/`make test-templates`, aren't
 scanned by the standalone `scripts/lint-all.sh` helper, and aren't listed by
 `make changed-since-deploy` (all three scan only `commands/`). `make lint`

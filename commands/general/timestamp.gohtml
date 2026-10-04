@@ -16,7 +16,8 @@
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
 {{- /* regex */ -}}
-{{ $snowflakeRegex := "\\d{16,}" }}
+{{/* 16-19 digits: a longer one would overflow int64 and decode as MaxInt64 */}}
+{{ $snowflakeRegex := "\\d{16,19}" }}
 {{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z"}}
 
 {{- /* default value */ -}}

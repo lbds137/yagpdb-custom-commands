@@ -59,7 +59,7 @@ function loadDeployJs(extra) {
 // to any of these files never breaks this test on its own (only a real normalize/hash
 // disagreement would).
 const PARITY_FILES = [
-  "commands/knowledge/define.gohtml",
+  "commands/knowledge/define_slash.gohtml",
   "commands/rules/rules.gohtml",
   // Has Hebrew text -- exercises UTF-8 encoding parity, not just ASCII.
   "commands/hebrew/alefbet.gohtml",

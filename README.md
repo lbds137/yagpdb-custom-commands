@@ -42,9 +42,9 @@ folder mixes both. Staff-group commands are marked below.
 - **`bump_reset.gohtml`** (staff) - Server bump reset functionality
 
 #### Rules (`commands/rules/`)
-- **`rule.gohtml`** - Display specific rules
+- **`rule_slash.gohtml`** - `/rule`: show one rule by number, or browse them all
 - **`rules.gohtml`** (staff) - Display all server rules
-- **`rules_pager.gohtml`** - The `rule browse` view (Message Component trigger `^rules:`):
+- **`rules_pager.gohtml`** - The `/rule` browse view (Message Component trigger `^rules:`):
   one rule per page, paging buttons, a jump menu and an opener-only Dismiss
 
 #### Edit (`commands/edit/`)
@@ -102,7 +102,7 @@ folder mixes both. Staff-group commands are marked below.
 - **`message_pointer.gohtml`** - Message reference utility
 
 #### Knowledge (`commands/knowledge/`)
-- **`define.gohtml`** - Glossary term lookup (links to thenighthouse.org)
+- **`define_slash.gohtml`** - `/define`: glossary term lookup (links to thenighthouse.org)
 
 #### General (`commands/general/`)
 - **`avatar_viewer.gohtml`** - View user avatars
@@ -114,7 +114,9 @@ folder mixes both. Staff-group commands are marked below.
 - **`prompt.gohtml`** (staff) - `/prompt`: post a writing prompt to a forum, thread or
   channel through a modal
 - **`prompt_post.gohtml`** (staff) - The `/prompt` modal's submit handler
-- **`timestamp.gohtml`** - Parse Discord snowflake timestamps
+- **`timestamp_slash.gohtml`** - `/timestamp`: parse Discord snowflake timestamps
+- **`timestamp.gohtml`** - The text form, kept for Lure of the Void and The Rose (disabled
+  on main)
 
 #### Plumbing (`commands/plumbing/`)
 - **`embed_exec.gohtml`** - Universal embed creation and execution

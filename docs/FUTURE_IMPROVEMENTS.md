@@ -240,12 +240,6 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
-- Found 2026-10-04 (unit 3 review), deferred: the text twins keep flaws unit 3 fixed in
-  the slash roots. timestamp.gohtml takes `\d{16,}`, so a 20+ digit ID decodes as
-  MaxInt64 (tmplToInt ignores the range error, general.go:1233); rule.gohtml's usage text
-  says "(1-<max>)", which a deleted middle rule makes wrong, and its max scan counts
-  non-canonical keys ("Rule #07"). Trigger: their
-  retirement after Lila's live check (then moot), or a fix to either before it.
 - Found 2026-10-04 (unit 3 review), deferred: /color, /hebrew and /gematria execCC
   embed_exec (or gematria) without checking the Commands id is > 0, so on a server
   missing the key the interaction gets no answer. Unit 3's roots refuse ephemerally
@@ -310,7 +304,8 @@ gets a failing test first.
   longer execCC's `rule` at all, so it no longer reads or clamps "ExecCC Limit"; it now
   packs its own embeds into as few messages as Discord's 10-embed / 6,000-character
   limits allow instead. contrasts and hugemoji are unaffected, and still clamp it.)
-- Deferred: `define` folds accents with a hand-written map (Latin-1 vowels, ñ, ç, ý/ÿ,
+- Deferred: `/define` (define_slash.gohtml; the text define.gohtml is retired and has the
+  same map) folds accents with a hand-written map (Latin-1 vowels, ñ, ç, ý/ÿ,
   macron vowels), while the site's slugify strips every combining mark after NFD. A term
   with any other mark (č, ş, ő, ą...) gets a hyphen where the site drops the mark, so its
   anchor misses. Today's 67 terms are all covered (only Ásatrú and Santería are
@@ -1034,3 +1029,8 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       check on a message without an embed fails (it passed) (2026-09-25)
 - [x] Test coverage for db operations (it passed only because the tests never reached the
       global data; rewritten 2026-09-25)
+- [x] The unit 3 review's text-twin flaws (found 2026-10-04): timestamp.gohtml's snowflake
+      regex is now `\d{16,19}`, so a 20+ digit ID falls back to the invoker instead of
+      decoding as MaxInt64 (tmplToInt ignores the range error, general.go:1233); the
+      rule.gohtml half (usage text "(1-<max>)", max scan counting "Rule #07") is moot:
+      rule.gohtml is retired (2026-10-04)

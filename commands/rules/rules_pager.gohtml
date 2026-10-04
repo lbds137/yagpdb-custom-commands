@@ -3,15 +3,15 @@
   Trigger type: `Message Component`
   Trigger: `^rules:`
   Group: `Utility`
-  Dependencies: none (`rule` and `rule_slash` execCC this for the first page)
+  Dependencies: none (`rule_slash` execCCs this for the first page)
 */ -}}
-{{- /* Browse view for the rulebook: one rule per page. `rule browse` and `/rule`
-  (rule_slash) execCC this with ExecData {Page: 1}; on `/rule` the child inherits the
-  slash interaction, so the first render answers it with sendResponse (public) instead
-  of sendMessage; a click rebuilds the page in place — the ◀/▶ buttons carry the page
-  in the custom ID (rules:<page>:<opener>), the jump select (rules:jump:<opener>) carries
-  the rule number in .Values, and Dismiss is rules:close:<opener>. <opener> is the
-  snowflake of the member who ran `rule browse`; it rides through every re-render so
+{{- /* Browse view for the rulebook: one rule per page. `/rule` (rule_slash) execCCs this
+  with ExecData {Page: 1}; the child inherits the slash interaction, so the first render
+  answers it with sendResponse (public) instead of sendMessage; a click rebuilds the page
+  in place — the ◀/▶ buttons carry the page in the custom ID (rules:<page>:<opener>),
+  the jump select (rules:jump:<opener>) carries the rule number in .Values, and Dismiss
+  is rules:close:<opener>. <opener> is the snowflake of the member who ran `/rule`; it
+  rides through every re-render so
   Dismiss stays theirs however many members page the browser. A click on an old id
   without it (rules:<page>, rules:jump) falls back to the clicker, as before. Utility,
   NOT Staff Utility: members click these buttons (the panel group gates every run — the
@@ -56,13 +56,13 @@
 {{ $author := sdict "name" .Guild.Name "url" $serverURL "icon_url" $gIcon }}
 
 {{/* which page: a button carries it in the custom ID, the select the rule number in
-  .Values, `rule` in ExecData; every id's third segment is the opener's user id */}}
+  .Values, `Page` in ExecData; every id's third segment is the opener's user id */}}
 {{ $page := 1 }}
 {{ $jumpN := 0 }}
 {{ $action := "" }}
 {{ $parts := cslice }}
 {{ $opener := toString .User.ID }}
-{{/* the first render is identified by ExecData.Page (set only by `rule` and `rule_slash`),
+{{/* the first render is identified by ExecData.Page (set only by `rule_slash`),
   not by .Interaction: an execCC child of a slash run inherits the interaction and has no
   CustomID. `and` doesn't short-circuit, so the checks nest */}}
 {{ $firstRender := false }}
@@ -96,8 +96,8 @@
 
 {{/* the dismiss button: only the member who opened the browser may use it (the opener's
   id rides in every custom ID, parsed above; a clicker is .User on a component run). On
-  the first render, an execCC child, .User is the caller — the member who ran `rule
-  browse` — and an old id without an opener falls back to the clicker */}}
+  the first render, an execCC child, .User is the caller — the member who ran `/rule`
+  — and an old id without an opener falls back to the clicker */}}
 {{ $closeID := printf "rules:close:%s" $opener }}
 {{/* Tzurot design language (consult 2026-09-30): every button carries text, and red is
   reserved for deleting entities — closing a UI the user spawned is a non-action, so
@@ -156,8 +156,8 @@
 
     {{/* the rule text, cut to fit the description inside Discord's 4,096-character cap
       and the 6,000-character whole-embed cap, in code points — the cutting embed_exec
-      does for `rule`, done here since the pager owns its embed. No summary line (Lila,
-      2026-09-30): one rule per page makes "page X of Y" redundant with the Page X/Y
+      does for `/rule <number>`, done here since the pager owns its embed. No summary
+      line (Lila, 2026-09-30): one rule per page makes "page X of Y" redundant with the Page X/Y
       button, and the rule count shows in the jump menu */}}
     {{- $otherLen := add (len (toRune $title)) (len (toRune (print (or $author.name "")))) -}}
     {{- $textMax := toInt (min 4096 (sub 6000 $otherLen)) -}}

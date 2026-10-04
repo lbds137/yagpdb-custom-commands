@@ -53,3 +53,13 @@ tests:
     assertions:
       sent_messages:
         - { embed_title: "Timestamp Parser", embed_contains: "111111111111111111" }
+
+  - name: "timestamp: a 20-digit argument falls back to the caller's own ID (no int64 overflow)"
+    template: "../../../commands/general/timestamp.gohtml"
+    context:
+      # 20 digits overflow int64: the old \d{16,} regex let it through to decode as MaxInt64.
+      # The caller's ID also appears in the embed's author line, so match the ID field's value.
+      args: ["12345678901234567890"]
+    assertions:
+      sent_messages:
+        - { embed_title: "Timestamp Parser", embed_contains: '"value": "111111111111111111"' }
