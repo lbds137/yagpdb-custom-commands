@@ -100,3 +100,73 @@ Slash description `Color tools`; tick "use subcommands"; then (header lines' tex
 | sub random | — | — | a random color |
 | sub hex | — | — | a hex code's integer value |
 | · color | string | ✓ | hex code, # optional |
+
+## Unit 2: /hebrew + /gematria
+
+Files: `commands/hebrew/hebrew_slash.gohtml` (`/hebrew`, 14,862 runes; minified 11,236 in
+`dist/free/`, still over the free 10k cap: a free server can't take it),
+`commands/gematria/gematria_slash.gohtml` (`/gematria`, 963 runes), and `gematria.gohtml`
+(11,784 runes) grows by passing `Respond` through (set only when the caller passed it, so
+every other caller's output is byte-identical). Both roots: Utility, Defer `None`. The text
+twins (alefbet, atbash, pyramid, rand_hebrew, gematria's text trigger) are untouched; their
+retirement is a later step after the live check. panel.json ids come from creating the
+panel commands (DISABLED), then `make config-sync`.
+
+Results are public; refusals are ephemeral sendResponses of the root with no execCC. A
+result is ONE execCC to gematria with `Respond`, which passes it to embed_exec, which
+answers through sendResponse: root (0) -> gematria (1) -> embed_exec (2), within YAGPDB's
+immediate execCC depth of 2 (customcommands/tmplextensions.go:231-232). The root prints
+nothing on that path (an empty run sends no response: common/templates/context.go:647-650).
+
+### /gematria panel rows
+
+Slash description `Gematria of Hebrew text`, no subcommands: option `text` string
+required, `the text to calculate`.
+
+### /hebrew panel rows
+
+Slash description `Hebrew tools`; tick "use subcommands"; then (header lines' text):
+
+| row | type | required | description |
+|---|---|---|---|
+| sub atbash | — | — | atbash cipher of Hebrew, Greek, Arabic, Latin, runes and digits |
+| · text | string | ✓ | the text to encipher |
+| sub alefbet | — | — | Paleo-Hebrew and Arabic letters converted to Hebrew |
+| · text | string | ✓ | the text to convert |
+| sub pyramid | — | — | gematria of a word's pyramid, one embed per word |
+| · text | string | ✓ | one or more words |
+| sub random | — | — | random Hebrew letters, with their gematria |
+| · letters | integer | ✓ | letters per group |
+| · groups | integer | — | how many groups (default 1) |
+
+`random`: groups < 1, letters < 1 or letters x groups > 1000 are refused; the groups are
+joined with single spaces (rand_hebrew's group mode joins with a leading space, which makes
+gematria count an empty first word; the slash form has none).
+
+### The multi-word pyramid
+
+A word is one execCC to gematria. Several words cannot be answered by the delayed runs
+alone: nobody would answer the interaction within Discord's 3 seconds. So the run answers
+FIRST with a public sendResponse (`Pyramid gematria of **N** words follows, one embed per
+word.`, plus pyramid.gohtml's skipped-words warning as a second line when `ExecCC Limit`
+cut words), THEN schedules one delayed self-execCC (delay 1) per kept word to its own CC
+(Commands key `hebrew_slash`), with ExecData `Description`, `AuthorID`, `ChannelID`.
+
+- A delayed execCC (and scheduleUniqueCC) stores the caller's CurrentFrame, its Interaction
+  and RespondedTo serialized at SCHEDULE time (tmplextensions.go:256-282; :344 for
+  scheduleUniqueCC). Because the response went first, each stored frame has
+  RespondedTo=true.
+- The delayed run restores it (customcommands/handle_timed.go:102-117): `.Interaction` is
+  set, but NOT `.IsSlashCommand`, `.SubCommand` or `.Options` (only set in
+  handle_slashcommand.go:118-160). The root therefore dispatches on `.ExecData.Description`
+  BEFORE `.IsSlashCommand`.
+- The run's sendResponse follows tokenArg (common/templates/context_interactions.go:
+  414-450): already responded -> followup, so each word's embed is a followup of the
+  interaction.
+- Cap: one immediate execCC on free servers, 10 on premium (the runcc counter,
+  tmplextensions.go:185): the delayed execCCs are counted in the root's run, so the kept
+  words are clamped to 10 as in pyramid.gohtml.
+
+Emulator support (this unit): `scheduled_runs` takes `interaction: none|pending|responded`
+(the state at schedule time), and a test runs the delayed half with
+`interaction: { type: slash, delayed: true, responded_to: true }` plus `exec_data`.

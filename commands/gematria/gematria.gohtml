@@ -234,12 +234,18 @@
   {{ $fields = $fields.AppendSlice .ExecData.Fields }}
 {{ end }}
 
-{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+{{/* a caller answering a slash command's interaction passes Respond: embed_exec then
+  answers it (sendResponse) instead of posting a message */}}
+{{ $embedData := sdict
   "AuthorID" .User.ID
   "ChannelID" (or .ExecData.ChannelID .Channel.ID)
   "Title" (or .ExecData.Title "Gematria Calculator")
   "Description" $text
   "Fields" $fields
-) }}
+}}
+{{ if .ExecData.Respond }}
+  {{ $embedData.Set "Respond" true }}
+{{ end }}
+{{ execCC $embed_exec $yagpdbChannelID 0 $embedData }}
 
 {{ deleteTrigger $deleteTriggerDelay }}

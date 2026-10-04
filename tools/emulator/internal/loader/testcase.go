@@ -219,6 +219,16 @@ type InteractionDef struct {
 	Options map[string]interface{} `yaml:"options"`
 	// Target is the user the user context menu entry was used on (.TargetUser)
 	Target int64 `yaml:"target"`
+	// Delayed makes this the delayed half of a slash command (type: slash): a run that
+	// execCC with a delay or scheduleUniqueCC scheduled, which needs exec_data. It gets
+	// the stored `.Interaction` and `.ExecData` but not .IsSlashCommand, .SubCommand or
+	// .Options (vendor customcommands/handle_timed.go:102-117), and no subcommand or
+	// options: of every interaction + exec_data combination only this one is allowed.
+	Delayed bool `yaml:"delayed"`
+	// RespondedTo is the stored interaction's RespondedTo when the run was scheduled
+	// (delayed only): true makes the run's response a followup, false (the default) its
+	// first response
+	RespondedTo bool `yaml:"responded_to"`
 }
 
 // componentKinds are InteractionDef.Component's values and their component types.
@@ -235,6 +245,24 @@ var componentKinds = map[string]types.ComponentType{
 // validate rejects an interaction the emulator can't run: an unmodelled type, a field
 // another type takes, or a missing one.
 func (d *InteractionDef) validate() error {
+	if d.RespondedTo && !d.Delayed {
+		return fmt.Errorf("interaction responded_to is only for a delayed run (delayed: true)")
+	}
+	if d.Delayed {
+		if d.Type != "slash" {
+			return fmt.Errorf("interaction delayed models a delayed slash command run: write type: slash")
+		}
+		// the restored interaction has no subcommand or options of its own to give: the
+		// handler's keys aren't restored (handle_timed.go:102-117)
+		if d.Subcommand != "" || d.Options != nil {
+			return fmt.Errorf("interaction delayed takes no subcommand or options (a delayed run " +
+				"has only .Interaction and .ExecData; give the data in exec_data)")
+		}
+		if err := d.onlyFields("slash delayed", "responded_to"); err != nil {
+			return err
+		}
+		return nil
+	}
 	switch d.Type {
 	case "component":
 		if err := d.onlyFields("component", "custom_id, message_id, values, component"); err != nil {
@@ -550,6 +578,12 @@ type ScheduledRunCheck struct {
 	Delay            Duration `yaml:"delay"`
 	Key              *string  `yaml:"key"`                // scheduleUniqueCC's key
 	ExecDataContains string   `yaml:"exec_data_contains"` // substring of the data as JSON
+	// Interaction is the state of the scheduling run's interaction when it scheduled the
+	// run: none (it had no interaction), pending (one it hadn't responded to) or
+	// responded (one it had responded to or deferred, so the delayed run's response is a
+	// followup); unset = any. Both execCC with a delay and scheduleUniqueCC store it
+	// (vendor customcommands/tmplextensions.go:256-282, :344).
+	Interaction string `yaml:"interaction"`
 }
 
 // PingsCheck is exactly who a message notifies; unset fields expect no one.
@@ -644,8 +678,14 @@ func (tc *TestCase) validateContext() error {
 	if c.Interaction == nil {
 		return nil
 	}
-	if len(c.Args) > 0 || c.MessageContent != "" || c.Reaction != nil || c.ExecData != nil {
-		return fmt.Errorf("test %q: interaction can't be combined with args, message_content, reaction or exec_data", tc.Name)
+	// exec_data comes with an interaction only as the delayed half of a slash command
+	delayed := c.Interaction.Delayed
+	if delayed && c.ExecData == nil {
+		return fmt.Errorf("test %q: a delayed interaction run needs exec_data (the data it was scheduled with)", tc.Name)
+	}
+	if len(c.Args) > 0 || c.MessageContent != "" || c.Reaction != nil || (c.ExecData != nil && !delayed) {
+		return fmt.Errorf("test %q: interaction can't be combined with args, message_content, reaction or exec_data"+
+			" (exec_data only with delayed: true)", tc.Name)
 	}
 	if err := c.Interaction.validate(); err != nil {
 		return fmt.Errorf("test %q: %w", tc.Name, err)

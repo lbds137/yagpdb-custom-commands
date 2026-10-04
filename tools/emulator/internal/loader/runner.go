@@ -359,6 +359,15 @@ func setTriggerMessage(tc *TestCase, source string, ctx *runtime.ExecutionContex
 			return runtime.Trigger{}, fmt.Errorf("args need a message trigger, not exec_data or reaction")
 		}
 		ctx.MessageContent = c.MessageContent
+		if c.Interaction != nil && c.Interaction.Delayed {
+			// the delayed half of a slash command (validateContext allows no other
+			// interaction with exec_data): the stored interaction, no handler keys
+			name := strings.TrimSuffix(filepath.Base(tc.Template), filepath.Ext(tc.Template))
+			if t, ok := runtime.ReadTrigger(source); ok {
+				name = t.Text
+			}
+			ctx.SetInteractionDelayed(name, c.Interaction.RespondedTo)
+		}
 		return runtime.Trigger{}, nil
 	}
 	t, ok := runtime.ReadTrigger(source)
@@ -753,14 +762,26 @@ func checkScheduledRuns(runs []runtime.ScheduledRun, checks *[]ScheduledRunCheck
 	if checks == nil {
 		return nil
 	}
+	var failures []string
+	for i, check := range *checks {
+		switch check.Interaction {
+		case "", string(runtime.ScheduledNoInteraction), string(runtime.ScheduledInteractionPending),
+			string(runtime.ScheduledInteractionResponded):
+		default:
+			failures = append(failures, fmt.Sprintf("scheduled run check %d: interaction is %q; it takes none, pending or responded", i, check.Interaction))
+		}
+	}
+	if len(failures) > 0 {
+		return failures
+	}
 	if len(runs) != len(*checks) {
 		return []string{fmt.Sprintf("expected %d scheduled runs, got %d: %s", len(*checks), len(runs), describeRuns(runs))}
 	}
-	var failures []string
 	for i, check := range *checks {
 		run := runs[i]
 		data := compactJSON(run.ExecData)
-		if (check.CCID != 0 && run.CCID != check.CCID) ||
+		if (check.Interaction != "" && string(run.Interaction) != check.Interaction) ||
+			(check.CCID != 0 && run.CCID != check.CCID) ||
 			(check.ChannelID != 0 && run.ChannelID != check.ChannelID) ||
 			(check.Delay != 0 && run.Delay != time.Duration(check.Delay)) ||
 			(check.Key != nil && (run.Key == nil || *run.Key != *check.Key)) ||
@@ -771,6 +792,9 @@ func checkScheduledRuns(runs []runtime.ScheduledRun, checks *[]ScheduledRunCheck
 			}
 			if check.ExecDataContains != "" {
 				want += fmt.Sprintf(", data containing %s", check.ExecDataContains)
+			}
+			if check.Interaction != "" {
+				want += ", interaction " + check.Interaction
 			}
 			failures = append(failures, fmt.Sprintf("scheduled run %d doesn't match (%s; 0 = any): %s", i, want, describeRuns(runs[i:i+1])))
 		}
@@ -941,6 +965,7 @@ func describeRuns(runs []runtime.ScheduledRun) string {
 		if r.Key != nil {
 			s += fmt.Sprintf(" (key %q)", *r.Key)
 		}
+		s += ", interaction " + string(r.Interaction)
 		parts = append(parts, s+" with "+compactJSON(r.ExecData))
 	}
 	return "[" + strings.Join(parts, "; ") + "]"

@@ -20,6 +20,8 @@
     "commands/general/prompt.gohtml": {"main": 101},
     "commands/general/prompt_post.gohtml": {"main": 102},
     "commands/color/color_slash.gohtml": {"main": 103},
+    "commands/hebrew/hebrew_slash.gohtml": {"main": 104},
+    "commands/gematria/gematria_slash.gohtml": {"main": 105},
     "commands/color/hex_to_int.gohtml": {"main": 18, "lotv": 6},
     "commands/db/db_get_embed.gohtml": {"main": 22, "lotv": 5},
     "commands/plumbing/ticket_clean.gohtml": {"main": 29},

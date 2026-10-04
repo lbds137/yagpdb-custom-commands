@@ -61,3 +61,24 @@ tests:
         # l appears three times
         - { embed_contains: "`X` - The Wheel of Fortune (3)" }
     snapshot: true
+
+  # A caller answering a slash command's interaction passes Respond: embed_exec then
+  # answers it (sendResponse). The interaction reaches gematria as the delayed shape
+  # (exec_data with the stored interaction), as a Command-trigger template can't take a click.
+  - name: "gematria: ExecData Respond is passed on, so the embed answers the interaction"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "אמת", Respond: true }
+      interaction: { type: slash, delayed: true, responded_to: true }
+    assertions:
+      interaction_responses:
+        - { kind: followup, ephemeral: false, embed_title: "Gematria Calculator", embed_contains: "`441` > `9`" }
+
+  - name: "gematria: without Respond the embed is posted as a message, not an interaction response"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "אמת" }
+    assertions:
+      interaction_responses: []
+      sent_messages:
+        - { embed_contains: "`441` > `9`" }

@@ -192,6 +192,11 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 - Planned (part 2): the deploy manifest picks the minified form for commands over a
   free server's limit (panel.json gets a per-server tier); dist/free/ is not used by
   deploys yet.
+- Known gap (slash-fleet unit 2, 2026-10-04): `/hebrew` (hebrew_slash) minifies to ~11.1k
+  runes, still over the free 10k cap, so lotv can't take it as one root (atbash's dict
+  alone is ~7k). Options when lotv adopts /hebrew: move the atbash dict into the DB
+  (Gematria dict, like Final Letters), or split atbash into its own root. Trigger: the
+  lotv /color + /hebrew adoption step.
 - Known defect (found in the config_sync review 2026-09-27): bootstrap makes 18 DB calls
   (9 dbGets, 9 dbSets), so on a free server it dies at the 11th, the Rules dbSet, and
   never writes Roles, Channels, Admin, Knowledge, Directory, Inactivity Prune or Staff
@@ -230,6 +235,13 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- Found 2026-10-04 (unit 2 review), deferred: a multi-word `/hebrew pyramid` answers
+  "N words follows" and then schedules N delayed runs, but YAGPDB rate-limits delayed runs
+  per channel (vendor customcommands/bot.go:48, burst 10, 0.1/s) and DROPS a refused run
+  without retry (handle_timed.go:66-69). A second 10-word pyramid in one channel within
+  ~100 s promises embeds that never come. The text pyramid shares the limit but promised
+  nothing. Trigger: Lila sees it live, or the next pyramid change (e.g. say "up to" in the
+  reply, or build all pyramids in one gematria call).
 - Found 2026-10-01 (grounding the context-menu unit), Lila's call — the color is
   user-visible: avatar_viewer.gohtml's role-color loop (lines 170-178) computes `$color`
   from the TARGET member's top colored role but never passes it to embed_exec, so the
@@ -333,6 +345,12 @@ gets a failing test first.
   errors on any command file whose panel count exceeds 20,000.
 
 ### Remaining emulator gaps
+- Found 2026-10-04 (unit 2 review): the delayed-interaction test shape
+  (`interaction: {type: slash, delayed: true, responded_to}`) can't express a DEFERRED
+  stored interaction. YAGPDB sends such a run's plain output as an edit of the original
+  response (common/templates/context.go:605-607); the emulator would model a followup.
+  No command hits it (every root that schedules is defer mode None). Trigger: a deferred
+  slash root that schedules runs.
 - Found 2026-10-04 (GLM audit B-F3 fix): `exec_responses` can only declare an exec's
   returned TEXT, not an exec ERROR. In YAGPDB a built-in that returns an error (kick's
   hierarchy/permission/KickUser failures) makes `exec` itself error ("exec/execadmin,
