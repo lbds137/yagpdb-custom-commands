@@ -47,8 +47,8 @@ check where it renders, for /hebrew and /gematria (unit 2).
 | `/staff` | Staff Utility | roles, inactivity, activity, rules, pointer, bump_reset, delrep, bootstrap |
 
 Existing: /db, /edit, /prompt, /role_ping. Main (premium): 13 slash CCs of 50.
-Free-tier top 10 (lotv's deployed set): /color, /hebrew, /gematria, /timestamp, plus
-/db and /edit if lotv adopts them — 6, under the cap. avatar_viewer / hugemoji keep their
+Free-tier top 10 (for a free server; lotv turned out to be premium, 2026-10-04): /color,
+/hebrew, /gematria, /timestamp, plus /db and /edit — 6, under the cap. avatar_viewer / hugemoji keep their
 text form and context menus (no slash root: the menus already are the discoverable form).
 
 ## Unit order
@@ -60,7 +60,8 @@ text form and context menus (no slash root: the menus already are the discoverab
 4. `/hiatus` + `/unhiatus` (Night House message: member commands going real slash).
 5. `/staff` (largest; may split if over 10 free subcommands).
 Then config_sync part 2 (`/setup` pickers) and minifier part 2 (free-tier deploy manifest,
-needed before lotv gets any root over 10k runes).
+needed before a free server gets any root over 10k runes; main, lotv and The Rose are
+all premium).
 
 ## Unit 1: /color
 
@@ -84,7 +85,8 @@ needed before lotv gets any root over 10k runes).
   contrasts moved to retired/; contrast and rand_color stay in commands/color/ because
   lotv still runs them (FUTURE: lotv /color, then retire them). hex_to_int stays (chat
   regex, and /color hex shares no code with it after inlining).
-- Size: 8.7k runes as built → under the free cap, so lotv needs no minifier for it.
+- Size: 8.7k runes as built → under the free cap, so even a free server needs no
+  minifier for it.
 
 ### /color panel rows (command 103, Lila at the panel, 2026-10-04)
 

@@ -33,7 +33,7 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
 
 1. Push the branch: the manifest refuses if HEAD isn't reachable from any `origin/*` branch
    (raw.githubusercontent.com URLs for an unpushed commit would 404).
-2. `make deploy-manifest SERVER=<main|lotv>` and capture its one line of JSON as `<manifest>`.
+2. `make deploy-manifest SERVER=<main|lotv|rose>` and capture its one line of JSON as `<manifest>`.
    A refusal or a stderr warning means stop and report it, not push through. A command
    with no id for this server is simply left out (panel.json is the per-server map).
 3. Load the Claude-in-Chrome tools (`ToolSearch` for `mcp__claude-in-chrome__*` if they're not
