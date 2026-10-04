@@ -1,0 +1,844 @@
+{
+  "commands": {
+    "commands/bump/bump_check.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/bump/bump_remind.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/bump/bump_reset.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/channels/channel_activity.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/channels/channel_activity_pager.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/channels/channel_link.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/channels/channel_tracker.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/channels/directory.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/channels/message_pointer.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/color/color_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "Color tools",
+      "slash": {
+        "subcommands": [
+          {
+            "name": "contrast",
+            "description": "WCAG contrast of a color or role against dark and light",
+            "options": [
+              {
+                "name": "color",
+                "type": "string",
+                "description": "hex code, # optional (use this OR role)",
+                "required": false
+              },
+              {
+                "name": "role",
+                "type": "role",
+                "description": "a role whose color to check (use this OR color)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "contrasts",
+            "description": "contrast of up to 10 colors or roles at once",
+            "options": [
+              {
+                "name": "colors",
+                "type": "string",
+                "description": "hex codes and/or role IDs or mentions, up to 10",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "random",
+            "description": "a random color",
+            "options": []
+          },
+          {
+            "name": "hex",
+            "description": "a hex code's integer value",
+            "options": [
+              {
+                "name": "color",
+                "type": "string",
+                "description": "hex code, # optional",
+                "required": true
+              }
+            ]
+          }
+        ],
+        "options": []
+      }
+    },
+    "commands/color/contrast.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/color/contrasts.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/color/hex_to_int.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/color/rand_color.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/db/db_get_embed.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/db/db_get_text.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/db/db_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": {
+        "subcommands": [
+          {
+            "name": "view",
+            "description": "show one value",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "database key, nest with :",
+                "required": true
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "another member (staff)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "browse",
+            "description": "list a dictionary's keys",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "dictionary key, nest with :",
+                "required": true
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "another member (staff)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "set",
+            "description": "set a value",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "database key, nest with :",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "description": "value, JSON for dicts",
+                "required": true
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "another member (staff)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "add",
+            "description": "add to a dict or array",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "array or dictionary key, nest with :",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "description": "value, JSON for dicts",
+                "required": true
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "another member (staff)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "remove",
+            "description": "remove from a dict or array",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "array or dictionary key, nest with :",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "description": "value, JSON for dicts",
+                "required": true
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "another member (staff)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "delete",
+            "description": "delete a key",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "database key, nest with :",
+                "required": true
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "another member (staff)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "export",
+            "description": "export entries as a JSON file",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "empty = all entries",
+                "required": false
+              },
+              {
+                "name": "user",
+                "type": "user",
+                "description": "another member (staff)",
+                "required": false
+              }
+            ]
+          }
+        ],
+        "options": []
+      }
+    },
+    "commands/db/simple_db_lookup.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/edit/edit_confirm.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/edit/edit_modal.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/edit/edit_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": {
+        "subcommands": [
+          {
+            "name": "rule",
+            "description": "edit a rule's text",
+            "options": [
+              {
+                "name": "rule",
+                "type": "integer",
+                "description": "the rule's number",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "entry",
+            "description": "edit a database entry",
+            "options": [
+              {
+                "name": "category",
+                "type": "string",
+                "description": "category to prefill",
+                "required": false
+              },
+              {
+                "name": "key",
+                "type": "string",
+                "description": "key to prefill",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "delete",
+            "description": "delete a rule or entry",
+            "options": [
+              {
+                "name": "rule",
+                "type": "integer",
+                "description": "rule number",
+                "required": false
+              },
+              {
+                "name": "category",
+                "type": "string",
+                "description": "category",
+                "required": false
+              },
+              {
+                "name": "key",
+                "type": "string",
+                "description": "key",
+                "required": false
+              }
+            ]
+          }
+        ],
+        "options": []
+      }
+    },
+    "commands/gematria/gematria.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/gematria/gematria_bootstrap.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/general/avatar_menu.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/general/avatar_viewer.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/general/dismiss.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/general/emoji_menu.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/general/hugemoji.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/general/prompt.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": {
+        "subcommands": [],
+        "options": [
+          {
+            "name": "channel",
+            "type": "channel",
+            "description": "where the prompt goes (default: this channel)",
+            "required": false
+          },
+          {
+            "name": "thread",
+            "type": "boolean",
+            "description": "post as a new thread (forced on for forum channels)",
+            "required": false
+          },
+          {
+            "name": "role",
+            "type": "role",
+            "description": "a role to ping at the top",
+            "required": false
+          }
+        ]
+      }
+    },
+    "commands/general/prompt_post.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/general/timestamp.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/hebrew/alefbet.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/hebrew/atbash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/hebrew/pyramid.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/hebrew/rand_hebrew.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/knowledge/define.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/members/batch_delrep.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/members/hiatus.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/members/inactivity.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/members/inactivity_prune_pick.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/members/role_ping_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": {
+        "subcommands": [],
+        "options": [
+          {
+            "name": "role",
+            "type": "role",
+            "description": "role to ping",
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": "string",
+            "description": "message to send with the ping",
+            "required": false
+          }
+        ]
+      }
+    },
+    "commands/members/staff_roles.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/members/staff_roles_pick.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/members/unhiatus.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/plumbing/bootstrap.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/plumbing/config_sync.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/plumbing/embed_exec.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/plumbing/log_user.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/plumbing/message_link.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/plumbing/ticket_clean.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/rules/rule.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/rules/rules.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    },
+    "commands/rules/rules_pager.gohtml": {
+      "deferMode": 0,
+      "slashDescription": null,
+      "slash": null
+    }
+  },
+  "samples": [
+    {
+      "name": "flat rows of every type",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `probe`\n  Slash option: `text string! the text`\n  Slash option: `who user! a member`\n  Slash option: `count integer how many`\n  Slash option: `where channel a channel`\n  Slash option: `rank role a role`\n  Slash option: `whom mentionable a role or a user`\n*/}}",
+      "header": {
+        "deferMode": 0,
+        "slashDescription": null,
+        "slash": {
+          "subcommands": [],
+          "options": [
+            {
+              "name": "text",
+              "type": "string",
+              "description": "the text",
+              "required": true
+            },
+            {
+              "name": "who",
+              "type": "user",
+              "description": "a member",
+              "required": true
+            },
+            {
+              "name": "count",
+              "type": "integer",
+              "description": "how many",
+              "required": false
+            },
+            {
+              "name": "where",
+              "type": "channel",
+              "description": "a channel",
+              "required": false
+            },
+            {
+              "name": "rank",
+              "type": "role",
+              "description": "a role",
+              "required": false
+            },
+            {
+              "name": "whom",
+              "type": "mentionable",
+              "description": "a role or a user",
+              "required": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "subcommands",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `kv`\n  Slash subcommand: `get read a key`\n  Slash subcommand: `set write a key`\n  Slash option: `get.key string! the key`\n  Slash option: `set.key string! the key`\n  Slash option: `set.ttl integer seconds`\n*/}}",
+      "header": {
+        "deferMode": 0,
+        "slashDescription": null,
+        "slash": {
+          "subcommands": [
+            {
+              "name": "get",
+              "description": "read a key",
+              "options": [
+                {
+                  "name": "key",
+                  "type": "string",
+                  "description": "the key",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "name": "set",
+              "description": "write a key",
+              "options": [
+                {
+                  "name": "key",
+                  "type": "string",
+                  "description": "the key",
+                  "required": true
+                },
+                {
+                  "name": "ttl",
+                  "type": "integer",
+                  "description": "seconds",
+                  "required": false
+                }
+              ]
+            }
+          ],
+          "options": []
+        }
+      }
+    },
+    {
+      "name": "ephemeral defer and a description",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash description: `Color tools`\n  Defer mode: `Ephemeral Message Response`\n*/}}",
+      "header": {
+        "deferMode": 2,
+        "slashDescription": "Color tools",
+        "slash": {
+          "subcommands": [],
+          "options": []
+        }
+      }
+    },
+    {
+      "name": "message defer, unicode option name",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Defer mode: `Message Response`\n  Slash option: `מפתח string! the key`\n*/}}",
+      "header": {
+        "deferMode": 1,
+        "slashDescription": null,
+        "slash": {
+          "subcommands": [],
+          "options": [
+            {
+              "name": "מפתח",
+              "type": "string",
+              "description": "the key",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a component with a defer mode",
+      "source": "{{/*\n  Trigger type: `Message Component`\n  Trigger: `^x:`\n  Defer mode: `Update Message Response`\n*/}}",
+      "header": {
+        "deferMode": 3,
+        "slashDescription": null,
+        "slash": null
+      }
+    },
+    {
+      "name": "a context menu entry",
+      "source": "{{/*\n  Trigger type: `User Context Menu`\n  Trigger: `View avatar`\n*/}}",
+      "header": {
+        "deferMode": 0,
+        "slashDescription": null,
+        "slash": null
+      }
+    }
+  ],
+  "errors": [
+    {
+      "name": "required option after an optional one",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Group: `Utility`\n  Slash option: `a string first`\n  Slash option: `b user! second`\n*/}}",
+      "error": "header: Option \"b\" is required but follows an optional one: write the required options first (the panel stores them that way)"
+    },
+    {
+      "name": "required subcommand option after an optional one",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Group: `Utility`\n  Slash subcommand: `get read`\n  Slash option: `get.a string first`\n  Slash option: `get.b user! second`\n*/}}",
+      "error": "header: Subcommand \"get\": Option \"b\" is required but follows an optional one: write the required options first (the panel stores them that way)"
+    },
+    {
+      "name": "menu option type",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Group: `Utility`\n  Slash option: `flavor string_menu! the flavor`\n*/}}",
+      "error": "header: Option \"flavor\": type \"string_menu\" is a choices menu, which a header can't express (the panel shows it back as \"string\"): use \"string\""
+    },
+    {
+      "name": "long slash description",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash description: `ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd`\n*/}}",
+      "error": "header: Slash command description must be between 1 and 100 characters"
+    },
+    {
+      "name": "empty slash description",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash description: ``\n*/}}",
+      "error": "header: Slash command description must be between 1 and 100 characters"
+    },
+    {
+      "name": "slash description on a message trigger",
+      "source": "{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Slash description: `d`\n*/}}",
+      "error": "header: Slash description needs a Slash Command trigger"
+    },
+    {
+      "name": "unknown defer mode",
+      "source": "{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Defer mode: `Later`\n*/}}",
+      "error": "header Defer mode: `Later` isn't one of the panel's: None, Message Response, Ephemeral Message Response, Update Message Response"
+    },
+    {
+      "name": "case sensitive not a boolean",
+      "source": "{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Case sensitive: `yes`\n*/}}",
+      "error": "header Case sensitive: `yes` isn't true or false"
+    },
+    {
+      "name": "uppercase name",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `Probe`\n*/}}",
+      "error": "header: Slash command name must be lowercase"
+    },
+    {
+      "name": "name with a space",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `my cmd`\n*/}}",
+      "error": "header: Slash command name must be 1-32 characters and contain only letters, numbers, dashes and underscores"
+    },
+    {
+      "name": "update defer",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Defer mode: `Update Message Response`\n*/}}",
+      "error": "header: \"Update message\" defer mode is not valid for slash commands"
+    },
+    {
+      "name": "bad option row",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `key string`\n*/}}",
+      "error": "header: Slash option `key string`: write `[sub.]name type[!] description` (type: string, string_menu, integer, integer_menu, number, number_menu, boolean, user, channel, role, mentionable; ! = required)"
+    },
+    {
+      "name": "unknown type",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `key text! the key`\n*/}}",
+      "error": "header: Invalid type for option \"key\": \"text!\" isn't one of string, string_menu, integer, integer_menu, number, number_menu, boolean, user, channel, role, mentionable"
+    },
+    {
+      "name": "uppercase option",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `Key string the key`\n*/}}",
+      "error": "header: Option name \"Key\" must be lowercase"
+    },
+    {
+      "name": "bad option name",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `ke$y string the key`\n*/}}",
+      "error": "header: Option name \"ke$y\" must be 1-32 characters (letters, numbers, dashes, underscores)"
+    },
+    {
+      "name": "duplicate option",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `key string a`\n  Slash option: `key string b`\n*/}}",
+      "error": "header: Duplicate option name \"key\""
+    },
+    {
+      "name": "long description",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `key string ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd`\n*/}}",
+      "error": "header: Description for option \"key\" must be between 1 and 100 characters"
+    },
+    {
+      "name": "too many options",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `o string an option`\n  Slash option: `ox string an option`\n  Slash option: `oxx string an option`\n  Slash option: `oxxx string an option`\n  Slash option: `oxxxx string an option`\n  Slash option: `oxxxxx string an option`\n  Slash option: `oxxxxxx string an option`\n  Slash option: `oxxxxxxx string an option`\n  Slash option: `oxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxxxxxxxx string an option`\n  Slash option: `oxxxxxxxxxxxxxxxxxxxxxxxxx string an option`\n*/}}",
+      "error": "header: can have at most 25 options"
+    },
+    {
+      "name": "bad subcommand row",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash subcommand: `get`\n*/}}",
+      "error": "header: Slash subcommand `get`: write `name description`"
+    },
+    {
+      "name": "uppercase subcommand",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash subcommand: `Get read`\n*/}}",
+      "error": "header: Subcommand name \"Get\" must be lowercase"
+    },
+    {
+      "name": "duplicate subcommand",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash subcommand: `get a`\n  Slash subcommand: `get b`\n*/}}",
+      "error": "header: Duplicate subcommand name \"get\""
+    },
+    {
+      "name": "subcommand option error is prefixed",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash subcommand: `get a`\n  Slash option: `get.Key string k`\n*/}}",
+      "error": "header: Subcommand \"get\": Option name \"Key\" must be lowercase"
+    },
+    {
+      "name": "top-level option with subcommands",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash subcommand: `get a`\n  Slash option: `key string k`\n*/}}",
+      "error": "header: Slash option `key string k`: a command with subcommands has no top-level options; write `<subcommand>.key ...`"
+    },
+    {
+      "name": "option of an unknown subcommand",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash subcommand: `get a`\n  Slash option: `set.key string k`\n*/}}",
+      "error": "header: Slash option `set.key string k`: no Slash subcommand line names \"set\" (subcommand lines come first)"
+    },
+    {
+      "name": "option rows on a message trigger",
+      "source": "{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Slash option: `key string k`\n*/}}",
+      "error": "header: Slash option and Slash subcommand lines need a Slash Command trigger"
+    },
+    {
+      "name": "context menu update defer",
+      "source": "{{/*\n  Trigger type: `User Context Menu`\n  Trigger: `View`\n  Defer mode: `Update Message Response`\n*/}}",
+      "error": "header: \"Update message\" defer mode is not valid for context menu commands"
+    },
+    {
+      "name": "context menu bad name",
+      "source": "{{/*\n  Trigger type: `Message Context Menu`\n  Trigger: `Quote!`\n*/}}",
+      "error": "header: Context menu command name must be 1-32 characters and contain only letters, numbers, spaces, dashes and underscores"
+    }
+  ]
+}

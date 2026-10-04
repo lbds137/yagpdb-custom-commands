@@ -109,7 +109,7 @@ class HeaderRule(Rule):
                     severity="error"
                 ))
         
-        # A deployed command names its panel group (the deploy tool reports drift against it)
+        # A deployed command names its panel group (the browser deploy sets the panel's group from it)
         if is_command_file(filename):
             group = header_group(header_lines)
             if group not in PANEL_GROUPS:
