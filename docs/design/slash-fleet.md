@@ -274,9 +274,16 @@ Success order: refusal checks; roles taken (hiatus, held roles from `hasRoleID`,
 interaction member's own roles, no API call) or given (unhiatus); `Staff` dict written;
 ONE execCC to embed_exec WITHOUT `Respond` posting the record to Mod Log (the current
 channel when Mod Log is unset, as today); then the ephemeral reply naming the roles
-removed or restored (`<@&id>` mentions; an ephemeral message notifies nobody). Refusals (no staff roles configured, holds
-none of them, not on hiatus, embed_exec not in Commands) are ephemeral replies with no
-execCC and no writes. The execCC child runs in a goroutine sharing the interaction (tmplextensions.go:240-248),
+removed or restored (`<@&id>` mentions; an ephemeral message notifies nobody). Refusals
+(no staff roles configured, holds none of them, not on hiatus, embed_exec not in
+Commands) are ephemeral replies with no execCC and no writes.
+
+`/unhiatus` restores only the recorded roles still in `Staff.Roles` (Lila, 2026-10-04: it
+is in Utility, so anyone can run it, and someone removed from staff while on hiatus must
+not get the roles back). The reply names any recorded role it skipped; when none is still
+a staff role it refuses and keeps the entry, so re-adding a role to Staff.Roles makes it
+restorable. The match is by `toString`, since YAGPDB's `in` doesn't compare int with uint
+(general.go ~606). The execCC child runs in a goroutine sharing the interaction (tmplextensions.go:240-248),
 so the parent's reply is safe only while embed_exec's non-`Respond` path prints nothing
 (its whitespace is trimmed and dropped, bot.go:762, context.go:648); a `print` there
 would race the parent for the deferred edit. YAGPDB swallows role-call failures (giveRole/takeRole return "" on
