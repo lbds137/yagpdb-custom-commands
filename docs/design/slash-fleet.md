@@ -258,7 +258,8 @@ Title/Description as define.
 
 Files: `commands/members/hiatus_slash.gohtml` (`/hiatus`, Staff Utility) and
 `commands/members/unhiatus_slash.gohtml` (`/unhiatus`, Utility, for the reason in the root
-map). No options. The text twins stay until Lila's live check, then retire (policy).
+map). No options. After Lila's live check (2026-10-04) the text twins hiatus (main 81) and
+unhiatus (82) were disabled and moved to `retired/`.
 
 Every reply is to the invoker alone, so both roots use Defer mode `Ephemeral Message
 Response` (customcommands/handle_component.go:172-174), the fleet's first: the ack goes
@@ -287,7 +288,7 @@ restorable. The match is by `toString`, since YAGPDB's `in` doesn't compare int 
 so the parent's reply is safe only while embed_exec's non-`Respond` path prints nothing
 (its whitespace is trimmed and dropped, bot.go:762, context.go:648); a `print` there
 would race the parent for the deferred edit. YAGPDB swallows role-call failures (giveRole/takeRole return "" on
-every error path), so a failure can't be detected or reported; the text twins behave the
+every error path), so a failure can't be detected or reported; the retired text twins behaved the
 same.
 
 ### Panel rows

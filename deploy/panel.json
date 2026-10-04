@@ -52,8 +52,6 @@
     "commands/rules/rules_pager.gohtml": {"main": 89},
     "commands/db/simple_db_lookup.gohtml": {"main": 79, "rose": 23},
     "commands/members/staff_roles.gohtml": {"main": 80},
-    "commands/members/hiatus.gohtml": {"main": 81},
-    "commands/members/unhiatus.gohtml": {"main": 82},
     "commands/hebrew/alefbet.gohtml": {"lotv": 14, "rose": 13},
     "commands/rules/rule_slash.gohtml": {"main": 106, "rose": 28},
     "commands/general/timestamp_slash.gohtml": {"main": 107, "rose": 29},

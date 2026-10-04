@@ -247,18 +247,6 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
-- Found 2026-10-04 (unit 4), deferred: text `hiatus` REPLACES an earlier hiatus record, so
-  a staff member re-granted one role while on hiatus who runs `hiatus` again loses the
-  record of the others (unhiatus never restores them). `/hiatus` merges instead (test
-  "a second hiatus adds to the earlier record"). Trigger: obsolete when the text twins
-  retire after Lila's live check of /hiatus; fix the twin only if it stays.
-- Found 2026-10-04 (unit 4 review), DECIDED (Lila, 2026-10-04): `/unhiatus` (Utility, so
-  anyone can run it) restored whatever the Hiatus record held, so someone removed from
-  staff while on hiatus could restore their roles. Decision: restore only the recorded
-  roles still in Staff.Roles (shipped in /unhiatus; design doc unit 4). The text twin
-  `unhiatus` keeps the hole until it retires after the live check of /unhiatus. By design,
-  a refusal keeps the entry: someone whose recorded roles all left Staff.Roles stays "on
-  hiatus" until a role is re-added or staff delete the entry with /db.
 - Found 2026-10-04 (unit 3 review), deferred: /color, /hebrew and /gematria execCC
   embed_exec (or gematria) without checking the Commands id is > 0, so on a server
   missing the key the interaction gets no answer. Unit 3's roots refuse ephemerally
@@ -1053,3 +1041,10 @@ Live templates are done (`tools/ide/`). A plugin would add what they can't:
       decoding as MaxInt64 (tmplToInt ignores the range error, general.go:1233); the
       rule.gohtml half (usage text "(1-<max>)", max scan counting "Rule #07") is moot:
       rule.gohtml is retired (2026-10-04)
+- [x] The unit 4 hiatus flaws (found 2026-10-04): `/hiatus` merges into an earlier hiatus
+      record (text `hiatus` replaced it, losing the roles recorded before), and
+      `/unhiatus` restores only the recorded roles still in Staff.Roles (Lila's decision:
+      it is in Utility, so someone removed from staff while on hiatus could otherwise get
+      the roles back). By design a refusal keeps the entry: someone whose recorded roles
+      all left Staff.Roles stays "on hiatus" until a role is re-added or staff delete the
+      entry with /db. The text twins are retired (main 81/82 disabled, 2026-10-04)

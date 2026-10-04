@@ -77,9 +77,11 @@ folder mixes both. Staff-group commands are marked below.
 - **`simple_db_lookup.gohtml`** (staff) - Simple database lookup
 
 #### Members (`commands/members/`)
-- **`hiatus.gohtml`** (staff) - User hiatus management
-- **`unhiatus.gohtml`** - Remove user hiatus status (in the `Utility` group on purpose:
-  a staff member on hiatus has lost the staff roles the `Staff Utility` group requires)
+- **`hiatus_slash.gohtml`** (staff) - `/hiatus`: step away from staff duties (removes
+  your staff roles, records them)
+- **`unhiatus_slash.gohtml`** - `/unhiatus`: return from a hiatus, restoring the recorded
+  roles still in Staff.Roles (in the `Utility` group on purpose: a staff member on hiatus
+  has lost the staff roles the `Staff Utility` group requires)
 - **`inactivity.gohtml`** (staff) - Inactivity tracking and management
 - **`inactivity_prune_pick.gohtml`** (staff) - The prune picker and its kick confirm
 - **`staff_roles.gohtml`** (staff) - Staff role management
