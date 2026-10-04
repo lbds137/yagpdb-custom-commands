@@ -122,6 +122,13 @@ picks, then the minifier.
   cap; create() it there, deploy embed_exec's Respond/Embeds version first), then retire
   contrast.gohtml and rand_color.gohtml fully (lotv 18, 16; they stay in commands/color/
   only for lotv). The other fleet roots follow the same per-server step.
+  BLOCKED 2026-10-04 (dry run): lotv's panel has no command groups (all 18 commands in
+  "None"), so every header's `Group:` fails there and nothing deploys or creates. Lila
+  wants lotv synced to everything (like The Rose: config_sync, the fleet roots,
+  rules_pager, db_get_text, simple_db_lookup, plus the stale live triggers of hex_to_int
+  and db_get_embed) but skipped it for now. Trigger: Lila creates "Utility" and
+  "Staff Utility" (staff role) in lotv's panel; then full dry run, create, enable, and
+  set config_sync's interval channel by hand.
 - Prerequisite (met by unit 4, 2026-09-27): the emulator models interactions: Slash
   (.Options, .CmdArgs, subcommands), Component and Modal triggers (.CustomID, .Values,
   .IsButton/.IsMenu), context-menu (.TargetUser/.TargetMember/.Message), sendResponse/
