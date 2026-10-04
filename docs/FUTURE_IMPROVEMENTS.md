@@ -247,6 +247,17 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- Found 2026-10-04 (unit 4), deferred: text `hiatus` REPLACES an earlier hiatus record, so
+  a staff member re-granted one role while on hiatus who runs `hiatus` again loses the
+  record of the others (unhiatus never restores them). `/hiatus` merges instead (test
+  "a second hiatus adds to the earlier record"). Trigger: obsolete when the text twins
+  retire after Lila's live check of /hiatus; fix the twin only if it stays.
+- Found 2026-10-04 (unit 4 review), LILA'S CALL (permissions): `unhiatus`/`/unhiatus`
+  (Utility, so anyone can run it) restore whatever the Hiatus record holds, with no
+  re-check against Staff.Roles. Someone removed from staff while on hiatus can still
+  /unhiatus their roles back unless their Hiatus entry is deleted by hand. Options:
+  restore only IDs still in Staff.Roles, or have staff removal clear the entry. Trigger:
+  her decision.
 - Found 2026-10-04 (unit 3 review), deferred: /color, /hebrew and /gematria execCC
   embed_exec (or gematria) without checking the Commands id is > 0, so on a server
   missing the key the interaction gets no answer. Unit 3's roots refuse ephemerally

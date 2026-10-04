@@ -1,0 +1,144 @@
+'hiatus_slash: holding none of the staff roles is an ephemeral refusal':
+    output: ⚠️ You don't hold any of the staff roles! (If you're already on hiatus, /unhiatus restores them.)
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ You don't hold any of the staff roles! (If you're already on hiatus, /unhiatus restores them.)
+          ephemeral: true
+    interaction_responses:
+        - kind: deferred_edit
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ You don't hold any of the staff roles! (If you're already on hiatus, /unhiatus restores them.)
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"Mod Log":888888888,"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png"}'
+        - user_id: 0
+          key: Staff
+          value: '{"Roles":[111111111,222222222]}'
+'hiatus_slash: no staff role IDs defined is an ephemeral refusal':
+    output: ⚠️ Staff role IDs must be defined before using this command!
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ Staff role IDs must be defined before using this command!
+          ephemeral: true
+    interaction_responses:
+        - kind: deferred_edit
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ Staff role IDs must be defined before using this command!
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"Mod Log":888888888,"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png"}'
+        - user_id: 0
+          key: Staff
+          value: '{}'
+'hiatus_slash: without embed_exec in Commands is an ephemeral refusal':
+    output: ⚠️ This command isn't set up on this server yet.
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ This command isn't set up on this server yet.
+          ephemeral: true
+    interaction_responses:
+        - kind: deferred_edit
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ This command isn't set up on this server yet.
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"Mod Log":888888888,"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png"}'
+        - user_id: 0
+          key: Staff
+          value: '{"Roles":[111111111,222222222]}'
+'unhiatus_slash: no staff role IDs defined is an ephemeral refusal':
+    output: ⚠️ Staff role IDs must be defined before using this command!
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ Staff role IDs must be defined before using this command!
+          ephemeral: true
+    interaction_responses:
+        - kind: deferred_edit
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ Staff role IDs must be defined before using this command!
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"Mod Log":888888888,"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png"}'
+        - user_id: 0
+          key: Staff
+          value: '{}'
+'unhiatus_slash: not on hiatus is an ephemeral refusal':
+    output: ⚠️ You are not a staff member on hiatus!
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ You are not a staff member on hiatus!
+          ephemeral: true
+    interaction_responses:
+        - kind: deferred_edit
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ You are not a staff member on hiatus!
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"Mod Log":888888888,"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"123"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png"}'
+        - user_id: 0
+          key: Staff
+          value: '{"Roles":[111111111,222222222]}'
+'unhiatus_slash: without embed_exec in Commands is an ephemeral refusal':
+    output: ⚠️ This command isn't set up on this server yet.
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ This command isn't set up on this server yet.
+          ephemeral: true
+    interaction_responses:
+        - kind: deferred_edit
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ This command isn't set up on this server yet.
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"Mod Log":888888888,"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png"}'
+        - user_id: 0
+          key: Staff
+          value: '{"Hiatus":{"987654321098765432":[111111111]},"Roles":[111111111,222222222]}'

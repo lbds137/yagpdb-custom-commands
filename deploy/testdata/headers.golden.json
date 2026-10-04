@@ -567,6 +567,14 @@
       "slashDescription": null,
       "slash": null
     },
+    "commands/members/hiatus_slash.gohtml": {
+      "deferMode": 2,
+      "slashDescription": "Step away from staff duties (removes your staff roles)",
+      "slash": {
+        "subcommands": [],
+        "options": []
+      }
+    },
     "commands/members/inactivity.gohtml": {
       "deferMode": 0,
       "slashDescription": null,
@@ -612,6 +620,14 @@
       "deferMode": 0,
       "slashDescription": null,
       "slash": null
+    },
+    "commands/members/unhiatus_slash.gohtml": {
+      "deferMode": 2,
+      "slashDescription": "Return from a staff hiatus (restores your staff roles)",
+      "slash": {
+        "subcommands": [],
+        "options": []
+      }
     },
     "commands/plumbing/bootstrap.gohtml": {
       "deferMode": 0,
