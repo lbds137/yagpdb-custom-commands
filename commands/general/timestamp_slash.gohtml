@@ -1,0 +1,72 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `timestamp`
+  Group: `Utility`
+  Slash description: `When a Discord ID was created (default: you)`
+  Defer mode: `None`
+  Dependencies: `embed_exec`
+
+  The slash version of timestamp. ONE execCC to embed_exec with `Respond`: the child
+  inherits the interaction and answers it (public), so this run prints nothing on that
+  path. An input that is neither a snowflake nor a mention is an ephemeral refusal of
+  this run, never alongside the execCC (an interaction takes one response). The text
+  twin falls back to the user silently; the slash form refuses instead.
+
+  Slash option: `id string a Discord ID or mention (default: you)`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $commandsDict := (dbGet 0 "Commands").Value }}
+	{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
+
+	{{/* 16-19 digits: a longer one would overflow int64 and decode as MaxInt64 */}}
+	{{ $snowflakeRegex := "\\d{16,19}" }}
+	{{ $entityIDRegex := joinStr "" "\\A" $snowflakeRegex "\\z" }}
+	{{ $mentionRegex := joinStr "" "\\A<(?:@!?|@&|#)" $snowflakeRegex ">\\z" }}
+
+	{{/* the ID to decode: the invoker's by default, else a bare snowflake or the digits
+		of a user, role or channel mention */}}
+	{{ $input := trimSpace (or .Options.id "") }}
+	{{ $entityID := "" }}
+	{{ $refusal := "" }}
+	{{ if eq $input "" }}
+		{{ $entityID = toString .User.ID }}
+	{{ else if reFind $entityIDRegex $input }}
+		{{ $entityID = $input }}
+	{{ else if reFind $mentionRegex $input }}
+		{{ $entityID = reReplace "\\D" $input "" }}
+	{{ else }}
+		{{/* the echo is cut to 100 characters, backticks made quotes so the input
+			can't break out of the code span */}}
+		{{ $shown := reReplace "`" $input "'" }}
+		{{ if gt (len (toRune $shown)) 100 }}
+			{{ $shown = joinStr "" (slice (split $shown "") 0 100) }}
+		{{ end }}
+		{{ $refusal = joinStr "" "⚠️ `" $shown "` isn't a Discord ID or mention." }}
+	{{ end }}
+
+	{{ if $refusal }}
+		{{ sendResponse nil (complexMessage "content" $refusal "ephemeral" true) }}
+	{{ else if le $embed_exec 0 }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ This command isn't set up on this server yet."
+			"ephemeral" true) }}
+	{{ else }}
+		{{ $fields := cslice }}
+		{{ $fields = $fields.Append (sdict "name" "ID" "value" (toString $entityID) "inline" false) }}
+		{{ $timestamp :=
+			div $entityID 4194304 | add 1420070400000 | mult 1000000 | toDuration | (newDate 1970 1 1 0 0 0).Add
+		}}
+		{{ $fields = $fields.Append (sdict "name" "Timestamp" "value" (toString $timestamp) "inline" false) }}
+
+		{{ execCC $embed_exec .Channel.ID 0 (sdict
+			"AuthorID" .User.ID
+			"ChannelID" .Channel.ID
+			"Title" "Timestamp Parser"
+			"Fields" $fields
+			"Respond" true
+		) }}
+	{{ end }}
+{{ else }}
+Use /timestamp as a slash command with a Discord ID or mention (default: you)
+{{ end }}
