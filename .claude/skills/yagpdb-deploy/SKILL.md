@@ -81,5 +81,15 @@ for its `Commands`-dict key. Only once that comes up empty is it safe to retire 
   (`role_trigger_mode`, `role_context_channel`, `slash_command_description`,
   `slash_use_subcommands`, ...). `deploy.js` always resubmits the page's own form with just
   `responses` swapped in, never a rebuilt one, so those fields survive untouched.
+- A full-manifest run (~50 commands, 0.8s apart plus fetches) outlasts `javascript_tool`'s
+  45s timeout, and the call errors though the run keeps going in the page. Start it as
+  `yagDeploy.run(m, opts).then(r => { window.yagDry = r })`, then poll `window.yagDry` in a
+  later call (a loop of 1s waits, under 45s). The real run can take just the dry run's
+  `would-update` ids.
+- Step 5 can load the committed script instead of pasting it: fetch `deploy/deploy.js`
+  from raw.githubusercontent.com at the manifest's commit and `(0, eval)` it (the panel's
+  page allowed it on 2026-10-04); check `typeof yagDeploy.run === "function"`.
+- An expired panel login redirects the tab to Discord's "Authorize YAGPDB" page: that is
+  an OAuth grant, so Lila clicks Authorize herself; then reload the panel URL.
 - `deploy.js` never navigates, clicks, or triggers a dialog -- if a command needs a structural
   change (new argument, renamed trigger), that's still a manual panel edit.
