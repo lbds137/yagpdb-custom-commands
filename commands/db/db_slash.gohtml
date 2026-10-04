@@ -121,7 +121,9 @@
 {{ end }}
 {{ if and $operationCheck $key $valueCheck }}
     {{/* the engine below is retired/db.gohtml's verbatim; its comments live there
-        (kept out here: YAGPDB's panel double-counts newlines against the 20k limit) */}}
+        (kept out here: YAGPDB's panel double-counts newlines against the 20k limit).
+        Every .Set/.Del is a `$_ :=` declaration: one never prints (a nil receiver would
+        print "<no value>"), which lets yagmin drop the whitespace around it */}}
     {{ $existingValue := "" }}
     {{ $found := false }}
 
@@ -149,7 +151,7 @@
                 {{/* plain map inside stored JSON: promote to sdict in its parent */}}
                 {{ if eq $plainMapType (printf "%T" $existingValue) }}
                     {{ $existingValue = sdict $existingValue }}
-                    {{ $lastParentExistingValue.Set $subkey $existingValue }}
+                    {{ $_ := $lastParentExistingValue.Set $subkey $existingValue }}
                 {{ end }}
             {{ else }}
                 {{ $found = false }}
@@ -179,14 +181,14 @@
             {{/* Dump specific key only */}}
             {{ $entry := dbGet $dumpUserID $key }}
             {{ if and $entry $entry.Value }}
-                {{ $dumpData.Set $key $entry.Value }}
+                {{ $_ := $dumpData.Set $key $entry.Value }}
             {{ end }}
         {{ else }}
             {{/* build from dbGetPattern's own entries (1 interaction, 100/call max);
                 rationale in retired/db.gohtml's copy of this loop */}}
             {{- range $entry := dbGetPattern $dumpUserID "%" 100 0 -}}
                 {{- if $entry.Value -}}
-                    {{- $dumpData.Set $entry.Key $entry.Value -}}
+                    {{- $_ := $dumpData.Set $entry.Key $entry.Value -}}
                 {{- end -}}
             {{- end -}}
         {{ end }}
@@ -222,7 +224,7 @@
             {{ if $isDelete }}
                 {{ $ptAction = "deleted" }}
                 {{ if ge (len $keyArray) 2 }}
-                    {{ $lastParentExistingValue.Del $lastSubkey }}
+                    {{ $_ := $lastParentExistingValue.Del $lastSubkey }}
                     {{ dbSet $userID $firstSubkey $parentExistingValue }}
                 {{ else }}
                     {{ dbDel $userID $key }}
@@ -257,7 +259,7 @@
                 {{ $newSlice = $newSlice.Append $parsedValue }}
                 {{ $existingValue = $newSlice }}
                 {{ if ge (len $keyArray) 2 }}
-                    {{ $lastParentExistingValue.Set $lastSubkey $existingValue }}
+                    {{ $_ := $lastParentExistingValue.Set $lastSubkey $existingValue }}
                     {{ dbSet $userID $firstSubkey $parentExistingValue }}
                 {{ else }}
                     {{ dbSet $userID $key $existingValue }}
@@ -276,7 +278,7 @@
                 {{ if $removed }}
                     {{ $existingValue = $newSlice }}
                     {{ if ge (len $keyArray) 2 }}
-                        {{ $lastParentExistingValue.Set $lastSubkey $existingValue }}
+                        {{ $_ := $lastParentExistingValue.Set $lastSubkey $existingValue }}
                         {{ dbSet $userID $firstSubkey $parentExistingValue }}
                     {{ else }}
                         {{ dbSet $userID $key $existingValue }}
@@ -301,16 +303,16 @@
                             {{- range $item := $v -}}
                                 {{- $newSlice = $newSlice.Append $item -}}
                             {{- end -}}
-                            {{- $existingValue.Set $k $newSlice -}}
+                            {{- $_ := $existingValue.Set $k $newSlice -}}
                         {{- else -}}
-                            {{- $existingValue.Set $k $v -}}
+                            {{- $_ := $existingValue.Set $k $v -}}
                         {{- end -}}
                     {{- else if $existingValue.HasKey $k -}}
-                        {{- $value.Set $k ($existingValue.Get $k) -}}
-                        {{- $existingValue.Del $k -}}
+                        {{- $_ := $value.Set $k ($existingValue.Get $k) -}}
+                        {{- $_ := $existingValue.Del $k -}}
                         {{- $removedAny = true -}}
                     {{- else -}}
-                        {{- $value.Del $k -}}
+                        {{- $_ := $value.Del $k -}}
                     {{- end -}}
                 {{- end -}}
 
@@ -340,7 +342,7 @@
             {{ end }}
             {{ $ptAction = "set" }}
             {{ if ge (len $keyArray) 2 }}
-                {{ $lastParentExistingValue.Set $lastSubkey $value }}
+                {{ $_ := $lastParentExistingValue.Set $lastSubkey $value }}
                 {{ dbSet $userID $firstSubkey $parentExistingValue }}
             {{ else }}
                 {{ dbSet $userID $key $value }}
