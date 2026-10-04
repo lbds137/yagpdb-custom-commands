@@ -269,6 +269,15 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		ctx.ChannelDetails[ch.ID] = types.CtxChannel{ID: ch.ID, Name: ch.Name, Type: ch.Type,
 			ParentID: ch.ParentID, Position: ch.Position, Topic: ch.Topic, NSFW: ch.NSFW,
 			AvailableTags: forumTags(ch.AvailableTags)}
+		if len(ch.PermissionOverwrites) > 0 {
+			if ctx.ChannelOverwrites == nil {
+				ctx.ChannelOverwrites = map[int64][]types.PermissionOverwrite{}
+			}
+			for _, ow := range ch.PermissionOverwrites {
+				ctx.ChannelOverwrites[ch.ID] = append(ctx.ChannelOverwrites[ch.ID],
+					types.PermissionOverwrite{ID: ow.ID, Type: int(ow.Type), Allow: ow.Allow, Deny: ow.Deny})
+			}
+		}
 		if ch.BotCannotSend {
 			if ctx.ChannelsCannotSend == nil {
 				ctx.ChannelsCannotSend = map[int64]bool{}
@@ -298,7 +307,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	}
 	ctx.SortChannels()
 	for _, role := range tc.Context.Guild.Roles {
-		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position, Mentionable: role.Mentionable}
+		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position, Mentionable: role.Mentionable, Permissions: role.Permissions}
 	}
 	if len(ctx.AvailableRoles) > 0 {
 		// Every guild has @everyone, whose ID is the guild's

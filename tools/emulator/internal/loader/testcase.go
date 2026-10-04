@@ -439,6 +439,37 @@ type ChannelDef struct {
 	// BotCannotSend makes a send to this channel fail as Discord refuses it (403 Missing
 	// Permissions), instead of being recorded
 	BotCannotSend bool `yaml:"bot_cannot_send"`
+	// PermissionOverwrites are the channel's allow/deny bits for roles and members, which
+	// getTargetPermissionsIn applies as YAGPDB does (a thread uses its parent's)
+	PermissionOverwrites []OverwriteDef `yaml:"permission_overwrites"`
+}
+
+// OverwriteDef is discordgo's PermissionOverwrite: id is a role's (the guild's ID is
+// @everyone) or a member's, type is "role" (the default) or "member", allow and deny are
+// permission bit masks (View Channel is 1024).
+type OverwriteDef struct {
+	ID    int64         `yaml:"id"`
+	Type  OverwriteType `yaml:"type"`
+	Allow int64         `yaml:"allow"`
+	Deny  int64         `yaml:"deny"`
+}
+
+// OverwriteType is an overwrite's `type:`, "role" (the default) or "member", read as
+// discordgo's PermissionOverwriteType value (0 or 1).
+type OverwriteType int
+
+func (o *OverwriteType) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.ScalarNode {
+		switch node.Value {
+		case "role":
+			*o = types.PermissionOverwriteTypeRole
+			return nil
+		case "member":
+			*o = types.PermissionOverwriteTypeMember
+			return nil
+		}
+	}
+	return fmt.Errorf(`line %d: permission_overwrites type: write "role" or "member"`, node.Line)
 }
 
 // TagDef is a forum channel's tag, as a test declares it.
@@ -472,6 +503,9 @@ type RoleDef struct {
 	Position int    `yaml:"position"` // Higher is above; roleAbove compares these
 	// Mentionable lets anyone ping the role; see GuildDef.BotMentionEveryone
 	Mentionable bool `yaml:"mentionable"`
+	// Permissions is the role's permission bit mask (the guild's ID is @everyone's role);
+	// getTargetPermissionsIn sums them
+	Permissions int64 `yaml:"permissions"`
 }
 
 // DBEntry represents a database entry for setup.

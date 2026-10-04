@@ -13,8 +13,9 @@ settings ephemeral, results public). Root map APPROVED by Lila 2026-10-04 (start
   roots never share subcommands (hiatus is Staff Utility, unhiatus Utility on purpose).
 - Immediate execCC nests at most 2 deep (tmplextensions.go:231-232) and the child shares
   the caller's Interaction pointer (:238-241). So root → child → gematria → embed_exec
-  (depth 3) is refused: **a root can't dispatch to today's text commands**; it holds its
-  subcommands' logic inline and execCCs only the renderer it already used (gematria,
+  (depth 3) is refused: **a root can't dispatch to a text command whose own chain is two
+  execCCs long** (handler → gematria → embed_exec). Unit 5's /staff router dispatches to
+  handlers whose chain is one execCC long. Units 1-4 hold their subcommands' logic inline and execCCs only the renderer it already used (gematria,
   embed_exec) at depth 1-2.
 - A run with empty output sends nothing (context.go:647-650), so a root that execCCs its
   renderer and prints nothing leaves the one interaction response to the child. Never
@@ -44,7 +45,8 @@ check where it renders, for /hebrew and /gematria (unit 2).
 | `/define` | Utility | none (define) |
 | `/hiatus` | Staff Utility | none (hiatus) |
 | `/unhiatus` | Utility | none (unhiatus) |
-| `/staff` | Staff Utility | roles, inactivity, activity, rules, pointer, bump_reset, delrep, bootstrap |
+| `/staff` | Staff Utility | roles, inactivity, activity, rules, bump_reset, delrep, bootstrap (a router: unit 5) |
+| `/pointer` | Utility | none (message_pointer; out of /staff, Lila 2026-10-04) |
 
 Existing: /db, /edit, /prompt, /role_ping. Main (premium): 13 slash CCs of 50.
 Free-tier top 10 (for a free server; lotv turned out to be premium, 2026-10-04): /color,
@@ -297,3 +299,87 @@ same.
 |---|---|
 | `/hiatus` | Step away from staff duties (removes your staff roles) |
 | `/unhiatus` | Return from a staff hiatus (restores your staff roles) |
+
+## Unit 5: /staff, /pointer
+
+`pointer` leaves `/staff` (Lila, 2026-10-04): the text `message_pointer` is in Utility, so
+under the Staff Utility root it would turn staff-only. It becomes its own Utility root
+`/pointer` instead, open to everyone as today. `/staff` keeps seven subcommands.
+
+### /staff is a router (measured, 2026-10-04)
+
+The seven handlers total 24.7k runes (staff_roles 4,819, inactivity 5,632,
+channel_activity 2,473, rules 6,217, bump_reset 596, batch_delrep 1,872, bootstrap 3,129),
+over the 20k premium cap, so their logic can't be inlined into one root. `/staff`
+(`commands/members/staff_slash.gohtml`, Staff Utility, Defer `None`) reads `.SubCommand`
+and `.Options` and makes ONE execCC to the existing handler (its `Commands` key, as
+today) with the options in ExecData, and prints nothing; the handler answers the
+interaction. Depth: root (0) -> handler (1) -> embed_exec / a pager / the prune picker
+(2), within YAGPDB's limit of 2 (tmplextensions.go:231-232). The Mechanics note that "a
+root can't dispatch to today's text commands" holds only for handlers that themselves
+need depth 3 (gematria -> embed_exec); none of these seven do, once inactivity's `date`
+writes its dict directly instead of through db_slash (root -> inactivity -> db_slash ->
+embed_exec would be depth 3). `exec "delrep"` works in a slash run: the run builds a
+minimal message (handle_slashcommand.go:163-172) and the execCC child inherits it
+(tmplextensions.go:236-239).
+
+Each handler gains a `/staff` path keyed on `.ExecData.Staff` (checked FIRST: an execCC
+child of a slash run inherits `.Interaction`). Its text path is untouched until the
+twin retires. Visibility stays as today, except that every refusal and every reply the
+text path deleted after a delay becomes ephemeral (deletes of interaction responses cap
+at 10 s). A POST, something staff publish for members (the inactivity announcements
+with their role ping, the rules), is still sent as a real channel message exactly as
+today, and the interaction gets a short ephemeral ack: an interaction response carries
+the "used /staff" header and is the wrong vehicle for a published message. A TOOL (a
+panel, a picker state, a result for the invoker) is the interaction response.
+
+Retirement differs from earlier units: the router execCCs the handlers, and YAGPDB
+refuses an execCC to a DISABLED command (tmplextensions.go:198-200). So after the live
+check, each handler's text trigger is switched to trigger type `None` (execCC-able, never
+triggered; embed_exec's own type) and its text-only branches are removed. It is not
+disabled.
+
+### /staff subcommands and options
+
+| sub | option | type | required | description |
+|---|---|---|---|---|
+| roles | roles | string | — | staff role IDs or mentions (omit for the role picker) |
+| inactivity | action | string | ✓ | start, end, remind, date or prune |
+| · | date | string | — | the next prune date (for date) |
+| · | user | user | — | the member to review (for prune; omit for the picker) |
+| activity | — | | | channel activity, oldest first |
+| rules | from | integer | — | first rule to post |
+| · | to | integer | — | last rule to post |
+| bump_reset | — | | | clear the last bump time |
+| delrep | users | string | ✓ | user IDs or mentions, up to 5 |
+| bootstrap | staff_role | role | — | the staff role (omit to keep the current one) |
+
+Slash description: `Staff tools`.
+
+### /pointer
+
+`commands/channels/pointer_slash.gohtml`, Utility, Defer `None`; message_pointer's logic
+inlined (2.8k runes). Options: `link string!` (the message link), `comment string`. The
+pointer embed is public, through embed_exec with `Respond`; an invalid link is an
+ephemeral refusal from the root. Slash description: `Post a pointer to a message`.
+
+### Unit 5 build notes (2026-10-04)
+
+- Panel: `/staff` main 111, rose 33; `/pointer` main 112, rose 34 (created disabled). The
+  Rose has only bootstrap of the seven handlers, so its other /staff subcommands answer
+  "isn't set up" (ephemeral).
+- The router wraps its execCC in `try`: an execCC error (a stale id, a disabled handler)
+  would otherwise leave the interaction unanswered (bot.go:762-775). Verified by code
+  reading only (emulator gap, FUTURE).
+- /pointer refuses a channel the invoker can't view (Lila, 2026-10-04), with the
+  invalid-link text; the emulator's getTargetPermissionsIn now copies dstate's
+  permission math.
+- Live-check items (the 3 s ack under Defer None covers the whole chain, not just the
+  root): `/staff delrep` with 5 IDs (five `exec "delrep"` before the reply),
+  `/staff rules` on the full rule set (every rule message is sent before the ack), and
+  `/staff activity` (cleanup deletes, then the pager's page build, before its response).
+- Accepted (review, 2026-10-04): a POST's ack comes after the post, so a failed send
+  (the bot can't post there) errors the run and leaves the interaction unanswered, as a
+  failed text-path send leaves no reply. The inactivity ping can land before its
+  announcement embed (embed_exec runs in a goroutine); the text path has the same race,
+  and the test's message order pins only the emulator's synchronous execCC.

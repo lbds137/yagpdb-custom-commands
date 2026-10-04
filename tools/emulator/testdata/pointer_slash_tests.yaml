@@ -1,0 +1,252 @@
+name: "pointer_slash (/pointer)"
+
+# The slash root of message_pointer: ONE execCC to embed_exec with Respond (public) on
+# success; an invalid link or a missing embed_exec is an ephemeral refusal with no execCC.
+
+defaults:
+  user: { id: 500000000000000001, username: "Invoker" }
+  channel: { id: 123456789012345678 }
+  guild:
+    id: 111222333444555666
+    name: "Test Server"
+    # an owner who isn't the invoker (the owner has every permission), and @everyone with
+    # View Channel (1024), so the invoker sees the channels without an overwrite
+    owner_id: 222333444555666777
+    roles:
+      - { id: 111222333444555666, name: "@everyone", permissions: 1024 }
+      - { id: 700000000000000001, name: "Admin", permissions: 8 }
+    channels:
+      - { id: 888888888888888888, name: "introduction" }
+      # staff-room hides from @everyone; its thread uses the parent's overwrites
+      - id: 777777777777777777
+        name: "staff-room"
+        permission_overwrites:
+          - { id: 111222333444555666, deny: 1024 }
+      - { id: 666666666666666666, name: "side-thread", type: 11, parent_id: 777777777777777777 }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Embed Color: 9807270 }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "1" }
+
+command_map:
+  1: "../../../commands/plumbing/embed_exec.gohtml"
+
+tests:
+  - name: "pointer_slash: a link without a comment answers publicly with the channel and message fields"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    snapshot: true
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    expected:
+      output_equals: ""
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Message Pointer"
+          embed_contains: "#️⃣ [introduction](https://discord.com/channels/111222333444555666/888888888888888888/)"
+
+  - name: "pointer_slash: a comment is posted as the first field"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options:
+          link: "https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444"
+          comment: "Read this one first"
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Message Pointer"
+          embed_contains: "Read this one first"
+
+  - name: "pointer_slash: the link is found inside surrounding text"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { link: "see https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444 ok" }
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Message Pointer"
+          embed_contains: "Click or tap here to view the message."
+
+  - name: "pointer_slash: a ptb. link is accepted"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://ptb.discord.com/channels/111222333444555666/888888888888888888/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Message Pointer"
+          embed_contains: "https://ptb.discord.com/channels/111222333444555666/888888888888888888/999888777666555444"
+
+  - name: "pointer_slash: a canary. link is accepted"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://canary.discord.com/channels/111222333444555666/888888888888888888/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Message Pointer"
+          embed_contains: "https://canary.discord.com/channels/111222333444555666/888888888888888888/999888777666555444"
+
+  # An ephemeral response is itself a sent message in the emulator, so `sent_messages: []`
+  # can't pin "no extra channel message"; the snapshot lists every sent message.
+  - name: "pointer_slash: a link to a message that does not exist is an ephemeral refusal"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    snapshot: true
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "does not match any valid message" }
+
+  - name: "pointer_slash: a string that is not a link is an ephemeral refusal"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, options: { link: "hello" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "does not match any valid message" }
+
+  - name: "pointer_slash: without embed_exec in Commands is an ephemeral refusal"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    snapshot: true
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  # The view check: a hidden channel's message is refused with the invalid-link text, so
+  # the reply neither names the channel nor confirms the message exists.
+  - name: "pointer_slash: a link into a channel the invoker can't view is the invalid-link refusal"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    snapshot: true
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/777777777777777777/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 777777777777777777, author_id: 222333444555666777, content: "secret" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "does not match any valid message" }
+
+  - name: "pointer_slash: a link to a thread whose parent hides it is refused"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    snapshot: true
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/666666666666666666/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 666666666666666666, author_id: 222333444555666777, content: "secret" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "does not match any valid message" }
+
+  - name: "pointer_slash: a link to a thread of a channel the invoker can view is posted"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/666666666666666666/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 666666666666666666, author_id: 222333444555666777, content: "hi" }
+      guild:
+        channels:
+          - { id: 777777777777777777, name: "staff-room" }
+          - { id: 666666666666666666, name: "side-thread", type: 11, parent_id: 777777777777777777 }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Message Pointer"
+          embed_contains: "side-thread"
+
+  - name: "pointer_slash: an invoker with the Admin role sees a hidden channel's message"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      user: { id: 500000000000000001, username: "Invoker", roles: [700000000000000001] }
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/777777777777777777/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 777777777777777777, author_id: 222333444555666777, content: "secret" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Message Pointer"
+          embed_contains: "staff-room"
+
+  - name: "pointer_slash: a link to a hidden channel's missing message is the same refusal"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/777777777777777777/999888777666555444" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "does not match any valid message" }
+
+  - name: "pointer_slash: a bare run prints the usage hint"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      exec_data: { probe: true }
+    expected:
+      output_contains: "Use /pointer as a slash command"
+
+  - name: "pointer_slash: a 1100-character comment is cut to 1023 characters and an ellipsis"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options:
+          link: "https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444"
+          comment: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_contains: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…\""

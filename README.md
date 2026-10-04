@@ -84,6 +84,8 @@ folder mixes both. Staff-group commands are marked below.
   has lost the staff roles the `Staff Utility` group requires)
 - **`inactivity.gohtml`** (staff) - Inactivity tracking and management
 - **`inactivity_prune_pick.gohtml`** (staff) - The prune picker and its kick confirm
+- **`staff_slash.gohtml`** (staff) - `/staff`: routes roles, inactivity, activity, rules,
+  bump_reset, delrep and bootstrap to their handlers (the text commands in this list)
 - **`staff_roles.gohtml`** (staff) - Staff role management
 - **`staff_roles_pick.gohtml`** (staff) - The Staff Roles panel's role select
 - **`role_ping_slash.gohtml`** (staff) - `/role_ping`: ping any role, with an
@@ -101,6 +103,8 @@ folder mixes both. Staff-group commands are marked below.
   (Regex `.*`, no output), for `channel_activity`
 - **`directory.gohtml`** (staff) - User directory management
 - **`channel_link.gohtml`** - Generate channel links
+- **`pointer_slash.gohtml`** - `/pointer`: post a pointer to a message (refuses a channel
+  the invoker can't view)
 - **`message_pointer.gohtml`** - Message reference utility
 
 #### Knowledge (`commands/knowledge/`)

@@ -51,7 +51,11 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # A channel also takes type (0 text, 2 voice, 4 category, 5 announcement, 15 forum),
     # parent_id, position, topic, nsfw, bot_cannot_send (a send there fails as Discord's
     # 403 Missing Permissions would, nothing recorded); .Guild.Channels is sorted by position
-    # guild.owner_id: .Guild.OwnerID (default: the triggering user); guild.prefix (default "-")
+    # guild.owner_id: .Guild.OwnerID (default: the triggering user, who then has every
+    # permission: set another owner to test getTargetPermissionsIn); guild.prefix (default "-")
+    # guild.roles[].permissions: the role's bit mask (the guild's ID is @everyone's role);
+    # a channel's permission_overwrites: [{ id, type: role|member, allow, deny }] (a thread
+    # uses its parent's); both feed getTargetPermissionsIn, as YAGPDB computes it
     members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
     member_roles: { 2: [111] }        # other members' roles (takeRoleID only takes a role they have)
     member_nicks: { 1: "Nick" }       # nicknames (.Member and getMember), the triggering user's too

@@ -1,0 +1,385 @@
+name: "staff_slash (/staff inactivity, activity, rules)"
+
+# Unit 5b: the router's inactivity, activity and rules subcommands and those handlers'
+# /staff paths. Announcements and rules are POSTS (real channel messages, as the text
+# path sends them) with an ephemeral ack; tools (the prune picker, the activity pager,
+# the date result) are the interaction response, public; refusals are ephemeral.
+# 600000000000000001 is the staffer (Staff role 111111111111111111), 700000000000000001
+# the prune target (Active 333..., Inactive 444...). Message 7 is the panel a click
+# lands on: the /staff path's own response message has the same shape as the text
+# path's panel (the click handlers read only its embed and the custom IDs).
+
+defaults:
+  guild:
+    id: 333333333333333333
+    name: "Test Server"
+    channels:
+      - { id: 999999999, name: "yagpdb" }
+    roles:
+      - { id: 111111111111111111, name: "Mod" }
+      - { id: 333333333333333333, name: "Active" }
+      - { id: 444444444444444444, name: "Inactive" }
+      - { id: 555555555555555555, name: "Member" }
+  channel: { id: 123456789012345678 }
+  user: { id: 600000000000000001, username: "Staffer", roles: [111111111111111111] }
+  members: [600000000000000001, 700000000000000001, 800000000000000001]
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Delete Trigger Delay: 5, Delete Response Delay: 10, Embed Color: 3447003, Server URL: "https://example.com", Guild Premium Tier: 0, Default Avatar: "https://example.com/a.png" }
+  - user_id: 0
+    key: "Commands"
+    value: { embed_exec: "1", inactivity: "20", channel_activity: "21", channel_activity_pager: "22", rules: "23", inactivity_prune_pick: "24" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 999999999 }
+  - user_id: 0
+    key: "Roles"
+    value: { Staff: "111111111111111111", Active: "333333333333333333", Inactive: "444444444444444444", Member: "555555555555555555" }
+  - user_id: 0
+    key: "Inactivity Prune"
+    value:
+      Previous Date: "2026-09-01"
+      Next Date: "2026-10-01"
+      Message Threshold: "0"
+      Minute Threshold: "100"
+      Opening Announcement: "Prune opens #{next_date} (last #{previous_date})."
+      Closing Announcement: "Prune closed."
+      Reminder: "Stay active: #{minute_threshold} minutes."
+  - user_id: 0
+    key: "Directory"
+    value: { Exclude Categories: [], Exclude Channels: [] }
+  - user_id: 0
+    key: "Rules"
+    value: { "Rule #1": "Be kind.", "Rule #2": "No spam.", "Rule #3": "Stay on topic." }
+
+command_map:
+  1: "../../../commands/plumbing/embed_exec.gohtml"
+  20: "../../../commands/members/inactivity.gohtml"
+  21: "../../../commands/channels/channel_activity.gohtml"
+  22: "../../../commands/channels/channel_activity_pager.gohtml"
+  23: "../../../commands/rules/rules.gohtml"
+  24: "../../../commands/members/inactivity_prune_pick.gohtml"
+
+tests:
+  # ---- inactivity: the announcements
+  - name: "staff_slash inactivity start: the announcement and the Member ping are channel posts, ack is ephemeral"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "start" } }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      sent_messages:
+        - { nth: 1, channel_id: 123456789012345678, embed_title: "Inactivity Prune Opening Announcement", embed_contains: "Prune opens 2026-10-01 (last 2026-09-01)." }
+        - { nth: 2, channel_id: 123456789012345678, content_equals: "<@&555555555555555555>", pings: { roles: [555555555555555555] } }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted the Opening Announcement." }
+
+  - name: "staff_slash inactivity end: the Closing Announcement pings the Member role"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "end" } }
+    assertions:
+      deletions: []
+      sent_messages:
+        - { nth: 1, embed_title: "Inactivity Prune Closing Announcement", embed_contains: "Prune closed." }
+        - { nth: 2, pings: { roles: [555555555555555555] } }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted the Closing Announcement." }
+
+  - name: "staff_slash inactivity remind: the Reminder pings the Inactive role"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "remind" } }
+    assertions:
+      deletions: []
+      sent_messages:
+        - { nth: 1, embed_title: "Inactivity Prune Reminder", embed_contains: "Stay active: 100 minutes." }
+        - { nth: 2, content_equals: "<@&444444444444444444>", pings: { roles: [444444444444444444] } }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted the Reminder." }
+
+  # ---- inactivity: date
+  - name: "staff_slash inactivity date: the dict is written directly (Previous Date = the old Next Date), result public"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "date", date: "2026-11-01" } }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      db_checks:
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Previous Date":"2026-10-01"' }
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Next Date":"2026-11-01"' }
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Minute Threshold":"100"' }
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Closing Announcement":"Prune closed."' }
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Inactivity Prune Inactivity Prune Date Editing", embed_contains: "Value successfully added!" }
+
+  - name: "staff_slash inactivity date: no date is an ephemeral refusal, nothing written"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "date" } }
+    assertions:
+      deletions: []
+      db_checks:
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Next Date":"2026-10-01"' }
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Missing Date Parameter" }
+
+  # ---- inactivity: prune
+  - name: "staff_slash inactivity prune <inactive user>: the confirm panel is the public interaction response"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      member_roles: { 700000000000000001: [444444444444444444] }
+      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 700000000000000001 } }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_contains: "<@700000000000000001> will be kicked!", components_contains: "templates-ip:600000000000000001:kick" }
+
+  - name: "staff_slash inactivity prune <active user>: the verdict has Kick disabled"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      member_roles: { 700000000000000001: [333333333333333333] }
+      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 700000000000000001 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_contains: "is not inactive.", components_contains: '"disabled": true' }
+
+  - name: "staff_slash inactivity prune <unknown user>: ephemeral refusal"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 999999999999999999 } }
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Invalid User Parameter" }
+
+  - name: "staff_slash inactivity prune (no user): the picker panel is the public response"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "prune" } }
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Inactivity Prune", embed_contains: "Next prune: 2026-10-01", components_contains: "templates-ip:600000000000000001" }
+
+  - name: "staff_slash inactivity: an invalid action is an ephemeral refusal"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "bogus" } }
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Invalid Action Specified" }
+
+  # the picker after a /staff entry: the click handlers read the response message's confirm
+  # embed and custom IDs, exactly as on the text path
+  - name: "inactivity_prune_pick: Kick still works on the /staff entry's confirm message"
+    template: "../../../commands/members/inactivity_prune_pick.gohtml"
+    context:
+      member_roles: { 700000000000000001: [444444444444444444] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
+            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+      interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
+      exec_responses:
+        'kick 700000000000000001 "pruned due to inactivity"': "👢 Kicked `Target#0`"
+    assertions:
+      execs:
+        - { line: 'kick 700000000000000001 "pruned due to inactivity"' }
+      interaction_responses:
+        - { kind: update, components_contains: "Pick a member to prune" }
+      sent_messages:
+        - { embed_contains: "has been kicked!" }
+
+  # ---- activity
+  # A /staff activity run is router -> channel_activity -> pager. The router test of that
+  # chain can't run under `make test-minified`: the loop-db warning channel_activity's
+  # cleanup loop always raises names an ABSOLUTE path when it comes from an execCC child
+  # (engine.go's child diagnostics), which differs between the checkout and prove's temp
+  # copy, so the prove reports a real difference. The two halves are tested apart instead:
+  # channel_activity as the root (its /staff entry, its own warning is path-relative), and
+  # the pager under an inline slash root that execCCs it the way channel_activity does
+  # (the loader refuses an interaction together with exec_data on a file template).
+  - name: "channel_activity: the /staff entry (ExecData.Staff) deletes no trigger and hands page 1 to the pager"
+    template: "../../../commands/channels/channel_activity.gohtml"
+    context:
+      clock: 2026-01-01T00:00:00Z
+      guild:
+        channels:
+          - { id: 11, name: "general", type: 0 }
+          - { id: 12, name: "announce", type: 5 }
+      exec_data: { Staff: true }
+    setup_db:
+      - { user_id: 11, key: "Last Active", value: 2000 }
+      - { user_id: 12, key: "Last Active", value: 5000 }
+    expected:
+      warning_contains: "dbDel inside a loop"
+    assertions:
+      deletions: []
+      sent_messages:
+        - { embed_title: "Channel activity", embed_contains: '**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>' }
+
+  - name: "channel_activity_pager: a slash root's execCC (the /staff chain) answers the inherited interaction, public"
+    template_source: |
+      {{/*
+        Trigger type: `Slash Command`
+        Trigger: `probe`
+      */}}
+      {{- execCC 22 .Channel.ID 0 (sdict "Bucket" "stale" "Page" 1) }}
+    snapshot: true
+    context:
+      clock: 2026-01-01T00:00:00Z
+      guild:
+        channels:
+          - { id: 11, name: "general", type: 0 }
+          - { id: 12, name: "announce", type: 5 }
+      interaction: { type: slash }
+    setup_db:
+      - { user_id: 11, key: "Last Active", value: 2000 }
+      - { user_id: 12, key: "Last Active", value: 5000 }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      edited_messages: []
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Channel activity"
+          embed_contains: '**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>'
+          components_contains: '"custom_id": "templates-ca:quiet:1:b"'
+
+  - name: "channel_activity_pager: a next-page click still works on the /staff entry's page (17 stale channels)"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
+    context:
+      clock: 2026-01-01T00:00:00Z
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
+      interaction: { type: component, custom_id: "ca:stale:2", message_id: 7 }
+      guild:
+        channels:
+          - { id: 500000001, name: "c1", type: 0 }
+          - { id: 500000002, name: "c2", type: 0 }
+          - { id: 500000003, name: "c3", type: 0 }
+          - { id: 500000004, name: "c4", type: 0 }
+          - { id: 500000005, name: "c5", type: 0 }
+          - { id: 500000006, name: "c6", type: 0 }
+          - { id: 500000007, name: "c7", type: 0 }
+          - { id: 500000008, name: "c8", type: 0 }
+          - { id: 500000009, name: "c9", type: 0 }
+          - { id: 500000010, name: "c10", type: 0 }
+          - { id: 500000011, name: "c11", type: 0 }
+          - { id: 500000012, name: "c12", type: 0 }
+          - { id: 500000013, name: "c13", type: 0 }
+          - { id: 500000014, name: "c14", type: 0 }
+          - { id: 500000015, name: "c15", type: 0 }
+          - { id: 500000016, name: "c16", type: 0 }
+          - { id: 500000017, name: "c17", type: 0 }
+    setup_db:
+      - { user_id: 500000001, key: "Last Active", value: 1000 }
+      - { user_id: 500000002, key: "Last Active", value: 1001 }
+      - { user_id: 500000003, key: "Last Active", value: 1002 }
+      - { user_id: 500000004, key: "Last Active", value: 1003 }
+      - { user_id: 500000005, key: "Last Active", value: 1004 }
+      - { user_id: 500000006, key: "Last Active", value: 1005 }
+      - { user_id: 500000007, key: "Last Active", value: 1006 }
+      - { user_id: 500000008, key: "Last Active", value: 1007 }
+      - { user_id: 500000009, key: "Last Active", value: 1008 }
+      - { user_id: 500000010, key: "Last Active", value: 1009 }
+      - { user_id: 500000011, key: "Last Active", value: 1010 }
+      - { user_id: 500000012, key: "Last Active", value: 1011 }
+      - { user_id: 500000013, key: "Last Active", value: 1012 }
+      - { user_id: 500000014, key: "Last Active", value: 1013 }
+      - { user_id: 500000015, key: "Last Active", value: 1014 }
+      - { user_id: 500000016, key: "Last Active", value: 1015 }
+      - { user_id: 500000017, key: "Last Active", value: 1016 }
+    assertions:
+      interaction_responses:
+        - { kind: update, embed_contains: "page 2 of 2" }
+
+  - name: "channel_activity_pager: the CSV button still works after a /staff entry"
+    template: "../../../commands/channels/channel_activity_pager.gohtml"
+    context:
+      clock: 2026-01-01T00:00:00Z
+      messages: [{ id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Channel activity" }] }]
+      interaction: { type: component, custom_id: "ca:csv", message_id: 7 }
+      guild:
+        channels:
+          - { id: 11, name: "general", type: 0 }
+    setup_db:
+      - { user_id: 11, key: "Last Active", value: 2000 }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "2 channels" }
+
+  # ---- rules
+  - name: "staff_slash rules: no range posts every rule as channel messages, ephemeral ack"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: rules }
+    expected:
+      output_equals: ""
+    assertions:
+      deletions: []
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: "Be kind." }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted rules 1-3." }
+
+  - name: "staff_slash rules: from/to select a range"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: rules, options: { from: 2, to: 3 } }
+    assertions:
+      deletions: []
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: "No spam." }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted rules 2-3." }
+
+  - name: "staff_slash rules: from only posts from that rule to the last"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: rules, options: { from: 3 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted rule 3." }
+
+  - name: "staff_slash rules: out-of-range values clamp silently (from and to past the max)"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: rules, options: { from: 99, to: 99 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted rules 1-3." }
+
+  - name: "staff_slash rules: to below from is ignored (to the last rule)"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: rules, options: { from: 3, to: 2 } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted rule 3." }
+
+  - name: "staff_slash rules: no rules configured is an ephemeral refusal, nothing posted"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: rules }
+    setup_db:
+      - { user_id: 0, key: "Rules", value: {} }
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "No rules configured" }

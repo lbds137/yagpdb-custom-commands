@@ -25,11 +25,11 @@ Every deployed command lives in one tree, `commands/<topic>/`, with a folder per
   rand_hebrew), `color/` (color_slash, hex_to_int; contrast and rand_color
   disabled on main, kept for lotv), `db/`
   (db_get_embed, db_get_text, db_slash, simple_db_lookup), `edit/` (edit_slash,
-  edit_modal, edit_confirm), `members/` (hiatus_slash, unhiatus_slash, inactivity,
+  edit_modal, edit_confirm), `members/` (staff_slash, hiatus_slash, unhiatus_slash, inactivity,
   inactivity_prune_pick, staff_roles, staff_roles_pick, role_ping_slash,
   batch_delrep), `channels/`
   (channel_activity, channel_activity_pager, channel_tracker, directory, channel_link,
-  message_pointer), `knowledge/` (define_slash), `general/` (avatar_menu, avatar_viewer,
+  message_pointer, pointer_slash), `knowledge/` (define_slash), `general/` (avatar_menu, avatar_viewer,
   dismiss, emoji_menu, hugemoji, prompt, prompt_post, timestamp_slash; timestamp is
   disabled on main, kept for lotv and The Rose), `plumbing/` (embed_exec, message_link, log_user,
   ticket_clean, bootstrap, config_sync).

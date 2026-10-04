@@ -20,10 +20,32 @@
 {{ $channelsDict := (dbGet 0 "Channels").Value }}
 {{ $yagpdbChannelID := toInt ($channelsDict.Get "YAGPDB") }}
 
-{{ $args := parseArgs 0 "Usage: `[rule to start at (inclusive)] (optional)` `[rule to end at (inclusive)] (optional)`"
-    (carg "int" "starting rule")
-    (carg "int" "ending rule")
-}}
+{{/* the /staff path (staff_slash execCCs this with ExecData.Staff, From and To; 0 = absent):
+  the range comes from ExecData instead of parseArgs, the rules are posted as real channel
+  messages exactly as the text path does, the interaction gets an ephemeral ack (or an
+  ephemeral refusal when no rules exist), and there is no trigger message to delete */}}
+{{ $staff := false }}
+{{ $fromArg := 0 }}
+{{ $toArg := 0 }}
+{{- if .ExecData -}}
+    {{- if .ExecData.Staff -}}
+        {{- $staff = true -}}
+        {{- $fromArg = toInt (or .ExecData.From 0) -}}
+        {{- $toArg = toInt (or .ExecData.To 0) -}}
+    {{- end -}}
+{{- end -}}
+{{ if not $staff }}
+    {{ $args := parseArgs 0 "Usage: `[rule to start at (inclusive)] (optional)` `[rule to end at (inclusive)] (optional)`"
+        (carg "int" "starting rule")
+        (carg "int" "ending rule")
+    }}
+    {{ if $args.IsSet 0 }}
+        {{ $fromArg = $args.Get 0 }}
+    {{ end }}
+    {{ if $args.IsSet 1 }}
+        {{ $toArg = $args.Get 1 }}
+    {{ end }}
+{{ end }}
 
 {{/* the rule numbers ascending: collected from the keys and ordered with `sort`, never a
   `seq` over 1..max (it errors past 10,000, so one stored "Rule #1000000" would break
@@ -46,18 +68,12 @@
 {{ $channelID := .Channel.ID }}
 {{ if gt $maxRule 0 }}
     {{ $startingRule := 1 }}
-    {{ if $args.IsSet 0 }}
-        {{ $startArg := $args.Get 0 }}
-        {{ if and (ge $startArg 1) (le $startArg $maxRule) }}
-            {{ $startingRule = $startArg }}
-        {{ end }}
+    {{ if and (ge $fromArg 1) (le $fromArg $maxRule) }}
+        {{ $startingRule = $fromArg }}
     {{ end }}
     {{ $endingRule := $maxRule }}
-    {{ if $args.IsSet 1 }}
-        {{ $endArg := $args.Get 1 }}
-        {{ if and (ge $endArg 1) (le $endArg $maxRule) (ge $endArg $startingRule) }}
-            {{ $endingRule = $endArg }}
-        {{ end }}
+    {{ if and (ge $toArg 1) (le $toArg $maxRule) (ge $toArg $startingRule) }}
+        {{ $endingRule = $toArg }}
     {{ end }}
 
     {{/* embed_exec's guild-author branch (no AuthorID in ExecData): the same author on
@@ -140,12 +156,27 @@
     {{- range $msgEmbeds := $messages -}}
         {{- sendMessage $channelID (complexMessage "embed" $msgEmbeds) -}}
     {{- end -}}
+    {{ if $staff }}
+        {{ $posted := print "Posted rules " $startingRule "-" $endingRule "." }}
+        {{ if eq $startingRule $endingRule }}
+            {{ $posted = print "Posted rule " $startingRule "." }}
+        {{ end }}
+        {{ sendResponse nil (complexMessage "content" $posted "ephemeral" true) }}
+    {{ end }}
 {{ else }}
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" $channelID
-        "Title" "Rules Lookup Failed"
-        "Description" "⚠️ No rules configured in the server!"
-    ) }}
+    {{ if $staff }}
+        {{ sendResponse nil (complexMessage
+            "content" "⚠️ No rules configured in the server!"
+            "ephemeral" true) }}
+    {{ else }}
+        {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+            "ChannelID" $channelID
+            "Title" "Rules Lookup Failed"
+            "Description" "⚠️ No rules configured in the server!"
+        ) }}
+    {{ end }}
 {{ end }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+{{ if not $staff }}
+    {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}

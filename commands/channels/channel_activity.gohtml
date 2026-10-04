@@ -55,4 +55,14 @@
   and rereads the entries itself; nothing is printed here after the execCC */}}
 {{ execCC $pager .Channel.ID 0 (sdict "Bucket" "stale" "Page" 1) }}
 
-{{ deleteTrigger $deleteTriggerDelay }}
+{{/* the /staff path (staff_slash execCCs this with ExecData.Staff): the pager answers the
+  inherited interaction, and there is no trigger message to delete */}}
+{{ $staff := false }}
+{{- if .ExecData -}}
+  {{- if .ExecData.Staff -}}
+    {{- $staff = true -}}
+  {{- end -}}
+{{- end -}}
+{{ if not $staff }}
+  {{ deleteTrigger $deleteTriggerDelay }}
+{{ end }}

@@ -1,0 +1,92 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `staff`
+  Group: `Staff Utility`
+  Slash description: `Staff tools`
+  Dependencies: `staff_roles`, `inactivity`, `channel_activity`, `rules`, `bump_reset`, `batch_delrep`, `bootstrap`
+
+  The router of the staff slash commands. The seven handlers are too big to inline in one
+  root, so this reads `.SubCommand` and `.Options` and makes ONE execCC to the existing
+  handler (its Commands dict key), passing the options as primitives in ExecData with
+  `Staff` true. It prints nothing: the handler answers the interaction it inherits
+  (depth: this root, then the handler, then its own embed_exec or pager, within YAGPDB's
+  limit of 2). A handler missing from the Commands dict is an ephemeral refusal of this
+  run, with no execCC.
+
+  Slash subcommand: `roles set the staff roles (or open the role picker)`
+  Slash option: `roles.roles string staff role IDs or mentions (omit for the role picker)`
+  Slash subcommand: `inactivity inactivity prune announcements, date and review`
+  Slash option: `inactivity.action string! start, end, remind, date or prune`
+  Slash option: `inactivity.date string the next prune date (for date)`
+  Slash option: `inactivity.user user the member to review (for prune; omit for the picker)`
+  Slash subcommand: `activity channel activity, oldest first`
+  Slash subcommand: `rules post the server rules`
+  Slash option: `rules.from integer first rule to post`
+  Slash option: `rules.to integer last rule to post`
+  Slash subcommand: `bump_reset clear the last bump time`
+  Slash subcommand: `delrep delete members' reputation`
+  Slash option: `delrep.users string! user IDs or mentions, up to 5`
+  Slash subcommand: `bootstrap initialize the server's configuration`
+  Slash option: `bootstrap.staff_role role the staff role (omit to keep the current one)`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $commandsDict := or (dbGet 0 "Commands").Value sdict }}
+
+	{{/* the handler's Commands key for each subcommand */}}
+	{{ $handlers := sdict
+		"roles" "staff_roles"
+		"inactivity" "inactivity"
+		"activity" "channel_activity"
+		"rules" "rules"
+		"bump_reset" "bump_reset"
+		"delrep" "batch_delrep"
+		"bootstrap" "bootstrap"
+	}}
+	{{ $subcommand := .SubCommand }}
+	{{ $handlerID := toInt ($commandsDict.Get (toString ($handlers.Get $subcommand))) }}
+
+	{{/* the options, as primitives: the handlers read plain values on both of their
+		paths, never a Role or User object */}}
+	{{ $execData := sdict "Staff" true }}
+	{{ if eq $subcommand "roles" }}
+		{{ $execData.Set "Roles" (toString (or .Options.roles "")) }}
+	{{ else if eq $subcommand "inactivity" }}
+		{{ $execData.Set "Action" (toString (or .Options.action "")) }}
+		{{ $execData.Set "Date" (toString (or .Options.date "")) }}
+		{{ $userID := "" }}
+		{{ if .Options.user }}
+			{{ $userID = toString .Options.user.ID }}
+		{{ end }}
+		{{ $execData.Set "User" $userID }}
+	{{ else if eq $subcommand "rules" }}
+		{{ $execData.Set "From" (toInt (or .Options.from 0)) }}
+		{{ $execData.Set "To" (toInt (or .Options.to 0)) }}
+	{{ else if eq $subcommand "delrep" }}
+		{{ $execData.Set "Users" (toString (or .Options.users "")) }}
+	{{ else if eq $subcommand "bootstrap" }}
+		{{ $staffRoleID := "" }}
+		{{ if .Options.staff_role }}
+			{{ $staffRoleID = toString .Options.staff_role.ID }}
+		{{ end }}
+		{{ $execData.Set "StaffRole" $staffRoleID }}
+	{{ end }}
+
+	{{ if le $handlerID 0 }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ This command isn't set up on this server yet."
+			"ephemeral" true) }}
+	{{ else }}
+		{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
+			interaction unanswered: YAGPDB sends no response for a run that errors */}}
+		{{ try }}
+			{{ execCC $handlerID .Channel.ID 0 $execData }}
+		{{ catch }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ This command isn't set up on this server yet."
+				"ephemeral" true) }}
+		{{ end }}
+	{{ end }}
+{{ else }}
+Use /staff as a slash command: roles, inactivity, activity, rules, bump_reset, delrep or bootstrap
+{{ end }}
