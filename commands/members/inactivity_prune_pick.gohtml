@@ -132,14 +132,35 @@
         {{/* ack first (updateMessage is the interaction response), kick second — a
           slow kick REST call must not eat the 3s ack window */}}
         {{- updateMessage $pickerMsg -}}
-        {{ $silent := exec "kick" $targetID $kickReason }}
-        {{ sendMessage nil (cembed
-            "title" $pruneCategory
-            "color" $embedColor
-            "description" (joinStr "" "🥾 **" $member.User.String "** has been kicked!")
-            "fields" (cslice (sdict "name" "Reason" "value" (joinStr "" "The user was " $kickReason ".")))
-            "thumbnail" (sdict "url" $userAvatar)
-        ) }}
+        {{/* exec errors when the kick command returns an error (hierarchy, perms:
+          tmplexec.go execCmd "exec/execadmin, run"), and returns failure as text
+          otherwise ("Member not found", "Error: ...", "Unknown command"); success is
+          moderation's GenericCmdResp(MAKick): "👢 Kicked `user`" */}}
+        {{ $kickErr := "" }}
+        {{ try }}
+            {{ $kickResp := toString (exec "kick" $targetID $kickReason) }}
+            {{ if not (hasPrefix $kickResp "👢 Kicked") }}
+                {{ $kickErr = or $kickResp "no reply from the kick command" }}
+            {{ end }}
+        {{ catch }}
+            {{ $kickErr = toString .Error }}
+        {{ end }}
+        {{ if $kickErr }}
+            {{ sendMessage nil (cembed
+                "title" $pruneCategory
+                "color" $embedColor
+                "description" (joinStr "" "⚠️ Couldn't kick **" $member.User.String
+                    "** (<@" $targetID ">): " $kickErr)
+            ) }}
+        {{ else }}
+            {{ sendMessage nil (cembed
+                "title" $pruneCategory
+                "color" $embedColor
+                "description" (joinStr "" "🥾 **" $member.User.String "** has been kicked!")
+                "fields" (cslice (sdict "name" "Reason" "value" (joinStr "" "The user was " $kickReason ".")))
+                "thumbnail" (sdict "url" $userAvatar)
+            ) }}
+        {{ end }}
     {{ else }}
         {{ updateMessage $verdictMsg }}
     {{ end }}
