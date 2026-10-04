@@ -84,3 +84,18 @@ needed before lotv gets any root over 10k runes).
   retired/ (Lila deletes them in the panel). hex_to_int stays (chat regex, and /color hex
   shares no code with it after inlining).
 - Size: ~13k runes estimated → premium fine; lotv waits for minifier part 2.
+
+### /color panel rows (command 103, Lila at the panel, 2026-10-04)
+
+Slash description `Color tools`; tick "use subcommands"; then (header lines' text):
+
+| row | type | required | description |
+|---|---|---|---|
+| sub contrast | — | — | WCAG contrast of a color or role against dark and light |
+| · color | string | — | hex code, # optional (use this OR role) |
+| · role | role | — | a role whose color to check (use this OR color) |
+| sub contrasts | — | — | contrast of up to 10 colors or roles at once |
+| · colors | string | ✓ | hex codes and/or role IDs or mentions, up to 10 |
+| sub random | — | — | a random color |
+| sub hex | — | — | a hex code's integer value |
+| · color | string | ✓ | hex code, # optional |
