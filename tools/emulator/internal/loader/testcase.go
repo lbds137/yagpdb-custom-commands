@@ -99,6 +99,10 @@ type ContextDef struct {
 	// an execs: assertion takes); a call whose line isn't a key returns "" and warns, since
 	// the emulator can't run the bot command YAGPDB would
 	ExecResponses map[string]string `yaml:"exec_responses"`
+	// PinsFull lists channels (threads a run creates included: their IDs start at
+	// 1200000000000000000) whose pin list is full: a pinMessage there fails as Discord's
+	// 30003 Maximum number of pins reached
+	PinsFull []int64 `yaml:"pins_full"`
 }
 
 // MessageDef is an existing Discord message.
@@ -557,6 +561,9 @@ type Assertions struct {
 	// Reactions are exactly the reactions the run added and removed, in order (`[]` for
 	// none)
 	Reactions *[]ReactionCheck `yaml:"reactions"`
+	// Pins are exactly the pinMessage and unpinMessage calls Discord accepted, in order
+	// (`[]` for none)
+	Pins *[]PinCheck `yaml:"pins"`
 	// Execs are exactly the bot commands the run executed with exec and execAdmin, in
 	// order (`[]` for none)
 	Execs *[]ExecCheck `yaml:"execs"`
@@ -598,6 +605,13 @@ type ReactionCheck struct {
 	UserID    int64  `yaml:"user_id"` // whose reaction "remove" removed
 	// Response requires the reaction to be on the command's response (addResponseReactions)
 	Response bool `yaml:"response"`
+}
+
+// PinCheck matches a pin or unpin; unset fields match anything.
+type PinCheck struct {
+	Action    string `yaml:"action"` // "pin" or "unpin"
+	ChannelID int64  `yaml:"channel_id"`
+	MessageID int64  `yaml:"message_id"`
 }
 
 // DeletionCheck matches a deletion; unset fields match anything.
@@ -933,6 +947,9 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.ExecResponses == nil {
 		tc.Context.ExecResponses = defaults.ExecResponses
+	}
+	if tc.Context.PinsFull == nil {
+		tc.Context.PinsFull = defaults.PinsFull
 	}
 	if tc.Context.Guild.Roles == nil {
 		tc.Context.Guild.Roles = defaults.Guild.Roles

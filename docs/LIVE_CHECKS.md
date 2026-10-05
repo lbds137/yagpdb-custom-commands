@@ -92,3 +92,26 @@ has, so re-picking the current values is the safe way to test the save path.
 
 ### Report back
 Which steps passed, and what step 1 showed as "not set".
+
+## /prompt pins its prompt (Gay Night House, after its deploy)
+
+1. `/prompt` in thread mode into a forum channel: the new post's first message is pinned
+   inside the post (the post's pin list shows it).
+2. `/prompt` in thread mode into a text channel: the prompt message inside the new thread
+   is pinned there.
+3. `/prompt` inline into a test channel: the message is pinned in that channel.
+4. If a channel's pins are full (or you remove the bot's Pin Messages permission in a test
+   channel): the prompt still posts, and the private confirmation ends "(couldn't pin it:
+   the pin list may be full, or I can't pin there)".
+5. Forum check worth a look: step 1 relies on a forum post's first message having the
+   post's own ID (Discord's documented behaviour, not yet seen live). If the post isn't
+   pinned while steps 2-3 work, tell me.
+
+## Lure of the Void and The Rose (synced 2026-10-04)
+
+1. In each: `/gematria text:אמת`, `/rule` (bare: the browse view with buttons), `/db`
+   and `/edit` open without "isn't set up".
+2. Typing `gematria אמת` no longer answers (slash-only now, all servers).
+
+### Report back
+Which steps passed.

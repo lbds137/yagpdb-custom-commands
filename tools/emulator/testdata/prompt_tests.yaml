@@ -381,3 +381,131 @@ tests:
         - { kind: message, ephemeral: true,
             content_contains:
               "✅ Created 2026-01-01: Long But Legal: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001" }
+
+  # ---------- the prompt is pinned where it landed ----------
+  # Forum post: the starter message has the thread's own ID. Text-channel thread: the
+  # prompt sent into it (the first send of the run, 1100000000000000001). Inline: the
+  # message in the target channel. A refused pin (30003, the pin list is full) never
+  # fails the post: pins_full names the channel (a created thread by its deterministic
+  # ID), nothing is pinned, and the ack says so. A role ping's failure adds its own
+  # suffix; both can apply.
+  - name: "prompt_post: pin, forum post's starter message is pinned in the new thread"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:0"
+        fields: { prompt_title: "Pinned", prompt_body: "hello" }
+    assertions:
+      pins:
+        - { action: pin, channel_id: 1200000000000000000, message_id: 1200000000000000000 }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "✅ Posted 2026-01-01: Pinned: " }
+
+  - name: "prompt_post: pin, thread-mode prompt is pinned in the created thread"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:0"
+        fields: { prompt_title: "Pinned", prompt_body: "hello" }
+    assertions:
+      pins:
+        - { action: pin, channel_id: 1200000000000000000, message_id: 1100000000000000001 }
+
+  - name: "prompt_post: pin, inline prompt is pinned in the target channel"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:444444444444444444:0"
+        fields: { prompt_body: "standup notes" }
+    assertions:
+      pins:
+        - { action: pin, channel_id: 444444444444444444, message_id: 1100000000000000001 }
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "✅ Sent: https://discord.com/channels/462036216909398026/444444444444444444/1100000000000000001" }
+
+  - name: "prompt_post: pin refused, forum post still lands and the ack says it couldn't pin"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      pins_full: [1200000000000000000]
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields: { prompt_title: "Full", prompt_body: "hello" }
+    assertions:
+      pins: []
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "hello"
+        - channel_id: 123456789012345678
+          content_contains: "🔔 New prompt for <@&222222222222222222>"
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "(couldn't pin it: the pin list may be full, or I can't pin there)" }
+
+  - name: "prompt_post: pin refused, created thread still holds the prompt and the ack says it couldn't pin"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      pins_full: [1200000000000000000]
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:0"
+        fields: { prompt_title: "Full", prompt_body: "hello" }
+    assertions:
+      pins: []
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "hello"
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "(couldn't pin it: the pin list may be full, or I can't pin there)" }
+
+  - name: "prompt_post: pin refused, inline prompt still sends and the ack says it couldn't pin"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      pins_full: [444444444444444444]
+      interaction:
+        type: modal
+        custom_id: "prompt:post:i:444444444444444444:0"
+        fields: { prompt_body: "standup notes" }
+    assertions:
+      pins: []
+      sent_messages:
+        - channel_id: 444444444444444444
+          content_equals: "standup notes"
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "✅ Sent: https://discord.com/channels/462036216909398026/444444444444444444/1100000000000000001 (couldn't pin it: the pin list may be full, or I can't pin there)" }
+
+  - name: "prompt_post: pin refused and ping refused, both suffixes apply"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      pins_full: [1200000000000000000]
+      guild:
+        id: 462036216909398026
+        name: "Gay Night House"
+        roles:
+          - { id: 111111111111111111, name: "Mod" }
+          - { id: 222222222222222222, name: "Helper" }
+        channels:
+          - { id: 333333333333333333, name: "prompts", type: 15 }
+          - { id: 123456789012345678, name: "general", bot_cannot_send: true }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields: { prompt_title: "Both", prompt_body: "hello" }
+    assertions:
+      pins: []
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "(couldn't send the ping) (couldn't pin it: the pin list may be full, or I can't pin there)" }

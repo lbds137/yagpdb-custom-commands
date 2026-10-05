@@ -14,7 +14,9 @@
   notifies. Inline mode: a plain message, mention-first, because a normal channel's
   sends do notify. The date is local time by the Global dict's `Timezone Offset` in
   hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
-  is the public artifact.
+  is the public artifact. Each post's prompt message is pinned where it landed, in its
+  own try, so a refused pin (full pin list, missing permission) never fails the post and
+  only adds "(couldn't pin it ...)" to the ack.
 */ -}}
 {{ if .IsModal }}
 	{{ $rolesDict := (dbGet 0 "Roles").Value }}
@@ -117,6 +119,14 @@
 								{{ else }}
 									{{ $link := print "https://discord.com/channels/" .Guild.ID
 										"/" $post.ID }}
+									{{/* the post's starter message has the thread's own ID */}}
+									{{ $pinOK := true }}
+									{{ try }}
+										{{ pinMessage $post.ID $post.ID }}
+									{{ catch }}
+										{{/* the post landed; only the pin failed */}}
+										{{ $pinOK = false }}
+									{{ end }}
 									{{ $pingOK := true }}
 									{{ if ne $roleID 0 }}
 										{{ try }}
@@ -136,6 +146,9 @@
 									{{ $ack := print "✅ Posted " $title ": " $link }}
 									{{ if not $pingOK }}
 										{{ $ack = print $ack " (couldn't send the ping)" }}
+									{{ end }}
+									{{ if not $pinOK }}
+										{{ $ack = print $ack " (couldn't pin it: the pin list may be full, or I can't pin there)" }}
 									{{ end }}
 									{{ sendResponse nil (complexMessage "content" $ack
 										"ephemeral" true) }}
@@ -166,6 +179,13 @@
 									{{ if $msgID }}
 										{{ $link := print "https://discord.com/channels/"
 											.Guild.ID "/" $post.ID "/" $msgID }}
+										{{ $pinOK := true }}
+										{{ try }}
+											{{ pinMessage $post.ID $msgID }}
+										{{ catch }}
+											{{/* the prompt landed; only the pin failed */}}
+											{{ $pinOK = false }}
+										{{ end }}
 										{{ $pingOK := true }}
 										{{ if ne $roleID 0 }}
 											{{ try }}
@@ -185,6 +205,9 @@
 										{{ $ack := print "✅ Created " $title ": " $link }}
 										{{ if not $pingOK }}
 											{{ $ack = print $ack " (couldn't send the ping)" }}
+										{{ end }}
+										{{ if not $pinOK }}
+											{{ $ack = print $ack " (couldn't pin it: the pin list may be full, or I can't pin there)" }}
 										{{ end }}
 										{{ sendResponse nil (complexMessage "content" $ack
 											"ephemeral" true) }}
@@ -208,9 +231,19 @@
 								{{ $msgID = sendMessageRetID $targetID (complexMessage
 									"content" $body) }}
 							{{ end }}
-							{{ sendResponse nil (complexMessage "content" (print
-								"✅ Sent: https://discord.com/channels/" .Guild.ID "/"
-								$targetID "/" $msgID) "ephemeral" true) }}
+							{{ $pinOK := true }}
+							{{ try }}
+								{{ pinMessage $targetID $msgID }}
+							{{ catch }}
+								{{/* the message landed; only the pin failed */}}
+								{{ $pinOK = false }}
+							{{ end }}
+							{{ $ack := print "✅ Sent: https://discord.com/channels/" .Guild.ID "/"
+								$targetID "/" $msgID }}
+							{{ if not $pinOK }}
+								{{ $ack = print $ack " (couldn't pin it: the pin list may be full, or I can't pin there)" }}
+							{{ end }}
+							{{ sendResponse nil (complexMessage "content" $ack "ephemeral" true) }}
 						{{ catch }}
 							{{ sendResponse nil (complexMessage
 								"content" "⚠️ Couldn't send the prompt there — check the channel."

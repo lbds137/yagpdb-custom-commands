@@ -45,7 +45,7 @@ IMPLEMENTED=(
     # Discord - Messages
     "sendMessage" "sendMessageRetID" "sendDM" "editMessage" "editMessageNoEscape" "getMessage" "deleteMessage"
     "deleteTrigger" "deleteResponse" "addReactions" "addMessageReactions"
-    "deleteAllMessageReactions"
+    "deleteAllMessageReactions" "pinMessage" "unpinMessage"
     # Discord - Interaction responses
     "sendResponse" "sendResponseNoEscape" "sendResponseRetID" "sendResponseNoEscapeRetID"
     "updateMessage" "updateMessageNoEscape" "ephemeralResponse" "sendModal"
