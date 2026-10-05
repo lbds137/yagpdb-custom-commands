@@ -626,6 +626,22 @@ func TestFailedChildFailsTheTest(t *testing.T) {
 	}
 }
 
+// An execCC child keeps the test's guild owner (else the child's owner falls back to the
+// triggering user, who then has every permission)
+func TestExecCCChildKeepsGuildOwner(t *testing.T) {
+	dir := t.TempDir()
+	child := `{{if ne (toInt .Guild.OwnerID) 42}}{{index (cslice) 5}}{{end}}`
+	if err := os.WriteFile(filepath.Join(dir, "child.gohtml"), []byte(child), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tc := &TestCase{Name: "owner", TemplateSource: `{{execCC 9 nil 0 nil}}ok`, CommandMap: map[int64]string{9: filepath.Join(dir, "child.gohtml")}}
+	tc.Context.Guild.OwnerID = 42
+	tc.applyDefaults()
+	if res := NewRunner(RunnerConfig{}).RunTest(tc); res.Error != nil || len(res.Failures) != 0 {
+		t.Errorf("the child saw another owner: %v, %q", res.Error, res.Failures)
+	}
+}
+
 func TestFixedClockAndSeed(t *testing.T) {
 	src := `{{currentTime.Unix}} {{.Message.Timestamp.Parse.Unix}} ` +
 		`{{humanizeTimeSinceDays (currentTime.Add -172800000000000)}} ` +

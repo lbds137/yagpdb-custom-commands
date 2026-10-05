@@ -221,6 +221,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 		ctx.Seed(int64(*tc.Context.Seed))
 	}
 	ctx.GuildName = tc.Context.Guild.Name
+	ctx.GuildIcon = tc.Context.Guild.Icon
 	ctx.OwnerID = tc.Context.Guild.OwnerID
 	if tc.Context.Guild.Prefix != "" {
 		ctx.Prefix = tc.Context.Guild.Prefix

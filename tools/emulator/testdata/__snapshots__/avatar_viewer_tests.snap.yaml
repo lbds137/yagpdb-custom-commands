@@ -1,3 +1,47 @@
+'avatar_viewer: a boosted server''s icon is a gif':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Viewer#0001",
+                  "url": "https://discordapp.com/users/987654321098765432"
+                },
+                "fields": [
+                  {
+                    "name": "ID",
+                    "value": "111222333444555666"
+                  },
+                  {
+                    "name": "Timestamp",
+                    "value": "2015-11-03 21:57:50.704 +0000 UTC"
+                  },
+                  {
+                    "name": "Name",
+                    "value": "Test Server"
+                  }
+                ],
+                "image": {
+                  "url": "https://cdn.discordapp.com/icons/111222333444555666/abc123.gif?size=256"
+                },
+                "thumbnail": {},
+                "title": "Avatar Viewer"
+              }
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":900000000000000001}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/default.png","Delete Trigger Delay":5,"Guild Premium Tier":1}'
 'avatar_viewer: a mod log entry gives the moderated user''s avatar':
     output: ""
     messages:
@@ -153,6 +197,94 @@
                 ],
                 "image": {
                   "url": "https://cdn.discordapp.com/embed/avatars/1.png?size=1024"
+                },
+                "thumbnail": {},
+                "title": "Avatar Viewer"
+              }
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":900000000000000001}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/default.png","Delete Trigger Delay":5}'
+'avatar_viewer: the server''s ID gives its icon':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Viewer#0001",
+                  "url": "https://discordapp.com/users/987654321098765432"
+                },
+                "fields": [
+                  {
+                    "name": "ID",
+                    "value": "111222333444555666"
+                  },
+                  {
+                    "name": "Timestamp",
+                    "value": "2015-11-03 21:57:50.704 +0000 UTC"
+                  },
+                  {
+                    "name": "Name",
+                    "value": "Test Server"
+                  }
+                ],
+                "image": {
+                  "url": "https://cdn.discordapp.com/icons/111222333444555666/abc123.png?size=256"
+                },
+                "thumbnail": {},
+                "title": "Avatar Viewer"
+              }
+    deletions:
+        - trigger 234567890 in channel 123456789012345678 after 5s
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":900000000000000001}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1"}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/default.png","Delete Trigger Delay":5}'
+'avatar_viewer: the server''s ID with no icon gives the Default Avatar':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://cdn.discordapp.com/embed/avatars/1.png?size=128",
+                  "name": "Viewer#0001",
+                  "url": "https://discordapp.com/users/987654321098765432"
+                },
+                "fields": [
+                  {
+                    "name": "ID",
+                    "value": "111222333444555666"
+                  },
+                  {
+                    "name": "Timestamp",
+                    "value": "2015-11-03 21:57:50.704 +0000 UTC"
+                  },
+                  {
+                    "name": "Name",
+                    "value": "Test Server"
+                  }
+                ],
+                "image": {
+                  "url": "https://example.com/default.png"
                 },
                 "thumbnail": {},
                 "title": "Avatar Viewer"

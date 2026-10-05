@@ -1015,6 +1015,8 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 	childCtx := &ExecutionContext{
 		GuildID:                  e.ctx.GuildID,
 		GuildName:                e.ctx.GuildName,
+		GuildIcon:                e.ctx.GuildIcon,
+		OwnerID:                  e.ctx.OwnerID,
 		Prefix:                   e.ctx.Prefix,
 		ChannelID:                channelID,
 		ChannelName:              e.ctx.channelName(channelID),
@@ -1037,7 +1039,6 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		Channels:                 e.ctx.Channels,
 		ChannelOrder:             e.ctx.ChannelOrder,
 		ChannelDetails:           e.ctx.ChannelDetails,
-		OwnerID:                  e.ctx.OwnerID,
 		BotCannotMentionEveryone: e.ctx.BotCannotMentionEveryone,
 		CommandIDMap:             e.ctx.CommandIDMap,
 		CCID:                     commandID,

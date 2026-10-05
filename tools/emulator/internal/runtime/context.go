@@ -70,7 +70,8 @@ type ExecutionContext struct {
 	// Guild/Server context
 	GuildID   int64
 	GuildName string
-	OwnerID   int64 // The guild owner; 0 means the triggering user
+	GuildIcon string // the guild icon hash, as Discord's guild "icon"; "" for none
+	OwnerID   int64  // The guild owner; 0 means the triggering user
 	// BotCannotMentionEveryone: the bot lacks "Mention @everyone, @here, and All Roles", so
 	// only mentionable roles ping and @everyone/@here don't
 	BotCannotMentionEveryone bool
@@ -386,6 +387,7 @@ func (ctx *ExecutionContext) BuildTemplateData() map[string]interface{} {
 	guild := types.CtxGuild{
 		ID:       ctx.GuildID,
 		Name:     ctx.GuildName,
+		Icon:     ctx.GuildIcon,
 		OwnerID:  ownerID,
 		Roles:    guildRoles,
 		Channels: guildChannels,
