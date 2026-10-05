@@ -260,6 +260,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	ctx.MemberRoles = tc.Context.MemberRoles
 	ctx.MemberNicks = tc.Context.MemberNicks
 	ctx.ExecResponses = tc.Context.ExecResponses
+	ctx.ExecErrors = tc.Context.ExecErrors
 	if len(tc.Context.PinsFull) > 0 {
 		ctx.PinsFull = map[int64]bool{}
 		for _, id := range tc.Context.PinsFull {
@@ -343,6 +344,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	if tc.CommandMap != nil {
 		ctx.CommandIDMap = tc.CommandMap
 	}
+	ctx.CommandStatus = tc.CommandStatus
 	ctx.TemplateBaseDir = r.config.BaseDir
 	ctx.TemplateRoot = r.config.TemplateRoot
 	return ctx

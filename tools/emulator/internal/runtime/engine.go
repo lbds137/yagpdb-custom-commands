@@ -957,12 +957,29 @@ func (e *Engine) createTicket(user, reason interface{}) types.SDict {
 
 // Cross-command execution
 
+// commandStatusErrors are YAGPDB's errors for a command a test declares in command_status
+// (vendor customcommands/tmplextensions.go tmplRunCC and tmplScheduleUniqueCC).
+var commandStatusErrors = map[string]string{
+	"missing":        "Couldn't find custom command",
+	"group_disabled": "custom command group is disabled",
+	"disabled":       "custom command is disabled",
+}
+
+// ValidCommandStatus reports whether s is a command_status word.
+func ValidCommandStatus(s string) bool {
+	_, ok := commandStatusErrors[s]
+	return ok
+}
+
 // findCC is tmplRunCC's and tmplScheduleUniqueCC's command lookup, with a test's
 // command_map standing in for the server's commands: a mapped command's template is read,
 // and an Interval, Crontab or Role-trigger command is refused as YAGPDB refuses it (vendor
 // customcommands/tmplextensions.go). mapped is false for a command the test doesn't map,
 // which may exist in production.
 func (e *Engine) findCC(fn string, ccID int64) (path string, source []byte, mapped bool, err error) {
+	if status, declared := e.ctx.CommandStatus[ccID]; declared {
+		return "", nil, true, errors.New(commandStatusErrors[status])
+	}
 	path, mapped = e.ctx.CommandIDMap[ccID]
 	if !mapped {
 		return "", nil, false, nil
@@ -1009,7 +1026,8 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 
 	if !mapped {
 		e.ctx.Warn(KindExecCC, "execCC %d isn't in the test's command_map, so it didn't run (YAGPDB "+
-			"runs that command, or fails \"Couldn't find custom command\" if there's none)", commandID)
+			"runs that command, or fails \"Couldn't find custom command\" if there's none; a test "+
+			"can declare that failure with command_status)", commandID)
 		return "", nil
 	}
 
@@ -1045,6 +1063,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		ChannelDetails:           e.ctx.ChannelDetails,
 		BotCannotMentionEveryone: e.ctx.BotCannotMentionEveryone,
 		CommandIDMap:             e.ctx.CommandIDMap,
+		CommandStatus:            e.ctx.CommandStatus,
 		CCID:                     commandID,
 		ExecCCDepth:              e.ctx.ExecCCDepth + 1,
 		MaxExecCCDepth:           e.ctx.MaxExecCCDepth,
@@ -1059,6 +1078,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		MemberNicks:     e.ctx.MemberNicks,
 		MemberJoinedAgo: e.ctx.MemberJoinedAgo,
 		ExecResponses:   e.ctx.ExecResponses,
+		ExecErrors:      e.ctx.ExecErrors,
 		scheduled:       e.ctx.scheduledRuns(),
 	}
 

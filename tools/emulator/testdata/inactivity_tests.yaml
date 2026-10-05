@@ -159,8 +159,7 @@ tests:
   # exec returns failure as text in these cases (moderation/commands.go Kick RunFunc:
   # "Member not found"; commands/tmplexec.go execCmd: "Error: "+err, "Unknown command").
   # Errors the kick command RETURNS (hierarchy, perms) make exec itself error, which
-  # the template catches; the emulator can only declare response text, not an error,
-  # so that branch has no test.
+  # the template catches; the test after this one declares that with exec_errors.
   - name: "inactivity_prune_pick: a kick that comes back as failure text is reported, not 'kicked'"
     template: "../../../commands/members/inactivity_prune_pick.gohtml"
     context:
@@ -178,6 +177,24 @@ tests:
         - channel_id: 123456789012345678
           embed_title: "Inactivity Prune"
           embed_contains: "Couldn't kick"
+
+  - name: "inactivity_prune_pick: a kick that errors (exec/execadmin, run) is caught and reported, not 'kicked'"
+    template: "../../../commands/members/inactivity_prune_pick.gohtml"
+    context:
+      member_roles: { 700000000000000001: [444444444444444444] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
+            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+      interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
+      exec_errors:
+        'kick 700000000000000001 "pruned due to inactivity"': "Missing Permissions"
+    assertions:
+      execs:
+        - { line: 'kick 700000000000000001 "pruned due to inactivity"' }
+      sent_messages:
+        - channel_id: 123456789012345678
+          embed_title: "Inactivity Prune"
+          embed_contains: "exec/execadmin, run: Missing Permissions"
 
   - name: "inactivity_prune_pick: Kick on a member who left shows the verdict, no exec"
     template: "../../../commands/members/inactivity_prune_pick.gohtml"

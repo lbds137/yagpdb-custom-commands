@@ -51,6 +51,22 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
 
+  # command_status declares embed_exec disabled: execCC fails as YAGPDB's does, and the
+  # catch answers the interaction
+  - name: "pointer_slash: a disabled embed_exec is an ephemeral refusal"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    command_status:
+      1: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   - name: "pointer_slash: a link without a comment answers publicly with the channel and message fields"
     template: "../../../commands/channels/pointer_slash.gohtml"
     snapshot: true

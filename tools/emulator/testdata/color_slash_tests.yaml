@@ -234,3 +234,14 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  # command_status: execCC fails as YAGPDB's does for a disabled command
+  - name: "color_slash: a disabled embed_exec is an ephemeral refusal"
+    template: "../../../commands/color/color_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: contrast, options: { color: "#FFFFFF" } }
+    command_status:
+      123: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }

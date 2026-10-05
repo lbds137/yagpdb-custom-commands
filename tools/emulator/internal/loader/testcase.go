@@ -25,10 +25,14 @@ type TestCase struct {
 	// SetupTemplates run in order before the test, on the same database (e.g. a bootstrap)
 	SetupTemplates []string         `yaml:"setup_templates"`
 	CommandMap     map[int64]string `yaml:"command_map"` // Maps command IDs to template paths
-	Expected       ExpectedResult   `yaml:"expected"`
-	Assertions     Assertions       `yaml:"assertions"`
-	Strict         bool             `yaml:"strict"`   // Fail on YAGPDB execution limits (like -strict)
-	Snapshot       bool             `yaml:"snapshot"` // Compare results with the saved snapshot
+	// CommandStatus makes execCC and scheduleUniqueCC of an id fail as YAGPDB's do for a
+	// command that doesn't exist (missing), is disabled, or whose group is disabled
+	// (group_disabled); it wins over the id's command_map entry
+	CommandStatus map[int64]string `yaml:"command_status"`
+	Expected      ExpectedResult   `yaml:"expected"`
+	Assertions    Assertions       `yaml:"assertions"`
+	Strict        bool             `yaml:"strict"`   // Fail on YAGPDB execution limits (like -strict)
+	Snapshot      bool             `yaml:"snapshot"` // Compare results with the saved snapshot
 
 	SourceFile string `yaml:"-"` // YAML file the test came from (for snapshots)
 }
@@ -99,6 +103,10 @@ type ContextDef struct {
 	// an execs: assertion takes); a call whose line isn't a key returns "" and warns, since
 	// the emulator can't run the bot command YAGPDB would
 	ExecResponses map[string]string `yaml:"exec_responses"`
+	// ExecErrors declares command lines whose exec/execAdmin fails: the call returns the
+	// error "exec/execadmin, run: <message>", as YAGPDB wraps a failed bot command's error.
+	// A line can't also be in exec_responses.
+	ExecErrors map[string]string `yaml:"exec_errors"`
 	// PinsFull lists channels (threads a run creates included: their IDs start at
 	// 1200000000000000000) whose pin list is full: a pinMessage there fails as Discord's
 	// 30003 Maximum number of pins reached
@@ -693,6 +701,8 @@ type TestSuite struct {
 	// SetupTemplates run before every test in the suite, ahead of the test's own
 	SetupTemplates []string         `yaml:"setup_templates"`
 	CommandMap     map[int64]string `yaml:"command_map"` // Shared command ID mapping
+	// CommandStatus is the suite's shared command_status (a test's own entries win)
+	CommandStatus map[int64]string `yaml:"command_status"`
 }
 
 // LoadTestCase loads a single test case from a YAML file.
@@ -711,6 +721,9 @@ func LoadTestCase(filename string) (*TestCase, error) {
 	tc.applyDefaults()
 	tc.SourceFile = filename
 
+	if err := tc.validateDeclared(); err != nil {
+		return nil, fmt.Errorf("%s: %w", filename, err)
+	}
 	if err := tc.validateContext(); err != nil {
 		return nil, fmt.Errorf("%s: %w", filename, err)
 	}
@@ -719,6 +732,38 @@ func LoadTestCase(filename string) (*TestCase, error) {
 	}
 
 	return &tc, nil
+}
+
+// validateDeclared rejects a command_status word the emulator doesn't know, and an
+// exec line declared in both exec_responses and exec_errors.
+func (tc *TestCase) validateDeclared() error {
+	for id, status := range tc.CommandStatus {
+		if !runtime.ValidCommandStatus(status) {
+			return fmt.Errorf("test %q: command_status %d: unknown status %q (use missing, disabled or group_disabled)",
+				tc.Name, id, status)
+		}
+	}
+	for line := range tc.Context.ExecErrors {
+		if _, both := tc.Context.ExecResponses[line]; both {
+			return fmt.Errorf("test %q: exec line %q is in both exec_responses and exec_errors", tc.Name, line)
+		}
+	}
+	return nil
+}
+
+// mergeCommandStatus adds the suite's command_status to the test's; the test's entries win.
+func (tc *TestCase) mergeCommandStatus(shared map[int64]string) {
+	if len(shared) == 0 {
+		return
+	}
+	if tc.CommandStatus == nil {
+		tc.CommandStatus = make(map[int64]string)
+	}
+	for k, v := range shared {
+		if _, exists := tc.CommandStatus[k]; !exists {
+			tc.CommandStatus[k] = v
+		}
+	}
 }
 
 // validateContext rejects a context that says two things about how the command was
@@ -789,6 +834,7 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 	// Apply defaults to all tests
 	for i := range ts.Tests {
 		ts.Tests[i].mergeDefaults(ts.Defaults, ts.SetupDB, ts.CommandMap)
+		ts.Tests[i].mergeCommandStatus(ts.CommandStatus)
 		if len(ts.SetupTemplates) > 0 {
 			ts.Tests[i].SetupTemplates = append(append([]string{}, ts.SetupTemplates...), ts.Tests[i].SetupTemplates...)
 		}
@@ -797,6 +843,9 @@ func LoadTestSuite(filename string) (*TestSuite, error) {
 		if ts.Tests[i].Context.User.ID == runtime.BotUserID {
 			return nil, fmt.Errorf("%s: test %q: user.id %d is the bot's; YAGPDB runs no custom command for a bot's message",
 				filename, ts.Tests[i].Name, runtime.BotUserID)
+		}
+		if err := ts.Tests[i].validateDeclared(); err != nil {
+			return nil, fmt.Errorf("%s: %w", filename, err)
 		}
 		if err := ts.Tests[i].validateContext(); err != nil {
 			return nil, fmt.Errorf("%s: %w", filename, err)
@@ -947,6 +996,9 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.ExecResponses == nil {
 		tc.Context.ExecResponses = defaults.ExecResponses
+	}
+	if tc.Context.ExecErrors == nil {
+		tc.Context.ExecErrors = defaults.ExecErrors
 	}
 	if tc.Context.PinsFull == nil {
 		tc.Context.PinsFull = defaults.PinsFull

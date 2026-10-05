@@ -104,6 +104,12 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
                                       # header turns Show errors off). Map the real command
                                       # where you can; a missing file is an error, an
                                       # unmapped execCC warns [execcc], a failed child fails
+  command_status: { 1: disabled }     # test or suite level (the test's entries win): execCC and
+                                      # scheduleUniqueCC of this id fail as YAGPDB's do:
+                                      # missing = "Couldn't find custom command", disabled =
+                                      # "custom command is disabled", group_disabled = "custom
+                                      # command group is disabled"; wins over command_map, and
+                                      # an execCC child sees it. An unknown word fails the load
                                       # the test (unless warning_contains expects it). IDs are ints: store
                                       # them as config_sync does (strings) and toInt them
   expected:
@@ -155,7 +161,10 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # YAGPDB builds it (strings quoted, switches and numbers not); recorded, not run: the
     # call returns the context's exec_responses entry for the line, or "" with a warning
     # if it isn't declared there. context: { exec_responses: { 'kick 5 "spam"': "Kicked" } }
-    # declares what a line returns ("" is allowed, and silences the warning)
+    # declares what a line returns ("" is allowed, and silences the warning);
+    # context: { exec_errors: { 'kick 5 "spam"': "Missing Permissions" } } makes the line fail
+    # with "exec/execadmin, run: Missing Permissions" ({{try}} catches it); a line can't be in
+    # both exec_responses and exec_errors (a loader error)
     deletions: [{ of: trigger, delay: 5s }, { of: message, channel_id: 9, message_id: 7 }]
     # exactly the deletions asked for, in order ([] for none): of = trigger|message|response;
     # unset fields match anything, delay: 0s = at once. Snapshots record deletions too

@@ -210,7 +210,10 @@ type ExecutionContext struct {
 	// same line an Exec records); a call whose line isn't a key returns "" and warns,
 	// since the emulator can't run the bot command YAGPDB would.
 	ExecResponses map[string]string
-	FileUploads   []FileUpload
+	// ExecErrors declares command lines whose exec/execAdmin fails with the given message
+	// (returned as "exec/execadmin, run: <message>")
+	ExecErrors  map[string]string
+	FileUploads []FileUpload
 	// ResponsePings are who the response (the template's output) notifies
 	ResponsePings Pings
 
@@ -280,6 +283,10 @@ type ExecutionContext struct {
 
 	// Command ID mapping (for execCC)
 	CommandIDMap map[int64]string
+	// CommandStatus makes execCC/scheduleUniqueCC of an id fail as YAGPDB's do for a
+	// command that doesn't exist, is disabled, or whose group is disabled (see
+	// ValidCommandStatus); checked before CommandIDMap
+	CommandStatus map[int64]string
 
 	// execCC tracking
 	ExecCCDepth     int    // Current nesting depth

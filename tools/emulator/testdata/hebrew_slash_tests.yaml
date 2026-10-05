@@ -327,6 +327,17 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
 
+  # command_status: execCC fails as YAGPDB's does for a disabled command
+  - name: "hebrew_slash: a disabled gematria is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: atbash, options: { text: "אמת" } }
+    command_status:
+      1: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   # config_sync is an Interval command: execCC to it errors as YAGPDB's does for a stale id
   - name: "hebrew_slash: a gematria id YAGPDB cannot execCC is an ephemeral refusal"
     template: "../../../commands/hebrew/hebrew_slash.gohtml"

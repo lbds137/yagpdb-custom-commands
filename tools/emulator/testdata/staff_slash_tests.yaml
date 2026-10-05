@@ -125,6 +125,20 @@ tests:
           embed_contains: "<@&111111111111111111>"
           components_contains: '"custom_id": "templates-sr:500000000000000001"'
 
+  # ---- a handler whose execCC fails (command_status declares it) still answers the interaction
+  - name: "staff_slash: a disabled handler is an ephemeral refusal and nothing ran"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: bump_reset }
+    command_status:
+      3: disabled
+    assertions:
+      db_checks:
+        # bump_reset didn't run: Last Bump is still set
+        - { user_id: 0, key: "Global", value_equals: { Embed Color: 9807270, Delete Trigger Delay: 5, Delete Response Delay: 10, Last Bump: "earlier" } }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   # ---- bump_reset
   - name: "staff_slash bump_reset: Last Bump is cleared, the reply is ephemeral and never deleted"
     template: "../../../commands/members/staff_slash.gohtml"
