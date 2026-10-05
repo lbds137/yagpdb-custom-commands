@@ -402,6 +402,11 @@ gets a failing test first.
   stricter limit so a later save from the panel also passes.
 
 ### Remaining emulator gaps
+- Found 2026-10-04 (review of the /prompt pin): the execCC child context (engine.go
+  execCC, the childCtx literal) does not copy the declared `Threads`, so a child resolving
+  a thread by ID or name may see it as unknown where YAGPDB would not. Not hit by any
+  current command (code reading only). Fix: copy Threads like Channels, with a test of a
+  child pinning or sending into a declared thread. Trigger: the next execCC-into-thread unit.
 - Found 2026-10-04 (unit 5): an execCC to an id outside the test's command_map only warns
   (`[execcc]`) and runs nothing, so no test can make execCC ERROR the way YAGPDB does for
   a missing command ("Couldn't find custom command") or a disabled one
