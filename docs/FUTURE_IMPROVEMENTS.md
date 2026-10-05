@@ -443,12 +443,11 @@ gets a failing test first.
   gematria_slash), timestamp_slash, define_slash, pointer_slash, rule_slash (number and
   browse). Not pinned: channel_link's try wraps a send, not an exec (its catch only calls
   execCC).
-- Found 2026-10-04 (unit 5b): `make test-minified` reports a real difference for a slash
-  root -> channel_activity -> pager chain because the static loop-db warning attached to
-  an execCC child carries the file's ABSOLUTE path, which differs between the checkout and
-  the prove copy (/tmp/yagmin-prove-*); prove's position normalizing covers only line:col.
-  So `/staff activity` has no end-to-end router test (its halves are tested apart). Fix:
-  normalize paths in the prove diff (or report child warnings repo-relative), then add it.
+- Shipped (2026-10-05): an execCC child's warnings name its command_map path as the test
+  wrote it (runtime.DisplayPath, the form a root template already used), not the
+  TemplateRoot-remapped path, so `make test-minified` no longer reports a real difference
+  for a child's loop-db warning; `/staff activity` has its end-to-end router test
+  (staff_slash_5b_tests.yaml) and a Go test pins the naming (template_root_test.go).
 - Found 2026-10-04 (unit 2 review): the delayed-interaction test shape
   (`interaction: {type: slash, delayed: true, responded_to}`) can't express a DEFERRED
   stored interaction. YAGPDB sends such a run's plain output as an edit of the original

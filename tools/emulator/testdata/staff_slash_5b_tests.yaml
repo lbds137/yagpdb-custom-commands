@@ -109,9 +109,9 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "Part of this command isn't installed on this server yet. Please tell an admin." }
 
-  # channel_activity runs as the root here, not behind the router: its cleanup loop's
-  # warning names an absolute path from an execCC child, which `make test-minified` can't
-  # compare (see the note at the /staff entry test below). A root run has no interaction,
+  # channel_activity runs as the root here because the refusal is reached before the
+  # router's answer matters; the whole chain behind the router is the "staff_slash
+  # activity" test below. A root run has no interaction,
   # so the refusal's sendResponse is YAGPDB's "invalid interaction token" error: it is the
   # refusal's own call, reached before the cleanup, and the seeded entry for a channel
   # that doesn't exist is the proof nothing was deleted (the old order deleted it first).
@@ -133,6 +133,26 @@ tests:
       execs: []
       sent_messages:
         - { content_contains: "invalid interaction token" }
+
+  # the whole /staff activity chain: router -> channel_activity -> channel_activity_pager
+  # The pager's browse view is the public interaction response, as for a slash root's
+  # execCC of it (the test below). The loop-db warning on channel_activity's cleanup loop
+  # reaches the report through the execCC child, named by its command_map path.
+  - name: "staff_slash activity: the browse view is the interaction response (router -> channel_activity -> pager)"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      clock: 2026-01-01T00:00:00Z
+      interaction: { type: slash, subcommand: activity }
+    setup_db:
+      - { user_id: 999999999, key: "Last Active", value: 1000 }
+    assertions:
+      deletions: []
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Channel activity"
+          embed_contains: '**Stale**, oldest first — page 1 of 1\n<#999999999> — <t:1000:R>'
+          components_contains: '"custom_id": "templates-ca:quiet:1:b"'
 
   # on the /staff path rules posts with sendMessage and answers with sendResponse: its only
   # execCC to embed_exec is the text path's, so a missing embed_exec must not refuse

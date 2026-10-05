@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -30,4 +31,24 @@ func RemapTemplateRoot(root, rel string) (string, bool) {
 		return "", false
 	}
 	return abs, true
+}
+
+// DisplayPath returns a template path relative to the working directory, so warnings
+// print as clickable file:line locations. A relative template is joined with baseDir
+// first. It takes the path as the test wrote it, before RemapTemplateRoot, so a run
+// against minified copies names the same file as a normal run.
+func DisplayPath(baseDir, template string) string {
+	if template == "" {
+		return ""
+	}
+	p := template
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(baseDir, p)
+	}
+	if wd, err := os.Getwd(); err == nil {
+		if rel, err := filepath.Rel(wd, p); err == nil {
+			return rel
+		}
+	}
+	return p
 }
