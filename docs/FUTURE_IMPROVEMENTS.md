@@ -96,6 +96,8 @@ picks, then the minifier.
   keys, `Rule #N`, title-casing) surface in the UI. Fixes likely overlap the pickers
   / /setup (roadmap item 4) and the new: cleanup; the cheap teaching layer (option
   descriptions, modal placeholders) already shipped with the slash work.
+  AUDITED 2026-10-05: docs/design/staff-lens-audit.md (24 findings F1-F25, recommended
+  batch, copy-only first). Waiting on Lila: which batch to build (user-visible copy).
 
 
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
@@ -258,6 +260,16 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
+- Found 2026-10-05 (staff-lens audit F2, confirmed by reading): `/edit entry` on an entry
+  whose stored value isn't text (a list or nested dict) opens an empty Value box
+  (edit_slash.gohtml prefills strings only), and submitting overwrites the value with the
+  typed text (edit_modal.gohtml's update branch sets it unconditionally). Fix shape: refuse
+  non-text entries at /edit and at submit, pointing to /db. Waiting on Lila with the audit
+  batch (the refusal is user-visible).
+- Found 2026-10-05 (staff-lens audit F15, confirmed by reading): `/staff inactivity date`
+  replies with the title "Inactivity Prune Inactivity Prune Date Editing" (inactivity
+  .gohtml joins $pruneCategory with a heading that already contains it). Fix with the
+  audit batch.
 - Found 2026-10-04 (unit 5a review), deferred: `/staff bootstrap` goes through the router,
   which needs `Commands.bootstrap`, and only config_sync fills Commands (hourly, for the
   servers in panel.json). So on a brand-new server the slash path can't bootstrap; only
