@@ -63,6 +63,95 @@ command_map:
   24: "../../../commands/members/inactivity_prune_pick.gohtml"
 
 tests:
+  # ---- handlers refuse up front when the ids they execCC are missing from Commands
+  # (the handler itself is present: the router finds it, it refuses)
+  - name: "staff_slash inactivity prune: only inactivity_prune_pick missing from Commands refuses up front"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      member_roles: { 700000000000000001: [444444444444444444] }
+      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 700000000000000001 } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { embed_exec: "1", inactivity: "20" }
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  - name: "staff_slash inactivity date: still works with inactivity_prune_pick missing from Commands"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "date", date: "2026-12-01" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { embed_exec: "1", inactivity: "20" }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Inactivity Prune", value_contains: "\"Next Date\":\"2026-12-01\"" }
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_contains: "Value successfully added!" }
+
+  - name: "staff_slash inactivity: every execCC id missing from Commands refuses up front, no announcement"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: inactivity, options: { action: "start" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { inactivity: "20" }
+    assertions:
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  # channel_activity runs as the root here, not behind the router: its cleanup loop's
+  # warning names an absolute path from an execCC child, which `make test-minified` can't
+  # compare (see the note at the /staff entry test below). A root run has no interaction,
+  # so the refusal's sendResponse is YAGPDB's "invalid interaction token" error: it is the
+  # refusal's own call, reached before the cleanup, and the seeded entry for a channel
+  # that doesn't exist is the proof nothing was deleted (the old order deleted it first).
+  - name: "channel_activity: the /staff entry without channel_activity_pager in Commands refuses before the cleanup deletes anything"
+    template: "../../../commands/channels/channel_activity.gohtml"
+    context:
+      exec_data: { Staff: true }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { channel_activity: "21" }
+      - { user_id: 99, key: "Last Active", value: 2000 }
+    expected:
+      error_contains: "invalid interaction token"
+    assertions:
+      db_checks:
+        - { user_id: 99, key: "Last Active", value_equals: 2000 }
+      deletions: []
+      execs: []
+      sent_messages:
+        - { content_contains: "invalid interaction token" }
+
+  # on the /staff path rules posts with sendMessage and answers with sendResponse: its only
+  # execCC to embed_exec is the text path's, so a missing embed_exec must not refuse
+  - name: "staff_slash rules: works without embed_exec in Commands (the /staff path never execCCs it)"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: rules }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { rules: "23" }
+    assertions:
+      deletions: []
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: "Be kind." }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted rules 1-3." }
+
   # ---- inactivity: the announcements
   - name: "staff_slash inactivity start: the announcement and the Member ping are channel posts, ack is ephemeral"
     template: "../../../commands/members/staff_slash.gohtml"

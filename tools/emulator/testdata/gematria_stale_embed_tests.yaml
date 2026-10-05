@@ -1,0 +1,51 @@
+name: "gematria_slash: a stale embed_exec id behind gematria"
+
+# gematria_slash_tests.yaml runs gematria_bootstrap before every test, and the bootstrap
+# itself execCCs embed_exec, so a stale (non-execCC-able) embed_exec id can't be mapped
+# there. Here the Gematria dict is seeded by hand instead (one letter, no tarot cards): the
+# run is root (gematria_slash) -> gematria (Respond) -> embed_exec, and the last is
+# config_sync, an Interval command that execCC errors on as YAGPDB does for a stale id.
+
+defaults:
+  user: { id: 500000000000000001, username: "Invoker" }
+  channel: { id: 123456789012345678 }
+  guild:
+    id: 333333333333333333
+    name: "Test Server"
+    channels:
+      - { id: 900000000000000001, name: "yagpdb" }
+
+setup_db:
+  - user_id: 0
+    key: "Global"
+    value: { Embed Color: 9807270 }
+  - user_id: 0
+    key: "Commands"
+    value: { gematria: "1", embed_exec: "2" }
+  - user_id: 0
+    key: "Channels"
+    value: { YAGPDB: 900000000000000001 }
+  - user_id: 0
+    key: "Gematria"
+    value:
+      Values: { "א": "1" }
+      Final Letters: { }
+      Tarot Indices: { }
+      RWS Numerals: { }
+      Thoth Numerals: { }
+      RWS Names: { }
+      Thoth Names: { }
+
+command_map:
+  1: "../../../commands/gematria/gematria.gohtml"
+  2: "../../../commands/plumbing/config_sync.gohtml"
+
+tests:
+  - name: "gematria_slash: an embed_exec id YAGPDB cannot execCC, behind gematria, is an ephemeral refusal"
+    template: "../../../commands/gematria/gematria_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, options: { text: "א" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }

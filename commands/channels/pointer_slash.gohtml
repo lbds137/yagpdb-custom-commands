@@ -82,14 +82,22 @@
 			"inline" false
 		) }}
 
-		{{ execCC $embed_exec .Channel.ID 0 (sdict
-			"AuthorID" .User.ID
-			"ChannelID" .Channel.ID
-			"Title" $title
-			"Description" ""
-			"Fields" $fields
-			"Respond" true
-		) }}
+		{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
+			interaction unanswered: YAGPDB sends no response for a run that errors */}}
+		{{ try }}
+			{{ execCC $embed_exec .Channel.ID 0 (sdict
+				"AuthorID" .User.ID
+				"ChannelID" .Channel.ID
+				"Title" $title
+				"Description" ""
+				"Fields" $fields
+				"Respond" true
+			) }}
+		{{ catch }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ This command isn't set up on this server yet."
+				"ephemeral" true) }}
+		{{ end }}
 	{{ end }}
 {{ else }}
 Use /pointer as a slash command with the message link and an optional comment

@@ -141,6 +141,20 @@ tests:
         - { cc_id: 3, delay: 1s, interaction: responded, exec_data_contains: '"Description":"שלום"' }
         - { cc_id: 3, delay: 1s, interaction: responded, exec_data_contains: '"Description":"בית"' }
 
+  - name: "hebrew_slash pyramid: several words without gematria in Commands is one ephemeral refusal, no announcement"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: pyramid, options: { text: "אמת בית" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { embed_exec: "2", hebrew_slash: "3" }
+    assertions:
+      scheduled_runs: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   - name: "hebrew_slash pyramid: scheduled runs carry the invoker and the channel"
     template: "../../../commands/hebrew/hebrew_slash.gohtml"
     context:
@@ -299,3 +313,27 @@ tests:
       exec_data: { probe: true }
     expected:
       output_contains: "Use /hebrew as a slash command"
+
+  - name: "hebrew_slash: without gematria in Commands is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: atbash, options: { text: "אמת" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  # config_sync is an Interval command: execCC to it errors as YAGPDB's does for a stale id
+  - name: "hebrew_slash: a gematria id YAGPDB cannot execCC is an ephemeral refusal"
+    template: "../../../commands/hebrew/hebrew_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: atbash, options: { text: "אמת" } }
+    command_map:
+      1: "../../../commands/plumbing/config_sync.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }

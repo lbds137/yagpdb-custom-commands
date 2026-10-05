@@ -253,14 +253,20 @@
 				"⚠️ Warning:" $skippedCount $subjectAndVerb "not processed because only" $execCCLimit $limitNoun "can be processed at a time."
 			) }}
 		{{ end }}
-		{{ sendResponse nil (complexMessage "content" (joinStr "\n" $lines.StringSlice)) }}
-		{{- range $word := $kept -}}
-			{{- execCC $hebrewSlash $channelID 1 (sdict
-				"AuthorID" $userID
-				"ChannelID" $channelID
-				"Description" $word
-			) -}}
-		{{- end -}}
+		{{/* no announcement is promised when the words can't be rendered: the final
+			refusal below answers instead */}}
+		{{ if or (le $gematria 0) (le $hebrewSlash 0) }}
+			{{ $refusal = "⚠️ This command isn't set up on this server yet." }}
+		{{ else }}
+			{{ sendResponse nil (complexMessage "content" (joinStr "\n" $lines.StringSlice)) }}
+			{{- range $word := $kept -}}
+				{{- execCC $hebrewSlash $channelID 1 (sdict
+					"AuthorID" $userID
+					"ChannelID" $channelID
+					"Description" $word
+				) -}}
+			{{- end -}}
+		{{ end }}
 	{{ else }}
 		{{ $pyramidString := "" }}
 		{{ $prevLine := "" }}
@@ -330,5 +336,19 @@ Use /hebrew as a slash command: atbash, alefbet, pyramid or random
 	{{ $result.Set "AuthorID" $userID }}
 	{{ $result.Set "ChannelID" $channelID }}
 	{{ $result.Set "Respond" true }}
-	{{ execCC $gematria $channelID 0 $result }}
+	{{ if le $gematria 0 }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ This command isn't set up on this server yet."
+			"ephemeral" true) }}
+	{{ else }}
+		{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
+			interaction unanswered: YAGPDB sends no response for a run that errors */}}
+		{{ try }}
+			{{ execCC $gematria $channelID 0 $result }}
+		{{ catch }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ This command isn't set up on this server yet."
+				"ephemeral" true) }}
+		{{ end }}
+	{{ end }}
 {{ end }}

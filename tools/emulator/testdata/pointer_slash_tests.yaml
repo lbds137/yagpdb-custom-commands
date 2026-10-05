@@ -36,6 +36,21 @@ command_map:
   1: "../../../commands/plumbing/embed_exec.gohtml"
 
 tests:
+  # config_sync is an Interval command: execCC to it errors as YAGPDB's does for a stale id
+  - name: "pointer_slash: an embed_exec id YAGPDB cannot execCC is an ephemeral refusal"
+    template: "../../../commands/channels/pointer_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        options: { link: "https://discord.com/channels/111222333444555666/888888888888888888/999888777666555444" }
+      messages:
+        - { id: 999888777666555444, channel_id: 888888888888888888, author_id: 222333444555666777, content: "hi" }
+    command_map:
+      1: "../../../commands/plumbing/config_sync.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   - name: "pointer_slash: a link without a comment answers publicly with the channel and message fields"
     template: "../../../commands/channels/pointer_slash.gohtml"
     snapshot: true

@@ -60,12 +60,20 @@
 			"content" "⚠️ This command isn't set up on this server yet."
 			"ephemeral" true) }}
 	{{ else }}
-		{{ execCC $embed_exec .Channel.ID 0 (sdict
-			"ChannelID" .Channel.ID
-			"Title" $title
-			"Description" $description
-			"Respond" true
-		) }}
+		{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
+			interaction unanswered: YAGPDB sends no response for a run that errors */}}
+		{{ try }}
+			{{ execCC $embed_exec .Channel.ID 0 (sdict
+				"ChannelID" .Channel.ID
+				"Title" $title
+				"Description" $description
+				"Respond" true
+			) }}
+		{{ catch }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ This command isn't set up on this server yet."
+				"ephemeral" true) }}
+		{{ end }}
 	{{ end }}
 {{ else }}
 Use /define as a slash command with the term to look up

@@ -16,6 +16,24 @@
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $pager := toInt ($commandsDict.Get "channel_activity_pager") }}
 
+{{/* the /staff path (staff_slash execCCs this with ExecData.Staff): the pager answers the
+  inherited interaction, and there is no trigger message to delete */}}
+{{ $staff := false }}
+{{- if .ExecData -}}
+  {{- if .ExecData.Staff -}}
+    {{- $staff = true -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* on that path an id that isn't in the Commands dict would leave the interaction
+  unanswered: refuse before the cleanup below deletes anything */}}
+{{ if and $staff (le $pager 0) }}
+  {{ sendResponse nil (complexMessage
+    "content" "⚠️ This command isn't set up on this server yet."
+    "ephemeral" true) }}
+  {{ return }}
+{{ end }}
+
 {{/* every channel that still exists (any type) */}}
 {{ $allChannelIDs := dict }}
 {{- range $channel := .Guild.Channels -}}
@@ -55,14 +73,6 @@
   and rereads the entries itself; nothing is printed here after the execCC */}}
 {{ execCC $pager .Channel.ID 0 (sdict "Bucket" "stale" "Page" 1) }}
 
-{{/* the /staff path (staff_slash execCCs this with ExecData.Staff): the pager answers the
-  inherited interaction, and there is no trigger message to delete */}}
-{{ $staff := false }}
-{{- if .ExecData -}}
-  {{- if .ExecData.Staff -}}
-    {{- $staff = true -}}
-  {{- end -}}
-{{- end -}}
 {{ if not $staff }}
   {{ deleteTrigger $deleteTriggerDelay }}
 {{ end }}

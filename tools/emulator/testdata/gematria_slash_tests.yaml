@@ -53,9 +53,47 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: false, embed_contains: "`1157` > `14` > `5`" }
 
+  # the child (gematria, on its Respond path) is the one that execCCs embed_exec
+  - name: "gematria_slash: gematria without embed_exec in Commands is an ephemeral refusal"
+    template: "../../../commands/gematria/gematria_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, options: { text: "אמת" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { gematria: "1" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   - name: "gematria_slash: a bare run prints the usage hint"
     template: "../../../commands/gematria/gematria_slash.gohtml"
     context:
       exec_data: { probe: true }
     expected:
       output_contains: "Use /gematria as a slash command"
+
+  - name: "gematria_slash: without gematria in Commands is an ephemeral refusal"
+    template: "../../../commands/gematria/gematria_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, options: { text: "אמת" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  # config_sync is an Interval command: execCC to it errors as YAGPDB's does for a stale id
+  - name: "gematria_slash: a gematria id YAGPDB cannot execCC is an ephemeral refusal"
+    template: "../../../commands/gematria/gematria_slash.gohtml"
+    context:
+      interaction: { type: slash, options: { text: "אמת" } }
+    command_map:
+      1: "../../../commands/plumbing/config_sync.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
