@@ -368,6 +368,12 @@
                 "type": "string",
                 "description": "key to prefill",
                 "required": false
+              },
+              {
+                "name": "create",
+                "type": "boolean",
+                "description": "make the category if it doesn't exist yet",
+                "required": false
               }
             ]
           },

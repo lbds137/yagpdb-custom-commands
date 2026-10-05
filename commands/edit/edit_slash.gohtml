@@ -16,6 +16,7 @@
   Slash subcommand: `entry edit a database entry`
   Slash option: `entry.category string category to prefill`
   Slash option: `entry.key string key to prefill`
+  Slash option: `entry.create boolean make the category if it doesn't exist yet`
   Slash subcommand: `delete delete a rule or entry`
   Slash option: `delete.rule integer rule number`
   Slash option: `delete.category string category`
@@ -66,8 +67,14 @@
 	{{ else if eq .SubCommand "entry" }}
 		{{ $categoryArg := toString (or .Options.category "") }}
 		{{ $keyArg := toString (or .Options.key "") }}
+		{{/* "or" returns the option's own value: a bool when given, false when absent */}}
+		{{ $create := or .Options.create false }}
+		{{ $catPlaceholder := "e.g. Admin" }}
+		{{ if $create }}
+			{{ $catPlaceholder = "a new or existing category" }}
+		{{ end }}
 		{{ $catField := sdict "label" "Category" "custom_id" "category" "style" 1 "required" true
-			"placeholder" "e.g. Admin — new:Name creates one" }}
+			"placeholder" $catPlaceholder }}
 		{{ $keyField := sdict "label" "Key" "custom_id" "key" "style" 1 "required" true
 			"placeholder" "the entry's name" }}
 		{{ $valueField := sdict "label" "Value" "custom_id" "value" "style" 2 "required" true
@@ -81,47 +88,64 @@
 		{{ if and $keyArg (le (len (toRune $keyArg)) 4000) }}
 			{{ $keyField.Set "value" $keyArg }}
 		{{ end }}
-		{{ $isNew := reFind "(?i)\\Anew:" $categoryArg }}
-		{{ $categoryName := $categoryArg }}
-		{{ if $isNew }}
-			{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
-		{{ end }}
-		{{ $category := title $categoryName }}
+		{{ $category := title $categoryArg }}
 		{{ $categoryEntry := dbGet 0 $category }}
-		{{ if $categoryEntry }}
-			{{ $categoryValue := $categoryEntry.Value }}
-			{{ $categoryDict := sdict }}
-			{{ $isDict := false }}
-			{{ if eq "map[string]interface {}" (printf "%T" $categoryValue) }}
-				{{ $categoryDict = sdict $categoryValue }}
-				{{ $isDict = true }}
-			{{ else if eq "map" (kindOf $categoryValue true) }}
-				{{ $categoryDict = $categoryValue }}
-				{{ $isDict = true }}
+		{{/* the refusals quote it in a 2000-character message: show a cut copy */}}
+		{{ $catShown := $category }}
+		{{ if gt (len (toRune $catShown)) 500 }}
+			{{ $catShown = joinStr "" (slice (split $catShown "") 0 499) "…" }}
+		{{ end }}
+		{{ $refused := "" }}
+		{{ if $categoryArg }}
+			{{ if and $create (reFind "(?i)\\A\\s*new:" $categoryArg) }}
+				{{ $refused = "⚠️ Leave out `new:` — the `create` option does that now." }}
+			{{ else if and (not $create) (not $categoryEntry) }}
+				{{ $refused = joinStr "" "⚠️ There is no `" $catShown
+					"` category. Check the spelling, or set `create` to True to make it." }}
 			{{ end }}
-			{{ if $isDict }}
-				{{ $key := $keyArg }}
-				{{ if ne $category "Commands" }}
-					{{ $key = title $keyArg }}
+		{{ end }}
+		{{ if $refused }}
+			{{ sendResponse nil (complexMessage "content" $refused "ephemeral" true) }}
+		{{ else }}
+			{{ if $categoryEntry }}
+				{{ $categoryValue := $categoryEntry.Value }}
+				{{ $categoryDict := sdict }}
+				{{ $isDict := false }}
+				{{ if eq "map[string]interface {}" (printf "%T" $categoryValue) }}
+					{{ $categoryDict = sdict $categoryValue }}
+					{{ $isDict = true }}
+				{{ else if eq "map" (kindOf $categoryValue true) }}
+					{{ $categoryDict = $categoryValue }}
+					{{ $isDict = true }}
 				{{ end }}
-				{{ if $categoryDict.HasKey $key }}
-					{{ $old := $categoryDict.Get $key }}
-					{{ if eq "string" (printf "%T" $old) }}
-						{{ if gt (len (toRune $old)) 4000 }}
-							{{ $valueField.Set "placeholder"
-								"current text is too long for this box; type a replacement" }}
-						{{ else }}
-							{{ $valueField.Set "value" $old }}
+				{{ if $isDict }}
+					{{ $key := $keyArg }}
+					{{ if ne $category "Commands" }}
+						{{ $key = title $keyArg }}
+					{{ end }}
+					{{ if $categoryDict.HasKey $key }}
+						{{ $old := $categoryDict.Get $key }}
+						{{ if eq "string" (printf "%T" $old) }}
+							{{ if gt (len (toRune $old)) 4000 }}
+								{{ $valueField.Set "placeholder"
+									"current text is too long for this box; type a replacement" }}
+							{{ else }}
+								{{ $valueField.Set "value" $old }}
+							{{ end }}
 						{{ end }}
 					{{ end }}
 				{{ end }}
 			{{ end }}
+			{{ $modalID := print "edit:entry:" currentTime.Unix }}
+			{{ if $create }}
+				{{ $modalID = print "edit:entry:new:" currentTime.Unix }}
+			{{ end }}
+			{{ sendModal (cmodal
+				"title" "Edit entry"
+				"custom_id" $modalID
+				"fields" (cslice $catField $keyField $valueField)
+			) }}
 		{{ end }}
-		{{ sendModal (cmodal
-			"title" "Edit entry"
-			"custom_id" (print "edit:entry:" currentTime.Unix)
-			"fields" (cslice $catField $keyField $valueField)
-		) }}
 	{{ else if eq .SubCommand "delete" }}
 		{{/* HasKey, not truthiness: an explicit 0 is a given (and refused below), not absent */}}
 		{{ $ruleGiven := false }}
@@ -186,28 +210,16 @@
 				{{ end }}
 			{{ end }}
 		{{ else }}
-			{{ $isNew := reFind "(?i)\\Anew:" $categoryArg }}
-			{{ $categoryName := $categoryArg }}
-			{{ if $isNew }}
-				{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
-			{{ end }}
-			{{ $category := title $categoryName }}
+			{{ $category := title $categoryArg }}
 			{{/* the refusals quote them in a 2000-character message: show cut copies */}}
 			{{ $catShown := $category }}
 			{{ if gt (len (toRune $catShown)) 500 }}
 				{{ $catShown = joinStr "" (slice (split $catShown "") 0 499) "…" }}
 			{{ end }}
 			{{ $refused := "" }}
-			{{ if and $isNew (not $categoryName) }}
-				{{ $refused = "⚠️ Give a category name after `new:`." }}
-			{{ end }}
-			{{ $categoryEntry := "" }}
-			{{ if not $refused }}
-				{{ $categoryEntry = dbGet 0 $category }}
-				{{ if and (not $isNew) (not $categoryEntry) }}
-					{{ $refused = joinStr "" "⚠️ There is no `" $catShown
-						"` category. Check the spelling, or use `new:" $catShown "` to create it." }}
-				{{ end }}
+			{{ $categoryEntry := dbGet 0 $category }}
+			{{ if not $categoryEntry }}
+				{{ $refused = joinStr "" "⚠️ There is no `" $catShown "` category. Check the spelling." }}
 			{{ end }}
 			{{ $categoryDict := sdict }}
 			{{ if and (not $refused) $categoryEntry }}
