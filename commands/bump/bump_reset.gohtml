@@ -23,9 +23,9 @@
     {{- end -}}
 {{- end -}}
 {{ if $staff }}
-    {{ sendResponse nil (complexMessage "content" "`Last Bump` reset!" "ephemeral" true) }}
+    {{ sendResponse nil (complexMessage "content" "✅ Bump timer reset." "ephemeral" true) }}
 {{ else }}
-    {{ $messageID := sendMessageRetID .Channel.ID "`Last Bump` reset!" }}
+    {{ $messageID := sendMessageRetID .Channel.ID "✅ Bump timer reset." }}
 
     {{ deleteTrigger $deleteTriggerDelay }}
     {{ deleteMessage .Channel.ID $messageID $deleteResponseDelay }}

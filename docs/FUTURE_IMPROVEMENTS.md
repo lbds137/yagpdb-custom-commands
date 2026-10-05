@@ -99,6 +99,8 @@ picks, then the minifier.
   AUDITED 2026-10-05: docs/design/staff-lens-audit.md (24 findings F1-F25, recommended
   batch, copy-only first). DECIDED (Lila 2026-10-05): build recommended items 1-12 as the
   doc proposes them (copy, F15, F2 guard, F16 Administrator gate); 13-17 later.
+  Items 1-12 shipped 2026-10-05 (F17, F14, F11, F1, F3, F20, F18, F19, F21, F23, F8, F5,
+  F15, F2, F16; deploy pending); 13-17 still open.
 
 
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
@@ -261,16 +263,17 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
 gets a failing test first.
-- Found 2026-10-05 (staff-lens audit F2, confirmed by reading): `/edit entry` on an entry
+- Fixed 2026-10-05 (staff-lens audit F2, confirmed by reading): `/edit entry` on an entry
   whose stored value isn't text (a list or nested dict) opens an empty Value box
   (edit_slash.gohtml prefills strings only), and submitting overwrites the value with the
   typed text (edit_modal.gohtml's update branch sets it unconditionally). Fix shape: refuse
   non-text entries at /edit and at submit, pointing to /db. Approved with the audit batch
   (Lila 2026-10-05).
-- Found 2026-10-05 (staff-lens audit F15, confirmed by reading): `/staff inactivity date`
+- Fixed 2026-10-05 (staff-lens audit F15, confirmed by reading): `/staff inactivity date`
   replies with the title "Inactivity Prune Inactivity Prune Date Editing" (inactivity
-  .gohtml joins $pruneCategory with a heading that already contains it). Fix with the
-  audit batch.
+  .gohtml joins $pruneCategory with a heading that already contains it). The /staff path
+  now replies "Next prune date updated" with previous/next; the text path keeps db_slash's
+  receipt, titled "Inactivity Prune Date Editing" (tests on both paths).
 - Found 2026-10-04 (unit 5a review), deferred: `/staff bootstrap` goes through the router,
   which needs `Commands.bootstrap`, and only config_sync fills Commands (hourly, for the
   servers in panel.json). So on a brand-new server the slash path can't bootstrap; only

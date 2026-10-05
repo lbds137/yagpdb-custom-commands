@@ -84,14 +84,14 @@ select rendering in snapshots (snapshot_test.go:261), select submit simulation
 
 ## 3. inactivity prune → Prune panel with kick confirm (user select)
 
-- Spawn: `inactivity prune` with NO user param (today: "Invalid User Parameter" error)
+- Spawn: `inactivity prune` with NO user param (before 2026-10-05: an "Invalid User Parameter" error)
   posts the panel.
 - Panel: embed "Inactivity Prune" (state: prev/next dates) + user select
-  `ip:<spawner snowflake>` — max_values 1, placeholder "Pick a member to prune…".
+  `ip:<spawner snowflake>` — max_values 1, placeholder "Pick a member to review…".
 - Handler `^ip:\d+(:\w+)?$` → commands/members/inactivity_prune_pick.gohtml, panel
   **99**, Staff Utility, Defer None. Four modes:
   - select submit → verdict now (isActive/isInactive, text-path rules): inactive →
-    confirm state (embed: member, avatar, "will be kicked"); active → verdict embed
+    confirm state (embed: member, avatar, "Kick <@x> from the server? Press Kick to confirm, or Cancel."); active → verdict embed
     with the Kick button DISABLED + "not inactive" note.
   - Kick button `ip:<spawner>:kick` (red) → RE-CHECK at press time (stale select):
     member gone or no longer inactive → verdict embed; else `exec "kick"` (same reason

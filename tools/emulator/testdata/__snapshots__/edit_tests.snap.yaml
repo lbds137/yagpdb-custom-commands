@@ -248,7 +248,7 @@
     output: ""
     interaction_responses:
         - kind: modal
-          title: Edit rule 9
+          title: New rule 9 (doesn't exist yet)
           custom_id: edit:rule:9:1767366245
           fields:
             - rule_text

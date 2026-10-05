@@ -91,15 +91,15 @@
         "title" $pruneCategory
         "color" $embedColor
         "description" (joinStr "\n"
-            (joinStr "" "Previous prune: " (or $prevDate "_not set_"))
-            (joinStr "" "Next prune: " (or $nextDate "_not set_"))
+            (joinStr "" "Previous prune: " (or $prevDate "_not set yet (use /staff inactivity, action date)_"))
+            (joinStr "" "Next prune: " (or $nextDate "_not set yet (use /staff inactivity, action date)_"))
             ""
             "Pick a member to review for pruning."))
     "components" (cslice
         (cmenu "type" "user"
             "custom_id" (print "ip:" $spawner)
             "max_values" 1
-            "placeholder" "Pick a member to prune…"))
+            "placeholder" "Pick a member to review…"))
 }}
 
 {{ $kickReason := "pruned due to inactivity" }}
@@ -107,7 +107,7 @@
     "embed" (cembed
         "title" $pruneCategory
         "color" $embedColor
-        "description" (joinStr "" "🥾 <@" $targetID "> will be kicked!")
+        "description" (joinStr "" "🥾 Kick <@" $targetID "> from the server? Press Kick to confirm, or Cancel.")
         "thumbnail" (sdict "url" $userAvatar))
     "components" (cslice
         (cbutton "label" "Kick" "style" "danger"
@@ -116,7 +116,7 @@
             "custom_id" (print "ip:" $spawner ":cancel")))
 }}
 
-{{ $note := "is not inactive." }}
+{{ $note := "isn't marked inactive (no Inactive role, or they also have the Active role), so they can't be pruned." }}
 {{ if not $member }}
     {{ $note = "is no longer in the server." }}
 {{ end }}
@@ -124,7 +124,7 @@
     "embed" (cembed
         "title" $pruneCategory
         "color" $embedColor
-        "description" (joinStr "" "❌ No action was taken — <@" $targetID "> " $note))
+        "description" (joinStr "" "❌ No action taken: <@" $targetID "> " $note))
     "components" (cslice
         (cbutton "label" "Kick" "style" "danger" "disabled" true
             "custom_id" (print "ip:" $spawner ":kick"))

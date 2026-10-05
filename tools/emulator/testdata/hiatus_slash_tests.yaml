@@ -214,7 +214,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222] } }
       interaction_responses:
-        - { kind: deferred_edit, ephemeral: true, content_contains: "You don't hold any of the staff roles" }
+        - { kind: deferred_edit, ephemeral: true, content_contains: "You have no staff roles to give up" }
 
   - name: "hiatus_slash: no staff role IDs defined is an ephemeral refusal"
     template: "../../../commands/members/hiatus_slash.gohtml"
@@ -231,7 +231,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Staff", value_equals: { } }
       interaction_responses:
-        - { kind: deferred_edit, ephemeral: true, content_contains: "Staff role IDs must be defined" }
+        - { kind: deferred_edit, ephemeral: true, content_contains: "No staff roles are set up yet. Ask an admin to run /staff roles." }
 
   - name: "hiatus_slash: without embed_exec in Commands is an ephemeral refusal"
     template: "../../../commands/members/hiatus_slash.gohtml"
@@ -248,7 +248,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222] } }
       interaction_responses:
-        - { kind: deferred_edit, ephemeral: true, content_contains: "isn't set up on this server yet" }
+        - { kind: deferred_edit, ephemeral: true, content_contains: "isn't installed on this server yet. Please tell an admin." }
 
   - name: "hiatus_slash: a bare run prints the usage hint"
     template: "../../../commands/members/hiatus_slash.gohtml"
@@ -324,7 +324,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [333333333] } } }
       interaction_responses:
-        - { kind: deferred_edit, ephemeral: true, content_contains: "None of your recorded roles are staff roles anymore, so nothing was restored." }
+        - { kind: deferred_edit, ephemeral: true, content_contains: "None of the roles you gave up are staff roles any more, so nothing was restored. Ask an admin." }
 
   - name: "unhiatus_slash: an unset Mod Log posts the record in the current channel"
     template: "../../../commands/members/unhiatus_slash.gohtml"
@@ -380,7 +380,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Staff", value_equals: { } }
       interaction_responses:
-        - { kind: deferred_edit, ephemeral: true, content_contains: "Staff role IDs must be defined" }
+        - { kind: deferred_edit, ephemeral: true, content_contains: "No staff roles are set up yet. Ask an admin to run /staff roles." }
 
   - name: "unhiatus_slash: without embed_exec in Commands is an ephemeral refusal"
     template: "../../../commands/members/unhiatus_slash.gohtml"
@@ -402,7 +402,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Staff", value_equals: { Roles: [111111111, 222222222], Hiatus: { "987654321098765432": [111111111] } } }
       interaction_responses:
-        - { kind: deferred_edit, ephemeral: true, content_contains: "isn't set up on this server yet" }
+        - { kind: deferred_edit, ephemeral: true, content_contains: "isn't installed on this server yet. Please tell an admin." }
 
   - name: "unhiatus_slash: a bare run prints the usage hint"
     template: "../../../commands/members/unhiatus_slash.gohtml"

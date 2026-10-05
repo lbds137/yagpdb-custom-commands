@@ -20,6 +20,19 @@
     {{- end -}}
 {{- end -}}
 
+{{- /* Administrator only, on both paths (as /setup's `staff` is): it rewrites the stored
+    defaults, can set the staff role, and points the bot channel at this channel.
+    Administrator is bit 8; the owner gets every bit */ -}}
+{{ if not (bitwiseAnd (getTargetPermissionsIn .User.ID .Channel.ID) 8) }}
+    {{ if $staff }}
+        {{ sendResponse nil (complexMessage
+            "content" "⚠️ Only an Administrator can run bootstrap." "ephemeral" true) }}
+    {{ else }}
+        {{ sendMessage nil "⚠️ Only an Administrator can run bootstrap." }}
+    {{ end }}
+    {{ return }}
+{{ end }}
+
 {{ if not $staff }}
     {{ $args := parseArgs 0 "Usage: [staff role ID]"
         (carg "string" "staff role ID")
@@ -96,8 +109,8 @@
 {{- /* sent directly: embed_exec's ID comes from the Commands dict, which config_sync may
     not have filled yet on a new server */ -}}
 {{ $done := cembed
-    "title" "Bootstrap Execution Complete"
-    "description" "The bootstrapping process completed successfully!"
+    "title" "Server defaults saved"
+    "description" "First-time setup is done. Next, run /setup to pick the roles and channels."
     "color" (toInt ($globalDict.Get "Embed Color"))
 }}
 {{ if $staff }}

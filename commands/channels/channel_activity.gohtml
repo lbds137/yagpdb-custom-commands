@@ -29,7 +29,7 @@
   unanswered: refuse before the cleanup below deletes anything */}}
 {{ if and $staff (le $pager 0) }}
   {{ sendResponse nil (complexMessage
-    "content" "⚠️ This command isn't set up on this server yet."
+    "content" "⚠️ Part of this command isn't installed on this server yet. Please tell an admin."
     "ephemeral" true) }}
   {{ return }}
 {{ end }}

@@ -48,13 +48,13 @@
 	{{- end -}}
 
 	{{- if le $embed_exec 0 -}}
-		{{- print "⚠️ This command isn't set up on this server yet." -}}
+		{{- print "⚠️ Part of this command isn't installed on this server yet. Please tell an admin." -}}
 	{{- else if eq (len $staffRoleIDs) 0 -}}
-		{{- print "⚠️ Staff role IDs must be defined before using this command!" -}}
+		{{- print "⚠️ No staff roles are set up yet. Ask an admin to run /staff roles." -}}
 	{{- else if not $userHiatusSlice -}}
 		{{- print "⚠️ You are not a staff member on hiatus!" -}}
 	{{- else if eq (len $restore) 0 -}}
-		{{- print "⚠️ None of your recorded roles are staff roles anymore, so nothing was restored." -}}
+		{{- print "⚠️ None of the roles you gave up are staff roles any more, so nothing was restored. Ask an admin." -}}
 	{{- else -}}
 		{{- $mentions := cslice -}}
 		{{- range $roleID := $restore -}}

@@ -252,7 +252,7 @@ Current: "Previous prune: _not set_", "🥾 <@x> will be kicked!", "No action wa
 Why: "not set" has no next step, and "not inactive" means "lacks the Inactive role" (code :79-80), which a
 moderator won't connect to the roles.
 Proposed: `_not set yet (use /staff inactivity, action date)_`; `🥾 Kick <@x> from the server? Press Kick to confirm, or Cancel.`;
-`❌ No action taken: <@x> doesn't have the Inactive role, so they can't be pruned.` Buttons Kick/Cancel and the picker placeholder (change `Pick a member to prune…` to `Pick a member to review…` to match the description line) are fine.
+`❌ No action taken: <@x> isn't marked inactive (no Inactive role, or they also have the Active role), so they can't be pruned.` Buttons Kick/Cancel and the picker placeholder (change `Pick a member to prune…` to `Pick a member to review…` to match the description line) are fine.
 
 **F22. /setup embed doesn't say what each role is for** (copy). `setup_slash.gohtml:127-138`.
 Current: lines `**Member** @x`, `**Active** @x`, `**Bump** not set`.

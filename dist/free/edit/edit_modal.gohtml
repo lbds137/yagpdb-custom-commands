@@ -1,0 +1,189 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Modal Submission`
+  Trigger: `^edit:(rule:\d+|entry(?::new)?):\d+$`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  The /edit forms' writer (edit_slash opens them): the engines are retired/rule_edit's and
+  simple_db_edit's, copied minus their `(nil)` delete branches — deletes go through
+  /edit delete's confirm (edit_confirm). Acks are ephemeral sendResponses, no public
+  embed_exec post.
+*/ -}}
+{{if .IsModal}}{{$I := ((dbGet 0 "Roles")).Value}}{{$J := toInt ($I.Get "Staff")}}{{$E := toInt (((dbGet 0 "Global")).Value.Get "Embed Color")}}{{$r := split .CustomID ":"}}{{$K := index $r 1}}{{$L := toInt (index $r (sub (len $r) 1))}}{{if not (hasRoleID $J)}}{{sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true)}}{{else}}{{if not (lt (sub currentTime.Unix $L) 3600)}}{{sendResponse nil (complexMessage "content" "⚠️ This form expired — it's older than an hour. Run /edit again." "ephemeral" true)}}{{else}}{{if eq $K "rule"}}{{$B := toInt (index $r 2)}}{{$k := .ModalValues.rule_text.value}}{{if or (lt $B 1) (gt $B 9999)}}{{sendResponse nil (complexMessage "content" "⚠️ Rule numbers run from 1 to 9999." "ephemeral" true)}}{{else}}{{if eq $k "(nil)"}}{{sendResponse nil (complexMessage "content" "⚠️ To delete, use `/edit delete`." "ephemeral" true)}}{{else}}{{$a := joinStr "" "Rule #" $B}}{{$n := or ((dbGet 0 "Rules")).Value sdict}}{{$s := $n.HasKey $a}}{{$h := ""}}{{if $s}}{{$h = $n.Get $a}}{{end}}{{$t := eq "string" (printf "%T" $h)}}{{$u := false}}{{if $t}}{{$u = eq $h $k}}{{end}}{{$f := ""}}{{$d := ""}}{{$b := cslice}}{{if not $s}}{{$n.Set $a $k}}
+				{{dbSet 0 "Rules" $n}}
+				{{$f = joinStr "" $a " added"}}
+				{{$d = $k}}
+			{{else}}{{if $u}}
+				{{$f = joinStr "" $a " unchanged"}}
+				{{$d = $k}}
+			{{else}}
+				{{$n.Set $a $k}}
+				{{dbSet 0 "Rules" $n}}
+				{{$f = joinStr "" $a " updated"}}
+				{{$d = $k}}
+				{{$c := $h}}
+				{{if $t}}
+					{{if gt (len (toRune $c)) 1024}}
+						{{$e := slice (split $c "") 0 1023}}
+						{{$c = joinStr "" $e "…"}}
+					{{end}}
+				{{else}}
+					
+					{{$i := json $c true}}
+					{{$v := sub 1024 8}}
+					{{if gt (len (toRune $i)) $v}}
+						{{$e := slice (split $i "") 0 (sub $v 1)}}
+						{{$i = joinStr "" $e "…"}}
+					{{end}}
+					{{$c = joinStr "" "```\n" $i "\n```"}}
+				{{end}}
+				{{$b = $b.Append (sdict "name" "Was" "value" $c)}}
+			{{end}}{{end}}
+			{{sendResponse nil (complexMessage "ephemeral" true "embed" (cembed "title" $f "color" $E "description" $d "fields" $b))}}
+		{{end}}{{end}}
+	{{else}}
+		{{$F := .ModalValues.category.value}}
+		{{$w := .ModalValues.key.value}}
+		{{$l := .ModalValues.value.value}}
+		{{if eq $l "(nil)"}}
+			{{sendResponse nil (complexMessage "content" "⚠️ To delete, use `/edit delete`." "ephemeral" true)}}
+		{{else}}
+			{{$M := "map[string]interface {}"}}
+			
+			{{$G := eq (index $r 2) "new"}}
+			{{$m := title $F}}
+			
+			{{$o := $m}}
+			{{if gt (len (toRune $o)) 500}}
+				{{$o = joinStr "" (slice (split $o "") 0 499) "…"}}
+			{{end}}
+			{{$j := ""}}
+			{{if and $G (reFind "(?i)\\A\\s*new:" $F)}}
+				{{$j = "⚠️ Leave out `new:` — the `create` option does that now."}}
+			{{end}}
+			{{$x := ""}}
+			{{if not $j}}
+				{{$x = dbGet 0 $m}}
+				{{if and (not $G) (not $x)}}
+					{{$j = joinStr "" "⚠️ There is no section called `" $o "`. Check the spelling, or set `create` to True to start a new one."}}
+				{{end}}
+			{{end}}
+			{{$g := sdict}}
+			{{if not $j}}
+				{{if $x}}
+					{{$y := $x.Value}}
+					{{if eq $M (printf "%T" $y)}}
+						{{$g = sdict $y}}
+					{{else}}{{if eq "map" (kindOf $y true)}}
+						{{$g = $y}}
+					{{else}}
+						{{$j = joinStr "" "⚠️ The `" $o "` category doesn't hold a dictionary of entries."}}
+					{{end}}{{end}}
+				{{end}}
+			{{end}}
+			
+			{{if not $j}}
+				{{$z := $w}}
+				{{if ne $m "Commands"}}
+					{{$z = title $w}}
+				{{end}}
+				{{if $g.HasKey $z}}
+					{{if ne "string" (printf "%T" ($g.Get $z))}}
+						{{$A := joinStr " › " $o $z}}
+						{{if gt (len (toRune $A)) 500}}
+							{{$A = joinStr "" (slice (split $A "") 0 499) "…"}}
+						{{end}}
+						{{$j = joinStr "" "⚠️ `" $A "` holds a list or a group of settings, not text, so it can't be edited here. An admin can change it with /db."}}
+					{{end}}
+				{{end}}
+			{{end}}
+			{{if $j}}
+				{{sendResponse nil (complexMessage "content" $j "ephemeral" true)}}
+			{{else}}
+				{{$a := $w}}
+				{{if ne $m "Commands"}}
+					{{$a = title $w}}
+				{{end}}
+				{{$C := ne $a $w}}
+				{{$s := $g.HasKey $a}}
+				{{$h := ""}}
+				{{if $s}}
+					{{$h = $g.Get $a}}
+				{{end}}
+				{{$t := eq "string" (printf "%T" $h)}}
+				
+				{{$u := false}}
+				{{if $t}}
+					{{$u = eq $h $l}}
+				{{end}}
+				
+				{{$p := joinStr " › " $m $a}}
+				{{if gt (len (toRune $p)) 246}}
+					{{$p = joinStr "" (slice (split $p "") 0 245) "…"}}
+				{{end}}
+				{{$q := $a}}
+				{{if gt (len (toRune $q)) 1024}}
+					{{$e := slice (split $q "") 0 1023}}
+					{{$q = joinStr "" $e "…"}}
+				{{end}}
+				{{$f := ""}}
+				{{$d := ""}}
+				{{$b := cslice}}
+				{{if not $s}}
+					{{$g.Set $a $l}}
+					{{dbSet 0 $m $g}}
+					{{$f = joinStr " " $p "added"}}
+					{{$d = $l}}
+					{{if $C}}
+						{{$b = $b.Append (sdict "name" "Stored as" "value" $q)}}
+					{{end}}
+				{{else}}{{if $u}}
+					{{$f = joinStr " " $p "unchanged"}}
+					{{$d = $l}}
+					{{if $C}}
+						{{$b = $b.Append (sdict "name" "Stored as" "value" $q)}}
+					{{end}}
+				{{else}}
+					{{$g.Set $a $l}}
+					{{dbSet 0 $m $g}}
+					{{$f = joinStr " " $p "updated"}}
+					{{$d = $l}}
+					{{$c := $h}}
+					{{if $t}}
+						{{if gt (len (toRune $c)) 1024}}
+							{{$e := slice (split $c "") 0 1023}}
+							{{$c = joinStr "" $e "…"}}
+						{{end}}
+					{{else}}
+						
+						{{$i := json $c true}}
+						{{$v := sub 1024 8}}
+						{{if gt (len (toRune $i)) $v}}
+							{{$e := slice (split $i "") 0 (sub $v 1)}}
+							{{$i = joinStr "" $e "…"}}
+						{{end}}
+						{{$c = joinStr "" "```\n" $i "\n```"}}
+					{{end}}
+					{{$b = $b.Append (sdict "name" "Was" "value" $c)}}
+					{{if $C}}
+						{{$b = $b.Append (sdict "name" "Stored as" "value" $q)}}
+					{{end}}
+				{{end}}{{end}}
+				
+				{{$D := len (toRune $f)}}
+				{{range $b}}
+					{{$D = add $D (len (toRune .name)) (len (toRune .value))}}
+				{{end}}
+				{{$H := toInt (min 4096 (sub 6000 $D))}}
+				{{if gt (len (toRune $d)) $H}}
+					{{$e := slice (split $d "") 0 (sub $H 1)}}
+					{{$d = joinStr "" $e "…"}}
+				{{end}}
+				{{sendResponse nil (complexMessage "ephemeral" true "embed" (cembed "title" $f "color" $E "description" $d "fields" $b))}}
+			{{end}}
+		{{end}}
+	{{end}}{{end}}{{end}}
+{{else}}
+Reached by submitting an /edit form; use /edit as a slash command.
+{{end}}

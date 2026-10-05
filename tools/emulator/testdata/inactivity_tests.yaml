@@ -57,8 +57,19 @@ tests:
       scheduled_runs: []
       sent_messages:
         - channel_id: 123456789012345678
-          embed_contains: "will be kicked"
+          embed_contains: "from the server?"
           components_contains: "templates-ip:600000000000000001:kick"
+
+  # the text path's date reply is db_slash's receipt; its title once repeated the category
+  - name: "inactivity: text date stores the date and its title names the category once"
+    template: "../../../commands/members/inactivity.gohtml"
+    context:
+      message_content: "-inactivity date 2026-12-01"
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Inactivity Prune", value_contains: "\"Next Date\":\"2026-12-01\"" }
+      sent_messages:
+        - { embed_title: "Inactivity Prune Date Editing" }
 
   - name: "inactivity: prune with an unknown user keeps the text path's error embed"
     template: "../../../commands/members/inactivity.gohtml"
@@ -67,7 +78,7 @@ tests:
     assertions:
       execs: []
       sent_messages:
-        - { embed_title: "Invalid User Parameter", embed_contains: "⚠️ You must enter a valid user parameter!" }
+        - { embed_title: "Member not found", embed_contains: "I couldn't find that member. Pick one with `user`, or leave it empty to choose from a menu." }
 
   - name: "inactivity: a bare prune posts the picker panel"
     template: "../../../commands/members/inactivity.gohtml"
@@ -107,7 +118,7 @@ tests:
       execs: []
       interaction_responses:
         - kind: update
-          embed_contains: "<@700000000000000001> will be kicked!"
+          embed_contains: "Kick <@700000000000000001> from the server?"
           components_contains: '"style": 4'
       edited_messages:
         - channel_id: 123456789012345678
@@ -126,11 +137,27 @@ tests:
       execs: []
       interaction_responses:
         - kind: update
-          embed_contains: "is not inactive."
+          embed_contains: "isn't marked inactive (no Inactive role, or they also have the Active role), so they can't be pruned."
           components_contains: '"disabled": true'
       edited_messages:
         - channel_id: 123456789012345678
           components_contains: "templates-ip:600000000000000001:cancel"
+
+  - name: "inactivity_prune_pick: a member with both the Inactive and Active roles isn't pruned"
+    template: "../../../commands/members/inactivity_prune_pick.gohtml"
+    context:
+      member_roles: { 700000000000000001: [333333333333333333, 444444444444444444] }
+      messages:
+        - { id: 7, channel_id: 123456789012345678, author_id: 1234567890, embeds: [{ title: "Inactivity Prune" }] }
+      interaction:
+        { type: component, custom_id: "ip:600000000000000001", message_id: 7,
+          component: user_menu, values: ["700000000000000001"] }
+    assertions:
+      execs: []
+      interaction_responses:
+        - kind: update
+          embed_contains: "or they also have the Active role), so they can't be pruned."
+          components_contains: '"disabled": true'
 
   - name: "inactivity_prune_pick: Kick re-checks, execs, posts the result and restores the picker"
     template: "../../../commands/members/inactivity_prune_pick.gohtml"
@@ -138,7 +165,7 @@ tests:
       member_roles: { 700000000000000001: [444444444444444444] }
       messages:
         - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
-            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+            embeds: [{ title: "Inactivity Prune", description: "🥾 Kick <@700000000000000001> from the server? Press Kick to confirm, or Cancel." }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
       exec_responses:
         # moderation GenericCmdResp(MAKick, ...): "<emoji> <prefix> `<user>`"
@@ -147,10 +174,10 @@ tests:
       execs:
         - { line: 'kick 700000000000000001 "pruned due to inactivity"' }
       interaction_responses:
-        - { kind: update, components_contains: "Pick a member to prune" }
+        - { kind: update, components_contains: "Pick a member to review" }
       edited_messages:
         - channel_id: 123456789012345678
-          components_contains: "Pick a member to prune"
+          components_contains: "Pick a member to review"
       sent_messages:
         - channel_id: 123456789012345678
           embed_title: "Inactivity Prune"
@@ -166,7 +193,7 @@ tests:
       member_roles: { 700000000000000001: [444444444444444444] }
       messages:
         - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
-            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+            embeds: [{ title: "Inactivity Prune", description: "🥾 Kick <@700000000000000001> from the server? Press Kick to confirm, or Cancel." }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
       exec_responses:
         'kick 700000000000000001 "pruned due to inactivity"': "Member not found"
@@ -184,7 +211,7 @@ tests:
       member_roles: { 700000000000000001: [444444444444444444] }
       messages:
         - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
-            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+            embeds: [{ title: "Inactivity Prune", description: "🥾 Kick <@700000000000000001> from the server? Press Kick to confirm, or Cancel." }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
       exec_errors:
         'kick 700000000000000001 "pruned due to inactivity"': "Missing Permissions"
@@ -202,7 +229,7 @@ tests:
       members: [600000000000000001]
       messages:
         - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
-            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+            embeds: [{ title: "Inactivity Prune", description: "🥾 Kick <@700000000000000001> from the server? Press Kick to confirm, or Cancel." }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
     assertions:
       execs: []
@@ -216,12 +243,12 @@ tests:
       member_roles: { 700000000000000001: [333333333333333333] }
       messages:
         - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
-            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+            embeds: [{ title: "Inactivity Prune", description: "🥾 Kick <@700000000000000001> from the server? Press Kick to confirm, or Cancel." }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
     assertions:
       execs: []
       interaction_responses:
-        - { kind: update, embed_contains: "is not inactive." }
+        - { kind: update, embed_contains: "isn't marked inactive (no Inactive role, or they also have the Active role), so they can't be pruned." }
       sent_messages: []
 
   - name: "inactivity_prune_pick: Cancel restores the picker state"
@@ -229,7 +256,7 @@ tests:
     context:
       messages:
         - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
-            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+            embeds: [{ title: "Inactivity Prune", description: "🥾 Kick <@700000000000000001> from the server? Press Kick to confirm, or Cancel." }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:cancel", message_id: 7 }
     assertions:
       execs: []
@@ -237,7 +264,7 @@ tests:
         - { kind: update, embed_contains: "Pick a member to review for pruning." }
       edited_messages:
         - channel_id: 123456789012345678
-          components_contains: "Pick a member to prune"
+          components_contains: "Pick a member to review"
 
   - name: "inactivity_prune_pick: the ExecData path posts the confirm for an inactive member"
     template: "../../../commands/members/inactivity_prune_pick.gohtml"
@@ -249,7 +276,7 @@ tests:
       interaction_responses: []
       sent_messages:
         - channel_id: 123456789012345678
-          embed_contains: "will be kicked!"
+          embed_contains: "from the server?"
           components_contains: "templates-ip:600000000000000001:kick"
 
   - name: "inactivity_prune_pick: the ExecData path posts the verdict for an active member"
@@ -260,7 +287,7 @@ tests:
     assertions:
       sent_messages:
         - channel_id: 123456789012345678
-          embed_contains: "is not inactive."
+          embed_contains: "isn't marked inactive (no Inactive role, or they also have the Active role), so they can't be pruned."
           components_contains: '"disabled": true'
 
   - name: "inactivity_prune_pick: a non-staff click is refused ephemerally"

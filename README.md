@@ -292,7 +292,7 @@ now; a minified build is planned.
 
 ### Staff Commands
 ```
-/edit entry category:Admin key:Welcome Message   # edit in a prefilled modal
+/edit entry section:Admin name:Welcome Message   # edit in a prefilled modal
 /edit rule rule:3                                # edit rule 3's text
 /edit delete rule:3                              # delete behind a confirm
 ```

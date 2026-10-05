@@ -1,14 +1,14 @@
 'hiatus_slash: holding none of the staff roles is an ephemeral refusal':
-    output: ⚠️ You don't hold any of the staff roles! (If you're already on hiatus, /unhiatus restores them.)
+    output: ⚠️ You have no staff roles to give up. (Already on hiatus? /unhiatus brings them back.)
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ You don't hold any of the staff roles! (If you're already on hiatus, /unhiatus restores them.)
+          content: ⚠️ You have no staff roles to give up. (Already on hiatus? /unhiatus brings them back.)
           ephemeral: true
     interaction_responses:
         - kind: deferred_edit
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ You don't hold any of the staff roles! (If you're already on hiatus, /unhiatus restores them.)
+          content: ⚠️ You have no staff roles to give up. (Already on hiatus? /unhiatus brings them back.)
     db:
         - user_id: 0
           key: Channels
@@ -23,16 +23,16 @@
           key: Staff
           value: '{"Roles":[111111111,222222222]}'
 'hiatus_slash: no staff role IDs defined is an ephemeral refusal':
-    output: ⚠️ Staff role IDs must be defined before using this command!
+    output: ⚠️ No staff roles are set up yet. Ask an admin to run /staff roles.
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ Staff role IDs must be defined before using this command!
+          content: ⚠️ No staff roles are set up yet. Ask an admin to run /staff roles.
           ephemeral: true
     interaction_responses:
         - kind: deferred_edit
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ Staff role IDs must be defined before using this command!
+          content: ⚠️ No staff roles are set up yet. Ask an admin to run /staff roles.
     db:
         - user_id: 0
           key: Channels
@@ -47,16 +47,16 @@
           key: Staff
           value: '{}'
 'hiatus_slash: without embed_exec in Commands is an ephemeral refusal':
-    output: ⚠️ This command isn't set up on this server yet.
+    output: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
           ephemeral: true
     interaction_responses:
         - kind: deferred_edit
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
     db:
         - user_id: 0
           key: Channels
@@ -71,16 +71,16 @@
           key: Staff
           value: '{"Roles":[111111111,222222222]}'
 'unhiatus_slash: no recorded role still staff is an ephemeral refusal and keeps the entry':
-    output: ⚠️ None of your recorded roles are staff roles anymore, so nothing was restored.
+    output: ⚠️ None of the roles you gave up are staff roles any more, so nothing was restored. Ask an admin.
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ None of your recorded roles are staff roles anymore, so nothing was restored.
+          content: ⚠️ None of the roles you gave up are staff roles any more, so nothing was restored. Ask an admin.
           ephemeral: true
     interaction_responses:
         - kind: deferred_edit
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ None of your recorded roles are staff roles anymore, so nothing was restored.
+          content: ⚠️ None of the roles you gave up are staff roles any more, so nothing was restored. Ask an admin.
     db:
         - user_id: 0
           key: Channels
@@ -95,16 +95,16 @@
           key: Staff
           value: '{"Hiatus":{"987654321098765432":[333333333]},"Roles":[111111111,222222222]}'
 'unhiatus_slash: no staff role IDs defined is an ephemeral refusal':
-    output: ⚠️ Staff role IDs must be defined before using this command!
+    output: ⚠️ No staff roles are set up yet. Ask an admin to run /staff roles.
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ Staff role IDs must be defined before using this command!
+          content: ⚠️ No staff roles are set up yet. Ask an admin to run /staff roles.
           ephemeral: true
     interaction_responses:
         - kind: deferred_edit
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ Staff role IDs must be defined before using this command!
+          content: ⚠️ No staff roles are set up yet. Ask an admin to run /staff roles.
     db:
         - user_id: 0
           key: Channels
@@ -143,16 +143,16 @@
           key: Staff
           value: '{"Roles":[111111111,222222222]}'
 'unhiatus_slash: without embed_exec in Commands is an ephemeral refusal':
-    output: ⚠️ This command isn't set up on this server yet.
+    output: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
           ephemeral: true
     interaction_responses:
         - kind: deferred_edit
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
     db:
         - user_id: 0
           key: Channels

@@ -2,13 +2,13 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          content: '`Last Bump` reset!'
+          content: ✅ Bump timer reset.
           ephemeral: true
     interaction_responses:
         - kind: message
           ephemeral: true
           message_id: 1100000000000000001
-          content: '`Last Bump` reset!'
+          content: ✅ Bump timer reset.
     db:
         - user_id: 0
           key: Channels
@@ -29,13 +29,13 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
           ephemeral: true
     interaction_responses:
         - kind: message
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
     db:
         - user_id: 0
           key: Channels
@@ -154,13 +154,13 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
           ephemeral: true
     interaction_responses:
         - kind: message
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
     db:
         - user_id: 0
           key: Channels
@@ -181,13 +181,13 @@
     output: ""
     messages:
         - channel_id: 123456789012345678
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
           ephemeral: true
     interaction_responses:
         - kind: message
           ephemeral: true
           message_id: 1100000000000000001
-          content: ⚠️ This command isn't set up on this server yet.
+          content: ⚠️ Part of this command isn't installed on this server yet. Please tell an admin.
     db:
         - user_id: 0
           key: Channels

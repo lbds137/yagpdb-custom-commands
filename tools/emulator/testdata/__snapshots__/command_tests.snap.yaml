@@ -237,8 +237,8 @@ bootstrap - Initialize with a staff role ID:
             - |-
               {
                 "color": 16777214,
-                "description": "The bootstrapping process completed successfully!",
-                "title": "Bootstrap Execution Complete"
+                "description": "First-time setup is done. Next, run /setup to pick the roles and channels.",
+                "title": "Server defaults saved"
               }
     deletions:
         - trigger 234567890 in channel 999999999 after 5s
@@ -1202,7 +1202,7 @@ inactivity - Prune an inactive member:
     messages:
         - channel_id: 123456789012345678
           embeds:
-            - "{\n  \"description\": \"\U0001F97E <@222333444555666777> will be kicked!\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/5.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
+            - "{\n  \"description\": \"\U0001F97E Kick <@222333444555666777> from the server? Press Kick to confirm, or Cancel.\",\n  \"thumbnail\": {\n    \"url\": \"https://cdn.discordapp.com/embed/avatars/5.png?size=128\"\n  },\n  \"title\": \"Inactivity Prune\"\n}"
           components:
             - |-
               {

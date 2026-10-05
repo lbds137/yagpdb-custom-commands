@@ -46,7 +46,8 @@
 				prefix before its own 100 check, so a field capped at 100 would strand
 				89-100 character titles in a server-side refusal that loses the text */}}
 			{{ $fields = cslice (sdict "label" "Title" "custom_id" "prompt_title"
-				"style" 1 "required" true "max_length" 88) $bodyField }}
+				"style" 1 "required" true "max_length" 88
+				"placeholder" "The date is added for you, e.g. 2026-10-05: Your title") $bodyField }}
 		{{ end }}
 		{{ try }}
 			{{ sendModal (cmodal "title" "New prompt" "custom_id" $customID "fields" $fields) }}

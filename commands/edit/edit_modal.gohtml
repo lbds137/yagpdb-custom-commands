@@ -111,8 +111,8 @@
 			{{ if not $refused }}
 				{{ $categoryEntry = dbGet 0 $category }}
 				{{ if and (not $create) (not $categoryEntry) }}
-					{{ $refused = joinStr "" "⚠️ There is no `" $catShown
-						"` category. Check the spelling, or set `create` to True to make it." }}
+					{{ $refused = joinStr "" "⚠️ There is no section called `" $catShown
+						"`. Check the spelling, or set `create` to True to start a new one." }}
 				{{ end }}
 			{{ end }}
 			{{ $categoryDict := sdict }}
@@ -126,6 +126,24 @@
 					{{ else }}
 						{{ $refused = joinStr "" "⚠️ The `" $catShown
 							"` category doesn't hold a dictionary of entries." }}
+					{{ end }}
+				{{ end }}
+			{{ end }}
+			{{/* a list or settings group must not be overwritten with text (the form can be
+				stale, or built before the entry changed type): same refusal as /edit entry */}}
+			{{ if not $refused }}
+				{{ $chkKey := $typedKey }}
+				{{ if ne $category "Commands" }}
+					{{ $chkKey = title $typedKey }}
+				{{ end }}
+				{{ if $categoryDict.HasKey $chkKey }}
+					{{ if ne "string" (printf "%T" ($categoryDict.Get $chkKey)) }}
+						{{ $chkLabel := joinStr " › " $catShown $chkKey }}
+						{{ if gt (len (toRune $chkLabel)) 500 }}
+							{{ $chkLabel = joinStr "" (slice (split $chkLabel "") 0 499) "…" }}
+						{{ end }}
+						{{ $refused = joinStr "" "⚠️ `" $chkLabel
+							"` holds a list or a group of settings, not text, so it can't be edited here. An admin can change it with /db." }}
 					{{ end }}
 				{{ end }}
 			{{ end }}

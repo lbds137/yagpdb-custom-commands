@@ -62,4 +62,4 @@ tests:
       db_checks:
         - { user_id: 0, key: "Global", value_equals: { Delete Trigger Delay: "5", Delete Response Delay: 10 } }
       sent_messages:
-        - { content_equals: "`Last Bump` reset!" }
+        - { content_equals: "✅ Bump timer reset." }

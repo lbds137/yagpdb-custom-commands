@@ -62,7 +62,7 @@ tests:
         - { user_id: 0, key: "Staff", value_equals: { } }
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+        - { kind: message, ephemeral: true, content_contains: "Part of this command isn't installed on this server yet. Please tell an admin." }
 
   - name: "staff_slash delrep: batch_delrep without embed_exec in Commands refuses up front, no delrep exec"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -77,7 +77,7 @@ tests:
       execs: []
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+        - { kind: message, ephemeral: true, content_contains: "Part of this command isn't installed on this server yet. Please tell an admin." }
 
   # ---- roles
   - name: "staff_slash roles: role IDs are stored (the Staff role rides along), answered publicly"
@@ -137,7 +137,7 @@ tests:
         # bump_reset didn't run: Last Bump is still set
         - { user_id: 0, key: "Global", value_equals: { Embed Color: 9807270, Delete Trigger Delay: 5, Delete Response Delay: 10, Last Bump: "earlier" } }
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+        - { kind: message, ephemeral: true, content_contains: "Part of this command isn't installed on this server yet. Please tell an admin." }
 
   # ---- bump_reset
   - name: "staff_slash bump_reset: Last Bump is cleared, the reply is ephemeral and never deleted"
@@ -152,7 +152,7 @@ tests:
         - { user_id: 0, key: "Global", value_equals: { Embed Color: 9807270, Delete Trigger Delay: 5, Delete Response Delay: 10 } }
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "`Last Bump` reset!" }
+        - { kind: message, ephemeral: true, content_contains: "✅ Bump timer reset." }
 
   # ---- delrep
   - name: "staff_slash delrep: the IDs become delrep exec calls, the result embed is public"
@@ -216,7 +216,7 @@ tests:
         - { user_id: 0, key: "Channels", value_equals: { YAGPDB: "123456789012345678" } }
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_title: "Bootstrap Execution Complete" }
+        - { kind: message, ephemeral: false, embed_title: "Server defaults saved" }
 
   - name: "staff_slash bootstrap: no staff_role keeps the current Staff role"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -227,7 +227,20 @@ tests:
         - { user_id: 0, key: "Roles", value_equals: { Staff: "222222222222222222" } }
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_title: "Bootstrap Execution Complete" }
+        - { kind: message, ephemeral: false, embed_title: "Server defaults saved" }
+
+  - name: "staff_slash bootstrap: a non-Administrator is refused ephemerally, nothing written (F16)"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: bootstrap, options: { staff_role: 111111111111111111 } }
+      guild: { owner_id: 1 }
+      members: [500000000000000001]
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Roles", value_equals: { Staff: "222222222222222222" } }
+        - { user_id: 0, key: "Directory", not_exists: true }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Only an Administrator can run bootstrap." }
 
   - name: "staff_slash bootstrap: needs no embed_exec key (it sends its own embed)"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -237,7 +250,7 @@ tests:
       - { user_id: 0, key: "Commands", value: { bootstrap: "5" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_title: "Bootstrap Execution Complete" }
+        - { kind: message, ephemeral: false, embed_title: "Server defaults saved" }
 
   # ---- the router's own refusals
   - name: "staff_slash: a handler missing from the Commands dict is an ephemeral refusal with no execCC"
@@ -255,7 +268,7 @@ tests:
         - { user_id: 0, key: "Global", value_equals: { Last Bump: "kept" } }
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "isn't set up on this server yet" }
+        - { kind: message, ephemeral: true, content_contains: "isn't installed on this server yet. Please tell an admin." }
 
   # A Slash Command trigger takes an interaction, so the bare run rides the execCC
   # path (no trigger check there) — the smoke's plain-message run, which lands here
