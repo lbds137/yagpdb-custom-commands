@@ -36,6 +36,8 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
 2. `make deploy-manifest SERVER=<main|lotv|rose>` and capture its one line of JSON as `<manifest>`.
    A refusal or a stderr warning means stop and report it, not push through. A command
    with no id for this server is simply left out (panel.json is the per-server map).
+   The manifest also refuses a command over the server's tier cap, and a free-tier server
+   deploys the command's `dist/free` copy (each entry's `source` says which file).
 3. Load the Claude-in-Chrome tools (`ToolSearch` for `mcp__claude-in-chrome__*` if they're not
    already loaded).
 4. Open a new tab on `https://yagpdb.xyz/manage/<guild>/customcommands/` (the guild id is in

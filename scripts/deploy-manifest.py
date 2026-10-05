@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """Build the one-line JSON deploy manifest for a YAGPDB server.
 
-Usage: scripts/deploy-manifest.py <server>   (or SERVER=<server> via `make deploy-manifest`)
+Usage: scripts/deploy-manifest.py <server> [--panel <panel.json>]
+       (or SERVER=<server> via `make deploy-manifest`; --panel is for tests)
 
 Prints one line of JSON to stdout:
     {"server":"main","guild":"...","commit":"<full sha>",
-     "commands":[{"path":...,"id":...,"sha":...,"raw":...}, ...]}
+     "commands":[{"path":...,"source":...,"id":...,"sha":...,"raw":...}, ...]}
+
+`path` is the commands/ path (the command's id and name). `source` is the file whose bytes
+get deployed, and `sha` and `raw` are its: equal to `path`, except on a server whose panel.json
+"tier" is "free", where a command with a dist/free copy (`dist/free/<path without the leading
+"commands/">`) deploys that copy instead; a stale dist/free (yagmin check, as
+`make minify-check`) refuses the manifest.
+
+Every entry's panel count (runes plus the newline count: a browser save of the panel form
+sends CRLF, so each newline counts twice) is checked against the server's tier cap
+(premium 20,000, free 10,000); the manifest refuses (exit 1) and lists every entry over it.
+deploy.js's own POST sends LF and is checked on runes alone, so this is deliberately the
+stricter count: a later save of the same code from the panel must pass too.
 
 Refuses (exit 1, message on stderr) if HEAD is not contained in any origin/*
 branch (raw.githubusercontent.com URLs for it would 404), unless
@@ -24,6 +37,7 @@ This is what deploy/deploy.test.js shells out to, to check deploy.js's independe
 normalize/sha256hex implementation for parity with this script's, on both real command
 files and synthetic edge-case strings.
 """
+import argparse
 import hashlib
 import json
 import os
@@ -32,6 +46,9 @@ import sys
 
 REPO = "lbds137/yagpdb-custom-commands"
 PANEL_JSON = "deploy/panel.json"
+# The panel's per-command size cap by server tier: MaxCCResponsesLength* in
+# vendor/yagpdb/customcommands/customcommands.go:955-958 (premium 20,000, free 10,000).
+CAPS = {"premium": 20000, "free": 10000}
 
 
 def run(*args):
@@ -46,6 +63,31 @@ def normalize(text: str) -> str:
 
 def sha256_hex(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def panel_count(content: str) -> int:
+    """The count a panel-form save checks: runes plus the newline count (sent as CRLF).
+
+    `content` is the file as deploy.js posts it (the raw bytes, trailing whitespace kept,
+    unlike normalize()), with CRLF folded to LF so a CRLF file isn't counted twice over;
+    see FUTURE_IMPROVEMENTS.md, "Emulator Enhancements", first bullet.
+    """
+    lf = content.replace("\r\n", "\n")
+    return len(lf) + lf.count("\n")
+
+
+def free_copy_path(path: str) -> str:
+    """The dist/free copy's path for a commands/ path (yagmin batch mirrors the layout)."""
+    return "dist/free/" + path.removeprefix("commands/")
+
+
+def exists_in_tree(path: str, working_tree: bool) -> bool:
+    """Whether `path` exists: in the working tree (test mode), else at HEAD."""
+    if working_tree:
+        return os.path.isfile(path)
+    return subprocess.run(
+        ["git", "cat-file", "-e", f"HEAD:{path}"], capture_output=True
+    ).returncode == 0
 
 
 def head_on_origin() -> bool:
@@ -77,20 +119,30 @@ def main() -> int:
         print(sha256_hex(normalize(content)))
         return 0
 
-    if len(sys.argv) > 1:
-        server = sys.argv[1]
-    else:
-        server = os.environ.get("SERVER")
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("server", nargs="?")
+    parser.add_argument("--panel", default=PANEL_JSON)
+    args = parser.parse_args()
+    server = args.server or os.environ.get("SERVER")
     if not server:
-        print("usage: deploy-manifest.py <server> (or SERVER=<server>)", file=sys.stderr)
+        print(
+            "usage: deploy-manifest.py <server> [--panel <panel.json>] (or SERVER=<server>)",
+            file=sys.stderr,
+        )
         return 1
 
-    with open(PANEL_JSON, encoding="utf-8") as f:
+    with open(args.panel, encoding="utf-8") as f:
         panel = json.load(f)
 
     if server not in panel["servers"]:
         print(f"unknown server: {server}", file=sys.stderr)
         return 1
+    tier = panel["servers"][server].get("tier")
+    if tier not in CAPS:
+        print(f"server {server}: tier must be one of {sorted(CAPS)}, got {tier!r}",
+              file=sys.stderr)
+        return 1
+    cap = CAPS[tier]
 
     skip_origin_check = os.environ.get("DEPLOY_MANIFEST_SKIP_ORIGIN_CHECK") == "1"
     skip_dirty_check = os.environ.get("DEPLOY_MANIFEST_SKIP_DIRTY_CHECK") == "1"
@@ -102,11 +154,25 @@ def main() -> int:
         )
         return 1
 
+    # A free server deploys dist/free copies: refuse a stale one (a command edited without
+    # `make minify`), the same check as `make minify-check`.
+    if tier == "free":
+        stale = subprocess.run(
+            ["go", "run", "./cmd/yagmin", "check", "-src", "../../commands",
+             "-dst", "../../dist/free", "-over", str(CAPS["free"])],
+            cwd="tools/emulator", capture_output=True, text=True,
+        )
+        if stale.returncode != 0:
+            print("refusing: dist/free is stale (run `make minify`):\n"
+                  + stale.stdout + stale.stderr, file=sys.stderr)
+            return 1
+
     head_sha = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
     ).stdout.strip()
 
     commands = []
+    over_cap = []
     for path, ids in panel["commands"].items():
         if path.startswith("retired/"):
             print(f"warning: {path} is retired but mapped in panel.json", file=sys.stderr)
@@ -116,28 +182,48 @@ def main() -> int:
         # a stop.
         if server not in ids:
             continue
-        if not skip_dirty_check and not working_tree_matches_head(path):
-            print(
-                f"refusing: {path} differs between the working tree and HEAD",
-                file=sys.stderr,
-            )
-            return 1
+        source = path
+        if tier == "free":
+            minified = free_copy_path(path)
+            if exists_in_tree(minified, skip_dirty_check):
+                source = minified
+        # the command and its deployed source both: a free server's dist copy is only as
+        # fresh as the minify-check run below, which reads the working tree
+        for checked in dict.fromkeys((path, source)):
+            if not skip_dirty_check and not working_tree_matches_head(checked):
+                print(
+                    f"refusing: {checked} differs between the working tree and HEAD",
+                    file=sys.stderr,
+                )
+                return 1
         if skip_dirty_check:
             # Test mode: hash the working tree, so a command added or edited mid-change
             # (not yet at HEAD) still gets a manifest entry.
-            with open(path, encoding="utf-8") as f:
+            with open(source, encoding="utf-8") as f:
                 content = f.read()
         else:
-            content = run("git", "show", f"HEAD:{path}").decode("utf-8")
+            content = run("git", "show", f"HEAD:{source}").decode("utf-8")
         normalized = normalize(content)
         digest = sha256_hex(normalized)
-        raw = f"https://raw.githubusercontent.com/{REPO}/{head_sha}/{path}"
+        count = panel_count(content)
+        if count > cap:
+            over_cap.append((path, source, count))
+        raw = f"https://raw.githubusercontent.com/{REPO}/{head_sha}/{source}"
         commands.append({
             "path": path,
+            "source": source,
             "id": ids[server],
             "sha": digest,
             "raw": raw,
         })
+
+    if over_cap:
+        print(f"refusing: {len(over_cap)} command(s) over the {tier} cap of {cap}:",
+              file=sys.stderr)
+        for path, source, count in over_cap:
+            print(f"  {path} (source {source}): panel count {count} > {cap}",
+                  file=sys.stderr)
+        return 1
 
     manifest = {
         "server": server,

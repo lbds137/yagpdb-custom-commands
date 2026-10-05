@@ -1,8 +1,8 @@
 {
   "servers": {
-    "main": {"name": "Gay Night House", "guild": "462036216909398026"},
-    "lotv": {"name": "Lure of the Void", "guild": "833216349932224562"},
-    "rose": {"name": "The Rose", "guild": "616105024367624212"}
+    "main": {"name": "Gay Night House", "guild": "462036216909398026", "tier": "premium"},
+    "lotv": {"name": "Lure of the Void", "guild": "833216349932224562", "tier": "premium"},
+    "rose": {"name": "The Rose", "guild": "616105024367624212", "tier": "premium"}
   },
   "commands": {
     "commands/plumbing/embed_exec.gohtml": {"main": 3, "lotv": 2, "rose": 2},

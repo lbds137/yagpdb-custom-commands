@@ -9,6 +9,7 @@ runs the real check (via its `--panel` option) against it -- not a reimplementat
 - an "unmanaged" path that does not exist in the working tree
 - a normal file with no id on any server in panel.json (checked here too so
   unmanaged-filtering doesn't accidentally swallow it); a file with only a lotv id passes
+- a server with a bad tier and one with no tier (a valid premium and free pass)
 """
 import json
 import os
@@ -46,7 +47,12 @@ def main() -> int:
     write("commands/general/lotv_only.gohtml", "lotv content\n")
 
     panel = {
-        "servers": ["main", "lotv"],
+        "servers": {
+            "main": {"tier": "premium"},
+            "lotv": {"tier": "gold"},  # bad tier
+            "rose": {},  # missing tier
+            "side": {"tier": "free"},  # fine
+        },
         "commands": {
             "commands/general/dual.gohtml": {"main": "1"},
             "commands/general/lotv_only.gohtml": {"lotv": "2"},
@@ -78,10 +84,15 @@ def main() -> int:
         "commands/general/missing.gohtml: unmanaged but does not exist in the working tree",
         "commands/general/normal.gohtml: no server id in panel.json",
         "commands/general/untracked.gohtml: no server id in panel.json",
+        "server lotv: tier must be one of ['free', 'premium'], got 'gold'",
+        "server rose: tier must be one of ['free', 'premium'], got None",
     ]
     for substr in expected_substrings:
         if substr not in proc.stderr:
             errors.append(f"missing expected error: {substr!r}")
+    for fine in ("server main: tier", "server side: tier"):
+        if fine in proc.stderr:
+            errors.append(f"a valid tier was reported: {fine!r}")
     if "lotv_only.gohtml" in proc.stderr:
         errors.append("a command with only a lotv id was reported; any server's id is enough")
 

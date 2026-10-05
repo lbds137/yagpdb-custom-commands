@@ -199,9 +199,16 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   the whole YAML suite on minified copies of every command and compares — only
   error/warning texts quoting variable names or line:col positions may differ).
   db_slash 18,532 → 9,188, gematria 11,533 → 6,910, edit_slash 10,548 → 7,217 runes.
-- Planned (part 2): the deploy manifest picks the minified form for commands over a
-  free server's limit (panel.json gets a per-server tier); dist/free/ is not used by
-  deploys yet.
+- Shipped (part 2, 2026-10-04): panel.json gives each server a `tier` (premium or free).
+  A free server's deploy manifest takes a command's dist/free copy (entry `source`), and
+  every manifest refuses, listing each one, a command over the tier's cap by the panel
+  count (runes plus newlines); yagmin's `-over` threshold is that same panel count. A
+  free-tier manifest also refuses a stale dist/free (yagmin check).
+- Test gaps (review of part 2, 2026-10-04): no test pins that the manifest lists EVERY
+  over-cap entry (only hebrew_slash's free copy is over any cap, so one case exists), the
+  premium 20,000 cap is never hit, and the stale-dist/free refusal has no test (it needs
+  a stale tree). Shape: load deploy-manifest.py as a module and drive main() over a
+  temporary tree. Trigger: the next change to deploy-manifest.py.
 - Known gap (slash-fleet unit 2, 2026-10-04): `/hebrew` (hebrew_slash) minifies to ~11.3k
   runes, still over the free 10k cap, so a FREE server can't take it as one root
   (atbash's dict alone is ~7k). Options: move the atbash dict into the DB (Gematria dict,
@@ -378,7 +385,10 @@ gets a failing test first.
   REFUSED at save time (db_slash was: 19,881 runes + 449 lines). The emulator's
   premium char check should model this (its limit check counts runes only). Guard in
   place meanwhile: the linter's `response-length` rule (tools/linter/yagpdb_lint.py)
-  errors on any command file whose panel count exceeds 20,000.
+  errors on any command file whose panel count exceeds 20,000. Note (code reading,
+  2026-10-04): deploy.js posts URL-encoded LF text, which the server checks on runes
+  alone; the doubled count is the browser save's, and the tooling keeps it as the
+  stricter limit so a later save from the panel also passes.
 
 ### Remaining emulator gaps
 - Found 2026-10-04 (unit 5): an execCC to an id outside the test's command_map only warns

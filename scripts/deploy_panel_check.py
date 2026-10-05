@@ -4,6 +4,7 @@
 - Every mapped path exists (tracked in the working tree) and isn't under retired/.
 - Every non-retired, non-unmanaged command file (commands/**) has an id on at least one server.
 - Ids are unique per server.
+- Every server has a "tier" of "premium" or "free" (deploy-manifest.py's size cap).
 - Every "unmanaged" path exists in the working tree and does NOT also appear in "commands"
   (an unmanaged file has no id and is never touched by the deploy tooling).
 
@@ -20,6 +21,7 @@ import sys
 
 PANEL_JSON = "deploy/panel.json"
 COMMAND_DIRS = ("commands",)
+TIERS = {"premium", "free"}
 
 
 def list_command_files():
@@ -44,6 +46,13 @@ def main() -> int:
     mapped = panel["commands"]
     unmanaged = set(panel.get("unmanaged", []))
     all_files = list_command_files()
+
+    for server, info in panel["servers"].items():
+        if info.get("tier") not in TIERS:
+            errors.append(
+                f"server {server}: tier must be one of {sorted(TIERS)}, "
+                f"got {info.get('tier')!r}"
+            )
 
     for path in mapped:
         if path.startswith("retired/"):
