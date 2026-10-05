@@ -142,7 +142,7 @@ options are `section` and `name` (renamed from `category` and `key` 2026-10-05).
 3. `/edit entry section:new:Scratch create:True`: refused, "Leave out `new:`".
 4. `/edit entry section:Admin` (an existing section, no `create`): the form opens as
    before.
-5. `/edit entry section:Roles name:Staff` (a list): refused privately, "holds a list or a
+5. `/edit entry section:Staff name:Roles` (the staff role list): refused privately, "holds a list or a
    group of settings, not text". No form opens.
 6. Cleanup: `/edit delete section:Scratch name:test`, confirm (an empty `Scratch`
    section stays behind; harmless).
