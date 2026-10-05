@@ -607,6 +607,48 @@ func TestCheckReactions(t *testing.T) {
 	}
 }
 
+// A pins check lists every pin change in order; unset fields match anything, and
+// context pins_full makes a pin there fail as Discord's 30003
+func TestCheckPins(t *testing.T) {
+	got := []runtime.PinChange{
+		{Action: "pin", ChannelID: 9, MessageID: 5},
+		{Action: "unpin", ChannelID: 9, MessageID: 6},
+	}
+	cases := []struct {
+		checks []PinCheck
+		fail   string
+	}{
+		{[]PinCheck{{Action: "pin"}, {MessageID: 6, ChannelID: 9}}, ""},
+		{[]PinCheck{{}}, "expected 1 pin changes, got 2"},
+		{[]PinCheck{{Action: "unpin"}, {}}, "pin change 0 doesn't match"},
+		{[]PinCheck{{}, {ChannelID: 8}}, "pin change 1 doesn't match"},
+		{[]PinCheck{{}, {MessageID: 5}}, "pin change 1 doesn't match"},
+		{[]PinCheck{{Action: "stick"}, {}}, `action is "stick"`},
+	}
+	for i, c := range cases {
+		failures := strings.Join(checkPins(got, &c.checks), "\n")
+		if (c.fail == "") != (failures == "") || !strings.Contains(failures, c.fail) {
+			t.Errorf("case %d: failures %q, want %q", i, failures, c.fail)
+		}
+	}
+	if f := checkPins(got, nil); f != nil {
+		t.Errorf("no check: %q", f)
+	}
+	r := NewRunner(RunnerConfig{})
+	tc := &TestCase{Name: "pin", TemplateSource: `{{pinMessage nil 1}}`,
+		Context: ContextDef{PinsFull: []int64{123456789012345678},
+			Messages: []MessageDef{{ID: 1, ChannelID: 123456789012345678}}},
+		Assertions: Assertions{Pins: &[]PinCheck{}}}
+	tc.applyDefaults()
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 0 {
+		t.Errorf("a pin in a pins_full channel is refused, so nothing is pinned: %v, %q", res.Error, res.Failures)
+	}
+	tc.Context.PinsFull = nil
+	if res := r.RunTest(tc); res.Error != nil || len(res.Failures) != 1 || !strings.Contains(res.Failures[0], "expected 0 pin changes, got 1") {
+		t.Errorf("a pin in any other channel lands: %v, %q", res.Error, res.Failures)
+	}
+}
+
 // A failed execCC child fails its test, unless the test expects it with warning_contains
 func TestFailedChildFailsTheTest(t *testing.T) {
 	dir := t.TempDir()

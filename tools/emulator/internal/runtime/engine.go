@@ -88,6 +88,8 @@ func (e *Engine) BuildFuncMap() template.FuncMap {
 		"editMessageNoEscape":       e.editMessage,
 		"getMessage":                e.getMessage,
 		"deleteMessage":             e.deleteMessage,
+		"pinMessage":                e.pinMessage,
+		"unpinMessage":              e.unpinMessage,
 		"deleteTrigger":             e.deleteTrigger,
 		"deleteResponse":            e.deleteResponse,
 		"addReactions":              e.addReactions,
@@ -1017,6 +1019,8 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		GuildName:                e.ctx.GuildName,
 		GuildIcon:                e.ctx.GuildIcon,
 		OwnerID:                  e.ctx.OwnerID,
+		PinsFull:                 e.ctx.PinsFull,
+		forumPosts:               e.ctx.forumPosts,
 		Prefix:                   e.ctx.Prefix,
 		ChannelID:                channelID,
 		ChannelName:              e.ctx.channelName(channelID),
@@ -1093,6 +1097,7 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 	e.ctx.RoleChanges = append(e.ctx.RoleChanges, childCtx.RoleChanges...)
 	e.ctx.Deletions = append(e.ctx.Deletions, childCtx.Deletions...)
 	e.ctx.Reactions = append(e.ctx.Reactions, childCtx.Reactions...)
+	e.ctx.Pins = append(e.ctx.Pins, childCtx.Pins...)
 	e.ctx.Execs = append(e.ctx.Execs, childCtx.Execs...)
 	e.ctx.FileUploads = append(e.ctx.FileUploads, childCtx.FileUploads...)
 	if err != nil { // the caller carries on

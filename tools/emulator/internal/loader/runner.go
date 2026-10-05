@@ -174,6 +174,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	result.Failures = append(result.Failures, checkDeletions(ctx.Deletions, tc.Assertions.Deletions)...)
 	result.Failures = append(result.Failures, checkExecs(ctx.Execs, tc.Assertions.Execs)...)
 	result.Failures = append(result.Failures, checkReactions(ctx.Reactions, tc.Assertions.Reactions)...)
+	result.Failures = append(result.Failures, checkPins(ctx.Pins, tc.Assertions.Pins)...)
 	result.Failures = append(result.Failures, checkInteractionResponses(ctx.InteractionResponses, tc.Assertions.InteractionResponses)...)
 
 	// Check role changes
@@ -259,6 +260,12 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	ctx.MemberRoles = tc.Context.MemberRoles
 	ctx.MemberNicks = tc.Context.MemberNicks
 	ctx.ExecResponses = tc.Context.ExecResponses
+	if len(tc.Context.PinsFull) > 0 {
+		ctx.PinsFull = map[int64]bool{}
+		for _, id := range tc.Context.PinsFull {
+			ctx.PinsFull[id] = true
+		}
+	}
 	if len(tc.Context.MemberJoinedAgo) > 0 {
 		ctx.MemberJoinedAgo = make(map[int64]time.Duration, len(tc.Context.MemberJoinedAgo))
 		for id, ago := range tc.Context.MemberJoinedAgo {
@@ -909,6 +916,40 @@ func checkReactions(changes []runtime.ReactionChange, checks *[]ReactionCheck) [
 				want += ", on the response"
 			}
 			failures = append(failures, fmt.Sprintf("reaction change %d doesn't match (%s; unset = any): %s", i, want, r))
+		}
+	}
+	return failures
+}
+
+// checkPins compares the pins and unpins with the expected list, one by one.
+func checkPins(pins []runtime.PinChange, checks *[]PinCheck) []string {
+	if checks == nil {
+		return nil
+	}
+	var failures []string
+	for i, c := range *checks {
+		switch c.Action {
+		case "", "pin", "unpin":
+		default:
+			failures = append(failures, fmt.Sprintf("pin check %d: action is %q; it takes pin or unpin", i, c.Action))
+		}
+	}
+	if len(failures) > 0 {
+		return failures
+	}
+	if len(pins) != len(*checks) {
+		parts := make([]string, len(pins))
+		for i, p := range pins {
+			parts[i] = p.String()
+		}
+		return []string{fmt.Sprintf("expected %d pin changes, got %d: [%s]", len(*checks), len(pins), strings.Join(parts, "; "))}
+	}
+	for i, c := range *checks {
+		p := pins[i]
+		if (c.Action != "" && p.Action != c.Action) || (c.ChannelID != 0 && p.ChannelID != c.ChannelID) ||
+			(c.MessageID != 0 && p.MessageID != c.MessageID) {
+			want := fmt.Sprintf("action %q, channel %d, message %d", c.Action, c.ChannelID, c.MessageID)
+			failures = append(failures, fmt.Sprintf("pin change %d doesn't match (%s; unset = any): %s", i, want, p))
 		}
 	}
 	return failures

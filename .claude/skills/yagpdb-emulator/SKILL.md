@@ -58,6 +58,9 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # guild.roles[].permissions: the role's bit mask (the guild's ID is @everyone's role);
     # a channel's permission_overwrites: [{ id, type: role|member, allow, deny }] (a thread
     # uses its parent's); both feed getTargetPermissionsIn, as YAGPDB computes it
+    pins_full: [9, 1200000000000000000]   # channels (a created thread by its deterministic
+                                      # ID, 1200000000000000000 up) whose pin list is full:
+                                      # a pinMessage there fails as Discord's 30003
     members: [1, 2]                   # if set, anyone else has left (getMember/userArg nil)
     member_roles: { 2: [111] }        # other members' roles (takeRoleID only takes a role they have)
     member_nicks: { 1: "Nick" }       # nicknames (.Member and getMember), the triggering user's too
@@ -139,6 +142,14 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # exactly the reaction changes, in order: action = add|remove|remove_emoji|remove_all;
     # response: true = on the response (addResponseReactions); reacting to a message that isn't
     # declared, sent or the run's own is Discord's 10008 (an error with -strict or inside {{try}}, else a warning)
+    pins: [{ action: pin, channel_id: 9, message_id: 7 }]
+    # exactly the pinMessage/unpinMessage calls Discord accepted, in order ([] for none);
+    # action = pin|unpin, unset fields match anything. A refused call (not recorded) is
+    # Discord's 10008 for a message that isn't known to exist (a forum post's starter
+    # message, whose ID is the thread's own, counts) or, for a pin in a channel of
+    # context.pins_full, 30003 Maximum number of pins reached; refusals follow the
+    # usual rule (a warning, or an error inside {{try}}/-strict). pinMessage and
+    # unpinMessage share YAGPDB's message_pins counter (2 per run)
     execs: [{ line: 'kick 5 "spam"', admin: true }]
     # exactly the exec/execAdmin calls, in order ([] for none), with the command line as
     # YAGPDB builds it (strings quoted, switches and numbers not); recorded, not run: the

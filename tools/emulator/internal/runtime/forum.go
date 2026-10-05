@@ -112,6 +112,10 @@ func (e *Engine) createForumPost(channel, name, content interface{}, optional ..
 	}
 	e.ctx.Threads[threadID] = title
 	e.ctx.ThreadOrder = append(e.ctx.ThreadOrder, threadID)
+	if e.ctx.forumPosts == nil {
+		e.ctx.forumPosts = map[int64]bool{}
+	}
+	e.ctx.forumPosts[threadID] = true
 	e.ctx.ChannelDetails[threadID] = types.CtxChannel{ID: threadID, Name: title,
 		Type:        channelTypeGuildPublicThread,
 		ParentID:    cID,

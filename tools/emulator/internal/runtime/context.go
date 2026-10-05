@@ -192,6 +192,14 @@ type ExecutionContext struct {
 	Deletions []Deletion
 	// Reactions are the reactions the run added and removed, in order
 	Reactions []ReactionChange
+	// Pins are the pins and unpins the run made, in order (see pins.go)
+	Pins []PinChange
+	// PinsFull are the channels (by ID, created threads included) whose pin list is full
+	// (a test's pins_full): a pin there fails as Discord's 30003
+	PinsFull map[int64]bool
+	// forumPosts are the threads createForumPost created, whose first message has the
+	// thread's own ID
+	forumPosts map[int64]bool
 	// InteractionResponses are the run's answers to its interaction, in order: the
 	// response, followups, an edit of a deferred response, an update of the component's
 	// message, a modal opened (see InteractionResponse)

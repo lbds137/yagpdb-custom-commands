@@ -1,0 +1,123 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Modal Submission`
+  Trigger: `^prompt:post:`
+  Group: `Staff Utility`
+  Defer mode: `None`
+
+  The /prompt form's writer (prompt opens it): posts the submitted prompt where the
+  form's custom ID points. Thread mode: in a forum channel, a post titled
+  `YYYY-MM-DD: ...`; anywhere else, a createThread thread. Both carry the bare body,
+  never a mention: a bot-created thread's messages don't notify until a human has
+  spoken in it (Discord's human-speech gate, probed 2026-10-02), so the role ping, if
+  the form has one, goes to the run channel as a normal message — one that always
+  notifies. Inline mode: a plain message, mention-first, because a normal channel's
+  sends do notify. The date is local time by the Global dict's `Timezone Offset` in
+  hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
+  is the public artifact. Each post's prompt message is pinned where it landed, in its
+  own try, so a refused pin (full pin list, missing permission) never fails the post and
+  only adds "(couldn't pin it ...)" to the ack.
+*/ -}}
+{{if .IsModal}}{{$v := ((dbGet 0 "Roles")).Value}}{{$w := toInt ($v.Get "Staff")}}{{if not (hasRoleID $w)}}{{sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true)}}{{else}}{{$g := split .CustomID ":"}}{{if ne (len $g) 5}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$h := index $g 2}}{{$f := toInt (index $g 3)}}{{$c := toInt (index $g 4)}}{{if or (and (ne $h "t") (ne $h "i")) (not (reFind "\\A\\d+\\z" (index $g 3))) (not (reFind "\\A\\d+\\z" (index $g 4)))}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$p := ""}}{{if eq $h "t"}}{{$p = .ModalValues.prompt_title.value}}{{end}}{{$i := .ModalValues.prompt_body.value}}{{$m := $i}}{{if ne $c 0}}{{$m = joinStr " " (mentionRoleID $c) $i}}{{end}}{{$q := false}}{{if eq $h "t"}}{{$n := ""}}{{try}}{{$n = getChannelOrThread $f}}{{catch}}{{end}}{{if $n}}{{$q = eq $n.Type 15}}{{end}}{{end}}{{$r := len (toRune $i)}}{{$s := len (toRune $m)}}{{if gt $r 2000}}{{sendResponse nil (complexMessage "content" (print "⚠️ The prompt is " $r " characters — the limit is 2000.") "ephemeral" true)}}{{else}}{{if and (gt $s 2000) (eq $h "i")}}{{sendResponse nil (complexMessage "content" (print "⚠️ The role ping puts the prompt at " $s " characters — the limit is 2000. Shorten the prompt or drop the role.") "ephemeral" true)}}{{else}}{{$t := -4}}{{$o := ((dbGet 0 "Global")).Value}}{{if $o}}{{if $o.HasKey "Timezone Offset"}}{{$t = toInt ($o.Get "Timezone Offset")}}{{end}}{{end}}{{$x := currentTime.Add (toInt64 (mult $t 3600000000000))}}{{$y := $x.Format "2006-01-02"}}{{if eq $h "t"}}{{$j := print $y ": " $p}}{{$u := len (toRune $j)}}{{if gt $u 100}}{{sendResponse nil (complexMessage "content" (print "⚠️ The thread title is " $u " characters — the limit is 100.") "ephemeral" true)}}{{else}}{{if $q}}{{$b := ""}}{{try}}{{$b = createForumPost $f $j (complexMessage "content" $i)}}{{catch}}{{end}}{{if not $b}}{{sendResponse nil (complexMessage "content" "⚠️ Couldn't create the post." "ephemeral" true)}}{{else}}{{$k := print "https://discord.com/channels/" .Guild.ID "/" $b.ID}}{{$e := true}}{{try}}{{pinMessage $b.ID $b.ID}}
+									{{catch}}
+										
+										{{$e = false}}
+									{{end}}
+									{{$l := true}}
+									{{if ne $c 0}}
+										{{try}}
+											
+											{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": " $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
+										{{catch}}
+											
+											{{$l = false}}
+										{{end}}
+									{{end}}
+									{{$a := print "✅ Posted " $j ": " $k}}
+									{{if not $l}}
+										{{$a = print $a " (couldn't send the ping)"}}
+									{{end}}
+									{{if not $e}}
+										{{$a = print $a " (couldn't pin it: the pin list may be full, or I can't pin there)"}}
+									{{end}}
+									{{sendResponse nil (complexMessage "content" $a "ephemeral" true)}}
+								{{end}}
+							{{else}}
+								
+								{{$b := ""}}
+								{{try}}
+									{{$b = createThread $f 0 $j}}
+								{{catch}}
+								{{end}}
+								{{if not $b}}
+									{{sendResponse nil (complexMessage "content" "⚠️ Couldn't create the post." "ephemeral" true)}}
+								{{else}}
+									{{$d := 0}}
+									{{try}}
+										{{$d = sendMessageRetID $b.ID (complexMessage "content" $i)}}
+									{{catch}}
+									{{end}}
+									{{if $d}}
+										{{$k := print "https://discord.com/channels/" .Guild.ID "/" $b.ID "/" $d}}
+										{{$e := true}}
+										{{try}}
+											{{pinMessage $b.ID $d}}
+										{{catch}}
+											
+											{{$e = false}}
+										{{end}}
+										{{$l := true}}
+										{{if ne $c 0}}
+											{{try}}
+												
+												{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": " $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
+											{{catch}}
+												
+												{{$l = false}}
+											{{end}}
+										{{end}}
+										{{$a := print "✅ Created " $j ": " $k}}
+										{{if not $l}}
+											{{$a = print $a " (couldn't send the ping)"}}
+										{{end}}
+										{{if not $e}}
+											{{$a = print $a " (couldn't pin it: the pin list may be full, or I can't pin there)"}}
+										{{end}}
+										{{sendResponse nil (complexMessage "content" $a "ephemeral" true)}}
+									{{else}}
+										{{sendResponse nil (complexMessage "content" (print "✅ Created " $j " but the prompt couldn't be sent into it — check the channel.") "ephemeral" true)}}
+									{{end}}
+								{{end}}
+							{{end}}
+						{{end}}
+					{{else}}
+						{{try}}
+							{{$d := 0}}
+							{{if ne $c 0}}
+								{{$d = sendMessageRetID $f (complexMessage "content" $m "allowed_mentions" (sdict "parse" (cslice "users" "roles")))}}
+							{{else}}
+								{{$d = sendMessageRetID $f (complexMessage "content" $i)}}
+							{{end}}
+							{{$e := true}}
+							{{try}}
+								{{pinMessage $f $d}}
+							{{catch}}
+								
+								{{$e = false}}
+							{{end}}
+							{{$a := print "✅ Sent: https://discord.com/channels/" .Guild.ID "/" $f "/" $d}}
+							{{if not $e}}
+								{{$a = print $a " (couldn't pin it: the pin list may be full, or I can't pin there)"}}
+							{{end}}
+							{{sendResponse nil (complexMessage "content" $a "ephemeral" true)}}
+						{{catch}}
+							{{sendResponse nil (complexMessage "content" "⚠️ Couldn't send the prompt there — check the channel." "ephemeral" true)}}
+						{{end}}
+					{{end}}
+				{{end}}{{end}}
+			{{end}}
+		{{end}}
+	{{end}}
+{{else}}
+Reached by submitting a /prompt form; use /prompt as a slash command.
+{{end}}
