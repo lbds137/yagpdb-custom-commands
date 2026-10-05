@@ -50,6 +50,10 @@ func (e *Engine) recordExec(admin bool, cmd string, args ...interface{}) (interf
 	line = strings.TrimSuffix(line, " ")
 	e.ctx.Execs = append(e.ctx.Execs, Exec{Admin: admin, ChannelID: e.ctx.ChannelID, Line: line})
 
+	if msg, ok := e.ctx.ExecErrors[line]; ok {
+		// tmplexec.go wraps the failed command's error: errors.WithMessage(err, "exec/execadmin, run")
+		return "", errors.New("exec/execadmin, run: " + msg)
+	}
 	if resp, ok := e.ctx.ExecResponses[line]; ok {
 		return resp, nil
 	}
@@ -58,7 +62,7 @@ func (e *Engine) recordExec(admin bool, cmd string, args ...interface{}) (interf
 		fn = "execAdmin"
 	}
 	e.ctx.Warn(KindExec, "%s %s isn't run by the emulator: it returns \"\", where YAGPDB "+
-		"returns the command's response; declare one in exec_responses", fn, line)
+		"returns the command's response; declare one in exec_responses, or a failure in exec_errors", fn, line)
 	return "", nil
 }
 

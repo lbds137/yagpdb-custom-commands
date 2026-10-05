@@ -88,6 +88,17 @@ tests:
     expected:
       output_contains: "Use /define as a slash command"
 
+  # command_status: execCC fails as YAGPDB's does for a disabled command
+  - name: "define_slash: a disabled embed_exec is an ephemeral refusal"
+    template: "../../../commands/knowledge/define_slash.gohtml"
+    context:
+      interaction: { type: slash, options: { term: "Ásatrú" } }
+    command_status:
+      1: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   # config_sync is an Interval command: execCC to it errors as YAGPDB's does for a stale id
   - name: "define_slash: an embed_exec id YAGPDB cannot execCC is an ephemeral refusal"
     template: "../../../commands/knowledge/define_slash.gohtml"

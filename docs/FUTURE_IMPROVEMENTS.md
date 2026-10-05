@@ -433,12 +433,13 @@ gets a failing test first.
   a thread by ID or name may see it as unknown where YAGPDB would not. Not hit by any
   current command (code reading only). Fix: copy Threads like Channels, with a test of a
   child pinning or sending into a declared thread. Trigger: the next execCC-into-thread unit.
-- Found 2026-10-04 (unit 5): an execCC to an id outside the test's command_map only warns
-  (`[execcc]`) and runs nothing, so no test can make execCC ERROR the way YAGPDB does for
-  a missing command ("Couldn't find custom command") or a disabled one
-  (tmplextensions.go:189-201). /staff's `try`/`catch` around its execCC (the ephemeral
-  "isn't set up" answer) is therefore verified by code reading only. Fix: a test-level
-  way to declare an id missing or disabled, then pin that catch.
+- Shipped (2026-10-05): a test or suite declares `command_status: { <id>: missing |
+  disabled | group_disabled }`, so execCC and scheduleUniqueCC of that id fail with
+  YAGPDB's own text (tmplextensions.go:189-201, 296-307), and a child sees it. Pinned
+  catches: staff_slash, color_slash, hebrew_slash, gematria_slash, gematria (behind
+  gematria_slash), timestamp_slash, define_slash, pointer_slash, rule_slash (number and
+  browse). Not pinned: channel_link's try wraps a send, not an exec (its catch only calls
+  execCC).
 - Found 2026-10-04 (unit 5b): `make test-minified` reports a real difference for a slash
   root -> channel_activity -> pager chain because the static loop-db warning attached to
   an execCC child carries the file's ABSOLUTE path, which differs between the checkout and
@@ -451,12 +452,10 @@ gets a failing test first.
   response (common/templates/context.go:605-607); the emulator would model a followup.
   No command hits it (every root that schedules is defer mode None). Trigger: a deferred
   slash root that schedules runs.
-- Found 2026-10-04 (GLM audit B-F3 fix): `exec_responses` can only declare an exec's
-  returned TEXT, not an exec ERROR. In YAGPDB a built-in that returns an error (kick's
-  hierarchy/permission/KickUser failures) makes `exec` itself error ("exec/execadmin,
-  run", vendor commands/tmplexec.go), so inactivity_prune_pick's `catch` branch has no
-  test. Add an error form to `exec_responses` and a prune test for it. Trigger: the next
-  exec-touching unit, or any change to that catch.
+- Shipped (2026-10-05): `context.exec_errors: { '<line>': '<message>' }` makes that exec
+  or execAdmin line fail with "exec/execadmin, run: <message>" (vendor
+  commands/tmplexec.go); a line in both `exec_responses` and `exec_errors` is a loader
+  error. Pinned: inactivity_prune_pick's kick `catch`.
 - Deferred, unverified: embed_exec cuts titles and descriptions by code point, and the
   emulator's limit checks count code points too (limits.go, `utf8.RuneCountInString`). The
   PR 7 review suggested that Discord may count characters outside the BMP (many emoji) as
@@ -507,10 +506,11 @@ gets a failing test first.
   `dbSet` of 32 and 10 read back as 32 and 10.
 - `exec`/`execAdmin` record the command line (`execs:`, snapshots) but don't run the bot
   command: a test declares what a call returns per line (`exec_responses:`; an
-  undeclared line returns "" and warns `[exec]`). The command's own checks aren't
-  modelled: errors that fail the run ("exec/execadmin, run: ...", a parse error,
-  execAdmin's "Failed fetching member", a guild cooldown), nor the text YAGPDB returns
-  ("Unknown command", "Error: ...") unless a test declares it.
+  undeclared line returns "" and warns `[exec]`; `exec_errors:` declares a line that
+  fails with "exec/execadmin, run: <message>"). The command's own checks aren't
+  modelled: a parse error, execAdmin's "Failed fetching member", a guild cooldown, nor
+  the text or error YAGPDB returns ("Unknown command", "Error: ...") unless a test
+  declares it.
 - Values holding Discord objects (a member, a message, a `cembed`, a whole `dbGet`
   entry) serialize as the emulator's types, so their size differs from YAGPDB's. A value
   whose overflow past 100000 bytes is only whitespace is stored whole; YAGPDB stores it
@@ -526,8 +526,8 @@ gets a failing test first.
   exec_data is a plain map, while the real run gets an `*sdict` with `.Get`/`.Set`).
 - `command_map` is only the commands a test runs, so an unmapped command may exist in
   production: execCC of one warns (`[execcc]`) and runs nothing, and a delayed run or
-  scheduleUniqueCC of one is scheduled. YAGPDB's disabled-command and disabled-group
-  errors aren't modelled.
+  scheduleUniqueCC of one is scheduled. YAGPDB's missing, disabled-command and
+  disabled-group errors are declared per id with `command_status:`.
 - `.Guild.Channels` items (types.ChannelState) lack dstate.ChannelState's thread
   metadata, permission overwrites, DefaultThreadRateLimitPerUser and forum fields (tags,
   default reaction, sort order, layout), so reading one errors here where YAGPDB gives

@@ -49,3 +49,18 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  # command_status reaches the execCC child: gematria's own execCC of embed_exec fails as
+  # YAGPDB's does for a disabled command (the id is mapped to a working embed_exec: status wins)
+  - name: "gematria_slash: a disabled embed_exec behind gematria is an ephemeral refusal"
+    template: "../../../commands/gematria/gematria_slash.gohtml"
+    context:
+      interaction: { type: slash, options: { text: "א" } }
+    command_map:
+      # a working embed_exec: only the declared status can make the execCC fail
+      2: "../../../commands/plumbing/embed_exec.gohtml"
+    command_status:
+      2: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }

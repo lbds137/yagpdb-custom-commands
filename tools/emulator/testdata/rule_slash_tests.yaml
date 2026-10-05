@@ -170,6 +170,27 @@ tests:
     expected:
       output_contains: "Use /rule as a slash command"
 
+  # command_status: execCC fails as YAGPDB's does for a disabled command
+  - name: "rule_slash: a disabled embed_exec is an ephemeral refusal"
+    template: "../../../commands/rules/rule_slash.gohtml"
+    context:
+      interaction: { type: slash, options: { number: 2 } }
+    command_status:
+      123: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  - name: "rule_slash: a disabled rules_pager is an ephemeral browse refusal"
+    template: "../../../commands/rules/rule_slash.gohtml"
+    context:
+      interaction: { type: slash }
+    command_status:
+      130: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "The rules browse view isn't set up on this server yet." }
+
   # config_sync is an Interval command: execCC to it errors as YAGPDB's does for a stale id
   - name: "rule_slash: an embed_exec id YAGPDB cannot execCC is an ephemeral refusal"
     template: "../../../commands/rules/rule_slash.gohtml"
