@@ -46,7 +46,7 @@ tests:
         - kind: message
           ephemeral: true
           embed_title: "Server setup"
-          embed_contains: "**Staff** not set\\n**Member** not set\\n**Active** not set\\n**Inactive** not set\\n**Bump** not set"
+          embed_contains: "**Staff** not set, pick one with /setup roles\\n**Member** not set, pick one with /setup roles\\n**Active** not set, pick one with /setup roles\\n**Inactive** not set, pick one with /setup roles\\n**Bump** not set, pick one with /setup roles"
 
   - name: "setup_slash: view with everything set shows the mentions, both sections"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -64,7 +64,7 @@ tests:
       interaction_responses:
         - kind: message
           ephemeral: true
-          embed_contains: "**Staff** <@&700000000000000001>\\n**Member** <@&700000000000000002>\\n**Active** <@&700000000000000003>\\n**Inactive** <@&700000000000000004>\\n**Bump** <@&700000000000000005>"
+          embed_contains: "**Staff** <@&700000000000000001>, the role most staff commands check\\n**Member** <@&700000000000000002>, the role inactivity pings at start and end\\n**Active** <@&700000000000000003>, the role the inactivity prune picker treats as active\\n**Inactive** <@&700000000000000004>, the role inactivity reminders ping and the prune picker checks\\n**Bump** <@&700000000000000005>, the role the bump reminder pings"
     expected:
       output_equals: ""
 
@@ -79,7 +79,7 @@ tests:
     assertions:
       interaction_responses:
         - kind: message
-          embed_contains: "**Bot** <#888888888888888801>\\n**Mod log** <#888888888888888802>"
+          embed_contains: "**Bot** <#888888888888888801>, the channel where helper commands run\\n**Mod log** <#888888888888888802>, the channel where hiatus and unhiatus post their record"
 
   - name: "setup_slash: roles with two options writes them as strings and leaves the rest"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -107,7 +107,7 @@ tests:
       interaction_responses:
         - kind: message
           ephemeral: true
-          embed_contains: "**Staff** <@&700000000000000004> (updated)\\n**Member** <@&700000000000000002> (updated)\\n**Active** not set\\n**Inactive** not set\\n**Bump** <@&700000000000000005>"
+          embed_contains: "**Staff** <@&700000000000000004>, the role most staff commands check (updated)\\n**Member** <@&700000000000000002>, the role inactivity pings at start and end (updated)\\n**Active** not set, pick one with /setup roles\\n**Inactive** not set, pick one with /setup roles\\n**Bump** <@&700000000000000005>, the role the bump reminder pings"
 
   - name: "setup_slash: roles shows only the Roles section"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -120,7 +120,7 @@ tests:
       interaction: { type: slash, subcommand: roles, options: { bump: 700000000000000005 } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "**Bump** <@&700000000000000005> (updated)" }
+        - { kind: message, ephemeral: true, embed_contains: "**Bump** <@&700000000000000005>, the role the bump reminder pings (updated)" }
 
   - name: "setup_slash: roles with no options shows the section and writes nothing"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -137,7 +137,7 @@ tests:
       interaction_responses:
         - kind: message
           ephemeral: true
-          embed_contains: "**Staff** <@&700000000000000001>\\n**Member** not set"
+          embed_contains: "**Staff** <@&700000000000000001>, the role most staff commands check\\n**Member** not set, pick one with /setup roles"
 
   - name: "setup_slash: roles with no options and no dict yet writes nothing"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -169,7 +169,7 @@ tests:
       interaction_responses:
         - kind: message
           ephemeral: true
-          embed_contains: "**Bot** <#888888888888888801> (updated)\\n**Mod log** <#888888888888888802> (updated)"
+          embed_contains: "**Bot** <#888888888888888801>, the channel where helper commands run (updated)\\n**Mod log** <#888888888888888802>, the channel where hiatus and unhiatus post their record (updated)"
 
   - name: "setup_slash: an announcement channel is accepted"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -179,7 +179,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Channels", value_equals: { Mod Log: "888888888888888803" } }
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "<#888888888888888803> (updated)" }
+        - { kind: message, ephemeral: true, embed_contains: "<#888888888888888803>, the channel where hiatus and unhiatus post their record (updated)" }
 
   - name: "setup_slash: @everyone is refused and nothing is written"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -263,7 +263,7 @@ tests:
           key: "Roles"
           value_equals: { Staff: "700000000000000001", Bump: "700000000000000005" }
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "**Bump** <@&700000000000000005> (updated)" }
+        - { kind: message, ephemeral: true, embed_contains: "**Bump** <@&700000000000000005>, the role the bump reminder pings (updated)" }
 
   - name: "setup_slash: the server owner may set staff without an Administrator role"
     template: "../../../commands/plumbing/setup_slash.gohtml"
@@ -334,6 +334,19 @@ tests:
         - { user_id: 0, key: "Channels", not_exists: true }
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "`mod_log`: pick a text" }
+
+  - name: "setup_slash: view of channels unset points at /setup channels, set shows the job"
+    template: "../../../commands/plumbing/setup_slash.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Channels"
+        value: { YAGPDB: "888888888888888801" }
+    context:
+      interaction: { type: slash, subcommand: channels }
+    assertions:
+      interaction_responses:
+        - kind: message
+          embed_contains: "**Bot** <#888888888888888801>, the channel where helper commands run\\n**Mod log** not set, pick one with /setup channels"
 
   - name: "setup_slash: a bare run prints the usage hint"
     template: "../../../commands/plumbing/setup_slash.gohtml"

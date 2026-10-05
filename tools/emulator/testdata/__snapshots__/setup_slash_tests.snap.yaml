@@ -99,7 +99,7 @@
                 "fields": [
                   {
                     "name": "Channels",
-                    "value": "**Bot** <#888888888888888801> (updated)\n**Mod log** <#888888888888888802> (updated)"
+                    "value": "**Bot** <#888888888888888801>, the channel where helper commands run (updated)\n**Mod log** <#888888888888888802>, the channel where hiatus and unhiatus post their record (updated)"
                   }
                 ],
                 "title": "Server setup"
@@ -116,7 +116,7 @@
                 "fields": [
                   {
                     "name": "Channels",
-                    "value": "**Bot** <#888888888888888801> (updated)\n**Mod log** <#888888888888888802> (updated)"
+                    "value": "**Bot** <#888888888888888801>, the channel where helper commands run (updated)\n**Mod log** <#888888888888888802>, the channel where hiatus and unhiatus post their record (updated)"
                   }
                 ],
                 "title": "Server setup"
@@ -139,7 +139,7 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** not set\n**Member** not set\n**Active** not set\n**Inactive** not set\n**Bump** <@&700000000000000005> (updated)"
+                    "value": "**Staff** not set, pick one with /setup roles\n**Member** not set, pick one with /setup roles\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** <@&700000000000000005>, the role the bump reminder pings (updated)"
                   }
                 ],
                 "title": "Server setup"
@@ -156,7 +156,7 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** not set\n**Member** not set\n**Active** not set\n**Inactive** not set\n**Bump** <@&700000000000000005> (updated)"
+                    "value": "**Staff** not set, pick one with /setup roles\n**Member** not set, pick one with /setup roles\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** <@&700000000000000005>, the role the bump reminder pings (updated)"
                   }
                 ],
                 "title": "Server setup"
@@ -182,7 +182,7 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** <@&700000000000000001>\n**Member** not set\n**Active** not set\n**Inactive** not set\n**Bump** not set"
+                    "value": "**Staff** <@&700000000000000001>, the role most staff commands check\n**Member** not set, pick one with /setup roles\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** not set, pick one with /setup roles"
                   }
                 ],
                 "title": "Server setup"
@@ -199,7 +199,7 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** <@&700000000000000001>\n**Member** not set\n**Active** not set\n**Inactive** not set\n**Bump** not set"
+                    "value": "**Staff** <@&700000000000000001>, the role most staff commands check\n**Member** not set, pick one with /setup roles\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** not set, pick one with /setup roles"
                   }
                 ],
                 "title": "Server setup"
@@ -222,7 +222,7 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** <@&700000000000000004> (updated)\n**Member** <@&700000000000000002> (updated)\n**Active** not set\n**Inactive** not set\n**Bump** <@&700000000000000005>"
+                    "value": "**Staff** <@&700000000000000004>, the role most staff commands check (updated)\n**Member** <@&700000000000000002>, the role inactivity pings at start and end (updated)\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** <@&700000000000000005>, the role the bump reminder pings"
                   }
                 ],
                 "title": "Server setup"
@@ -239,7 +239,7 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** <@&700000000000000004> (updated)\n**Member** <@&700000000000000002> (updated)\n**Active** not set\n**Inactive** not set\n**Bump** <@&700000000000000005>"
+                    "value": "**Staff** <@&700000000000000004>, the role most staff commands check (updated)\n**Member** <@&700000000000000002>, the role inactivity pings at start and end (updated)\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** <@&700000000000000005>, the role the bump reminder pings"
                   }
                 ],
                 "title": "Server setup"
@@ -301,11 +301,11 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** <@&700000000000000001>\n**Member** <@&700000000000000002>\n**Active** <@&700000000000000003>\n**Inactive** <@&700000000000000004>\n**Bump** <@&700000000000000005>"
+                    "value": "**Staff** <@&700000000000000001>, the role most staff commands check\n**Member** <@&700000000000000002>, the role inactivity pings at start and end\n**Active** <@&700000000000000003>, the role the inactivity prune picker treats as active\n**Inactive** <@&700000000000000004>, the role inactivity reminders ping and the prune picker checks\n**Bump** <@&700000000000000005>, the role the bump reminder pings"
                   },
                   {
                     "name": "Channels",
-                    "value": "**Bot** <#888888888888888801>\n**Mod log** <#888888888888888802>"
+                    "value": "**Bot** <#888888888888888801>, the channel where helper commands run\n**Mod log** <#888888888888888802>, the channel where hiatus and unhiatus post their record"
                   }
                 ],
                 "title": "Server setup"
@@ -322,11 +322,11 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** <@&700000000000000001>\n**Member** <@&700000000000000002>\n**Active** <@&700000000000000003>\n**Inactive** <@&700000000000000004>\n**Bump** <@&700000000000000005>"
+                    "value": "**Staff** <@&700000000000000001>, the role most staff commands check\n**Member** <@&700000000000000002>, the role inactivity pings at start and end\n**Active** <@&700000000000000003>, the role the inactivity prune picker treats as active\n**Inactive** <@&700000000000000004>, the role inactivity reminders ping and the prune picker checks\n**Bump** <@&700000000000000005>, the role the bump reminder pings"
                   },
                   {
                     "name": "Channels",
-                    "value": "**Bot** <#888888888888888801>\n**Mod log** <#888888888888888802>"
+                    "value": "**Bot** <#888888888888888801>, the channel where helper commands run\n**Mod log** <#888888888888888802>, the channel where hiatus and unhiatus post their record"
                   }
                 ],
                 "title": "Server setup"
@@ -352,11 +352,11 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** not set\n**Member** not set\n**Active** not set\n**Inactive** not set\n**Bump** not set"
+                    "value": "**Staff** not set, pick one with /setup roles\n**Member** not set, pick one with /setup roles\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** not set, pick one with /setup roles"
                   },
                   {
                     "name": "Channels",
-                    "value": "**Bot** not set\n**Mod log** not set"
+                    "value": "**Bot** not set, pick one with /setup channels\n**Mod log** not set, pick one with /setup channels"
                   }
                 ],
                 "title": "Server setup"
@@ -373,11 +373,11 @@
                 "fields": [
                   {
                     "name": "Roles",
-                    "value": "**Staff** not set\n**Member** not set\n**Active** not set\n**Inactive** not set\n**Bump** not set"
+                    "value": "**Staff** not set, pick one with /setup roles\n**Member** not set, pick one with /setup roles\n**Active** not set, pick one with /setup roles\n**Inactive** not set, pick one with /setup roles\n**Bump** not set, pick one with /setup roles"
                   },
                   {
                     "name": "Channels",
-                    "value": "**Bot** not set\n**Mod log** not set"
+                    "value": "**Bot** not set, pick one with /setup channels\n**Mod log** not set, pick one with /setup channels"
                   }
                 ],
                 "title": "Server setup"

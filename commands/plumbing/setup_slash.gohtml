@@ -37,17 +37,24 @@
 	{{ $globalDict := or (dbGet 0 "Global").Value sdict }}
 	{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
 
-	{{/* each section's options in display order: the option name, its dict key and label */}}
+	{{/* each section's options in display order: the option name, its dict key, label and job */}}
 	{{ $layout := sdict
 		"Roles" (cslice
-			(sdict "opt" "staff" "key" "Staff" "label" "Staff")
-			(sdict "opt" "member" "key" "Member" "label" "Member")
-			(sdict "opt" "active" "key" "Active" "label" "Active")
-			(sdict "opt" "inactive" "key" "Inactive" "label" "Inactive")
-			(sdict "opt" "bump" "key" "Bump" "label" "Bump"))
+			(sdict "opt" "staff" "key" "Staff" "label" "Staff"
+				"job" "the role most staff commands check")
+			(sdict "opt" "member" "key" "Member" "label" "Member"
+				"job" "the role inactivity pings at start and end")
+			(sdict "opt" "active" "key" "Active" "label" "Active"
+				"job" "the role the inactivity prune picker treats as active")
+			(sdict "opt" "inactive" "key" "Inactive" "label" "Inactive"
+				"job" "the role inactivity reminders ping and the prune picker checks")
+			(sdict "opt" "bump" "key" "Bump" "label" "Bump"
+				"job" "the role the bump reminder pings"))
 		"Channels" (cslice
-			(sdict "opt" "bot" "key" "YAGPDB" "label" "Bot")
-			(sdict "opt" "mod_log" "key" "Mod Log" "label" "Mod log"))
+			(sdict "opt" "bot" "key" "YAGPDB" "label" "Bot"
+				"job" "the channel where helper commands run")
+			(sdict "opt" "mod_log" "key" "Mod Log" "label" "Mod log"
+				"job" "the channel where hiatus and unhiatus post their record"))
 	}}
 
 	{{ $sub := .SubCommand }}
@@ -124,12 +131,12 @@
 			{{ $lines := cslice }}
 			{{ range $layout.Get $section }}
 				{{ $id := toInt (or ($dict.Get .key) "") }}
-				{{ $shown := "not set" }}
+				{{ $shown := joinStr "" "not set, pick one with /setup " (lower $section) }}
 				{{ if gt $id 0 }}
 					{{ if eq $section "Roles" }}
-						{{ $shown = joinStr "" "<@&" (toString $id) ">" }}
+						{{ $shown = joinStr "" "<@&" (toString $id) ">, " .job }}
 					{{ else }}
-						{{ $shown = joinStr "" "<#" (toString $id) ">" }}
+						{{ $shown = joinStr "" "<#" (toString $id) ">, " .job }}
 					{{ end }}
 				{{ end }}
 				{{ $mark := "" }}

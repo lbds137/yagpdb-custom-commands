@@ -1,4 +1,4 @@
-'edit delete entry: a seeded entry gets a danger confirm, record written':
+'edit delete_entry: a seeded entry gets a danger confirm, record written':
     output: ""
     messages:
         - channel_id: 222222222222222222
@@ -82,7 +82,7 @@
         - user_id: 111111111111111111
           key: Edit Pending
           value: '{"category":"Admin","key":"Greeting","kind":"entry","stamp":1767366245}'
-'edit delete rule: a seeded rule gets a danger confirm, record written':
+'edit delete_rule: a seeded rule gets a danger confirm, record written':
     output: ""
     messages:
         - channel_id: 222222222222222222
@@ -316,7 +316,7 @@
         - user_id: 0
           key: Rules
           value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
-'submit entry: a Commands key keeps its case (no Stored as)':
+'submit entry: a Commands key keeps its case (no Saved as)':
     output: ""
     messages:
         - channel_id: 222222222222222222
@@ -355,7 +355,7 @@
         - user_id: 0
           key: Rules
           value: '{"Rule #3":"be kind","Rule #4":{"note":"a dict, not text"}}'
-'submit entry: an update acks Was and Stored as':
+'submit entry: an update acks Was and Saved as':
     output: ""
     messages:
         - channel_id: 222222222222222222
@@ -370,8 +370,8 @@
                     "value": "hello"
                   },
                   {
-                    "name": "Stored as",
-                    "value": "Greeting"
+                    "name": "Saved as",
+                    "value": "`Greeting` (first letters are capitalised for you)"
                   }
                 ],
                 "title": "Admin › Greeting updated"
@@ -392,8 +392,8 @@
                     "value": "hello"
                   },
                   {
-                    "name": "Stored as",
-                    "value": "Greeting"
+                    "name": "Saved as",
+                    "value": "`Greeting` (first letters are capitalised for you)"
                   }
                 ],
                 "title": "Admin › Greeting updated"
@@ -425,8 +425,8 @@
                 "description": "hello",
                 "fields": [
                   {
-                    "name": "Stored as",
-                    "value": "Greeting"
+                    "name": "Saved as",
+                    "value": "`Greeting` (first letters are capitalised for you)"
                   }
                 ],
                 "title": "Admin › Greeting unchanged"
@@ -443,8 +443,8 @@
                 "description": "hello",
                 "fields": [
                   {
-                    "name": "Stored as",
-                    "value": "Greeting"
+                    "name": "Saved as",
+                    "value": "`Greeting` (first letters are capitalised for you)"
                   }
                 ],
                 "title": "Admin › Greeting unchanged"

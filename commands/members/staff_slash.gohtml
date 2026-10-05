@@ -6,7 +6,8 @@
   Slash description: `Staff tools`
   Dependencies: `staff_roles`, `inactivity`, `channel_activity`, `rules`, `bump_reset`, `batch_delrep`, `bootstrap`
 
-  The router of the staff slash commands. The seven handlers are too big to inline in one
+  The router of the staff slash commands. The nine subcommands run on seven handlers
+  (announce, prune and prune_date all go to `inactivity`), too big to inline in one
   root, so this reads `.SubCommand` and `.Options` and makes ONE execCC to the existing
   handler (its Commands dict key), passing the options as primitives in ExecData with
   `Staff` true. It prints nothing: the handler answers the interaction it inherits
@@ -16,17 +17,23 @@
 
   Slash subcommand: `roles choose which roles count as staff`
   Slash option: `roles.roles string leave empty to pick the roles from a menu (recommended)`
-  Slash subcommand: `inactivity inactivity prune: announcements, next date, review a member`
-  Slash option: `inactivity.action string! start/end/remind post that announcement; date sets the next prune date; prune reviews a member`
-  Slash option: `inactivity.date string the next prune date as announcements should show it, e.g. March 1`
-  Slash option: `inactivity.user user member to review (prune only; leave empty to pick from a menu)`
+  Slash subcommand: `announce post an inactivity prune announcement`
+  Slash option: `announce.which string! start, end or remind`
+  Slash subcommand: `prune review an inactive member for pruning`
+  Slash option: `prune.user user member to review (leave empty to pick from a menu)`
+  Slash subcommand: `prune_date set the next inactivity prune date`
+  Slash option: `prune_date.date string! the next prune date as announcements should show it, e.g. March 1`
   Slash subcommand: `activity see which channels have gone quiet`
   Slash subcommand: `rules post the server rules in this channel`
   Slash option: `rules.from integer first rule number to post (default: all)`
   Slash option: `rules.to integer last rule number to post (default: all)`
   Slash subcommand: `bump_reset reset the bump timer`
   Slash subcommand: `delrep clear members' reputation`
-  Slash option: `delrep.users string! user IDs or mentions, up to 5`
+  Slash option: `delrep.user1 user! member whose reputation to clear`
+  Slash option: `delrep.user2 user another member to clear (optional)`
+  Slash option: `delrep.user3 user another member to clear (optional)`
+  Slash option: `delrep.user4 user another member to clear (optional)`
+  Slash option: `delrep.user5 user another member to clear (optional)`
   Slash subcommand: `bootstrap (admin) first-time setup of stored defaults; run it in the bot channel`
   Slash option: `bootstrap.staff_role role the staff role (omit to keep the current one)`
 */ -}}
@@ -36,7 +43,9 @@
 	{{/* the handler's Commands key for each subcommand */}}
 	{{ $handlers := sdict
 		"roles" "staff_roles"
-		"inactivity" "inactivity"
+		"announce" "inactivity"
+		"prune" "inactivity"
+		"prune_date" "inactivity"
 		"activity" "channel_activity"
 		"rules" "rules"
 		"bump_reset" "bump_reset"
@@ -49,21 +58,41 @@
 	{{/* the options, as primitives: the handlers read plain values on both of their
 		paths, never a Role or User object */}}
 	{{ $execData := sdict "Staff" true }}
+	{{ $refusal := "" }}
 	{{ if eq $subcommand "roles" }}
 		{{ $execData.Set "Roles" (toString (or .Options.roles "")) }}
-	{{ else if eq $subcommand "inactivity" }}
-		{{ $execData.Set "Action" (toString (or .Options.action "")) }}
-		{{ $execData.Set "Date" (toString (or .Options.date "")) }}
+	{{ else if eq $subcommand "announce" }}
+		{{ $which := lower (reReplace `^\s+|\s+$` (toString (or .Options.which "")) "") }}
+		{{ if not (in (cslice "start" "end" "remind") $which) }}
+			{{ $refusal = "⚠️ Unknown announcement: choose start, end or remind." }}
+		{{ end }}
+		{{ $execData.Set "Action" $which }}
+	{{ else if eq $subcommand "prune" }}
+		{{ $execData.Set "Action" "prune" }}
 		{{ $userID := "" }}
 		{{ if .Options.user }}
 			{{ $userID = toString .Options.user.ID }}
 		{{ end }}
 		{{ $execData.Set "User" $userID }}
+	{{ else if eq $subcommand "prune_date" }}
+		{{ $execData.Set "Action" "date" }}
+		{{ $execData.Set "Date" (reReplace `^\s+|\s+$` (toString (or .Options.date "")) "") }}
 	{{ else if eq $subcommand "rules" }}
 		{{ $execData.Set "From" (toInt (or .Options.from 0)) }}
 		{{ $execData.Set "To" (toInt (or .Options.to 0)) }}
 	{{ else if eq $subcommand "delrep" }}
-		{{ $execData.Set "Users" (toString (or .Options.users "")) }}
+		{{/* the picked members' IDs, each once, space-separated: batch_delrep reads the
+			IDs out of this string */}}
+		{{ $picked := "" }}
+		{{ range $picker := cslice .Options.user1 .Options.user2 .Options.user3 .Options.user4 .Options.user5 }}
+			{{ if $picker }}
+				{{ $pickedID := toString $picker.ID }}
+				{{ if not (in (split $picked " ") $pickedID) }}
+					{{ $picked = joinStr " " $picked $pickedID }}
+				{{ end }}
+			{{ end }}
+		{{ end }}
+		{{ $execData.Set "Users" (reReplace `^\s+` $picked "") }}
 	{{ else if eq $subcommand "bootstrap" }}
 		{{ $staffRoleID := "" }}
 		{{ if .Options.staff_role }}
@@ -72,7 +101,9 @@
 		{{ $execData.Set "StaffRole" $staffRoleID }}
 	{{ end }}
 
-	{{ if le $handlerID 0 }}
+	{{ if $refusal }}
+		{{ sendResponse nil (complexMessage "content" $refusal "ephemeral" true) }}
+	{{ else if le $handlerID 0 }}
 		{{ sendResponse nil (complexMessage
 			"content" "⚠️ Part of this command isn't installed on this server yet. Please tell an admin."
 			"ephemeral" true) }}
@@ -88,5 +119,5 @@
 		{{ end }}
 	{{ end }}
 {{ else }}
-Use /staff as a slash command: roles, inactivity, activity, rules, bump_reset, delrep or bootstrap
+Use /staff as a slash command: roles, announce, prune, prune_date, activity, rules, bump_reset, delrep or bootstrap
 {{ end }}

@@ -91,8 +91,8 @@
         "title" $pruneCategory
         "color" $embedColor
         "description" (joinStr "\n"
-            (joinStr "" "Previous prune: " (or $prevDate "_not set yet (use /staff inactivity, action date)_"))
-            (joinStr "" "Next prune: " (or $nextDate "_not set yet (use /staff inactivity, action date)_"))
+            (joinStr "" "Previous prune: " (or $prevDate "_not set yet (use /staff prune_date)_"))
+            (joinStr "" "Next prune: " (or $nextDate "_not set yet (use /staff prune_date)_"))
             ""
             "Pick a member to review for pruning."))
     "components" (cslice

@@ -1,6 +1,6 @@
-name: "staff_slash (/staff inactivity, activity, rules)"
+name: "staff_slash (/staff announce, prune, prune_date, activity, rules)"
 
-# Unit 5b: the router's inactivity, activity and rules subcommands and those handlers'
+# Unit 5b: the router's announce, prune, prune_date, activity and rules subcommands and those handlers'
 # /staff paths. Announcements and rules are POSTS (real channel messages, as the text
 # path sends them) with an ephemeral ack; tools (the prune picker, the activity pager,
 # the date result) are the interaction response, public; refusals are ephemeral.
@@ -70,7 +70,7 @@ tests:
     snapshot: true
     context:
       member_roles: { 700000000000000001: [444444444444444444] }
-      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 700000000000000001 } }
+      interaction: { type: slash, subcommand: prune, options: { user: 700000000000000001 } }
     setup_db:
       - user_id: 0
         key: "Commands"
@@ -83,7 +83,7 @@ tests:
   - name: "staff_slash inactivity date: still works with inactivity_prune_pick missing from Commands"
     template: "../../../commands/members/staff_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "date", date: "2026-12-01" } }
+      interaction: { type: slash, subcommand: prune_date, options: { date: "2026-12-01" } }
     setup_db:
       - user_id: 0
         key: "Commands"
@@ -99,7 +99,7 @@ tests:
     template: "../../../commands/members/staff_slash.gohtml"
     snapshot: true
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "start" } }
+      interaction: { type: slash, subcommand: announce, options: { which: "start" } }
     setup_db:
       - user_id: 0
         key: "Commands"
@@ -176,7 +176,7 @@ tests:
   - name: "staff_slash inactivity start: the announcement and the Member ping are channel posts, ack is ephemeral"
     template: "../../../commands/members/staff_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "start" } }
+      interaction: { type: slash, subcommand: announce, options: { which: "start" } }
     expected:
       output_equals: ""
     assertions:
@@ -190,7 +190,7 @@ tests:
   - name: "staff_slash inactivity end: the Closing Announcement pings the Member role"
     template: "../../../commands/members/staff_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "end" } }
+      interaction: { type: slash, subcommand: announce, options: { which: "end" } }
     assertions:
       deletions: []
       sent_messages:
@@ -202,7 +202,7 @@ tests:
   - name: "staff_slash inactivity remind: the Reminder pings the Inactive role"
     template: "../../../commands/members/staff_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "remind" } }
+      interaction: { type: slash, subcommand: announce, options: { which: "remind" } }
     assertions:
       deletions: []
       sent_messages:
@@ -216,7 +216,7 @@ tests:
     template: "../../../commands/members/staff_slash.gohtml"
     snapshot: true
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "date", date: "2026-11-01" } }
+      interaction: { type: slash, subcommand: prune_date, options: { date: "2026-11-01" } }
     expected:
       output_equals: ""
     assertions:
@@ -229,11 +229,11 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: false, embed_title: "Next prune date updated", embed_contains: "**Next:** 2026-11-01" }
 
-  - name: "staff_slash inactivity date: no date is an ephemeral refusal, nothing written"
+  - name: "staff_slash prune_date: a blank date is an ephemeral refusal, nothing written"
     template: "../../../commands/members/staff_slash.gohtml"
     snapshot: true
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "date" } }
+      interaction: { type: slash, subcommand: prune_date, options: { date: "   " } }
     assertions:
       deletions: []
       db_checks:
@@ -247,7 +247,7 @@ tests:
     snapshot: true
     context:
       member_roles: { 700000000000000001: [444444444444444444] }
-      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 700000000000000001 } }
+      interaction: { type: slash, subcommand: prune, options: { user: 700000000000000001 } }
     expected:
       output_equals: ""
     assertions:
@@ -259,7 +259,7 @@ tests:
     template: "../../../commands/members/staff_slash.gohtml"
     context:
       member_roles: { 700000000000000001: [333333333333333333] }
-      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 700000000000000001 } }
+      interaction: { type: slash, subcommand: prune, options: { user: 700000000000000001 } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: false, embed_contains: "isn't marked inactive (no Inactive role, or they also have the Active role), so they can't be pruned.", components_contains: '"disabled": true' }
@@ -267,7 +267,7 @@ tests:
   - name: "staff_slash inactivity prune <unknown user>: ephemeral refusal"
     template: "../../../commands/members/staff_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 999999999999999999 } }
+      interaction: { type: slash, subcommand: prune, options: { user: 999999999999999999 } }
     assertions:
       deletions: []
       interaction_responses:
@@ -277,20 +277,55 @@ tests:
     template: "../../../commands/members/staff_slash.gohtml"
     snapshot: true
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "prune" } }
+      interaction: { type: slash, subcommand: prune, options: { } }
     assertions:
       deletions: []
       interaction_responses:
         - { kind: message, ephemeral: false, embed_title: "Inactivity Prune", embed_contains: "Next prune: 2026-10-01", components_contains: "templates-ip:600000000000000001" }
 
-  - name: "staff_slash inactivity: an invalid action is an ephemeral refusal"
+  - name: "staff_slash announce: an unknown announcement is the router's ephemeral refusal, no execCC"
     template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
     context:
-      interaction: { type: slash, subcommand: inactivity, options: { action: "bogus" } }
+      interaction: { type: slash, subcommand: announce, options: { which: "bogus" } }
     assertions:
+      execs: []
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_title: "Unknown action" }
+        - { kind: message, ephemeral: true, content_contains: "⚠️ Unknown announcement: choose start, end or remind." }
+
+  - name: "staff_slash announce: prune is not an announcement, refused before any execCC"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: announce, options: { which: "prune" } }
+    assertions:
+      execs: []
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "⚠️ Unknown announcement: choose start, end or remind." }
+
+  - name: "staff_slash announce: ' Start ' is trimmed and lowercased to the start announcement"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: announce, options: { which: " Start " } }
+    assertions:
+      deletions: []
+      sent_messages:
+        - { nth: 1, channel_id: 123456789012345678, embed_title: "Inactivity Prune Opening Announcement", embed_contains: "Prune opens 2026-10-01 (last 2026-09-01)." }
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Posted the Opening Announcement." }
+
+  - name: "staff_slash prune_date: 'March 1' is stored as the next date"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: prune_date, options: { date: "March 1" } }
+    assertions:
+      deletions: []
+      db_checks:
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Next Date":"March 1"' }
+        - { user_id: 0, key: "Inactivity Prune", value_contains: '"Previous Date":"2026-10-01"' }
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Next prune date updated", embed_contains: "**Next:** March 1" }
 
   # the picker after a /staff entry: the click handlers read the response message's confirm
   # embed and custom IDs, exactly as on the text path
