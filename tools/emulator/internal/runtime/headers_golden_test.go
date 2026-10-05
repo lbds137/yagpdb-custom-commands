@@ -46,6 +46,7 @@ type goldenSlash struct {
 
 type goldenHeader struct {
 	DeferMode        int          `json:"deferMode"`
+	Interval         *int         `json:"interval"`
 	SlashDescription *string      `json:"slashDescription"`
 	Slash            *goldenSlash `json:"slash"`
 }
@@ -81,6 +82,10 @@ func goldenSamples(t *testing.T) []goldenSample {
 		{"a component with a defer mode",
 			"{{/*\n  Trigger type: `Message Component`\n  Trigger: `^x:`\n  Defer mode: `Update Message Response`\n*/}}"},
 		{"a context menu entry", "{{/*\n  Trigger type: `User Context Menu`\n  Trigger: `View avatar`\n*/}}"},
+		{"an hourly interval", "{{/*\n  Trigger type: `Hourly interval`\n  Group: `Utility`\n  Interval: `12`\n*/}}"},
+		{"a minute interval", "{{/*\n  Trigger type: `Minute interval`\n  Group: `Utility`\n  Interval: `15`\n*/}}"},
+		{"an Interval line on a command is ignored",
+			"{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Interval: `3`\n*/}}"},
 	}
 	var out []goldenSample
 	for _, s := range sources {
@@ -103,6 +108,11 @@ func goldenOf(t *testing.T, path, source string) goldenHeader {
 		t.Errorf("%s: %v", path, err)
 	}
 	g := goldenHeader{DeferMode: int(ReadDeferMode(source))}
+	if tr, ok := ReadTrigger(source); ok && tr.IntervalTriggered() {
+		if n, ok := ReadInterval(source); ok {
+			g.Interval = &n
+		}
+	}
 	if d, ok := ReadSlashDescription(source); ok {
 		g.SlashDescription = &d
 	}
@@ -143,7 +153,22 @@ func TestHeaderGolden(t *testing.T) {
 		t.Fatal("no commands found: wrong repoRoot?")
 	}
 	got.Samples = goldenSamples(t)
-	for _, c := range slashHeaderErrorCases() {
+	errorCases := slashHeaderErrorCases()
+	for _, c := range []struct{ name, src string }{
+		{"hourly interval without Interval", "{{/*\n  Trigger type: `Hourly interval`\n  Group: `Utility`\n*/}}"},
+		{"minute interval without Interval", "{{/*\n  Trigger type: `Minute interval`\n  Group: `Utility`\n*/}}"},
+		{"interval of zero", "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `0`\n*/}}"},
+		{"interval negative", "{{/*\n  Trigger type: `Minute interval`\n  Interval: `-5`\n*/}}"},
+		{"interval not a number", "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `daily`\n*/}}"},
+		{"hourly interval above 744", "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `745`\n*/}}"},
+		{"minute interval below 5", "{{/*\n  Trigger type: `Minute interval`\n  Interval: `4`\n*/}}"},
+		{"minute interval above 44640", "{{/*\n  Trigger type: `Minute interval`\n  Interval: `44641`\n*/}}"},
+		{"minute interval of whole hours", "{{/*\n  Trigger type: `Minute interval`\n  Interval: `120`\n*/}}"},
+		{"interval fractional", "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `1.5`\n*/}}"},
+	} {
+		errorCases = append(errorCases, struct{ name, src, want string }{c.name, c.src, ""})
+	}
+	for _, c := range errorCases {
 		err := ValidateHeader(c.src)
 		if err == nil {
 			t.Errorf("%s: expected an error", c.name)

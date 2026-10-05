@@ -337,6 +337,7 @@ test("parseHeader reads the defer mode, slash description and slash rows as the 
     assert.deepEqual(
       J({
         deferMode: header.deferMode,
+        interval: header.interval,
         slashDescription: header.slashDescription,
         slash: header.slash,
       }),
@@ -355,6 +356,7 @@ test("parseHeader reads the golden's valid samples (other defer modes, descripti
     assert.deepEqual(
       J({
         deferMode: header.deferMode,
+        interval: header.interval,
         slashDescription: header.slashDescription,
         slash: header.slash,
       }),
@@ -377,6 +379,7 @@ const LABELS = {
     Command: "cmd",
     "Slash Command": "slash_command",
     "Hourly interval": "interval_hours",
+    "Minute interval": "interval_minutes",
     "Message Component": "component",
   },
   group: { None: "0", Utility: "11", "Staff Utility": "12" },
@@ -786,4 +789,149 @@ test("parseHeader reads Defer mode and Slash description lines", () => {
   assert.equal(yagDeploy.parseHeader(PLAIN).deferMode, 0);
   assert.equal(yagDeploy.parseHeader(PLAIN).slashDescription, null);
   assert.equal(yagDeploy.parseHeader(PLAIN).slash, null);
+});
+
+// An interval command's `Interval:` line (hours for Hourly, minutes for Minute: the unit
+// the panel's input shows, customcommands/web.go tmplGetCCInterval).
+const HOURLY = [
+  "{{- /*",
+  "  Trigger type: `Hourly interval`",
+  "  Group: `Utility`",
+  "  Interval: `12`",
+  "*/ -}}",
+].join("\n");
+const MINUTE = HOURLY.replace("Hourly", "Minute").replace("`12`", "`15`");
+const NEW_INTERVAL_FORM = [
+  ["type", "cmd"],
+  ["trigger", ""],
+  ["interaction_defer_mode", "0"],
+  ["time_trigger_interval", "0"],
+  ["responses", "placeholder"],
+  ["GroupID", "11"],
+];
+
+test("parseHeader reads the Interval line for the interval types only", () => {
+  const yagDeploy = loadDeployJs();
+  assert.equal(yagDeploy.parseHeader(HOURLY).interval, 12);
+  assert.equal(yagDeploy.parseHeader(HOURLY).error, null);
+  assert.equal(yagDeploy.parseHeader(MINUTE).interval, 15);
+  assert.equal(yagDeploy.parseHeader(PLAIN).interval, null);
+  // an Interval line on a non-interval command is ignored, not an error
+  const ignored = yagDeploy.parseHeader(PLAIN.replace("*/", "  Interval: `3`\n*/"));
+  assert.equal(ignored.interval, null);
+  assert.equal(ignored.error, null);
+  // an interval type without a usable line is a header error
+  assert.match(
+    yagDeploy.parseHeader(HOURLY.replace("  Interval: `12`\n", "")).error,
+    /^header Interval: a `Hourly interval` trigger needs an `Interval:` line$/
+  );
+  for (const bad of ["0", "-5", "1.5", "daily"]) {
+    assert.equal(
+      yagDeploy.parseHeader(HOURLY.replace("`12`", "`" + bad + "`")).error,
+      "header Interval: `" + bad + "` isn't a positive whole number",
+      bad
+    );
+  }
+});
+
+test("parseHeader enforces the panel's interval bounds: hours 1-744, minutes 5-44640", () => {
+  const yagDeploy = loadDeployJs();
+  const withInterval = (src, n) => yagDeploy.parseHeader(src.replace(/Interval: `\d+`/, "Interval: `" + n + "`"));
+  for (const n of [1, 744]) assert.equal(withInterval(HOURLY, n).error, null, "hourly " + n);
+  for (const n of [5, 44639]) assert.equal(withInterval(MINUTE, n).error, null, "minute " + n);
+  // a whole number of hours in minutes reads back as hourly in the panel: refused
+  for (const n of [60, 44640]) {
+    assert.equal(
+      withInterval(MINUTE, n).error,
+      "header Interval: `" + n + "` minutes is whole hours: use `Hourly interval`"
+    );
+  }
+  assert.equal(withInterval(HOURLY, 745).error, "header Interval: `745` isn't between 1 and 744 hours");
+  assert.equal(withInterval(MINUTE, 4).error, "header Interval: `4` isn't between 5 and 44640 minutes");
+  assert.equal(
+    withInterval(MINUTE, 44641).error,
+    "header Interval: `44641` isn't between 5 and 44640 minutes"
+  );
+  // 4 is fine for hours, 745 fine for minutes: the bounds follow the type
+  assert.equal(withInterval(HOURLY, 4).error, null);
+  assert.equal(withInterval(MINUTE, 745).error, null);
+});
+
+test("applyStructure posts time_trigger_interval for an interval header, not for others", () => {
+  const yagDeploy = loadDeployJs();
+  const get = (out, name) => J(out).filter((e) => e[0] === name).map((e) => e[1]);
+
+  const hourly = yagDeploy.applyStructure(NEW_INTERVAL_FORM, yagDeploy.parseHeader(HOURLY), LABELS, {});
+  assert.deepEqual(get(hourly, "type"), ["interval_hours"]);
+  assert.deepEqual(get(hourly, "time_trigger_interval"), ["12"]);
+  const minute = yagDeploy.applyStructure(NEW_INTERVAL_FORM, yagDeploy.parseHeader(MINUTE), LABELS, {});
+  assert.deepEqual(get(minute, "type"), ["interval_minutes"]);
+  assert.deepEqual(get(minute, "time_trigger_interval"), ["15"]);
+
+  // a form without the field gets it appended; every other trigger type leaves it as is
+  const noField = NEW_INTERVAL_FORM.filter((e) => e[0] !== "time_trigger_interval");
+  assert.deepEqual(
+    get(yagDeploy.applyStructure(noField, yagDeploy.parseHeader(HOURLY), LABELS, {}), "time_trigger_interval"),
+    ["12"]
+  );
+  for (const source of [PLAIN, SLASH_FLAT]) {
+    const out = yagDeploy.applyStructure(NEW_INTERVAL_FORM, yagDeploy.parseHeader(source), LABELS, {});
+    assert.deepEqual(get(out, "time_trigger_interval"), ["0"], source.split("\n")[1]);
+    assert.deepEqual(
+      get(yagDeploy.applyStructure(noField, yagDeploy.parseHeader(source), LABELS, {}), "time_trigger_interval"),
+      []
+    );
+  }
+});
+
+test("structureDiff compares the interval in the header's unit; round trip is clean", () => {
+  const yagDeploy = loadDeployJs();
+  const header = yagDeploy.parseHeader(HOURLY);
+  const live = yagDeploy.liveStructure(NEW_INTERVAL_FORM, LABELS);
+  assert.equal(live.interval, 0);
+  const diff = J(yagDeploy.structureDiff(header, live));
+  assert.deepEqual(diff.interval, { live: 0, header: 12 });
+  assert.deepEqual(Object.keys(diff).sort(), ["interval", "type"]);
+
+  // the panel shows an hourly command's stored minutes / 60, i.e. the header's own number
+  const out = yagDeploy.applyStructure(NEW_INTERVAL_FORM, header, LABELS, {});
+  assert.equal(yagDeploy.structureDiff(header, yagDeploy.liveStructure(out, LABELS)), null);
+
+  // a different live interval reads back as a diff (the check run() makes after the post)
+  const other = J(out).map((e) => (e[0] === "time_trigger_interval" ? [e[0], "24"] : e));
+  assert.deepEqual(
+    J(yagDeploy.structureDiff(header, yagDeploy.liveStructure(other, LABELS))).interval,
+    { live: 24, header: 12 }
+  );
+  assert.equal(
+    yagDeploy.classifyReadBack({
+      readBackSha: "m", manifestSha: "m", alertText: null,
+      structure: yagDeploy.structureDiff(header, yagDeploy.liveStructure(other, LABELS)),
+    }).status,
+    "failed: read-back structure interval"
+  );
+
+  // a non-interval header never diffs on the interval, whatever the live form holds
+  const plain = yagDeploy.parseHeader(PLAIN);
+  const plainLive = yagDeploy.liveStructure(
+    [["type", "cmd"], ["trigger", "rules"], ["GroupID", "12"], ["interaction_defer_mode", "0"],
+      ["time_trigger_interval", "99"]],
+    LABELS
+  );
+  assert.equal(yagDeploy.structureDiff(plain, plainLive), null);
+});
+
+test("a dry run on a new hourly command reports the interval diff and builds the post", async () => {
+  const probe = loadDeployJs();
+  const sha = await probe.sha256hex(probe.normalize(HOURLY));
+  const posts = [];
+  const yagDeploy = loadDeployJs(stubPanel(HOURLY, NEW_INTERVAL_FORM, posts));
+  const manifest = {
+    guild: "1",
+    commands: [{ path: "commands/plumbing/config_sync.gohtml", id: 5, sha, raw: "https://raw.example/c" }],
+  };
+  const res = J(await yagDeploy.run(manifest, { dryRun: true }));
+  assert.equal(res[0].status, "would-update");
+  assert.deepEqual(res[0].structure.interval, { live: 0, header: 12 });
+  assert.equal(posts.length, 0);
 });
