@@ -8,18 +8,18 @@
 */ -}}
 {{define "buildGematriaStrings"}}
   {{$b := .}}
-  {{$L := len ($b.Get "tokens")}}
+  {{$N := len ($b.Get "tokens")}}
   {{$v := "`"}}
   {{$w := "`"}}
-  {{if gt $L 1}}
+  {{if gt $N 1}}
     {{$v = "`[ "}}
     {{$w = " ]`"}}
   {{end}}
   {{$aD := joinStr "" $v (joinStr " " (($b.Get "lengths")).StringSlice) $w}}
-  {{$M := ""}}
-  {{$x := cslice}}{{range $N := seq -1 ($b.Get "depth")}}{{$O := ""}}{{$X := ""}}{{if lt $N 0}}{{$x = $b.Get "values"}}{{$O = joinStr "" $v (joinStr " " $x.StringSlice) $w}}{{else}}{{$i := cslice}}{{range $Y := seq 0 $L}}{{$Z := index ($b.Get "reductions") $Y}}{{if gt (len $Z) $N}}{{$i = $i.Append (index $Z $N)}}{{else}}{{$i = $i.Append (index $x $Y)}}{{end}}{{end}}{{$O = joinStr "" $v (joinStr " " $i.StringSlice) $w}}{{$X = " > "}}{{$x = $i}}{{end}}{{$M = joinStr $X $M $O}}{{end}}{{$b.Set "count" $L}}
+  {{$O := ""}}
+  {{$x := cslice}}{{range $P := seq -1 ($b.Get "depth")}}{{$Q := ""}}{{$Z := ""}}{{if lt $P 0}}{{$x = $b.Get "values"}}{{$Q = joinStr "" $v (joinStr " " $x.StringSlice) $w}}{{else}}{{$i := cslice}}{{range $aa := seq 0 $N}}{{$ab := index ($b.Get "reductions") $aa}}{{if gt (len $ab) $P}}{{$i = $i.Append (index $ab $P)}}{{else}}{{$i = $i.Append (index $x $aa)}}{{end}}{{end}}{{$Q = joinStr "" $v (joinStr " " $i.StringSlice) $w}}{{$Z = " > "}}{{$x = $i}}{{end}}{{$O = joinStr $Z $O $Q}}{{end}}{{$b.Set "count" $N}}
   {{$b.Set "lengthString" $aD}}
-  {{$b.Set "gematriaString" $M}}
+  {{$b.Set "gematriaString" $O}}
 
   {{return $b}}
 {{end}}{{define "reduce"}}
@@ -48,34 +48,34 @@
 	{{return}}
 {{end}}
 
-{{$aa := ((dbGet 0 "Global")).Value}}
-{{$ab := toInt ($aa.Get "Delete Trigger Delay")}}
+{{$ac := ((dbGet 0 "Global")).Value}}
+{{$ad := toInt ($ac.Get "Delete Trigger Delay")}}
 
 {{$h := ((dbGet 0 "Gematria")).Value}}
 {{$z := $h.Get "Values"}}
 {{$o := $h.Get "Tarot Indices"}}
 
-{{$ac := ((dbGet 0 "Commands")).Value}}
-{{$ad := toInt ($ac.Get "embed_exec")}}
+{{$ae := ((dbGet 0 "Commands")).Value}}
+{{$A := toInt ($ae.Get "embed_exec")}}
 
-{{$ae := ((dbGet 0 "Channels")).Value}}
-{{$af := toInt ($ae.Get "YAGPDB")}}
-
-
+{{$af := ((dbGet 0 "Channels")).Value}}
+{{$R := toInt ($af.Get "YAGPDB")}}
 
 
 
 
 
-{{$c := sdict "text" sdict "line" sdict "word" sdict}}{{range $ag, $aG := $c}}{{$ah := sdict "tokens" cslice "lengths" cslice "values" cslice "reductions" cslice "depth" 0}}{{$c.Set $ag $ah}}{{end}}{{$A := 0}}
+
+
+{{$c := sdict "text" sdict "line" sdict "word" sdict}}{{range $ag, $aG := $c}}{{$ah := sdict "tokens" cslice "lengths" cslice "values" cslice "reductions" cslice "depth" 0}}{{$c.Set $ag $ah}}{{end}}{{$B := 0}}
 {{$p := 0}}
 {{$ai := cslice}}
 {{$aj := 0}}
-{{$P := split $g "\n"}}{{range $ak, $Q := $P}}{{$q := 0}}{{$j := 0}}{{$al := cslice}}{{$am := 0}}{{$R := split $Q " "}}{{range $an, $k := $R}}{{$r := 0}}{{$l := 0}}{{$ao := cslice}}{{$ap := 0}}{{$B := ""}}{{if and (ne $ak (sub (len $P) 1)) (eq $an (sub (len $R) 1))}}{{$B = " |"}}{{end}}{{$aq := split $k ""}}{{range $C := $aq}}{{$f := $z.Get $C}}{{if $f}}{{$r = add $r 1}}{{$l = add $l $f}}{{end}}{{end}}{{$ar := sdict "reductionStep" $l "reductions" $ao "depth" $ap "separator" $B}}{{$S := execTemplate "reduce" $ar}}{{$as := sdict "dictionary" ($c.Get "word") "separator" $B "token" $k "length" $r "value" $l "reductions" ($S.Get "reductions") "depth" ($S.Get "depth")}}{{$c.Set "word" (((execTemplate "updateData" $as)).Get "dictionary")}}{{$q = add $q $r}}{{$j = add $j $l}}{{end}}{{$at := sdict "reductionStep" $j "reductions" $al "depth" $am "separator" ""}}{{$T := execTemplate "reduce" $at}}{{$au := sdict "dictionary" ($c.Get "line") "separator" "" "token" $Q "length" $q "value" $j "reductions" ($T.Get "reductions") "depth" ($T.Get "depth")}}{{$c.Set "line" (((execTemplate "updateData" $au)).Get "dictionary")}}{{$A = add $A $q}}{{$p = add $p $j}}{{end}}{{$av := sdict "reductionStep" $p "reductions" $ai "depth" $aj "separator" ""}}
-{{$U := execTemplate "reduce" $av}}
-{{$aw := sdict "dictionary" ($c.Get "text") "separator" "" "token" $g "length" $A "value" $p "reductions" ($U.Get "reductions") "depth" ($U.Get "depth")}}
+{{$S := split $g "\n"}}{{range $ak, $T := $S}}{{$q := 0}}{{$j := 0}}{{$al := cslice}}{{$am := 0}}{{$U := split $T " "}}{{range $an, $k := $U}}{{$r := 0}}{{$l := 0}}{{$ao := cslice}}{{$ap := 0}}{{$C := ""}}{{if and (ne $ak (sub (len $S) 1)) (eq $an (sub (len $U) 1))}}{{$C = " |"}}{{end}}{{$aq := split $k ""}}{{range $D := $aq}}{{$f := $z.Get $D}}{{if $f}}{{$r = add $r 1}}{{$l = add $l $f}}{{end}}{{end}}{{$ar := sdict "reductionStep" $l "reductions" $ao "depth" $ap "separator" $C}}{{$V := execTemplate "reduce" $ar}}{{$as := sdict "dictionary" ($c.Get "word") "separator" $C "token" $k "length" $r "value" $l "reductions" ($V.Get "reductions") "depth" ($V.Get "depth")}}{{$c.Set "word" (((execTemplate "updateData" $as)).Get "dictionary")}}{{$q = add $q $r}}{{$j = add $j $l}}{{end}}{{$at := sdict "reductionStep" $j "reductions" $al "depth" $am "separator" ""}}{{$W := execTemplate "reduce" $at}}{{$au := sdict "dictionary" ($c.Get "line") "separator" "" "token" $T "length" $q "value" $j "reductions" ($W.Get "reductions") "depth" ($W.Get "depth")}}{{$c.Set "line" (((execTemplate "updateData" $au)).Get "dictionary")}}{{$B = add $B $q}}{{$p = add $p $j}}{{end}}{{$av := sdict "reductionStep" $p "reductions" $ai "depth" $aj "separator" ""}}
+{{$X := execTemplate "reduce" $av}}
+{{$aw := sdict "dictionary" ($c.Get "text") "separator" "" "token" $g "length" $B "value" $p "reductions" ($X.Get "reductions") "depth" ($X.Get "depth")}}
 {{$c.Set "text" (((execTemplate "updateData" $aw)).Get "dictionary")}}
 
 {{$m := execTemplate "buildGematriaStrings" ($c.Get "word")}}
-{{$D := execTemplate "buildGematriaStrings" ($c.Get "line")}}
-{{$E := execTemplate "buildGematriaStrings" ($c.Get "text")}}{{$s := $m.Get "count"}}{{$F := $D.Get "count"}}{{$a := cslice}}{{if eq 1 $s}}{{$k := index ((($c.Get "word")).Get "tokens") 0}}{{if eq 1 (len (toRune $k))}}{{$a = $a.Append (sdict "name" "Letter Gematria" "value" ($E.Get "gematriaString"))}}{{$f := $z.Get $k}}{{if $o.HasKey $f}}{{$ax := $o.Get $f}}{{$a = $a.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $ax) "`"))}}{{end}}{{else}}{{$a = $a.Append (sdict "name" "Word Length" "value" ($m.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Word Gematria" "value" ($m.Get "gematriaString"))}}{{end}}{{else}}{{$a = $a.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $s "`"))}}{{$a = $a.Append (sdict "name" "Word Length" "value" ($m.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Word Gematria" "value" ($m.Get "gematriaString"))}}{{if and (gt $F 1) (ne $s $F)}}{{$a = $a.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $F "`"))}}{{$a = $a.Append (sdict "name" "Line Length" "value" ($D.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Line Gematria" "value" ($D.Get "gematriaString"))}}{{end}}{{if gt $s 1}}{{$a = $a.Append (sdict "name" "Total Length" "value" ($E.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Total Gematria" "value" ($E.Get "gematriaString"))}}{{end}}{{end}}{{$ay := $h.Get "RWS Numerals"}}{{$az := $h.Get "Thoth Numerals"}}{{$aA := $h.Get "RWS Names"}}{{$aB := $h.Get "Thoth Names"}}{{$t := cslice}}{{$G := dict}}{{range $C := split $g ""}}{{$f := $z.Get $C}}{{if $o.HasKey $f}}{{$e := $o.Get $f}}{{$n := toInt ($G.Get $e)}}{{if eq $n 0}}{{$t = $t.Append $e}}{{end}}{{$G.Set $e (add 1 $n)}}{{end}}{{end}}{{$V := len $t}}{{$H := cslice}}{{$I := cslice}}{{range $e := $t}}{{$J := ""}}{{$n := $G.Get $e}}{{if gt $n 1}}{{$J = joinStr "" " (" $n ")"}}{{end}}{{$H = $H.Append (joinStr "" "`" ($ay.Get $e) "` - " ($aA.Get $e) $J)}}{{$I = $I.Append (joinStr "" "`" ($az.Get $e) "` - " ($aB.Get $e) $J)}}{{end}}{{$u := joinStr "\n" $H.StringSlice}}{{$K := joinStr "\n" $I.StringSlice}}{{$aC := le $V 11}}{{if and $u $K $aC}}{{$a = $a.Append (sdict "name" "Unique Arcana" "value" (joinStr "" "`" $V "`"))}}{{if eq $u $K}}{{$a = $a.Append (sdict "name" "Major Arcana" "value" $u)}}{{else}}{{$a = $a.Append (sdict "name" "Major Arcana (RWS)" "value" $u)}}{{$a = $a.Append (sdict "name" "Major Arcana (Thoth)" "value" $K)}}{{end}}{{end}}{{if .ExecData.Fields}}{{$a = $a.AppendSlice .ExecData.Fields}}{{end}}{{$W := sdict "AuthorID" .User.ID "ChannelID" (or .ExecData.ChannelID .Channel.ID) "Title" (or .ExecData.Title "Gematria Calculator") "Description" $g "Fields" $a}}{{if .ExecData.Respond}}{{$W.Set "Respond" true}}{{end}}{{execCC $ad $af 0 $W}}{{deleteTrigger $ab}}
+{{$E := execTemplate "buildGematriaStrings" ($c.Get "line")}}
+{{$F := execTemplate "buildGematriaStrings" ($c.Get "text")}}{{$s := $m.Get "count"}}{{$G := $E.Get "count"}}{{$a := cslice}}{{if eq 1 $s}}{{$k := index ((($c.Get "word")).Get "tokens") 0}}{{if eq 1 (len (toRune $k))}}{{$a = $a.Append (sdict "name" "Letter Gematria" "value" ($F.Get "gematriaString"))}}{{$f := $z.Get $k}}{{if $o.HasKey $f}}{{$ax := $o.Get $f}}{{$a = $a.Append (sdict "name" "Letter Number" "value" (joinStr "" "`" (add 1 $ax) "`"))}}{{end}}{{else}}{{$a = $a.Append (sdict "name" "Word Length" "value" ($m.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Word Gematria" "value" ($m.Get "gematriaString"))}}{{end}}{{else}}{{$a = $a.Append (sdict "name" "Word Count" "value" (joinStr "" "`" $s "`"))}}{{$a = $a.Append (sdict "name" "Word Length" "value" ($m.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Word Gematria" "value" ($m.Get "gematriaString"))}}{{if and (gt $G 1) (ne $s $G)}}{{$a = $a.Append (sdict "name" "Line Count" "value" (joinStr "" "`" $G "`"))}}{{$a = $a.Append (sdict "name" "Line Length" "value" ($E.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Line Gematria" "value" ($E.Get "gematriaString"))}}{{end}}{{if gt $s 1}}{{$a = $a.Append (sdict "name" "Total Length" "value" ($F.Get "lengthString"))}}{{$a = $a.Append (sdict "name" "Total Gematria" "value" ($F.Get "gematriaString"))}}{{end}}{{end}}{{$ay := $h.Get "RWS Numerals"}}{{$az := $h.Get "Thoth Numerals"}}{{$aA := $h.Get "RWS Names"}}{{$aB := $h.Get "Thoth Names"}}{{$t := cslice}}{{$H := dict}}{{range $D := split $g ""}}{{$f := $z.Get $D}}{{if $o.HasKey $f}}{{$e := $o.Get $f}}{{$n := toInt ($H.Get $e)}}{{if eq $n 0}}{{$t = $t.Append $e}}{{end}}{{$H.Set $e (add 1 $n)}}{{end}}{{end}}{{$Y := len $t}}{{$I := cslice}}{{$J := cslice}}{{range $e := $t}}{{$K := ""}}{{$n := $H.Get $e}}{{if gt $n 1}}{{$K = joinStr "" " (" $n ")"}}{{end}}{{$I = $I.Append (joinStr "" "`" ($ay.Get $e) "` - " ($aA.Get $e) $K)}}{{$J = $J.Append (joinStr "" "`" ($az.Get $e) "` - " ($aB.Get $e) $K)}}{{end}}{{$u := joinStr "\n" $I.StringSlice}}{{$L := joinStr "\n" $J.StringSlice}}{{$aC := le $Y 11}}{{if and $u $L $aC}}{{$a = $a.Append (sdict "name" "Unique Arcana" "value" (joinStr "" "`" $Y "`"))}}{{if eq $u $L}}{{$a = $a.Append (sdict "name" "Major Arcana" "value" $u)}}{{else}}{{$a = $a.Append (sdict "name" "Major Arcana (RWS)" "value" $u)}}{{$a = $a.Append (sdict "name" "Major Arcana (Thoth)" "value" $L)}}{{end}}{{end}}{{if .ExecData.Fields}}{{$a = $a.AppendSlice .ExecData.Fields}}{{end}}{{$M := sdict "AuthorID" .User.ID "ChannelID" (or .ExecData.ChannelID .Channel.ID) "Title" (or .ExecData.Title "Gematria Calculator") "Description" $g "Fields" $a}}{{if .ExecData.Respond}}{{$M.Set "Respond" true}}{{if le $A 0}}{{sendResponse nil (complexMessage "content" "⚠️ This command isn't set up on this server yet." "ephemeral" true)}}{{else}}{{try}}{{execCC $A $R 0 $M}}{{catch}}{{sendResponse nil (complexMessage "content" "⚠️ This command isn't set up on this server yet." "ephemeral" true)}}{{end}}{{end}}{{else}}{{execCC $A $R 0 $M}}{{end}}{{deleteTrigger $ad}}

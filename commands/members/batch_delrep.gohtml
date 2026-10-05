@@ -30,6 +30,14 @@
 {{ if not $staff }}
     {{ $input = .Message.Content }}
 {{ end }}
+{{/* the /staff path answers through an execCC, and an id that isn't in the Commands dict
+  would leave the interaction unanswered: refuse before the delreps run */}}
+{{ if and $staff (le $embed_exec 0) }}
+    {{ sendResponse nil (complexMessage
+        "content" "⚠️ This command isn't set up on this server yet."
+        "ephemeral" true) }}
+    {{ return }}
+{{ end }}
 {{ $userIDs := reFindAll "\\d{16,}" $input }}
 {{ $count := len $userIDs }}
 {{ $result := "The following users have been purged from the Reputation leaderboard: " }}

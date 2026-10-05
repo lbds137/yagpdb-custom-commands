@@ -269,14 +269,23 @@ gets a failing test first.
   parent can still point into a private thread they aren't in (its name shows). Trigger:
   if private threads carry anything sensitive on a server (check with Lila), add a
   thread-membership check (vendor has no template function for it today: check first).
-- Found 2026-10-04 (unit 3 review), deferred: /color, /hebrew and /gematria execCC
-  embed_exec (or gematria) without checking the Commands id is > 0, so on a server
-  missing the key the interaction gets no answer. Unit 3's roots refuse ephemerally
-  ("This command isn't set up on this server yet."). Trigger: the next change to any
-  of those roots, or a new server without config_sync. Same class (unit 5 review): the
-  /staff handlers execCC embed_exec, inactivity_prune_pick or channel_activity_pager
-  without that check; the error is in the handler (a goroutine), so the router's
-  try/catch can't answer for it. Same trigger, plus the /staff twin retirement.
+- Fixed 2026-10-04 (tests red on the old templates): /color, /hebrew and /gematria
+  execCC'd embed_exec (or gematria) without checking the Commands id is > 0, so on a
+  server missing the key the interaction got no answer. Every slash root now refuses
+  ephemerally ("This command isn't set up on this server yet.") on a missing id AND
+  try/catches the execCC (a stale, disabled or interval id errors in tmplRunCC before
+  the child starts, so the catch can't double-answer); gematria does the same on its
+  Respond path, and a multi-word /hebrew pyramid refuses before its announcement. The
+  /staff handlers staff_roles, inactivity (prune_pick only for prune), channel_activity
+  (now before its cleanup) and batch_delrep refuse up front on the Staff path; rules
+  needs no guard (its Staff path never execCCs). Residuals, deferred:
+  - a /staff handler whose execCC target id is NONZERO but stale/disabled still errors
+    in the handler (a goroutine) with no answer; wrapping its ~15 execCC sites wasn't
+    worth it while config_sync rewrites the ids hourly. Trigger: a stale id seen live,
+    or config_sync stops running on a server.
+  - the multi-word /hebrew pyramid's delayed self-execCCs aren't caught: a stale
+    hebrew_slash id errors after the public announcement. Trigger: same, or the next
+    pyramid change (see the rate-limit item below).
 - Found 2026-10-04 (unit 2 review), deferred: a multi-word `/hebrew pyramid` answers
   "N words follows" and then schedules N delayed runs, but YAGPDB rate-limits delayed runs
   per channel (vendor customcommands/bot.go:48, burst 10, 0.1/s) and DROPS a refused run

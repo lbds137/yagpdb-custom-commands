@@ -422,6 +422,72 @@
         - user_id: 0
           key: Rules
           value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
+'staff_slash inactivity prune: only inactivity_prune_pick missing from Commands refuses up front':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ This command isn't set up on this server yet.
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ This command isn't set up on this server yet.
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"embed_exec":"1","inactivity":"20"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
+'staff_slash inactivity: every execCC id missing from Commands refuses up front, no announcement':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          content: ⚠️ This command isn't set up on this server yet.
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000001
+          content: ⚠️ This command isn't set up on this server yet.
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"inactivity":"20"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'
 'staff_slash rules: no range posts every rule as channel messages, ephemeral ack':
     output: ""
     messages:
@@ -529,3 +595,77 @@
         - user_id: 0
           key: Rules
           value: '{}'
+'staff_slash rules: works without embed_exec in Commands (the /staff path never execCCs it)':
+    output: ""
+    messages:
+        - channel_id: 123456789012345678
+          embeds:
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "Be kind.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Rule #1"
+              }
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "No spam.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Rule #2"
+              }
+            - |-
+              {
+                "author": {
+                  "icon_url": "https://example.com/a.png",
+                  "name": "Test Server",
+                  "url": "https://example.com"
+                },
+                "color": 3447003,
+                "description": "Stay on topic.",
+                "image": {},
+                "thumbnail": {},
+                "title": "Rule #3"
+              }
+        - channel_id: 123456789012345678
+          content: Posted rules 1-3.
+          ephemeral: true
+    interaction_responses:
+        - kind: message
+          ephemeral: true
+          message_id: 1100000000000000002
+          content: Posted rules 1-3.
+    db:
+        - user_id: 0
+          key: Channels
+          value: '{"YAGPDB":999999999}'
+        - user_id: 0
+          key: Commands
+          value: '{"rules":"23"}'
+        - user_id: 0
+          key: Directory
+          value: '{"Exclude Categories":[],"Exclude Channels":[]}'
+        - user_id: 0
+          key: Global
+          value: '{"Default Avatar":"https://example.com/a.png","Delete Response Delay":10,"Delete Trigger Delay":5,"Embed Color":3447003,"Guild Premium Tier":0,"Server URL":"https://example.com"}'
+        - user_id: 0
+          key: Inactivity Prune
+          value: '{"Closing Announcement":"Prune closed.","Message Threshold":"0","Minute Threshold":"100","Next Date":"2026-10-01","Opening Announcement":"Prune opens #{next_date} (last #{previous_date}).","Previous Date":"2026-09-01","Reminder":"Stay active: #{minute_threshold} minutes."}'
+        - user_id: 0
+          key: Roles
+          value: '{"Active":"333333333333333333","Inactive":"444444444444444444","Member":"555555555555555555","Staff":"111111111111111111"}'
+        - user_id: 0
+          key: Rules
+          value: '{"Rule #1":"Be kind.","Rule #2":"No spam.","Rule #3":"Stay on topic."}'

@@ -250,7 +250,23 @@
 }}
 {{ if .ExecData.Respond }}
   {{ $embedData.Set "Respond" true }}
+  {{/* an interaction would go unanswered if embed_exec is missing or its execCC errors
+    (YAGPDB sends no response for a run that errors): refuse ephemerally instead */}}
+  {{ if le $embed_exec 0 }}
+    {{ sendResponse nil (complexMessage
+      "content" "⚠️ This command isn't set up on this server yet."
+      "ephemeral" true) }}
+  {{ else }}
+    {{ try }}
+      {{ execCC $embed_exec $yagpdbChannelID 0 $embedData }}
+    {{ catch }}
+      {{ sendResponse nil (complexMessage
+        "content" "⚠️ This command isn't set up on this server yet."
+        "ephemeral" true) }}
+    {{ end }}
+  {{ end }}
+{{ else }}
+  {{ execCC $embed_exec $yagpdbChannelID 0 $embedData }}
 {{ end }}
-{{ execCC $embed_exec $yagpdbChannelID 0 $embedData }}
 
 {{ deleteTrigger $deleteTriggerDelay }}

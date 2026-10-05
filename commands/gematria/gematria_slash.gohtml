@@ -17,12 +17,26 @@
 {{ if .IsSlashCommand }}
 	{{ $commandsDict := (dbGet 0 "Commands").Value }}
 	{{ $gematria := toInt ($commandsDict.Get "gematria") }}
-	{{ execCC $gematria .Channel.ID 0 (sdict
-		"AuthorID" .User.ID
-		"ChannelID" .Channel.ID
-		"Description" .Options.text
-		"Respond" true
-	) }}
+	{{ if le $gematria 0 }}
+		{{ sendResponse nil (complexMessage
+			"content" "⚠️ This command isn't set up on this server yet."
+			"ephemeral" true) }}
+	{{ else }}
+		{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
+			interaction unanswered: YAGPDB sends no response for a run that errors */}}
+		{{ try }}
+			{{ execCC $gematria .Channel.ID 0 (sdict
+				"AuthorID" .User.ID
+				"ChannelID" .Channel.ID
+				"Description" .Options.text
+				"Respond" true
+			) }}
+		{{ catch }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ This command isn't set up on this server yet."
+				"ephemeral" true) }}
+		{{ end }}
+	{{ end }}
 {{ else }}
 Use /gematria as a slash command with the text to calculate
 {{ end }}

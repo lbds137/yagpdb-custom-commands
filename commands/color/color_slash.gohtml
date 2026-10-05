@@ -214,7 +214,21 @@
 		{{ if or (eq $subcommand "hex") (eq $subcommand "random") }}
 			{{ $execData.Set "AuthorID" .User.ID }}
 		{{ end }}
-		{{ execCC $embed_exec .Channel.ID 0 $execData }}
+		{{ if le $embed_exec 0 }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ This command isn't set up on this server yet."
+				"ephemeral" true) }}
+		{{ else }}
+			{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
+				interaction unanswered: YAGPDB sends no response for a run that errors */}}
+			{{ try }}
+				{{ execCC $embed_exec .Channel.ID 0 $execData }}
+			{{ catch }}
+				{{ sendResponse nil (complexMessage
+					"content" "⚠️ This command isn't set up on this server yet."
+					"ephemeral" true) }}
+			{{ end }}
+		{{ end }}
 	{{ end }}
 {{ else }}
 Use /color as a slash command: contrast, contrasts, random or hex

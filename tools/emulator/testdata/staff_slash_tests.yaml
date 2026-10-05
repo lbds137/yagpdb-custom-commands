@@ -46,6 +46,39 @@ command_map:
   5: "../../../commands/plumbing/bootstrap.gohtml"
 
 tests:
+  # ---- handlers refuse up front when the ids they execCC are missing from Commands
+  # (staff_roles and batch_delrep are present: the router finds them, they refuse)
+  - name: "staff_slash roles: staff_roles without embed_exec in Commands refuses up front, nothing stored"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: roles, options: { roles: "<@&111111111111111111>" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { staff_roles: "2" }
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Staff", value_equals: { } }
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  - name: "staff_slash delrep: batch_delrep without embed_exec in Commands refuses up front, no delrep exec"
+    template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
+    context:
+      interaction: { type: slash, subcommand: delrep, options: { users: "111111111111111111" } }
+    setup_db:
+      - user_id: 0
+        key: "Commands"
+        value: { batch_delrep: "4" }
+    assertions:
+      execs: []
+      deletions: []
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
   # ---- roles
   - name: "staff_slash roles: role IDs are stored (the Staff role rides along), answered publicly"
     template: "../../../commands/members/staff_slash.gohtml"

@@ -35,6 +35,14 @@
 {{ if not $staff }}
     {{ $trigger = .Message.Content }}
 {{ end }}
+{{/* the /staff path answers through execCCs, and an id that isn't in the Commands dict
+  would leave the interaction unanswered: refuse before any side effect */}}
+{{ if and $staff (le $embed_exec 0) }}
+    {{ sendResponse nil (complexMessage
+        "content" "⚠️ This command isn't set up on this server yet."
+        "ephemeral" true) }}
+    {{ return }}
+{{ end }}
 {{ $roleIDs := reFindAll "\\d{16,}" $trigger }}
 {{ if gt (len $roleIDs) 0 }}
     {{/* the text path: the configured Staff role rides along when missing, so a

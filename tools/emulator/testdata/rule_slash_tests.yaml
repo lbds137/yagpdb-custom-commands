@@ -169,3 +169,24 @@ tests:
       exec_data: { probe: true }
     expected:
       output_contains: "Use /rule as a slash command"
+
+  # config_sync is an Interval command: execCC to it errors as YAGPDB's does for a stale id
+  - name: "rule_slash: an embed_exec id YAGPDB cannot execCC is an ephemeral refusal"
+    template: "../../../commands/rules/rule_slash.gohtml"
+    context:
+      interaction: { type: slash, options: { number: 2 } }
+    command_map:
+      123: "../../../commands/plumbing/config_sync.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+
+  - name: "rule_slash: a rules_pager id YAGPDB cannot execCC is an ephemeral browse refusal"
+    template: "../../../commands/rules/rule_slash.gohtml"
+    context:
+      interaction: { type: slash }
+    command_map:
+      130: "../../../commands/plumbing/config_sync.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "The rules browse view isn't set up on this server yet." }

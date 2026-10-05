@@ -45,6 +45,17 @@
 {{ $db := toInt ($commandsDict.Get "db_slash") }}
 {{ $prunePick := toInt ($commandsDict.Get "inactivity_prune_pick") }}
 
+{{/* the /staff path answers through execCCs (embed_exec for every action,
+  inactivity_prune_pick for prune only; db_slash is the text path's only), and an id that
+  isn't in the Commands dict would leave the interaction unanswered: refuse before any
+  side effect */}}
+{{ if and $staff (or (le $embed_exec 0) (and (eq $action "prune") (le $prunePick 0))) }}
+    {{ sendResponse nil (complexMessage
+        "content" "⚠️ This command isn't set up on this server yet."
+        "ephemeral" true) }}
+    {{ return }}
+{{ end }}
+
 {{ $rolesDict := (dbGet 0 "Roles").Value }}
 
 {{ $channelsDict := (dbGet 0 "Channels").Value }}

@@ -44,12 +44,20 @@
 				{{ if eq (len $rulesDict) 1 }}
 					{{ $title = "Rules" }}
 				{{ end }}
-				{{ execCC $embed_exec .Channel.ID 0 (sdict
-					"ChannelID" .Channel.ID
-					"Title" $title
-					"Description" ($rulesDict.Get $key)
-					"Respond" true
-				) }}
+				{{/* an execCC error (a stale id, a disabled handler) would otherwise leave
+					the interaction unanswered: YAGPDB sends no response for a run that errors */}}
+				{{ try }}
+					{{ execCC $embed_exec .Channel.ID 0 (sdict
+						"ChannelID" .Channel.ID
+						"Title" $title
+						"Description" ($rulesDict.Get $key)
+						"Respond" true
+					) }}
+				{{ catch }}
+					{{ sendResponse nil (complexMessage
+						"content" "⚠️ This command isn't set up on this server yet."
+						"ephemeral" true) }}
+				{{ end }}
 			{{ else }}
 				{{ sendResponse nil (complexMessage
 					"content" "⚠️ This command isn't set up on this server yet."
@@ -67,7 +75,13 @@
 	{{ else if gt $rules_pager 0 }}
 		{{/* the browse view: rules_pager owns the message. An id of 0 means it isn't in
 			the Commands dict yet (config_sync hasn't picked it up) */}}
-		{{ execCC $rules_pager .Channel.ID 0 (sdict "Page" 1) }}
+		{{ try }}
+			{{ execCC $rules_pager .Channel.ID 0 (sdict "Page" 1) }}
+		{{ catch }}
+			{{ sendResponse nil (complexMessage
+				"content" "⚠️ The rules browse view isn't set up on this server yet."
+				"ephemeral" true) }}
+		{{ end }}
 	{{ else }}
 		{{ sendResponse nil (complexMessage
 			"content" "⚠️ The rules browse view isn't set up on this server yet."
