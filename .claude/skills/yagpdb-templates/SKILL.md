@@ -69,8 +69,9 @@ retired/          - Commands no longer deployed (see retired/README.md)
 
 - **embed_exec** - Universal embed creation
 - **db** - Database operations (get/set/add/remove/delete/dump)
-- **message_link** - Message reference handling, called by log_user (commands/plumbing/,
-  unmanaged: never deployed, the live copy holds the real watched ID)
+- **message_link** - Message reference handling, called by log_user (both in
+  commands/plumbing/; log_user is unmanaged: never deployed, its live copy holds the real
+  watched ID; message_link deploys normally)
 
 ### Limits
 

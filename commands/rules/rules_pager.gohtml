@@ -22,7 +22,6 @@
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
 {{ $serverURL := or ($globalDict.Get "Server URL") "" }}
-{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
 
 {{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
 
@@ -44,7 +43,8 @@
 
 {{/* the guild author, the same block rules.gohtml puts on every rule embed */}}
 {{ $gIconExtension := ".png" }}
-{{ if ge $guildPremiumTier 1 }}
+{{/* a_ marks an animated icon (YAGPDB's GuildSet.IconURL does the same) */}}
+{{ if hasPrefix .Guild.Icon "a_" }}
     {{ $gIconExtension = ".gif" }}
 {{ end }}
 {{ $gIcon := "" }}

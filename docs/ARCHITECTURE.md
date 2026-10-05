@@ -51,8 +51,9 @@ Core services are implemented as reusable custom commands:
 
 - **`embed_exec`**: Universal embed creation service
 - **`db`**: Database operations service
-- **`message_link`**: Message linking service, called by log_user (commands/plumbing/,
-  unmanaged: never deployed, the live copy holds the real watched ID)
+- **`message_link`**: Message linking service, called by log_user (both in
+  commands/plumbing/; log_user is unmanaged: never deployed, its live copy holds the real
+  watched ID; message_link deploys normally)
 
 ## Data Flow Architecture
 

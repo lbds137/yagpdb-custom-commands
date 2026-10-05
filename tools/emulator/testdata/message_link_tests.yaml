@@ -55,6 +55,56 @@ tests:
         - { channel_id: 123456789012345678, embed_title: "Message Link", content_contains: "quoted a message:\nlook" }
     snapshot: true
 
+  # the footer's guild icon: .gif only for an animated (a_) hash; no icon gives the
+  # Default Avatar (the old template built `.../icons/<id>/.png`)
+  - name: "message_link: an animated (a_) guild icon is a gif in the footer"
+    template: "../../../commands/plumbing/message_link.gohtml"
+    context:
+      guild: { icon: "a_abc123" }
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: "https://cdn.discordapp.com/icons/111222333444555666/a_abc123.gif" }
+
+  - name: "message_link: a plain guild icon stays a png even with Guild Premium Tier 1"
+    template: "../../../commands/plumbing/message_link.gohtml"
+    setup_db:
+      - user_id: 0
+        key: "Global"
+        value: { Command Prefix: "-", Embed Color: 5793266, Delete Trigger Delay: 5, Default Avatar: "https://example.com/a.png", Guild Premium Tier: 1 }
+    context:
+      guild: { icon: "abc123" }
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: "https://cdn.discordapp.com/icons/111222333444555666/abc123.png" }
+
+  - name: "message_link: a guild with no icon shows the Default Avatar in the footer"
+    template: "../../../commands/plumbing/message_link.gohtml"
+    context:
+      message_content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+      exec_data:
+        Message:
+          Content: "https://discord.com/channels/111222333444555666/900000000000000002/700000000000000001"
+          GuildID: 111222333444555666
+          ChannelID: 123456789012345678
+          Author: { ID: 987654321098765432, String: "Linker#0001" }
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, embed_contains: '"icon_url": "https://example.com/a.png"' }
+
   - name: "message_link: shows the author's nickname"
     template: "../../../commands/plumbing/message_link.gohtml"
     context:

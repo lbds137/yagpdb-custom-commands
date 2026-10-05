@@ -291,16 +291,16 @@ gets a failing test first.
   pass `"Color" $color` (avatar embeds adopt the viewed person's color) or delete the
   loop (invoker-colored, today's live behavior). The context-menu twin avatar_menu
   shipped without the loop (invoker-colored).
-- Found 2026-10-04 (review of the guild-icon fix), deferred: message_link.gohtml (~:213,
-  unmanaged) builds the same `.../icons/<id>/.png` URL with no `.Guild.Icon` guard.
-  The fix is the repo copy plus Lila's manual paste of only that branch into the live
-  copy (it holds the real watched ID). Trigger: her go-ahead for that paste.
-- Found 2026-10-04 (same review), deferred: avatar_viewer, message_link, embed_exec,
-  rules and rules_pager pick `.gif` by Global "Guild Premium Tier", but Discord marks
-  an animated icon by its hash's `a_` prefix (vendor dstate GuildSet.IconURL,
-  interface.go:158-166): a boosted server with a static icon gets a converted .gif,
-  an unboosted animated one a .png. Fix: `hasPrefix .Guild.Icon "a_"` at each site.
-  Trigger: the next change to any of them.
+- Fixed 2026-10-04 (Lila's yes; tests red on the old templates): message_link built the
+  same `.../icons/<id>/.png` URL with no `.Guild.Icon` guard (now the Default Avatar).
+  message_link is managed (panel.json main 32, lotv 11, rose 4) and deploys normally;
+  the "unmanaged" note in its docs meant its caller, log_user (docs reworded).
+- Fixed 2026-10-04 (same review): avatar_viewer, message_link, embed_exec, rules and
+  rules_pager picked `.gif` by Global "Guild Premium Tier"; they now use the hash's `a_`
+  prefix, as YAGPDB's GuildSet.IconURL does (vendor dstate interface.go:158-166). Global
+  "Guild Premium Tier" has no reader left; bootstrap still writes its default (inert).
+  Deferred, trigger: the next bootstrap change drops that default (and the key
+  from docs/ARCHITECTURE.md and API_REFERENCE.md).
 - Fixed 2026-10-04 (tests pin it; the emulator gained a `guild.icon` fixture). Found
   2026-10-01 (same grounding): avatar_viewer's guild-icon branch builds
   `https://cdn.discordapp.com/icons/<id>/.png` — a 404 — when the guild has no icon:
