@@ -416,7 +416,8 @@ Out of scope: `Staff.Roles` (a list; `/staff roles` owns it), Directory's exclud
 - `roles`/`channels` with options: validate all first, then set the given keys in one
   dbGet + dbSet of the dict; reply with the section as saved, the changed keys marked.
   No options: the section as it is (same as `view`'s half).
-- Refused (whole run, nothing written): @everyone (role ID = guild ID) and a managed role
+- Refused (whole run, nothing written): `staff` unless the invoker has Administrator
+  (Lila 2026-10-04; the owner counts), @everyone (role ID = guild ID) and a managed role
   (a bot's or integration's: no one can grant it); a channel that isn't a text or
   announcement channel (types 0, 5: helpers and logs post there).
 - IDs stored as strings, as bootstrap writes them; readers `toInt` them.

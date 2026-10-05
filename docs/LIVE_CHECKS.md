@@ -84,7 +84,10 @@ has, so re-picking the current values is the safe way to test the save path.
    channel" refusal.
 7. `/setup channels mod_log:<the current mod log channel>`: Channels field, Mod log
    marked "(updated)".
-8. Only if you want to change one for real: pick the new role or channel, then check the
+8. From a staff account WITHOUT Administrator (if you have one): `/setup roles
+   staff:<any role>`: a private "only an Administrator can change the staff role"
+   refusal; `/setup roles bump:<the current bump role>` still works.
+9. Only if you want to change one for real: pick the new role or channel, then check the
    command that uses it (the table in docs/design/slash-fleet.md says which).
 
 ### Report back
