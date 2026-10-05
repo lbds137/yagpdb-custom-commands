@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -47,7 +48,8 @@ Batch and check flags:
     -src <dir>   Tree to minify (default commands)
     -dst <dir>   Where the copies go (batch writes there, check reads; required);
                  mirrors src's layout
-    -over <n>    Only files over n runes (0 = every file)
+    -over <n>    Only files over n by the panel's count: runes plus newlines, since the
+                 panel counts each newline twice (0 = every file)
 
 Prove flags:
     -commands <dir>  Command tree (default commands)
@@ -91,14 +93,14 @@ func minifyFile(args []string) {
 }
 
 // batch handles: yagmin batch -src DIR -dst DIR [-over N]. Every .gohtml under src
-// whose rune count is over the threshold is minified into dst under the same
+// whose panel count (panelCount) is over the threshold is minified into dst under the same
 // relative path. Batch never deletes anything; files that fall under the threshold
 // keep their stale copy until someone removes it.
 func batch(args []string) {
 	fs := flag.NewFlagSet("batch", flag.ExitOnError)
 	src := fs.String("src", "commands", "Tree to minify")
 	dst := fs.String("dst", "", "Where to write the minified copies (required)")
-	over := fs.Int("over", 0, "Only files over this many runes (0 = every file)")
+	over := fs.Int("over", 0, "Only files over this panel count: runes plus newlines (0 = every file)")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
@@ -142,7 +144,7 @@ func check(args []string) {
 	fs := flag.NewFlagSet("check", flag.ExitOnError)
 	src := fs.String("src", "commands", "Tree to minify")
 	dst := fs.String("dst", "", "Tree of copies to check (required)")
-	over := fs.Int("over", 0, "Only files over this many runes (0 = every file)")
+	over := fs.Int("over", 0, "Only files over this panel count: runes plus newlines (0 = every file)")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
@@ -222,7 +224,7 @@ func eachMinified(src string, over int,
 		if err != nil {
 			return err
 		}
-		if over > 0 && utf8.RuneCount(source) <= over {
+		if over > 0 && panelCount(source) <= over {
 			continue
 		}
 		minified, err := minify(filepath.Base(path), string(source))
@@ -238,6 +240,14 @@ func eachMinified(src string, over int,
 		}
 	}
 	return nil
+}
+
+// panelCount is the size the YAGPDB panel checks against its cap: the runes of the
+// CRLF-normalized code plus its newline count (the panel counts every newline twice;
+// docs/FUTURE_IMPROVEMENTS.md, "Emulator Enhancements", first bullet).
+func panelCount(source []byte) int {
+	normalized := bytes.ReplaceAll(source, []byte("\r\n"), []byte("\n"))
+	return utf8.RuneCount(normalized) + bytes.Count(normalized, []byte("\n"))
 }
 
 // commandFiles lists the .gohtml files under root, sorted.

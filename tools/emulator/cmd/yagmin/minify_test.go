@@ -468,6 +468,52 @@ func TestBatchOnlyOverThreshold(t *testing.T) {
 	}
 }
 
+func TestPanelCountCountsNewlinesTwice(t *testing.T) {
+	// 7 runes in LF form + 2 newlines = 9; CRLF counts the same as LF
+	if got := panelCount([]byte("ab\ncd\ne")); got != 9 {
+		t.Errorf("panelCount(LF) = %d, want 9", got)
+	}
+	if got := panelCount([]byte("ab\r\ncd\r\ne")); got != 9 {
+		t.Errorf("panelCount(CRLF) = %d, want 9", got)
+	}
+	// runes, not bytes
+	if got := panelCount([]byte("אב")); got != 2 {
+		t.Errorf("panelCount(two Hebrew letters) = %d, want 2", got)
+	}
+}
+
+func TestBatchThresholdIsPanelCount(t *testing.T) {
+	srcDir := t.TempDir()
+	dst := t.TempDir()
+	// 20 runes with 10 newlines: 20 runes is not over 25, the panel count of 30 is
+	body := strings.Repeat("a\n", 10)
+	if utf8.RuneCountInString(body) > 25 || panelCount([]byte(body)) <= 25 {
+		t.Fatalf("bad fixture: %d runes, panel count %d", utf8.RuneCountInString(body),
+			panelCount([]byte(body)))
+	}
+	for rel, content := range map[string]string{
+		"a/lines.gohtml": body,
+		"a/flat.gohtml":  strings.Repeat("a", 20),
+	} {
+		path := filepath.Join(srcDir, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := batchRun(srcDir, dst, 25); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dst, "a/lines.gohtml")); err != nil {
+		t.Errorf("under the threshold in runes but over by panel count, should be minified: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dst, "a/flat.gohtml")); !os.IsNotExist(err) {
+		t.Errorf("a file under the threshold by panel count should be skipped, got %v", err)
+	}
+}
+
 func TestIsAllowedClassifiesDifferences(t *testing.T) {
 	cases := []struct {
 		normal, minified string
