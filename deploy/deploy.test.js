@@ -304,6 +304,85 @@ test("classifyReadBack: read-back sha decides success, an alert is only a note",
   );
 });
 
+// The panel's cp_main.html renders alerts as `showAlerts("{{json .Alerts}}")`; html/template
+// escapes the JSON's quotes inside the JS string (backslash-u0022). A fake page: just the
+// two selectors findErrorAlert/panelDangerMessages use.
+const BS = String.fromCharCode(92);
+function showAlertsScript(alerts, quoteEscape = BS + "u0022") {
+  const body = JSON.stringify(alerts).replace(/\\/g, BS + BS).replace(/"/g, quoteEscape);
+  return "$(function(){ showAlerts(" + String.fromCharCode(34) + body + String.fromCharCode(34) + "); });";
+}
+function fakePage(scripts, alertDivText) {
+  return {
+    querySelectorAll: (sel) => (sel === "script" ? scripts.map((t) => ({ textContent: t })) : []),
+    querySelector: () => (alertDivText ? { textContent: alertDivText } : null),
+  };
+}
+const DANGER_MESSAGE = "Slash command description must be between 1 and 100 characters";
+const DANGER_SCRIPT = showAlertsScript([{ Style: "danger", Message: DANGER_MESSAGE }]);
+const SUCCESS_SCRIPT = showAlertsScript([{ Style: "success", Message: "Success! Edited command" }]);
+
+test("panelDangerMessages reads the showAlerts argument: danger messages only", () => {
+  const yagDeploy = loadDeployJs();
+  assert.deepEqual(
+    Array.from(yagDeploy.panelDangerMessages(fakePage([DANGER_SCRIPT]))),
+    [DANGER_MESSAGE]
+  );
+  // a success-only page, an empty alert list and an unrelated script have none
+  assert.deepEqual(Array.from(yagDeploy.panelDangerMessages(fakePage([SUCCESS_SCRIPT]))), []);
+  assert.deepEqual(
+    Array.from(yagDeploy.panelDangerMessages(fakePage([showAlertsScript(null)]))),
+    []
+  );
+  // the older escape form (backslash-x22) reads the same
+  assert.deepEqual(
+    Array.from(
+      yagDeploy.panelDangerMessages(
+        fakePage([showAlertsScript([{ Style: "danger", Message: DANGER_MESSAGE }], BS + "x22")])
+      )
+    ),
+    [DANGER_MESSAGE]
+  );
+  assert.deepEqual(Array.from(yagDeploy.panelDangerMessages(fakePage(["var x = 1;"]))), []);
+  // mixed: only the danger one, even when a quote and a backslash escape are inside it
+  const tricky = 'bad "" ' + BS + " end";
+  const mixed = showAlertsScript([
+    { Style: "success", Message: "ok" },
+    { Style: "danger", Message: tricky },
+  ]);
+  assert.deepEqual(Array.from(yagDeploy.panelDangerMessages(fakePage([mixed]))), [tricky]);
+});
+
+test("findErrorAlert: showAlerts danger message and the existing alert div, success ignored", () => {
+  const yagDeploy = loadDeployJs();
+  assert.equal(yagDeploy.findErrorAlert(fakePage([DANGER_SCRIPT])), DANGER_MESSAGE);
+  assert.equal(yagDeploy.findErrorAlert(fakePage([SUCCESS_SCRIPT])), null);
+  assert.equal(yagDeploy.findErrorAlert(fakePage([], " Site notice ")), "Site notice");
+  assert.equal(
+    yagDeploy.findErrorAlert(fakePage([DANGER_SCRIPT], "Site notice")),
+    DANGER_MESSAGE + "; Site notice"
+  );
+});
+
+test("classifyReadBack puts the panel's danger message in a failed status only", () => {
+  const yagDeploy = loadDeployJs();
+  const failed = yagDeploy.classifyReadBack({
+    readBackSha: "stale",
+    manifestSha: "m",
+    alertText: DANGER_MESSAGE,
+    panelMessage: DANGER_MESSAGE,
+  });
+  assert.equal(failed.status, "failed: read-back mismatch (panel: " + DANGER_MESSAGE + ")");
+  assert.equal(failed.note, DANGER_MESSAGE);
+  const ok = yagDeploy.classifyReadBack({
+    readBackSha: "m",
+    manifestSha: "m",
+    alertText: null,
+    panelMessage: "",
+  });
+  assert.equal(ok.status, "updated");
+});
+
 // ---------------------------------------------------------------------------------------
 // Structure: header parsing parity with the emulator, and the pure form helpers.
 // deploy.js's return values come from the vm sandbox's Realm, so they go through J() before
@@ -406,6 +485,7 @@ const SLASH_FLAT = [
   "  Trigger type: `Slash Command`",
   "  Trigger: `probe`",
   "  Group: `Staff Utility`",
+  "  Slash description: `Probe a member`",
   "  Slash option: `who user! a member`",
   "  Slash option: `note string a note`",
   "*/ -}}",
@@ -509,8 +589,7 @@ test("applyStructure writes top-level rows when the header has no subcommands", 
   assert.deepEqual(get("slash_options.0.required"), ["on"]);
   assert.deepEqual(get("slash_options.1.name"), ["note"]);
   assert.deepEqual(get("slash_options.1.required"), []);
-  // No Slash description line: the live description is left untouched.
-  assert.deepEqual(get("slash_command_description"), ["Old description"]);
+  assert.deepEqual(get("slash_command_description"), ["Probe a member"]);
 });
 
 test("applyStructure keeps a non-slash command's slash_* entries", () => {

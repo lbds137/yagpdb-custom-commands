@@ -410,7 +410,14 @@
       try {
         var def = readSlashCommand(source, trigger.text, deferMode, headerLine("Slash description", header));
         // Only a header naming a panel group is a deployable command (trigger.go ValidateHeader).
-        if (headerLine("Group", header) !== null) validateDeployableSlashDef(def);
+        if (headerLine("Group", header) !== null) {
+          validateDeployableSlashDef(def);
+          if (headerLine("Slash description", header) === null) {
+            throw new Error(
+              "Slash description: a Slash Command needs a `Slash description:` line (1-100 characters)"
+            );
+          }
+        }
       } catch (err) {
         return "header: " + err.message;
       }
@@ -769,10 +776,47 @@
   // The panel shows site-wide notice banners, so an `.alert-danger`/`.alert.alert-error` on
   // a page is not by itself evidence that a save failed -- it's attached as `note`, and
   // success is always decided by the read-back (classifyReadBack), never by this alone.
+  //
+  // The panel renders "danger" and "success" alerts only through a script call,
+  // `showAlerts("<json>")` (cp_main.html: `{{json .Alerts}}` inside a JS string, so html/
+  // template escapes each quote as backslash-u0022, or backslash-x22), never as `.alert`
+  // divs. panelDangerMessages reads those; findErrorAlert returns them joined with the
+  // div's text, if any.
+  function unescapeJsString(s) {
+    return s.replace(/\\(?:u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([\s\S]))/g, (m, u, x, c) => {
+      if (u || x) return String.fromCharCode(parseInt(u || x, 16));
+      const simple = { n: "\n", r: "\r", t: "\t", b: "\b", f: "\f", v: "\v", "0": "\0" };
+      return Object.prototype.hasOwnProperty.call(simple, c) ? simple[c] : c;
+    });
+  }
+
+  function panelDangerMessages(doc) {
+    const messages = [];
+    const re = /showAlerts\(\s*"((?:[^"\\]|\\[\s\S])*)"\s*\)/g;
+    for (const script of Array.from(doc.querySelectorAll("script"))) {
+      const text = script.textContent || "";
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        let alerts;
+        try {
+          alerts = JSON.parse(unescapeJsString(m[1]));
+        } catch (err) {
+          continue;
+        }
+        if (!Array.isArray(alerts)) continue;
+        for (const alert of alerts) {
+          if (alert && alert.Style === "danger" && alert.Message) messages.push(String(alert.Message));
+        }
+      }
+    }
+    return messages;
+  }
+
   function findErrorAlert(doc) {
+    const parts = panelDangerMessages(doc);
     const el = doc.querySelector(".alert-danger, .alert.alert-error");
-    if (!el) return null;
-    return (el.textContent || "").trim().slice(0, 200);
+    if (el) parts.push((el.textContent || "").trim());
+    return parts.length > 0 ? parts.join("; ").slice(0, 200) : null;
   }
 
   async function fetchEditPage(guild, id) {
@@ -836,15 +880,26 @@
   // alert banners are site-wide notices, not failure signals): the code hash matches, the
   // header's structure matches, and is_enabled is what was asked. An alert (if any) is
   // surfaced as `note` for a human to see either way.
-  function classifyReadBack({ readBackSha, manifestSha, alertText, structure, enabled, wantEnabled }) {
+  // panelMessage (optional): the panel's own danger message(s) from the save response,
+  // appended to a failed status so the reason shows without a hand capture.
+  function classifyReadBack({
+    readBackSha, manifestSha, alertText, panelMessage, structure, enabled, wantEnabled,
+  }) {
     const note = alertText || null;
-    if (readBackSha !== manifestSha) return { status: "failed: read-back mismatch", note };
+    const why = panelMessage ? " (panel: " + panelMessage + ")" : "";
+    if (readBackSha !== manifestSha) return { status: "failed: read-back mismatch" + why, note };
     if (structure) {
-      return { status: "failed: read-back structure " + Object.keys(structure).join(","), note };
+      return {
+        status: "failed: read-back structure " + Object.keys(structure).join(",") + why,
+        note,
+      };
     }
     if (wantEnabled === true || wantEnabled === false) {
       if (enabled !== wantEnabled) {
-        return { status: "failed: read-back enabled is " + enabled + ", wanted " + wantEnabled, note };
+        return {
+          status: "failed: read-back enabled is " + enabled + ", wanted " + wantEnabled + why,
+          note,
+        };
       }
     }
     return { status: "updated", note };
@@ -986,6 +1041,7 @@
 
         const { doc: postDoc } = await postForm(form.getAttribute("action"), newEntries);
         const alertText = findErrorAlert(postDoc);
+        const panelMessage = panelDangerMessages(postDoc).join("; ").slice(0, 200);
 
         // ALWAYS re-fetch and check, regardless of whether an alert matched: the panel shows
         // site-wide notice banners too, so an alert on the page is not evidence of failure
@@ -1005,6 +1061,7 @@
           readBackSha,
           manifestSha,
           alertText,
+          panelMessage,
           structure: readBackForm
             ? structureDiff(header, liveStructure(readEntries, readLabels))
             : { form: null },
@@ -1185,6 +1242,8 @@
     applyStructure,
     decide,
     classifyReadBack,
+    findErrorAlert,
+    panelDangerMessages,
     checkOptions,
     groupIdsFromLinks,
     newCommandId,

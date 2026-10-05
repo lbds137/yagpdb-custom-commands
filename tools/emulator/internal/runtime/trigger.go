@@ -172,6 +172,12 @@ func ValidateHeader(source string) error {
 		// either shape (testdata/templates/slash_probe.gohtml uses *_menu types).
 		if _, deployable := headerValue(headerGroup, source); err == nil && deployable {
 			err = validateDeployableSlashDef(def)
+			// A new slash command with no description is refused by the panel
+			// (customcommands.go:649-651), so a deployable one must carry the line.
+			if _, has := ReadSlashDescription(source); err == nil && !has {
+				err = fmt.Errorf("Slash description: a Slash Command needs a `Slash description:` " +
+					"line (1-100 characters)")
+			}
 		}
 		if err != nil {
 			return fmt.Errorf("header: %w", err)
