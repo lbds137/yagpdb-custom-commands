@@ -659,7 +659,17 @@ gets a failing test first.
   would fold it into the role). Main's config_sync is panel id 88. An interval command
   runs only with a context channel set: without one (or once that channel is deleted)
   YAGPDB neither runs nor reschedules it, silently (handle_timed.go:165-172). Part 2
-  (`/setup`) stays open, with the slash work.
+  shipped 2026-10-04: `/setup` (setup_slash, main 113, rose 35; design: slash-fleet.md,
+  "config_sync part 2: /setup") sets the five single-ID roles and two channels with
+  slash pickers. Live check pending (docs/LIVE_CHECKS.md).
+- Lila's call (review of /setup, 2026-10-04): anyone in the Staff Utility group can
+  repoint Roles `Staff` with `/setup roles staff:` to any non-managed role, and 16
+  in-template staff checks read it (some in Utility-group commands: dismiss, prompt,
+  hugemoji), so a broad role opens those checks to everyone in it. Not new: staff could
+  already do it through /edit and /db; the picker makes it easier. Options: leave it;
+  limit `staff` to members with Manage Server/Administrator (getTargetPermissionsIn); or
+  refuse a role above the invoker's highest role. Also unchecked: a staff role above the
+  bot's own role (hiatus then can't remove it). Trigger: her decision.
 - Deferred (trigger: Lure of the Void is used again): lotv has no config_sync (no panel
   id in panel.json, so it isn't deployed there and the generated lotv branch is unused),
   and its bootstrap no longer writes embed_exec/db. Revive it with a config_sync created

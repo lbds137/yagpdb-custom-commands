@@ -47,6 +47,7 @@ check where it renders, for /hebrew and /gematria (unit 2).
 | `/unhiatus` | Utility | none (unhiatus) |
 | `/staff` | Staff Utility | roles, inactivity, activity, rules, bump_reset, delrep, bootstrap (a router: unit 5) |
 | `/pointer` | Utility | none (message_pointer; out of /staff, Lila 2026-10-04) |
+| `/setup` | Staff Utility | view, roles, channels (new: config_sync part 2) |
 
 Existing: /db, /edit, /prompt, /role_ping. Main (premium): 13 slash CCs of 50.
 Free-tier top 10 (for a free server; lotv turned out to be premium, 2026-10-04): /color,
@@ -383,3 +384,39 @@ ephemeral refusal from the root. Slash description: `Post a pointer to a message
   failed text-path send leaves no reply. The inactivity ping can land before its
   announcement embed (embed_exec runs in a goroutine); the text path has the same race,
   and the test's message order pins only the emulator's synchronous execCC.
+
+## config_sync part 2: /setup (2026-10-04)
+
+Part 1 (FUTURE_IMPROVEMENTS.md, "DECIDED (Lila 2026-09-27, both parts") made the
+`Commands` dict generated. Part 2 is the rest of that decision: role and channel IDs set
+with Discord's pickers instead of typed into `/db` or `/edit`. A slash `role` or
+`channel` option IS Discord's picker, so `/setup` needs no component handler.
+
+Scope, measured (git grep of `.Get "` reads in commands/, 2026-10-04): the single-ID
+keys the commands read.
+
+| Option | Stored as | Read by |
+|--------|-----------|---------|
+| `roles.staff` | Roles `Staff` | 16 reads |
+| `roles.member` | Roles `Member` | inactivity (start/end ping) |
+| `roles.active` | Roles `Active` | inactivity_prune_pick |
+| `roles.inactive` | Roles `Inactive` | inactivity (remind ping), inactivity_prune_pick |
+| `roles.bump` | Roles `Bump` | bump_remind |
+| `channels.bot` | Channels `YAGPDB` | 27 reads: the channel execCC runs helpers in |
+| `channels.mod_log` | Channels `Mod Log` | hiatus, unhiatus |
+
+Out of scope: `Staff.Roles` (a list; `/staff roles` owns it), Directory's exclude lists
+(category and channel NAMES, not IDs), Global's non-ID settings. Unsetting a key stays
+`/edit` (a slash picker can't send "none").
+
+- `commands/plumbing/setup_slash.gohtml`, Slash Command `setup`, Staff Utility, Defer
+  `None`. Subcommands: `view`, `roles` (the five role options, all optional), `channels`
+  (the two channel options, all optional). Every reply is ephemeral (settings, design
+  language).
+- `roles`/`channels` with options: validate all first, then set the given keys in one
+  dbGet + dbSet of the dict; reply with the section as saved, the changed keys marked.
+  No options: the section as it is (same as `view`'s half).
+- Refused (whole run, nothing written): @everyone (role ID = guild ID) and a managed role
+  (a bot's or integration's: no one can grant it); a channel that isn't a text or
+  announcement channel (types 0, 5: helpers and logs post there).
+- IDs stored as strings, as bootstrap writes them; readers `toInt` them.

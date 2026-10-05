@@ -46,6 +46,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     user: { id: 1, roles: [111] }
     guild: { roles: [{ id: 111, name: "Staff", color: 3447003, position: 2 }] }  # if set, unknown roles are nil/errors
     # guild.bot_mention_everyone: false -> only roles with mentionable: true ping, never @everyone/@here
+    # guild.roles entries also take managed: true (a bot's or integration's role: .Managed)
     # guild.channels: [{ id: 9, name: "staff-log" }]: if set, channel arguments accept only these
     # (and the test's channel), by ID or name; else any ID, with a [channel] warning.
     # A channel also takes type (0 text, 2 voice, 4 category, 5 announcement, 15 forum),

@@ -64,3 +64,28 @@ Skip (it rewrites the server config).
 Which steps passed, and anything slow or odd. After a pass: the old text commands'
 triggers get switched to None (not disabled: /staff calls them), and the text
 `message_pointer` is disabled on main.
+
+## config_sync part 2: /setup (main 113, rose 35)
+
+Server: Gay Night House, as a staff member. Every reply is private ("Only you can see
+this"). Nothing here changes a setting unless you pick the role or channel it already
+has, so re-picking the current values is the safe way to test the save path.
+
+1. `/setup view`: a "Server setup" embed with a Roles field (Staff, Member, Active,
+   Inactive, Bump) and a Channels field (Bot, Mod log), each a mention or "not set".
+   Note anything shown "not set" that you expected to be set.
+2. `/setup roles` with no options: the Roles field only, no "(updated)" marks.
+3. `/setup roles staff:<the current staff role>`: the Roles field, Staff marked
+   "(updated)" and unchanged. Run `/setup view` again: still the same.
+4. `/setup roles bump:@everyone`: a private refusal naming `bump`; nothing changes.
+5. `/setup roles bump:<a bot's own role, e.g. YAGPDB's>`: a private "managed by a bot
+   or integration" refusal.
+6. `/setup channels mod_log:<a category>`: a private "pick a text or announcement
+   channel" refusal.
+7. `/setup channels mod_log:<the current mod log channel>`: Channels field, Mod log
+   marked "(updated)".
+8. Only if you want to change one for real: pick the new role or channel, then check the
+   command that uses it (the table in docs/design/slash-fleet.md says which).
+
+### Report back
+Which steps passed, and what step 1 showed as "not set".

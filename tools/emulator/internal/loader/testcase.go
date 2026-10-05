@@ -503,6 +503,8 @@ type RoleDef struct {
 	Position int    `yaml:"position"` // Higher is above; roleAbove compares these
 	// Mentionable lets anyone ping the role; see GuildDef.BotMentionEveryone
 	Mentionable bool `yaml:"mentionable"`
+	// Managed is a bot's or integration's role: .Managed, which no member can be given
+	Managed bool `yaml:"managed"`
 	// Permissions is the role's permission bit mask (the guild's ID is @everyone's role);
 	// getTargetPermissionsIn sums them
 	Permissions int64 `yaml:"permissions"`

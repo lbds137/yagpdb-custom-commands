@@ -133,6 +133,9 @@ folder mixes both. Staff-group commands are marked below.
 - **`config_sync.gohtml`** (staff, hourly) - Writes every command's panel ID into the
   `Commands` dict; generated from `deploy/panel.json` by `make config-sync`, never edited by
   hand
+- **`setup_slash.gohtml`** (staff) - `/setup`: view and set the configured roles (staff,
+  member, active, inactive, bump) and channels (bot, mod log) with Discord's pickers;
+  replies are private
 
 **Key Features:**
 - Advanced permission checking
@@ -239,6 +242,9 @@ generated from `deploy/panel.json`: after adding a command's panel ID there, run
 `make config-sync` and deploy `config_sync`; its next run writes the IDs (merged: keys it
 doesn't know stay). Its panel entry needs a channel set and Enabled ticked: an interval
 command without a channel (or whose channel was deleted) stops running, with no error.
+
+The other role and channel IDs (Member, Active, Inactive and Bump roles, the Mod Log
+channel) are set with `/setup roles` and `/setup channels`; `/setup view` shows them all.
 
 ### 2. Required Custom Commands
 

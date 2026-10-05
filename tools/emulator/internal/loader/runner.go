@@ -307,7 +307,7 @@ func (r *Runner) newContext(tc *TestCase, db *state.MockDB) *runtime.ExecutionCo
 	}
 	ctx.SortChannels()
 	for _, role := range tc.Context.Guild.Roles {
-		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position, Mentionable: role.Mentionable, Permissions: role.Permissions}
+		ctx.AvailableRoles[role.ID] = types.CtxRole{ID: role.ID, Name: role.Name, Color: role.Color, Position: role.Position, Mentionable: role.Mentionable, Managed: role.Managed, Permissions: role.Permissions}
 	}
 	if len(ctx.AvailableRoles) > 0 {
 		// Every guild has @everyone, whose ID is the guild's
