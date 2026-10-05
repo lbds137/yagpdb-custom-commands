@@ -154,12 +154,15 @@
         {{ if ge $guildPremiumTier 1 }}
             {{ $gIconExtension = ".gif" }}
         {{ end }}
-        {{ $avatarURL = (joinStr ""
-            "https://cdn.discordapp.com/icons/"
-            (toString .Guild.ID) "/"
-            .Guild.Icon $gIconExtension
-            "?size=" $size
-        ) }}
+        {{/* no icon: leave it empty, so the Default Avatar fallback below applies */}}
+        {{ if .Guild.Icon }}
+            {{ $avatarURL = (joinStr ""
+                "https://cdn.discordapp.com/icons/"
+                (toString .Guild.ID) "/"
+                .Guild.Icon $gIconExtension
+                "?size=" $size
+            ) }}
+        {{ end }}
     {{ end }}
 {{ end }}
 

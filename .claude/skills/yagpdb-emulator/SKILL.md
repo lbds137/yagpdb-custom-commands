@@ -54,6 +54,7 @@ Flags go before the file. `run` and `test` take `-strict` and `-schema <file>`.
     # 403 Missing Permissions would, nothing recorded); .Guild.Channels is sorted by position
     # guild.owner_id: .Guild.OwnerID (default: the triggering user, who then has every
     # permission: set another owner to test getTargetPermissionsIn); guild.prefix (default "-")
+    # guild.icon: .Guild.Icon, the icon hash as Discord's guild "icon" field (default "": no icon)
     # guild.roles[].permissions: the role's bit mask (the guild's ID is @everyone's role);
     # a channel's permission_overwrites: [{ id, type: role|member, allow, deny }] (a thread
     # uses its parent's); both feed getTargetPermissionsIn, as YAGPDB computes it

@@ -482,6 +482,7 @@ type TagDef struct {
 type GuildDef struct {
 	ID    int64     `yaml:"id"`
 	Name  string    `yaml:"name"`
+	Icon  string    `yaml:"icon"`  // .Guild.Icon: the icon hash, as Discord's guild "icon" (default none)
 	Roles []RoleDef `yaml:"roles"` // If set, getRole and targetHasRole know only these
 	// Channels, if set, are the server's other channels (the test's channel always exists):
 	// channel arguments then accept only these, by ID or by name
@@ -946,6 +947,9 @@ func (tc *TestCase) mergeDefaults(defaults ContextDef, sharedDB []DBEntry, share
 	}
 	if tc.Context.Guild.Name == "" {
 		tc.Context.Guild.Name = defaults.Guild.Name
+	}
+	if tc.Context.Guild.Icon == "" {
+		tc.Context.Guild.Icon = defaults.Guild.Icon
 	}
 	if tc.Context.Guild.Prefix == "" {
 		tc.Context.Guild.Prefix = defaults.Guild.Prefix

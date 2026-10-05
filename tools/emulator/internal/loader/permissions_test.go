@@ -46,6 +46,41 @@ tests:
 	}
 }
 
+// guild.icon reaches .Guild.Icon (default: none)
+func TestGuildIconPlumbsThrough(t *testing.T) {
+	dir := t.TempDir()
+	suite := `
+name: "icon"
+tests:
+  - name: "an icon"
+    template_source: "[{{ .Guild.Icon }}]"
+    context:
+      guild: { id: 1, icon: "abc123" }
+    expected:
+      output_equals: "[abc123]"
+  - name: "no icon"
+    template_source: "[{{ .Guild.Icon }}]"
+    context:
+      guild: { id: 1 }
+    expected:
+      output_equals: "[]"
+`
+	path := filepath.Join(dir, "icon_tests.yaml")
+	if err := os.WriteFile(path, []byte(suite), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tests, err := LoadTestFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range tests {
+		res := NewRunner(RunnerConfig{BaseDir: dir}).RunTest(tc)
+		if res.Error != nil || !res.Passed {
+			t.Errorf("%s: error=%v failures=%q output=%q", tc.Name, res.Error, res.Failures, res.Output)
+		}
+	}
+}
+
 // An overwrite's type is "role" or "member"; anything else is refused at load
 func TestOverwriteTypeIsValidatedAtLoad(t *testing.T) {
 	dir := t.TempDir()
