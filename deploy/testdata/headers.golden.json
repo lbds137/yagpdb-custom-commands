@@ -779,7 +779,7 @@
               {
                 "name": "staff",
                 "type": "role",
-                "description": "the staff role (most staff commands check it)",
+                "description": "the staff role (most staff commands check it; Administrator only)",
                 "required": false
               },
               {

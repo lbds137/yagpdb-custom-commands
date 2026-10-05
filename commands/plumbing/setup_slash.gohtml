@@ -12,7 +12,8 @@
   mention or "not set", and the keys changed by this run marked "(updated)".
 
   `roles` and `channels` validate EVERY given option first; any refusal is one ephemeral
-  reply naming the option, and nothing is written. Refused: a role whose ID is the guild's
+  reply naming the option, and nothing is written. Refused: `staff` from anyone without
+  Administrator (Lila 2026-10-04: the staff checks read it), a role whose ID is the guild's
   (@everyone) or that is managed (a bot's or integration's: no one can be given it), and
   a channel that isn't a text or announcement channel (types 0 and 5: the helpers and
   logs post there). Then one dbGet of the dict, one Set per given option, one dbSet. With
@@ -23,7 +24,7 @@
 
   Slash subcommand: `view show the configured roles and channels`
   Slash subcommand: `roles set the configured roles`
-  Slash option: `roles.staff role the staff role (most staff commands check it)`
+  Slash option: `roles.staff role the staff role (most staff commands check it; Administrator only)`
   Slash option: `roles.member role the role inactivity pings at start and end`
   Slash option: `roles.active role the role the inactivity prune picker treats as active`
   Slash option: `roles.inactive role the role inactivity reminders ping and the prune picker checks`
@@ -61,6 +62,10 @@
 		{{ $writes = true }}
 	{{ end }}
 
+	{{/* Administrator (bit 8; the owner and an admin get every bit, dstate
+		CalculateBasePermissions) may repoint Roles Staff, which the staff checks read */}}
+	{{ $isAdmin := bitwiseAnd (getTargetPermissionsIn .User.ID .Channel.ID) 8 }}
+
 	{{/* validate every given option before anything is written */}}
 	{{ $refusal := "" }}
 	{{ if $writes }}
@@ -68,7 +73,9 @@
 			{{ $given := $opts.Get .opt }}
 			{{ if and $given (not $refusal) }}
 				{{ if eq (index $sections 0) "Roles" }}
-					{{ if eq (toString $given.ID) (toString $.Guild.ID) }}
+					{{ if and (eq .opt "staff") (not $isAdmin) }}
+						{{ $refusal = "⚠️ `staff`: only an Administrator can change the staff role." }}
+					{{ else if eq (toString $given.ID) (toString $.Guild.ID) }}
 						{{ $refusal = joinStr "" "⚠️ `" .opt "`: @everyone can't be the " .label " role." }}
 					{{ else if $given.Managed }}
 						{{ $refusal = joinStr "" "⚠️ `" .opt "`: " $given.Name " is managed by a bot or integration, so no one can be given it." }}
