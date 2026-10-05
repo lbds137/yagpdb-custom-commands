@@ -17,10 +17,11 @@
   Slash option: `entry.section string section to edit, e.g. Inactivity Prune (capitals don't matter)`
   Slash option: `entry.name string name of the entry, e.g. Opening Announcement`
   Slash option: `entry.create boolean start a brand-new section (only if it doesn't exist yet)`
-  Slash subcommand: `delete delete a rule or entry`
-  Slash option: `delete.rule integer rule number (to delete a rule)`
-  Slash option: `delete.section string section of the entry (to delete an entry, with name)`
-  Slash option: `delete.name string name of the entry (with section)`
+  Slash subcommand: `delete_rule delete a rule (asks you to confirm)`
+  Slash option: `delete_rule.rule integer! rule number to delete`
+  Slash subcommand: `delete_entry delete a stored entry (asks you to confirm)`
+  Slash option: `delete_entry.section string! section of the entry, e.g. Inactivity Prune`
+  Slash option: `delete_entry.name string! name of the entry, e.g. Opening Announcement`
 */ -}}
 {{ if .IsSlashCommand }}
 	{{ $rolesDict := (dbGet 0 "Roles").Value }}
@@ -167,111 +168,20 @@
 				) }}
 			{{ end }}
 		{{ end }}
-	{{ else if eq .SubCommand "delete" }}
-		{{/* HasKey, not truthiness: an explicit 0 is a given (and refused below), not absent */}}
-		{{ $ruleGiven := false }}
-		{{ if .Options.HasKey "rule" }}
-			{{ $ruleGiven = true }}
-		{{ end }}
-		{{ $categoryArg := toString (or .Options.section "") }}
-		{{ $keyArg := toString (or .Options.name "") }}
-		{{ $valid := or
-			(and $ruleGiven (not $categoryArg) (not $keyArg))
-			(and $categoryArg $keyArg (not $ruleGiven)) }}
-		{{ if not $valid }}
+	{{ else if eq .SubCommand "delete_rule" }}
+		{{ $n := toInt (or .Options.rule 0) }}
+		{{/* no upper bound here: deleting an existing out-of-range rule is the repair path */}}
+		{{ if lt $n 1 }}
 			{{ sendResponse nil (complexMessage
-				"content" "⚠️ To delete a rule, give only `rule`. To delete an entry, give both `section` and `name`."
-				"ephemeral" true) }}
-		{{ else if $ruleGiven }}
-			{{ $n := toInt (or .Options.rule 0) }}
-			{{/* no upper bound here: deleting an existing out-of-range rule is the repair path */}}
-			{{ if lt $n 1 }}
-				{{ sendResponse nil (complexMessage
-					"content" "⚠️ Rule numbers start at 1." "ephemeral" true) }}
-			{{ else }}
-				{{ $key := joinStr "" "Rule #" $n }}
-				{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
-				{{ if not ($rulesDict.HasKey $key) }}
-					{{ sendResponse nil (complexMessage
-						"content" (print "⚠️ There is no rule #" $n " to delete.") "ephemeral" true) }}
-				{{ else }}
-					{{ $old := $rulesDict.Get $key }}
-					{{ $description := "" }}
-					{{ if eq "string" (printf "%T" $old) }}
-						{{ if gt (len (toRune $old)) 4096 }}
-							{{ $kept := slice (split $old "") 0 4095 }}
-							{{ $old = joinStr "" $kept "…" }}
-						{{ end }}
-						{{ $description = $old }}
-					{{ else }}
-						{{/* cut the json first, then fence: fencing after a truncation drops
-							the closing fence and breaks the embed's markdown */}}
-						{{ $oldJSON := json $old true }}
-						{{ $oldJSONMax := sub 4096 8 }}
-						{{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
-							{{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
-							{{ $oldJSON = joinStr "" $kept "…" }}
-						{{ end }}
-						{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
-					{{ end }}
-					{{ $uid := .Member.User.ID }}
-					{{ $stamp := currentTime.Unix }}
-					{{ dbSet $uid "Edit Pending" (sdict "kind" "rule" "rule" $n "stamp" $stamp) }}
-					{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
-					{{ $row := cslice
-						(cbutton "label" (joinStr "" "Delete rule " $n) "style" "danger"
-							"custom_id" (print "editdel:" $uid ":" $stamp ":go"))
-						(cbutton "label" "Dismiss" "style" "secondary"
-							"custom_id" (print "editdel:" $uid ":" $stamp ":no"))
-					}}
-					{{ sendResponse nil (complexMessage "ephemeral" true
-						"embed" (cembed "title" (joinStr "" "Delete rule #" $n "?")
-							"color" $embedColor "description" $description)
-						"components" (cslice $row)) }}
-				{{ end }}
-			{{ end }}
+				"content" "⚠️ Rule numbers start at 1." "ephemeral" true) }}
 		{{ else }}
-			{{ $category := title $categoryArg }}
-			{{/* the refusals quote them in a 2000-character message: show cut copies */}}
-			{{ $catShown := $category }}
-			{{ if gt (len (toRune $catShown)) 500 }}
-				{{ $catShown = joinStr "" (slice (split $catShown "") 0 499) "…" }}
-			{{ end }}
-			{{ $refused := "" }}
-			{{ $categoryEntry := dbGet 0 $category }}
-			{{ if not $categoryEntry }}
-				{{ $refused = joinStr "" "⚠️ There is no section called `" $catShown "`. Check the spelling." }}
-			{{ end }}
-			{{ $categoryDict := sdict }}
-			{{ if and (not $refused) $categoryEntry }}
-				{{ $categoryValue := $categoryEntry.Value }}
-				{{ if eq "map[string]interface {}" (printf "%T" $categoryValue) }}
-					{{ $categoryDict = sdict $categoryValue }}
-				{{ else if eq "map" (kindOf $categoryValue true) }}
-					{{ $categoryDict = $categoryValue }}
-				{{ else }}
-					{{ $refused = joinStr "" "⚠️ The `" $catShown
-						"` category doesn't hold a dictionary of entries." }}
-				{{ end }}
-			{{ end }}
-			{{ $key := $keyArg }}
-			{{ if not $refused }}
-				{{ if ne $category "Commands" }}
-					{{ $key = title $keyArg }}
-				{{ end }}
-				{{ if not ($categoryDict.HasKey $key) }}
-					{{ $keyShown := $key }}
-					{{ if gt (len (toRune $keyShown)) 500 }}
-						{{ $keyShown = joinStr "" (slice (split $keyShown "") 0 499) "…" }}
-					{{ end }}
-					{{ $refused = joinStr "" "⚠️ There is no entry called `" $keyShown "` in `" $catShown
-						"`." }}
-				{{ end }}
-			{{ end }}
-			{{ if $refused }}
-				{{ sendResponse nil (complexMessage "content" $refused "ephemeral" true) }}
+			{{ $key := joinStr "" "Rule #" $n }}
+			{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
+			{{ if not ($rulesDict.HasKey $key) }}
+				{{ sendResponse nil (complexMessage
+					"content" (print "⚠️ There is no rule #" $n " to delete.") "ephemeral" true) }}
 			{{ else }}
-				{{ $old := $categoryDict.Get $key }}
+				{{ $old := $rulesDict.Get $key }}
 				{{ $description := "" }}
 				{{ if eq "string" (printf "%T" $old) }}
 					{{ if gt (len (toRune $old)) 4096 }}
@@ -292,27 +202,104 @@
 				{{ end }}
 				{{ $uid := .Member.User.ID }}
 				{{ $stamp := currentTime.Unix }}
-				{{ dbSet $uid "Edit Pending"
-					(sdict "kind" "entry" "category" $category "key" $key "stamp" $stamp) }}
+				{{ dbSet $uid "Edit Pending" (sdict "kind" "rule" "rule" $n "stamp" $stamp) }}
 				{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
 				{{ $row := cslice
-					(cbutton "label" "Delete entry" "style" "danger"
+					(cbutton "label" (joinStr "" "Delete rule " $n) "style" "danger"
 						"custom_id" (print "editdel:" $uid ":" $stamp ":go"))
 					(cbutton "label" "Dismiss" "style" "secondary"
 						"custom_id" (print "editdel:" $uid ":" $stamp ":no"))
 				}}
-				{{/* the title holds 256: "Delete " and "?" take 8 of them */}}
-				{{ $label := joinStr " › " $category $key }}
-				{{ if gt (len (toRune $label)) 248 }}
-					{{ $label = joinStr "" (slice (split $label "") 0 247) "…" }}
-				{{ end }}
 				{{ sendResponse nil (complexMessage "ephemeral" true
-					"embed" (cembed "title" (joinStr "" "Delete " $label "?")
+					"embed" (cembed "title" (joinStr "" "Delete rule #" $n "?")
 						"color" $embedColor "description" $description)
 					"components" (cslice $row)) }}
 			{{ end }}
 		{{ end }}
+	{{ else if eq .SubCommand "delete_entry" }}
+		{{ $categoryArg := toString (or .Options.section "") }}
+		{{ $keyArg := toString (or .Options.name "") }}
+		{{ $category := title $categoryArg }}
+		{{/* the refusals quote them in a 2000-character message: show cut copies */}}
+		{{ $catShown := $category }}
+		{{ if gt (len (toRune $catShown)) 500 }}
+			{{ $catShown = joinStr "" (slice (split $catShown "") 0 499) "…" }}
+		{{ end }}
+		{{ $refused := "" }}
+		{{ $categoryEntry := dbGet 0 $category }}
+		{{ if not $categoryEntry }}
+			{{ $refused = joinStr "" "⚠️ There is no section called `" $catShown "`. Check the spelling." }}
+		{{ end }}
+		{{ $categoryDict := sdict }}
+		{{ if and (not $refused) $categoryEntry }}
+			{{ $categoryValue := $categoryEntry.Value }}
+			{{ if eq "map[string]interface {}" (printf "%T" $categoryValue) }}
+				{{ $categoryDict = sdict $categoryValue }}
+			{{ else if eq "map" (kindOf $categoryValue true) }}
+				{{ $categoryDict = $categoryValue }}
+			{{ else }}
+				{{ $refused = joinStr "" "⚠️ `" $catShown "` can't be edited by name: "
+					"it holds a single value or a list. An admin can change it with /db." }}
+			{{ end }}
+		{{ end }}
+		{{ $key := $keyArg }}
+		{{ if not $refused }}
+			{{ if ne $category "Commands" }}
+				{{ $key = title $keyArg }}
+			{{ end }}
+			{{ if not ($categoryDict.HasKey $key) }}
+				{{ $keyShown := $key }}
+				{{ if gt (len (toRune $keyShown)) 500 }}
+					{{ $keyShown = joinStr "" (slice (split $keyShown "") 0 499) "…" }}
+				{{ end }}
+				{{ $refused = joinStr "" "⚠️ There is no entry called `" $keyShown "` in `" $catShown
+					"`." }}
+			{{ end }}
+		{{ end }}
+		{{ if $refused }}
+			{{ sendResponse nil (complexMessage "content" $refused "ephemeral" true) }}
+		{{ else }}
+			{{ $old := $categoryDict.Get $key }}
+			{{ $description := "" }}
+			{{ if eq "string" (printf "%T" $old) }}
+				{{ if gt (len (toRune $old)) 4096 }}
+					{{ $kept := slice (split $old "") 0 4095 }}
+					{{ $old = joinStr "" $kept "…" }}
+				{{ end }}
+				{{ $description = $old }}
+			{{ else }}
+				{{/* cut the json first, then fence: fencing after a truncation drops
+					the closing fence and breaks the embed's markdown */}}
+				{{ $oldJSON := json $old true }}
+				{{ $oldJSONMax := sub 4096 8 }}
+				{{ if gt (len (toRune $oldJSON)) $oldJSONMax }}
+					{{ $kept := slice (split $oldJSON "") 0 (sub $oldJSONMax 1) }}
+					{{ $oldJSON = joinStr "" $kept "…" }}
+				{{ end }}
+				{{ $description = joinStr "" "```\n" $oldJSON "\n```" }}
+			{{ end }}
+			{{ $uid := .Member.User.ID }}
+			{{ $stamp := currentTime.Unix }}
+			{{ dbSet $uid "Edit Pending"
+				(sdict "kind" "entry" "category" $category "key" $key "stamp" $stamp) }}
+			{{ $embedColor := toInt ((dbGet 0 "Global").Value.Get "Embed Color") }}
+			{{ $row := cslice
+				(cbutton "label" "Delete entry" "style" "danger"
+					"custom_id" (print "editdel:" $uid ":" $stamp ":go"))
+				(cbutton "label" "Dismiss" "style" "secondary"
+					"custom_id" (print "editdel:" $uid ":" $stamp ":no"))
+			}}
+			{{/* the title holds 256: "Delete " and "?" take 8 of them */}}
+			{{ $label := joinStr " › " $category $key }}
+			{{ if gt (len (toRune $label)) 248 }}
+				{{ $label = joinStr "" (slice (split $label "") 0 247) "…" }}
+			{{ end }}
+			{{ sendResponse nil (complexMessage "ephemeral" true
+				"embed" (cembed "title" (joinStr "" "Delete " $label "?")
+					"color" $embedColor "description" $description)
+				"components" (cslice $row)) }}
+		{{ end }}
 	{{ end }}
 {{ else }}
-Use /edit as a slash command: rule · entry · delete
+Use /edit as a slash command: rule · entry · delete_rule · delete_entry
 {{ end }}

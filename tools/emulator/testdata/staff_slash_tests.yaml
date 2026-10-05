@@ -68,7 +68,7 @@ tests:
     template: "../../../commands/members/staff_slash.gohtml"
     snapshot: true
     context:
-      interaction: { type: slash, subcommand: delrep, options: { users: "111111111111111111" } }
+      interaction: { type: slash, subcommand: delrep, options: { user1: 111111111111111111 } }
     setup_db:
       - user_id: 0
         key: "Commands"
@@ -158,7 +158,7 @@ tests:
   - name: "staff_slash delrep: the IDs become delrep exec calls, the result embed is public"
     template: "../../../commands/members/staff_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: delrep, options: { users: "<@100000000000000001> 100000000000000002" } }
+      interaction: { type: slash, subcommand: delrep, options: { user1: 100000000000000001, user3: 100000000000000002 } }
       exec_responses:
         'delrep "100000000000000001"': "ok"
         'delrep "100000000000000002"': "ok"
@@ -172,10 +172,36 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: false, embed_title: "Batch Reputation Deletion", embed_contains: "<@100000000000000002>" }
 
-  - name: "staff_slash delrep: more than 5 IDs purges the first 5 and lists the rest"
+  - name: "staff_slash delrep: user1 and user3 set purge both, listed in one embed"
     template: "../../../commands/members/staff_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: delrep, options: { users: "100000000000000001 100000000000000002 100000000000000003 100000000000000004 100000000000000005 100000000000000006" } }
+      interaction: { type: slash, subcommand: delrep, options: { user1: 100000000000000001, user3: 100000000000000003 } }
+      exec_responses:
+        'delrep "100000000000000001"': "ok"
+        'delrep "100000000000000003"': "ok"
+    assertions:
+      execs:
+        - { line: 'delrep "100000000000000001"' }
+        - { line: 'delrep "100000000000000003"' }
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Batch Reputation Deletion", embed_contains: "- <@100000000000000003>" }
+
+  - name: "staff_slash delrep: the same member picked twice is purged once"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: delrep, options: { user1: 100000000000000001, user2: 100000000000000001 } }
+      exec_responses:
+        'delrep "100000000000000001"': "ok"
+    assertions:
+      execs:
+        - { line: 'delrep "100000000000000001"' }
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_title: "Batch Reputation Deletion", embed_contains: "- <@100000000000000001>" }
+
+  - name: "staff_slash delrep: all five pickers purge five members"
+    template: "../../../commands/members/staff_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: delrep, options: { user1: 100000000000000001, user2: 100000000000000002, user3: 100000000000000003, user4: 100000000000000004, user5: 100000000000000005 } }
       exec_responses:
         'delrep "100000000000000001"': "ok"
         'delrep "100000000000000002"': "ok"
@@ -190,18 +216,7 @@ tests:
         - { line: 'delrep "100000000000000004"' }
         - { line: 'delrep "100000000000000005"' }
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_contains: "could not be purged due to custom command limits" }
-
-  - name: "staff_slash delrep: no user ID in the text is an ephemeral refusal, nothing purged"
-    template: "../../../commands/members/staff_slash.gohtml"
-    snapshot: true
-    context:
-      interaction: { type: slash, subcommand: delrep, options: { users: "nobody" } }
-    assertions:
-      execs: []
-      deletions: []
-      interaction_responses:
-        - { kind: message, ephemeral: true, embed_title: "Missing User IDs", embed_contains: "at least one user ID" }
+        - { kind: message, ephemeral: false, embed_title: "Batch Reputation Deletion", embed_contains: "<@100000000000000005>" }
 
   # ---- bootstrap
   - name: "staff_slash bootstrap: the staff_role option sets Roles > Staff, the completion embed is public"

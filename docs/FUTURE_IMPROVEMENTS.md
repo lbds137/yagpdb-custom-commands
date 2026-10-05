@@ -76,7 +76,7 @@ picks, then the minifier.
   silently become a category), so the fix moves that protection to a typed control
   rather than dropping it. Leading candidate: a `create` true/false slash option on
   `/edit entry` — the modal keeps its free-text Category field (prefill needs it),
-  and the handler refuses unknown categories unless `create` is set. `/edit delete`'s
+  and the handler refuses unknown categories unless `create` is set. `/edit delete_entry`'s
   unknown-category refusal stays as is (delete never creates). A dynamic category
   picker would need /setup-style machinery (YAGPDB's string_menu choices are static,
   set in the panel form). Pick up with the next /edit polish round or with the
@@ -84,7 +84,7 @@ picks, then the minifier.
   takes `create` (boolean); the flag rides the modal custom_id `edit:entry:new:<unix>`,
   an unknown category without it is refused (at /edit when the option names one, and
   at submit), and `new:` is gone: with `create` set, a `new:` prefix gets "Leave out
-  `new:`" (habit guard). `/edit delete` says only "Check the spelling."
+  `new:`" (habit guard). `/edit delete_entry` says only "Check the spelling."
 - Staff-facing tools are still techy (Lila 2026-10-01: "my regular staff might have a
   hard time understanding how to use them" — pre-existing; the modal UX is "a ton
   better" but the vocabulary stayed). The techiness is storage shape leaking into
@@ -103,6 +103,9 @@ picks, then the minifier.
   F15, F2, F16; deploy pending); 13-17 still open.
   DECIDED (Lila 2026-10-05 01:20): build items 13-15 as the doc proposes (F12 delrep
   pickers, F4 + F13 subcommand splits, F9/F6/F22 copy); F7 waits on her curated list.
+  Items 13-15 shipped 2026-10-05 (deploy pending; panel rows change: /staff gets
+  announce/prune/prune_date + delrep user1-5, /edit gets delete_rule/delete_entry).
+  Still open: 16 (F7, needs her list of staff-editable entries), 17 (F24 decided, F25 blocked).
 
 
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
@@ -397,7 +400,7 @@ gets a failing test first.
   slash /db deliberately differs (30ab6ef, Lila's call 2026-10-01) — staff without
   `user` default to row 0 on EVERY subcommand, since a user picker can't express row 0.
 - Shipped (2026-10-04, GLM-week audit A-F1): rule numbers. `/edit` refuses rule numbers
-  outside 1..9999 (slash and modal; `/edit delete` stays unbounded as the repair path),
+  outside 1..9999 (slash and modal; `/edit delete_rule` stays unbounded as the repair path),
   and `rules`/browse no longer scan `seq 0..max` (YAGPDB's seq refuses > 10,000
   entries, so one "Rule #1000000" broke both): they sort the existing numbers instead.
 - Shipped (2026-10-04, GLM-week audit A-F5): over-long keys, categories and values can

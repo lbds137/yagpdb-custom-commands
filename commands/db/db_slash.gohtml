@@ -7,9 +7,8 @@
   Defer mode: `None`
   Dependencies: `embed_exec` (the ExecData path only)
 
-  The slash version of retired/db.gohtml (text /db retired 2026-10-01): same engine,
-  ephemeral sendResponse instead of embed_exec. inactivity's "date" execCC still
-  arrives on the ExecData path, which keeps db.gohtml's behavior, embed_exec included.
+  The slash version of retired/db.gohtml: same engine, ephemeral sendResponse.
+  inactivity's "date" execCC still arrives on the ExecData path (embed_exec).
 
   Slash subcommand: `view show one stored value`
   Slash option: `view.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
@@ -36,9 +35,8 @@
   Slash option: `export.key string empty = all entries`
   Slash option: `export.user user another member's own data (staff)`
 
-  view = get, browse = keys, export = dump. Rows: staff default to the global row 0
-  (the old `:0` without the colon), a picked `user` targets that member, everyone
-  else their own row.
+  view = get, browse = keys, export = dump. Rows: staff default to the global row 0,
+  a picked `user` targets that member, everyone else their own row.
 */ -}}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
@@ -90,8 +88,7 @@
     {{ $key = or .Options.key "" }}
     {{ $value = or .Options.value "" }}
     {{ $valueType = printf "%T" $value }}
-    {{/* staff default to the GLOBAL row (0) — the text command's `:0`, no colon needed;
-        a picked `user` targets that member (self included); others keep their own row */}}
+    {{/* staff default to the GLOBAL row (0); a picked `user` is that member's row */}}
     {{ if hasRoleID $staffRoleID }}
         {{ $userID = 0 }}
         {{ if .Options.user }}
@@ -112,7 +109,7 @@
 {{ $valueCheck := or $value $isKeys $isDelete $isGet $isDump }}
 
 {{ $nil := "(nil)" }}
-{{ $invalidValueText := "Invalid value provided! Please double check your input and try again." }}
+{{ $invalidValueText := "I couldn't read that value. Lists and groups must be valid JSON, e.g. {\"a\": 1}." }}
 {{ $resultText := "" }}
 {{ $resultEmoji := "✅" }}
 {{ $displayUserID := $userID }}
@@ -121,10 +118,8 @@
     {{ $key = "all" }}
 {{ end }}
 {{ if and $operationCheck $key $valueCheck }}
-    {{/* the engine below is retired/db.gohtml's verbatim; its comments live there
-        (kept out here: YAGPDB's panel double-counts newlines against the 20k limit).
-        Every .Set/.Del is a `$_ :=` declaration: one never prints (a nil receiver would
-        print "<no value>"), which lets yagmin drop the whitespace around it */}}
+    {{/* the engine is retired/db.gohtml's verbatim (its comments live there); every
+        .Set/.Del is a `$_ :=`, so yagmin can drop the whitespace around it */}}
     {{ $existingValue := "" }}
     {{ $found := false }}
 
@@ -174,8 +169,6 @@
 
     {{ $ptAction := "" }}
     {{ if $isDump }}
-        {{/* one rule everywhere now: staff default row 0, staff `user` = that row,
-            others own — dump needs no special case anymore */}}
         {{ $dumpUserID := $userID }}
         {{ $dumpData := sdict }}
         {{ if and $key (ne $key "all") }}
@@ -185,8 +178,6 @@
                 {{ $_ := $dumpData.Set $key $entry.Value }}
             {{ end }}
         {{ else }}
-            {{/* build from dbGetPattern's own entries (1 interaction, 100/call max);
-                rationale in retired/db.gohtml's copy of this loop */}}
             {{- range $entry := dbGetPattern $dumpUserID "%" 100 0 -}}
                 {{- if $entry.Value -}}
                     {{- $_ := $dumpData.Set $entry.Key $entry.Value -}}
@@ -217,7 +208,7 @@
                 {{- $value = $value.Append $k -}}
             {{- end -}}
         {{ else }}
-            {{ $errorText = "No dictionary found for the given key!" }}
+            {{ $errorText = "That name isn't a group of entries, so there is nothing to list." }}
         {{ end }}
     {{ else if or $isDelete $isGet }}
         {{ if $found }}
@@ -234,7 +225,7 @@
                 {{ $ptAction = "retrieved" }}
             {{ end }}
         {{ else }}
-            {{ $errorText = "No value found!" }}
+            {{ $errorText = "Nothing is stored under that name." }}
         {{ end }}
     {{ else if or $isAdd $isRemove }}
         {{ try }}
@@ -286,7 +277,7 @@
                     {{ end }}
                     {{ $value = $parsedValue }}
                 {{ else }}
-                    {{ $errorText = "No value found!" }}
+                    {{ $errorText = "Nothing is stored under that name." }}
                 {{ end }}
             {{ else if and $existingIsDict $parsedIsDict }}
                 {{/* Dict operations: add/remove keys of the target dictionary */}}
@@ -324,18 +315,18 @@
                         {{ dbSet $userID $key $existingValue }}
                     {{ end }}
                 {{ else }}
-                    {{ $errorText = "No value found!" }}
+                    {{ $errorText = "Nothing is stored under that name." }}
                 {{ end }}
             {{ else if $existingIsDict }}
                 {{ $errorText = $invalidValueText }}
             {{ else }}
-                {{ $errorText = "No array or dictionary found for the given key!" }}
+                {{ $errorText = "That name isn't a list or a group, so you can't add to or remove from it." }}
             {{ end }}
         {{ catch }}
             {{ $errorText = $invalidValueText }}
         {{ end }}
     {{ else if and (ge (len $keyArray) 2) (not $parentFound) }}
-        {{ $errorText = "No dictionary found for the given key!" }}
+        {{ $errorText = "That group doesn't exist, so nothing can be stored inside it." }}
     {{ else }}
         {{ try }}
             {{ if eq $stringType $valueType }}
@@ -402,6 +393,12 @@
     {{ $keyShown = joinStr "" (slice (split $keyShown "") 0 1016) "…" }}
 {{ end }}
 
+{{/* a mention doesn't render inside a code block, so this field is plain */}}
+{{ $whose := "Server-wide" }}
+{{ if toInt $displayUserID }}
+    {{ $whose = joinStr "" "<@" $displayUserID ">" }}
+{{ end }}
+
 {{ if $isSlash }}
     {{/* export answered with the file already; others reply with the embed */}}
     {{ if not $isDump }}
@@ -411,7 +408,7 @@
             "color" $embedColor
             "description" (joinStr "" "```\n" (or $value $nil) "\n```")
             "fields" (cslice
-                (sdict "name" "User ID" "value" (joinStr "" "```\n" $displayUserID "```") "inline" true)
+                (sdict "name" "Whose data" "value" $whose "inline" true)
                 (sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
                 (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
             )
@@ -429,7 +426,7 @@
         "Description" (joinStr "" "```\n" (or $value $nil) "\n```")
         "AuthorID" $displayUserID
         "Fields" (cslice
-            (sdict "name" "User ID" "value" (joinStr "" "```\n" $displayUserID "```") "inline" true)
+            (sdict "name" "Whose data" "value" $whose "inline" true)
             (sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
             (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
         )

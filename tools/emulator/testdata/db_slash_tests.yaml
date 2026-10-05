@@ -72,7 +72,7 @@ tests:
       interaction: { type: slash, subcommand: view, options: { key: "Nope" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "No value found!" }
+        - { kind: message, ephemeral: true, embed_contains: "Nothing is stored under that name." }
 
   - name: "db_slash view: `user` from a non-staff member is ignored (own row)"
     template: "../../../commands/db/db_slash.gohtml"
@@ -100,7 +100,17 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            embed_contains: "No dictionary found for the given key!" }
+            embed_contains: "That name isn't a group of entries, so there is nothing to list." }
+
+  - name: "db_slash set: a nested key under a missing group says the group doesn't exist"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Nope:Sub", value: "{\"a\": 1}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "That group doesn't exist, so nothing can be stored inside it." }
 
   - name: "db_slash set: a plain string is refused (JSON objects only, as the text command)"
     template: "../../../commands/db/db_slash.gohtml"
@@ -109,7 +119,7 @@ tests:
                      options: { key: "Greeting", value: "hello there" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "Invalid value provided!" }
+        - { kind: message, ephemeral: true, embed_contains: "I couldn't read that value. Lists and groups must be valid JSON, e.g. {" }
       db_checks:
         - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
 
@@ -200,7 +210,7 @@ tests:
                      options: { key: "List", value: "zed" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "No value found!" }
+        - { kind: message, ephemeral: true, embed_contains: "Nothing is stored under that name." }
       db_checks:
         - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
 
@@ -212,7 +222,7 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            embed_contains: "No array or dictionary found for the given key!" }
+            embed_contains: "That name isn't a list or a group, so you can't add to or remove from it." }
 
   - name: "db_slash delete: a top-level key (value echoed)"
     template: "../../../commands/db/db_slash.gohtml"
@@ -368,3 +378,41 @@ tests:
         - user_id: 0
           key: "Inactivity Prune"
           value_equals: { Previous Date: "2026-09-30", Next Date: "2027-01-01" }
+
+  - name: "db_slash view: Whose data names the member for their own row"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: view, options: { key: "Notes" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Whose data" }
+      sent_messages:
+        - { ephemeral: true, embed_contains: "<@111111111111111111>" }
+
+  - name: "db_slash view: Whose data says Server-wide for the global row, outside a code block"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: view, options: { key: "Global:Embed Color" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Whose data" }
+      sent_messages:
+        - { ephemeral: true, embed_contains: "\"value\": \"Server-wide\"" }
+
+  - name: "db_slash ExecData: the embed_exec path shows Whose data too"
+    template: "../../../commands/db/db_slash.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Inactivity Prune", value: { Next Date: "2026-10-01" } }
+    context:
+      exec_data:
+        ChannelID: 222222222222222222
+        UserID: 0
+        Operation: "add"
+        Key: "Inactivity Prune"
+        Value: { Next Date: "2027-01-01" }
+        Title: "Inactivity Prune Date Editing"
+    assertions:
+      sent_messages:
+        - { embed_contains: "Whose data" }
+        - { embed_contains: "Server-wide" }

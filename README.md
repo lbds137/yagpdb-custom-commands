@@ -51,7 +51,7 @@ folder mixes both. Staff-group commands are marked below.
 - **`edit_slash.gohtml`** (staff) - `/edit`: edit a rule or a database entry in a
   prefilled modal, or delete one behind a confirm
 - **`edit_modal.gohtml`** (staff) - The `/edit` modal's submit handler
-- **`edit_confirm.gohtml`** (staff) - The `/edit delete` confirm's buttons
+- **`edit_confirm.gohtml`** (staff) - The `/edit delete_rule` and `delete_entry` confirm's buttons
 
 #### Gematria (`commands/gematria/`)
 - **`gematria.gohtml`** - Advanced gematria calculator with tarot associations: the
@@ -85,8 +85,8 @@ folder mixes both. Staff-group commands are marked below.
   has lost the staff roles the `Staff Utility` group requires)
 - **`inactivity.gohtml`** (staff) - Inactivity tracking and management
 - **`inactivity_prune_pick.gohtml`** (staff) - The prune picker and its kick confirm
-- **`staff_slash.gohtml`** (staff) - `/staff`: routes roles, inactivity, activity, rules,
-  bump_reset, delrep and bootstrap to their handlers (the text commands in this list)
+- **`staff_slash.gohtml`** (staff) - `/staff`: routes roles, announce, prune, prune_date
+  (all three to inactivity), activity, rules, bump_reset, delrep and bootstrap to their handlers (the text commands in this list)
 - **`staff_roles.gohtml`** (staff) - Staff role management
 - **`staff_roles_pick.gohtml`** (staff) - The Staff Roles panel's role select
 - **`role_ping_slash.gohtml`** (staff) - `/role_ping`: ping any role, with an
@@ -294,7 +294,7 @@ now; a minified build is planned.
 ```
 /edit entry section:Admin name:Welcome Message   # edit in a prefilled modal
 /edit rule rule:3                                # edit rule 3's text
-/edit delete rule:3                              # delete behind a confirm
+/edit delete_rule rule:3                         # delete behind a confirm
 ```
 
 ### Database Operations

@@ -21,25 +21,27 @@ described as "private" shows "Only you can see this".
 1. `/staff bump_reset`: private "✅ Bump timer reset.".
 
 ### /staff delrep
-1. `/staff delrep users:<one member ID>`: a public "Batch Reputation Deletion" embed
+1. `/staff delrep user1:<one member>`: a public "Batch Reputation Deletion" embed
    naming them; their reputation is cleared.
-2. With 5 IDs (pick members whose rep you're fine clearing): the reply must arrive
-   (Discord's limit is 3 seconds; "The application did not respond" means it was too
-   slow — note it).
-3. `/staff delrep users:abc`: a private "must provide at least one user ID" refusal.
+2. With `user1` to `user5` all picked (members whose rep you're fine clearing): the reply
+   must arrive (Discord's limit is 3 seconds; "The application did not respond" means it
+   was too slow — note it).
+3. `/staff delrep` with `user1` empty: Discord itself won't send it (`user1` is required).
+   Picking the same member in `user1` and `user2` clears them once (one line in the embed).
 
-### /staff inactivity
-1. `/staff inactivity action:date date:<the real next prune date>`: a public embed
+### /staff announce, prune, prune_date
+1. `/staff prune_date date:<the real next prune date>`: a public embed
    "Next prune date updated" with **Previous:** (the old next date) and **Next:** (yours).
    Check with `/db view key:Inactivity Prune` if you like.
-2. `/staff inactivity action:date` (no date): a private "Date needed" refusal.
-3. `/staff inactivity action:prune`: a public picker panel; pick a member, then Cancel.
-4. `/staff inactivity action:prune user:<a member>`: the public confirm (or "active,
+2. `/staff prune_date` with `date` empty: Discord itself won't send it (`date` is required).
+3. `/staff prune`: a public picker panel; pick a member, then Cancel.
+4. `/staff prune user:<a member>`: the public confirm (or "active,
    Kick disabled" verdict); press Cancel. Don't press Kick unless you mean it.
-5. `/staff inactivity action:nonsense`: a private "Unknown action" refusal.
-6. Only if you actually want to post one: `action:start`, `end` or `remind` posts the
-   announcement and pings the role as normal channel messages, and you get a private
-   "Posted the …" confirmation. Check the ping notified.
+5. `/staff announce which:nonsense`: a private "⚠️ Unknown announcement: choose start, end
+   or remind." refusal.
+6. Only if you actually want to post one: `/staff announce which:start`, `end` or `remind`
+   posts the announcement and pings the role as normal channel messages, and you get a
+   private "Posted the …" confirmation. Check the ping notified.
 
 ### /staff activity
 1. `/staff activity`: a public "Channel activity" page. Press the next-page button and
@@ -72,8 +74,9 @@ this"). Nothing here changes a setting unless you pick the role or channel it al
 has, so re-picking the current values is the safe way to test the save path.
 
 1. `/setup view`: a "Server setup" embed with a Roles field (Staff, Member, Active,
-   Inactive, Bump) and a Channels field (Bot, Mod log), each a mention or "not set".
-   Note anything shown "not set" that you expected to be set.
+   Inactive, Bump) and a Channels field (Bot, Mod log), each line a mention and what it is
+   for, or "not set, pick one with /setup roles" (/setup channels for channels).
+   Note anything marked "not set" that you expected to be set.
 2. `/setup roles` with no options: the Roles field only, no "(updated)" marks.
 3. `/setup roles staff:<the current staff role>`: the Roles field, Staff marked
    "(updated)" and unchanged. Run `/setup view` again: still the same.
@@ -133,7 +136,7 @@ Which steps passed.
 
 ## /edit entry: `create` replaces `new:` (any server, after its deploy)
 
-Use a throwaway section name (e.g. `Scratch`) and clean up with `/edit delete` after. The
+Use a throwaway section name (e.g. `Scratch`) and clean up with `/edit delete_entry` after. The
 options are `section` and `name` (renamed from `category` and `key` 2026-10-05).
 1. `/edit entry section:Scratch` (no `create`): refused right away, privately, "There
    is no section called `Scratch`… set `create` to True to start a new one." No form opens.
@@ -144,8 +147,16 @@ options are `section` and `name` (renamed from `category` and `key` 2026-10-05).
    before.
 5. `/edit entry section:Staff name:Roles` (the staff role list): refused privately, "holds a list or a
    group of settings, not text". No form opens.
-6. Cleanup: `/edit delete section:Scratch name:test`, confirm (an empty `Scratch`
+6. Cleanup: `/edit delete_entry section:Scratch name:test`, confirm (an empty `Scratch`
    section stays behind; harmless).
+7. Before step 6, `/edit delete_rule rule:<a rule number that doesn't exist>`: refused,
+   "There is no rule #N to delete.". Delete subcommands are now `delete_rule` and
+   `delete_entry`, both with required options (no `delete` any more).
+8. Submit step 2's form with a lowercase name: the ack has a "Saved as" field reading
+   `` `Test` (first letters are capitalised for you)``.
+9. `/db view key:Notes` (any key): the embed's first field is "Whose data" (a mention for a
+   member's own row, "Server-wide" for the global row), and `/db view key:Nope` says
+   "Nothing is stored under that name.".
 
 ### Report back
 Which steps passed.

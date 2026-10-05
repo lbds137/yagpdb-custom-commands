@@ -7,8 +7,8 @@
 
   The /edit forms' writer (edit_slash opens them): the engines are retired/rule_edit's and
   simple_db_edit's, copied minus their `(nil)` delete branches — deletes go through
-  /edit delete's confirm (edit_confirm). Acks are ephemeral sendResponses, no public
-  embed_exec post.
+  the /edit delete_rule and delete_entry confirm (edit_confirm). Acks are ephemeral
+  sendResponses, no public embed_exec post.
 */ -}}
 {{ if .IsModal }}
 	{{ $rolesDict := (dbGet 0 "Roles").Value }}
@@ -31,7 +31,7 @@
 				"content" "⚠️ Rule numbers run from 1 to 9999." "ephemeral" true) }}
 		{{ else if eq $text "(nil)" }}
 			{{ sendResponse nil (complexMessage
-				"content" "⚠️ To delete, use `/edit delete`." "ephemeral" true) }}
+				"content" "⚠️ To delete, use `/edit delete_rule`." "ephemeral" true) }}
 		{{ else }}
 			{{ $key := joinStr "" "Rule #" $n }}
 			{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
@@ -92,7 +92,7 @@
 		{{ $value := .ModalValues.value.value }}
 		{{ if eq $value "(nil)" }}
 			{{ sendResponse nil (complexMessage
-				"content" "⚠️ To delete, use `/edit delete`." "ephemeral" true) }}
+				"content" "⚠️ To delete, use `/edit delete_entry`." "ephemeral" true) }}
 		{{ else }}
 			{{ $plainMapType := "map[string]interface {}" }}
 			{{/* the slash option `create` rides in the custom_id: edit:entry:new:<stamp> */}}
@@ -124,8 +124,8 @@
 					{{ else if eq "map" (kindOf $categoryValue true) }}
 						{{ $categoryDict = $categoryValue }}
 					{{ else }}
-						{{ $refused = joinStr "" "⚠️ The `" $catShown
-							"` category doesn't hold a dictionary of entries." }}
+						{{ $refused = joinStr "" "⚠️ `" $catShown "` can't be edited by name: "
+							"it holds a single value or a list. An admin can change it with /db." }}
 					{{ end }}
 				{{ end }}
 			{{ end }}
@@ -168,11 +168,14 @@
 				{{ if gt (len (toRune $label)) 246 }}
 					{{ $label = joinStr "" (slice (split $label "") 0 245) "…" }}
 				{{ end }}
-				{{ $storedAs := $key }}
-				{{ if gt (len (toRune $storedAs)) 1024 }}
-					{{ $kept := slice (split $storedAs "") 0 1023 }}
+				{{/* the field holds 1024: the backticks and the suffix take 42 of them */}}
+				{{/* a backtick in the key would close the code span early */}}
+				{{ $storedAs := reReplace "\x60" $key "'" }}
+				{{ if gt (len (toRune $storedAs)) 982 }}
+					{{ $kept := slice (split $storedAs "") 0 981 }}
 					{{ $storedAs = joinStr "" $kept "…" }}
 				{{ end }}
+				{{ $storedAs = joinStr "" "`" $storedAs "` (first letters are capitalised for you)" }}
 				{{ $title := "" }}
 				{{ $description := "" }}
 				{{ $fields := cslice }}
@@ -182,13 +185,13 @@
 					{{ $title = joinStr " " $label "added" }}
 					{{ $description = $value }}
 					{{ if $storedKeyDiffers }}
-						{{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+						{{ $fields = $fields.Append (sdict "name" "Saved as" "value" $storedAs) }}
 					{{ end }}
 				{{ else if $isUnchanged }}
 					{{ $title = joinStr " " $label "unchanged" }}
 					{{ $description = $value }}
 					{{ if $storedKeyDiffers }}
-						{{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+						{{ $fields = $fields.Append (sdict "name" "Saved as" "value" $storedAs) }}
 					{{ end }}
 				{{ else }}
 					{{ $categoryDict.Set $key $value }}
@@ -202,7 +205,7 @@
 					{{ end }}
 					{{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
 					{{ if $storedKeyDiffers }}
-						{{ $fields = $fields.Append (sdict "name" "Stored as" "value" $storedAs) }}
+						{{ $fields = $fields.Append (sdict "name" "Saved as" "value" $storedAs) }}
 					{{ end }}
 				{{ end }}
 				{{/* the whole embed holds 6000: the fields and title come first, the

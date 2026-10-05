@@ -378,26 +378,32 @@
             ]
           },
           {
-            "name": "delete",
-            "description": "delete a rule or entry",
+            "name": "delete_rule",
+            "description": "delete a rule (asks you to confirm)",
             "options": [
               {
                 "name": "rule",
                 "type": "integer",
-                "description": "rule number (to delete a rule)",
-                "required": false
-              },
+                "description": "rule number to delete",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "delete_entry",
+            "description": "delete a stored entry (asks you to confirm)",
+            "options": [
               {
                 "name": "section",
                 "type": "string",
-                "description": "section of the entry (to delete an entry, with name)",
-                "required": false
+                "description": "section of the entry, e.g. Inactivity Prune",
+                "required": true
               },
               {
                 "name": "name",
                 "type": "string",
-                "description": "name of the entry (with section)",
-                "required": false
+                "description": "name of the entry, e.g. Opening Announcement",
+                "required": true
               }
             ]
           }
@@ -703,26 +709,38 @@
             ]
           },
           {
-            "name": "inactivity",
-            "description": "inactivity prune: announcements, next date, review a member",
+            "name": "announce",
+            "description": "post an inactivity prune announcement",
             "options": [
               {
-                "name": "action",
+                "name": "which",
                 "type": "string",
-                "description": "start/end/remind post that announcement; date sets the next prune date; prune reviews a member",
+                "description": "start, end or remind",
                 "required": true
-              },
+              }
+            ]
+          },
+          {
+            "name": "prune",
+            "description": "review an inactive member for pruning",
+            "options": [
+              {
+                "name": "user",
+                "type": "user",
+                "description": "member to review (leave empty to pick from a menu)",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "prune_date",
+            "description": "set the next inactivity prune date",
+            "options": [
               {
                 "name": "date",
                 "type": "string",
                 "description": "the next prune date as announcements should show it, e.g. March 1",
-                "required": false
-              },
-              {
-                "name": "user",
-                "type": "user",
-                "description": "member to review (prune only; leave empty to pick from a menu)",
-                "required": false
+                "required": true
               }
             ]
           },
@@ -759,10 +777,34 @@
             "description": "clear members' reputation",
             "options": [
               {
-                "name": "users",
-                "type": "string",
-                "description": "user IDs or mentions, up to 5",
+                "name": "user1",
+                "type": "user",
+                "description": "member whose reputation to clear",
                 "required": true
+              },
+              {
+                "name": "user2",
+                "type": "user",
+                "description": "another member to clear (optional)",
+                "required": false
+              },
+              {
+                "name": "user3",
+                "type": "user",
+                "description": "another member to clear (optional)",
+                "required": false
+              },
+              {
+                "name": "user4",
+                "type": "user",
+                "description": "another member to clear (optional)",
+                "required": false
+              },
+              {
+                "name": "user5",
+                "type": "user",
+                "description": "another member to clear (optional)",
+                "required": false
               }
             ]
           },
