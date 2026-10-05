@@ -122,7 +122,8 @@ The guards only fire when a command is missing from setup, so this is a smoke ch
 the normal answers still arrive (any server; Gay Night House for /staff):
 1. `/color random`, `/gematria text:אמת`, `/hebrew pyramid text:אמת שלום` (the
    "2 words follows" line, then two embeds), `/define`, `/timestamp`, `/rule number:1`.
-2. `/staff inactivity action:date` with a date: the date-editing embed, as before.
+2. `/staff activity`: the channel-activity browse view opens, as before (read-only;
+   inactivity date would rewrite the real prune date, so it is not a smoke step).
 3. Nothing answers "isn't set up on this server yet".
 
 ### Report back
