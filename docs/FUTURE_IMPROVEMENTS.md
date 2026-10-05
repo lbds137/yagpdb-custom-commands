@@ -101,6 +101,8 @@ picks, then the minifier.
   doc proposes them (copy, F15, F2 guard, F16 Administrator gate); 13-17 later.
   Items 1-12 shipped 2026-10-05 (F17, F14, F11, F1, F3, F20, F18, F19, F21, F23, F8, F5,
   F15, F2, F16; deploy pending); 13-17 still open.
+  DECIDED (Lila 2026-10-05 01:20): build items 13-15 as the doc proposes (F12 delrep
+  pickers, F4 + F13 subcommand splits, F9/F6/F22 copy); F7 waits on her curated list.
 
 
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
