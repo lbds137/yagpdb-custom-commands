@@ -1,6 +1,8 @@
 # /edit modal — spec
 
-Status: drafted 2026-10-01, overnight GLM 5.3 session. Decisions of record: Lila's
+Status: drafted 2026-10-01, overnight GLM 5.3 session. Superseded in one part
+(2026-10-04): the `new:` category prefix below became `/edit entry`'s `create` option
+(docs/FUTURE_IMPROVEMENTS.md has the shipped note); the rest stands. Decisions of record: Lila's
 pick 3 of 2026-09-27 ("`/edit` slash opening a modal for rule_edit and
 simple_db_edit, deletes behind a danger confirm button") and the Tzurot design
 language of 2026-09-30. Staff-only → no Night House /commands/ change.

@@ -167,6 +167,70 @@ tests:
         - { kind: modal, title: "Edit entry", custom_id: "edit:entry:1767366245",
             fields: ["category", "key", "value"] }
 
+  - name: "edit entry: create true opens the modal with the :new: custom_id"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry, options: { create: true } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit entry", custom_id: "edit:entry:new:1767366245",
+            fields: ["category", "key", "value"] }
+
+  - name: "edit entry: create true with an existing category still opens the modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { category: "Admin", key: "greeting", create: true } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit entry", custom_id: "edit:entry:new:1767366245",
+            fields: ["category", "key", "value"] }
+
+  - name: "edit entry: an unknown category without create is refused, no modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { category: "Nope", key: "a" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "There is no `Nope` category. Check the spelling, or set `create` to True to make it." }
+
+  - name: "edit entry: an unknown category with create true opens the modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { category: "Nope", key: "a", create: true } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit entry", custom_id: "edit:entry:new:1767366245",
+            fields: ["category", "key", "value"] }
+
+  - name: "edit entry: a new: prefix with create true is refused, no modal"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { category: "new:Widgets", key: "a", create: true } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "Leave out `new:` — the `create` option does that now." }
+
+  - name: "edit entry: create false behaves as absent"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { category: "Nope", create: false } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "There is no `Nope` category" }
+
   - name: "edit delete rule: a seeded rule gets a danger confirm, record written"
     template: "../../../commands/edit/edit_slash.gohtml"
     snapshot: true
@@ -228,7 +292,7 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "There is no `Nope` category" }
+            content_contains: "There is no `Nope` category. Check the spelling." }
 
   - name: "edit delete: no form at all is a usage error naming both forms"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -450,7 +514,35 @@ tests:
             Greeting: "hello"
             Motd: "stay golden"
 
-  - name: "submit entry: new: creates the category"
+  - name: "submit entry: a :new: custom_id creates the category"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:new:1767366245",
+                     fields: { category: "Widgets", key: "gizmo", value: "x" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Widgets › Gizmo added" }
+      db_checks:
+        - { user_id: 0, key: "Widgets", value_equals: { Gizmo: "x" } }
+
+  - name: "submit entry: a :new: custom_id writes into an existing category"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:new:1767366245",
+                     fields: { category: "Admin", key: "greeting", value: "hi there" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_title: "Admin › Greeting updated" }
+      db_checks:
+        - user_id: 0
+          key: "Admin"
+          value_equals:
+            Greeting: "hi there"
+            Motd: "stay golden"
+
+  - name: "submit entry: a new: prefix without create is an unknown category, nothing written"
     template: "../../../commands/edit/edit_modal.gohtml"
     context:
       user: { roles: [888888888] }
@@ -458,9 +550,25 @@ tests:
                      fields: { category: "new:Widgets", key: "gizmo", value: "x" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_title: "Widgets › Gizmo added" }
+        - { kind: message, ephemeral: true,
+            content_contains: "There is no `New:widgets` category. Check the spelling, or set `create` to True to make it." }
       db_checks:
-        - { user_id: 0, key: "Widgets", value_equals: { Gizmo: "x" } }
+        - { user_id: 0, key: "Widgets", not_exists: true }
+        - { user_id: 0, key: "New:Widgets", not_exists: true }
+
+  - name: "submit entry: a new: prefix with create is refused, nothing written"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:new:1767366245",
+                     fields: { category: "new:Widgets", key: "gizmo", value: "x" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "Leave out `new:` — the `create` option does that now." }
+      db_checks:
+        - { user_id: 0, key: "Widgets", not_exists: true }
+        - { user_id: 0, key: "New:Widgets", not_exists: true }
 
   - name: "submit entry: an unknown category is refused, nothing written"
     template: "../../../commands/edit/edit_modal.gohtml"
@@ -470,7 +578,8 @@ tests:
                      fields: { category: "Nope", key: "a", value: "b" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "There is no `Nope` category" }
+        - { kind: message, ephemeral: true,
+            content_contains: "There is no `Nope` category. Check the spelling, or set `create` to True to make it." }
       db_checks:
         - { user_id: 0, key: "Nope", not_exists: true }
 
@@ -537,6 +646,45 @@ tests:
           value_equals:
             Greeting: "hello"
             Motd: "stay golden"
+
+  - name: "submit entry: a stale stamp on a :new: form is expired"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:new:1750000000",
+                     fields: { category: "Widgets", key: "gizmo", value: "x" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "expired" }
+      db_checks:
+        - { user_id: 0, key: "Widgets", not_exists: true }
+
+  - name: "submit entry: a :new: form into a non-dictionary category is refused"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Flat", value: "just a string" }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:new:1767366245",
+                     fields: { category: "Flat", key: "a", value: "b" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "doesn't hold a dictionary of entries" }
+      db_checks:
+        - { user_id: 0, key: "Flat", value_equals: "just a string" }
+
+  - name: "submit entry: a new: prefix after spaces with create is refused, nothing written"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:new:1767366245",
+                     fields: { category: "  new:Widgets", key: "gizmo", value: "x" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Leave out `new:`" }
+      db_checks:
+        - { user_id: 0, key: "  New:widgets", not_exists: true }
 
   - name: "submit: a non-staff member is refused (defense; Discord won't send this)"
     template: "../../../commands/edit/edit_modal.gohtml"

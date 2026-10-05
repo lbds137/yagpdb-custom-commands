@@ -1,7 +1,7 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `Modal Submission`
-  Trigger: `^edit:(rule:\d+|entry):\d+$`
+  Trigger: `^edit:(rule:\d+|entry(?::new)?):\d+$`
   Group: `Staff Utility`
   Defer mode: `None`
 
@@ -95,27 +95,24 @@
 				"content" "⚠️ To delete, use `/edit delete`." "ephemeral" true) }}
 		{{ else }}
 			{{ $plainMapType := "map[string]interface {}" }}
-			{{ $isNew := reFind "(?i)\\Anew:" $categoryArg }}
-			{{ $categoryName := $categoryArg }}
-			{{ if $isNew }}
-				{{ $categoryName = trimSpace (reReplace "(?i)\\Anew:" $categoryArg "") }}
-			{{ end }}
-			{{ $category := title $categoryName }}
+			{{/* the slash option `create` rides in the custom_id: edit:entry:new:<stamp> */}}
+			{{ $create := eq (index $parts 2) "new" }}
+			{{ $category := title $categoryArg }}
 			{{/* the refusals quote it in a 2000-character message: show a cut copy */}}
 			{{ $catShown := $category }}
 			{{ if gt (len (toRune $catShown)) 500 }}
 				{{ $catShown = joinStr "" (slice (split $catShown "") 0 499) "…" }}
 			{{ end }}
 			{{ $refused := "" }}
-			{{ if and $isNew (not $categoryName) }}
-				{{ $refused = "⚠️ Give a category name after `new:`." }}
+			{{ if and $create (reFind "(?i)\\A\\s*new:" $categoryArg) }}
+				{{ $refused = "⚠️ Leave out `new:` — the `create` option does that now." }}
 			{{ end }}
 			{{ $categoryEntry := "" }}
 			{{ if not $refused }}
 				{{ $categoryEntry = dbGet 0 $category }}
-				{{ if and (not $isNew) (not $categoryEntry) }}
+				{{ if and (not $create) (not $categoryEntry) }}
 					{{ $refused = joinStr "" "⚠️ There is no `" $catShown
-						"` category. Check the spelling, or use `new:" $catShown "` to create it." }}
+						"` category. Check the spelling, or set `create` to True to make it." }}
 				{{ end }}
 			{{ end }}
 			{{ $categoryDict := sdict }}

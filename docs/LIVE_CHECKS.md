@@ -128,3 +128,19 @@ the normal answers still arrive (any server; Gay Night House for /staff):
 
 ### Report back
 Which steps passed.
+
+## /edit entry: `create` replaces `new:` (any server, after its deploy)
+
+Use a throwaway category name (e.g. `Scratch`) and clean up with `/edit delete` after.
+1. `/edit entry category:Scratch` (no `create`): refused right away, privately, "There
+   is no `Scratch` category… set `create` to True to make it." No form opens.
+2. `/edit entry category:Scratch create:True`: the form opens; fill key `test`, value
+   `hi`, submit: "Scratch › Test added".
+3. `/edit entry category:new:Scratch create:True`: refused, "Leave out `new:`".
+4. `/edit entry category:Admin` (an existing category, no `create`): the form opens as
+   before.
+5. Cleanup: `/edit delete category:Scratch key:test`, confirm (an empty `Scratch`
+   category stays behind; harmless).
+
+### Report back
+Which steps passed.

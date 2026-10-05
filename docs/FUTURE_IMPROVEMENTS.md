@@ -80,7 +80,11 @@ picks, then the minifier.
   unknown-category refusal stays as is (delete never creates). A dynamic category
   picker would need /setup-style machinery (YAGPDB's string_menu choices are static,
   set in the panel form). Pick up with the next /edit polish round or with the
-  pickers (roadmap item 4).
+  pickers (roadmap item 4). Shipped (2026-10-04, /edit polish round): `/edit entry`
+  takes `create` (boolean); the flag rides the modal custom_id `edit:entry:new:<unix>`,
+  an unknown category without it is refused (at /edit when the option names one, and
+  at submit), and `new:` is gone: with `create` set, a `new:` prefix gets "Leave out
+  `new:`" (habit guard). `/edit delete` says only "Check the spelling."
 - Staff-facing tools are still techy (Lila 2026-10-01: "my regular staff might have a
   hard time understanding how to use them" — pre-existing; the modal UX is "a ton
   better" but the vocabulary stayed). The techiness is storage shape leaking into
