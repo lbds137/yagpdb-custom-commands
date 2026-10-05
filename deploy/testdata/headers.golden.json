@@ -1125,6 +1125,11 @@
       "error": "header: Slash command description must be between 1 and 100 characters"
     },
     {
+      "name": "deployable slash command without a description",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Group: `Utility`\n  Slash option: `key string k`\n*/}}",
+      "error": "header: Slash description: a Slash Command needs a `Slash description:` line (1-100 characters)"
+    },
+    {
       "name": "slash description on a message trigger",
       "source": "{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Slash description: `d`\n*/}}",
       "error": "header: Slash description needs a Slash Command trigger"

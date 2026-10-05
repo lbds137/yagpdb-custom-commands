@@ -118,6 +118,7 @@ tests:
         Trigger type: `Slash Command`
         Trigger: `probe`
         Group: `Utility`
+        Slash description: `Probe`
         Defer mode: `None`
       */ -}}
       {{ execCC 1 .Channel.ID 0 (sdict "Respond" true "Title" "Answer" "Description" "body") }}
@@ -136,6 +137,7 @@ tests:
         Trigger type: `Slash Command`
         Trigger: `probe`
         Group: `Utility`
+        Slash description: `Probe`
         Defer mode: `None`
       */ -}}
       {{ execCC 1 .Channel.ID 0 (sdict "Respond" true "Title" "Oops" "DeleteResponse" true "DeleteDelay" 5) }}
@@ -154,6 +156,7 @@ tests:
         Trigger type: `Slash Command`
         Trigger: `probe`
         Group: `Utility`
+        Slash description: `Probe`
         Defer mode: `None`
       */ -}}
       {{ execCC 1 .Channel.ID 0 (sdict "Respond" true "Title" "Buttons" "Components" (cbutton "label" "Go" "custom_id" "probe:go")) }}
@@ -188,6 +191,7 @@ tests:
         Trigger type: `Slash Command`
         Trigger: `probe`
         Group: `Utility`
+        Slash description: `Probe`
         Defer mode: `None`
       */ -}}
       {{ execCC 1 .Channel.ID 0 (sdict "Respond" true "Embeds" (cslice

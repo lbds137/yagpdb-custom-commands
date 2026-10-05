@@ -595,6 +595,17 @@ gets a failing test first.
 
 ## Tooling defects
 
+- Fixed 2026-10-04 (found deploying /db and /edit to The Rose): deploy.js said only
+  `failed: read-back mismatch` because the panel shows danger alerts only through a
+  script call, `showAlerts("<json>")` (cp_main.html:187, :245-251; never an `.alert`
+  div), which `findErrorAlert` couldn't see. It now parses that call's argument (JS
+  string unescaped, JSON parsed, danger messages kept) next to the div check, and a
+  failed read-back status ends `(panel: <message>)`. Success is still the read-back's.
+- Fixed 2026-10-04 (same deploy): a `Slash Command` header without `Slash description:`
+  deployed an empty description to a NEW command, which YAGPDB refuses
+  (customcommands.go:649-651, 1-100 runes). `ValidateHeader` (Go) and its JS mirror
+  now require the line on a deployable (`Group:`-bearing) Slash Command header, same
+  message, held by `deploy/testdata/headers.golden.json`.
 - Fixed 2026-10-04 (found the same day on The Rose's config_sync, #24): the browser deploy
   couldn't finish a NEW interval command. create() leaves `time_trigger_interval` 0 and
   YAGPDB refuses an hourly interval under 1 (vendor customcommands/customcommands.go:
@@ -633,11 +644,11 @@ gets a failing test first.
   field errors the run outside any try (.ModalValues access in prompt_post) —
   staff-gated so only staff can trip it, but the submitter gets no response; a
   field guard would close it.
-- Command headers record `Slash option:` descriptions but not the top-level slash
-  command's description (the panel's slash_command_description field,
-  customcommands.go:233/619/649) — so the panel and the repo can drift. Candidate: a
-  `Slash description:` header line the linter cross-checks; meanwhile /prompt's
-  panel description lives in this unit's deploy report (2026-10-01).
+- Fixed 2026-10-04: the `Slash description:` header line (added with the slash fleet) is
+  now required on every deployable slash command, and the four that lacked it (/db,
+  /edit, /prompt, /role_ping) carry their live panel descriptions. Was: headers recorded
+  option descriptions but not the command's (customcommands.go:233/619/649), so the
+  panel and repo could drift.
 - PRODUCTION FINDING (smoke 2026-10-01/02): a forum post's FIRST message never
   notifies its mentions, even with allowed_mentions transmitted — the payload
   provably rode along (restapi.go:2634-2637 nests MessageSend; message.go:340

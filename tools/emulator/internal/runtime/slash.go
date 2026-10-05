@@ -27,7 +27,7 @@ var (
 )
 
 // ReadSlashDescription is the header's slash command description, and whether the header
-// has the line (without it the deploy leaves the panel's description alone).
+// has the line (a deployable Slash Command header must have it: ValidateHeader).
 func ReadSlashDescription(source string) (string, bool) {
 	if m := headerSlashDescription.FindStringSubmatch(headerComment(source)); m != nil {
 		return m[1], true

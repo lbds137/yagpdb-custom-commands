@@ -18,7 +18,8 @@ also applies it: trigger type (`Trigger type:`), trigger text (`Trigger:`), grou
 interaction defer mode (`Defer mode:`, absent = None), the panel's cosmetic command name
 (the file's basename without `.gohtml`, from the manifest path, not a header line; `create`
 sets it too), and for a `Slash Command` the
-description (`Slash description:`, absent = left as the panel has it) and the
+description (`Slash description:`, required, 1-100 characters: YAGPDB refuses a new slash
+command without one) and the
 `Slash subcommand:` / `Slash option:` rows (replaced wholesale; choices, min/max and channel
 types are posted empty), and for an `Hourly interval` / `Minute interval` the interval
 (`Interval:`, required, within the panel's 1-744 hours / 5-44640 minutes: the unit the
@@ -63,7 +64,9 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
 7. On her go-ahead only, run for real with the same options and `dryRun: false`.
 8. Every command should come back `"updated"` or `"same"`. Anything else (`missing`,
    `skipped-multi`, or a `failed: ...` status) -- stop, report the statuses, and do not retry
-   blindly; a retry without understanding the failure can compound it. A `note` field on a
+   blindly; a retry without understanding the failure can compound it. A failed status
+   ending `(panel: <message>)` carries the panel's own refusal text (it renders danger
+   alerts through `showAlerts("<json>")`, which deploy.js parses). A `note` field on a
    result (an `.alert-danger`/`.alert.alert-error` seen on the page) is informational only:
    the panel shows site-wide notice banners too, so it rides along on an `"updated"` result
    as often as on a failed one. Success/failure is decided solely by the read-back: the code
