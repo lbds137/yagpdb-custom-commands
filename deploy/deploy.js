@@ -347,6 +347,20 @@
     check(def.options);
   }
 
+  // The interval types' panel type labels and the form's `type` values, which the
+  // interval field's unit follows (hours for interval_hours, minutes for interval_minutes).
+  function isIntervalType(label) {
+    return label !== null && (eqFold(label, "Hourly interval") || eqFold(label, "Minute interval"));
+  }
+
+  // The `Interval:` line as a positive whole number (trigger.go ReadInterval), or null.
+  function readInterval(header) {
+    var v = headerLine("Interval", header);
+    if (v === null || !/^[0-9]{1,9}$/.test(v)) return null;
+    var n = Number(v);
+    return n > 0 ? n : null;
+  }
+
   // trigger.go ValidateHeader: the message of the first thing it rejects, or null.
   function validateHeaderError(source, deferMode, trigger) {
     var header = headerComment(source);
@@ -365,6 +379,28 @@
     var defer = headerLine("Defer mode", header);
     if (defer !== null && parseDeferMode(defer) < 0) {
       return "header Defer mode: `" + defer + "` isn't one of the panel's: " + DEFER_LABELS.join(", ");
+    }
+    if (isIntervalType(trigger.type)) {
+      var intervalText = headerLine("Interval", header);
+      if (intervalText === null) {
+        return "header Interval: a `" + trigger.type + "` trigger needs an `Interval:` line";
+      }
+      if (readInterval(header) === null) {
+        return "header Interval: `" + intervalText + "` isn't a positive whole number";
+      }
+      // The panel's bounds (vendor customcommands/customcommands.go:39-42, :498-504).
+      var intervalN = readInterval(header);
+      if (eqFold(trigger.type, "Hourly interval") && intervalN > 744) {
+        return "header Interval: `" + intervalText + "` isn't between 1 and 744 hours";
+      }
+      if (eqFold(trigger.type, "Minute interval") && (intervalN < 5 || intervalN > 44640)) {
+        return "header Interval: `" + intervalText + "` isn't between 5 and 44640 minutes";
+      }
+      // The panel stores minutes and shows a multiple of 60 as hourly (customcommands/web.go
+      // tmplGetCCIntervalTriggerType), so such a header could never read back as written.
+      if (eqFold(trigger.type, "Minute interval") && intervalN % 60 === 0) {
+        return "header Interval: `" + intervalText + "` minutes is whole hours: use `Hourly interval`";
+      }
     }
     var isSlash = trigger.type !== null && eqFold(trigger.type, "Slash Command");
     var isContext =
@@ -433,6 +469,7 @@
       trigger: triggerMatch ? triggerMatch[1] : null,
       group: groupMatch ? groupMatch[1] : null,
       deferMode: deferMode,
+      interval: isIntervalType(trigger.type) ? readInterval(header) : null,
       slashDescription: slashDescription,
       slash: slash,
       error: error,
@@ -588,6 +625,11 @@
       group: labelFor(labels && labels.group, entryValue(entries, "GroupID")),
       deferMode: deferValue === null ? null : DEFER_LABELS[Number(deferValue)] || null,
       name: entryValue(entries, "name"),
+      // The form's interval input, in the unit its type shows (hours for an hourly
+      // command: customcommands/web.go tmplGetCCInterval); null when absent or not a number.
+      interval: /^\d+$/.test(entryValue(entries, "time_trigger_interval") || "")
+        ? Number(entryValue(entries, "time_trigger_interval"))
+        : null,
       slashDescription: entryValue(entries, "slash_command_description"),
       slash: liveSlashRows(entries),
     };
@@ -612,6 +654,9 @@
     if (header.group !== null && header.group !== live.group) differ("group", live.group, header.group);
     var wantDefer = DEFER_LABELS[header.deferMode];
     if (wantDefer !== live.deferMode) differ("deferMode", live.deferMode, wantDefer);
+    if (isIntervalType(header.type) && header.interval !== null && header.interval !== live.interval) {
+      differ("interval", live.interval, header.interval);
+    }
     if (header.type === SLASH_COMMAND) {
       if (header.slashDescription !== null && header.slashDescription !== live.slashDescription) {
         differ("slashDescription", live.slashDescription, header.slashDescription);
@@ -663,6 +708,9 @@
     if (header.group !== null) scalars.GroupID = valueOfLabel(labels && labels.group, header.group, "group");
     if (typeof header.name === "string") scalars.name = header.name;
     scalars.interaction_defer_mode = String(header.deferMode);
+    if (isIntervalType(header.type) && header.interval !== null) {
+      scalars.time_trigger_interval = String(header.interval);
+    }
     if (isSlash && header.slashDescription !== null) {
       scalars.slash_command_description = header.slashDescription;
     }

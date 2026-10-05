@@ -595,14 +595,15 @@ gets a failing test first.
 
 ## Tooling defects
 
-- Found 2026-10-04 (The Rose's config_sync, #24): the browser deploy can't finish a NEW
-  interval command. create() leaves `time_trigger_interval` 0, deploy.js doesn't manage
-  it (the header's `Interval:` line is ignored), and YAGPDB refuses an hourly interval
-  under 1 (vendor customcommands/customcommands.go:503-504), so the update is rejected
-  (`failed: read-back mismatch`, still type Command, disabled). Fix: deploy.js posts
-  `time_trigger_interval` from the header for interval types (golden + JS test). The
-  context channel stays manual. Workaround used: Lila sets type, interval and channel in
-  the panel, then the deploy reruns. Trigger: the next interval command created.
+- Fixed 2026-10-04 (found the same day on The Rose's config_sync, #24): the browser deploy
+  couldn't finish a NEW interval command. create() leaves `time_trigger_interval` 0 and
+  YAGPDB refuses an hourly interval under 1 (vendor customcommands/customcommands.go:
+  503-504), so the update was rejected (`failed: read-back mismatch`). deploy.js now posts
+  `time_trigger_interval` from the header's `Interval:` line for the two interval types
+  (hours for Hourly, minutes for Minute: the unit the panel's input shows, web.go
+  tmplGetCCInterval), diffs it as `interval` and checks it on read-back; the Go header
+  reader exposes it in the golden and an interval header without a positive `Interval:`
+  is a header error. The context channel stays manual.
 - Forum prompts SHIPPED (2026-10-01): `createForumPost` is ported into the emulator
   (faithful copy of tmplCreateForumPost, context_funcs.go:1479-1531; the earlier
   "vendor stale" claim here was a grep miss — `head -8` truncated before :1532), and

@@ -2,51 +2,61 @@
   "commands": {
     "commands/bump/bump_check.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/bump/bump_remind.gohtml": {
       "deferMode": 0,
+      "interval": 12,
       "slashDescription": null,
       "slash": null
     },
     "commands/bump/bump_reset.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/channels/channel_activity.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/channels/channel_activity_pager.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/channels/channel_link.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/channels/channel_tracker.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/channels/directory.gohtml": {
       "deferMode": 0,
+      "interval": 168,
       "slashDescription": null,
       "slash": null
     },
     "commands/channels/message_pointer.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/channels/pointer_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "Post a pointer to a message",
       "slash": {
         "subcommands": [],
@@ -68,6 +78,7 @@
     },
     "commands/color/color_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "Color tools",
       "slash": {
         "subcommands": [
@@ -124,31 +135,37 @@
     },
     "commands/color/contrast.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/color/hex_to_int.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/color/rand_color.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/db/db_get_embed.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/db/db_get_text.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/db/db_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": {
         "subcommands": [
@@ -302,21 +319,25 @@
     },
     "commands/db/simple_db_lookup.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/edit/edit_confirm.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/edit/edit_modal.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/edit/edit_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": {
         "subcommands": [
@@ -380,16 +401,19 @@
     },
     "commands/gematria/gematria.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/gematria/gematria_bootstrap.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/gematria/gematria_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "Gematria of Hebrew text",
       "slash": {
         "subcommands": [],
@@ -405,31 +429,37 @@
     },
     "commands/general/avatar_menu.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/general/avatar_viewer.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/general/dismiss.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/general/emoji_menu.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/general/hugemoji.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/general/prompt.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": {
         "subcommands": [],
@@ -457,16 +487,19 @@
     },
     "commands/general/prompt_post.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/general/timestamp.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/general/timestamp_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "When a Discord ID was created (default: you)",
       "slash": {
         "subcommands": [],
@@ -482,16 +515,19 @@
     },
     "commands/hebrew/alefbet.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/hebrew/atbash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/hebrew/hebrew_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "Hebrew tools",
       "slash": {
         "subcommands": [
@@ -555,16 +591,19 @@
     },
     "commands/hebrew/pyramid.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/hebrew/rand_hebrew.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/knowledge/define_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "Link a Night House glossary term",
       "slash": {
         "subcommands": [],
@@ -580,11 +619,13 @@
     },
     "commands/members/batch_delrep.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/members/hiatus_slash.gohtml": {
       "deferMode": 2,
+      "interval": null,
       "slashDescription": "Step away from staff duties (removes your staff roles)",
       "slash": {
         "subcommands": [],
@@ -593,16 +634,19 @@
     },
     "commands/members/inactivity.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/members/inactivity_prune_pick.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/members/role_ping_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": {
         "subcommands": [],
@@ -624,16 +668,19 @@
     },
     "commands/members/staff_roles.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/members/staff_roles_pick.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/members/staff_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "Staff tools",
       "slash": {
         "subcommands": [
@@ -731,6 +778,7 @@
     },
     "commands/members/unhiatus_slash.gohtml": {
       "deferMode": 2,
+      "interval": null,
       "slashDescription": "Return from a staff hiatus (restores your staff roles)",
       "slash": {
         "subcommands": [],
@@ -739,31 +787,37 @@
     },
     "commands/plumbing/bootstrap.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/plumbing/config_sync.gohtml": {
       "deferMode": 0,
+      "interval": 1,
       "slashDescription": null,
       "slash": null
     },
     "commands/plumbing/embed_exec.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/plumbing/log_user.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/plumbing/message_link.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/plumbing/setup_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "Set the server's roles and channels",
       "slash": {
         "subcommands": [
@@ -832,11 +886,13 @@
     },
     "commands/plumbing/ticket_clean.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/rules/rule_slash.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": "View a server rule, or browse them all",
       "slash": {
         "subcommands": [],
@@ -852,11 +908,13 @@
     },
     "commands/rules/rules.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     },
     "commands/rules/rules_pager.gohtml": {
       "deferMode": 0,
+      "interval": null,
       "slashDescription": null,
       "slash": null
     }
@@ -867,6 +925,7 @@
       "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `probe`\n  Slash option: `text string! the text`\n  Slash option: `who user! a member`\n  Slash option: `count integer how many`\n  Slash option: `where channel a channel`\n  Slash option: `rank role a role`\n  Slash option: `whom mentionable a role or a user`\n*/}}",
       "header": {
         "deferMode": 0,
+        "interval": null,
         "slashDescription": null,
         "slash": {
           "subcommands": [],
@@ -916,6 +975,7 @@
       "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `kv`\n  Slash subcommand: `get read a key`\n  Slash subcommand: `set write a key`\n  Slash option: `get.key string! the key`\n  Slash option: `set.key string! the key`\n  Slash option: `set.ttl integer seconds`\n*/}}",
       "header": {
         "deferMode": 0,
+        "interval": null,
         "slashDescription": null,
         "slash": {
           "subcommands": [
@@ -959,6 +1019,7 @@
       "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash description: `Color tools`\n  Defer mode: `Ephemeral Message Response`\n*/}}",
       "header": {
         "deferMode": 2,
+        "interval": null,
         "slashDescription": "Color tools",
         "slash": {
           "subcommands": [],
@@ -971,6 +1032,7 @@
       "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Defer mode: `Message Response`\n  Slash option: `מפתח string! the key`\n*/}}",
       "header": {
         "deferMode": 1,
+        "interval": null,
         "slashDescription": null,
         "slash": {
           "subcommands": [],
@@ -990,6 +1052,7 @@
       "source": "{{/*\n  Trigger type: `Message Component`\n  Trigger: `^x:`\n  Defer mode: `Update Message Response`\n*/}}",
       "header": {
         "deferMode": 3,
+        "interval": null,
         "slashDescription": null,
         "slash": null
       }
@@ -999,6 +1062,37 @@
       "source": "{{/*\n  Trigger type: `User Context Menu`\n  Trigger: `View avatar`\n*/}}",
       "header": {
         "deferMode": 0,
+        "interval": null,
+        "slashDescription": null,
+        "slash": null
+      }
+    },
+    {
+      "name": "an hourly interval",
+      "source": "{{/*\n  Trigger type: `Hourly interval`\n  Group: `Utility`\n  Interval: `12`\n*/}}",
+      "header": {
+        "deferMode": 0,
+        "interval": 12,
+        "slashDescription": null,
+        "slash": null
+      }
+    },
+    {
+      "name": "a minute interval",
+      "source": "{{/*\n  Trigger type: `Minute interval`\n  Group: `Utility`\n  Interval: `15`\n*/}}",
+      "header": {
+        "deferMode": 0,
+        "interval": 15,
+        "slashDescription": null,
+        "slash": null
+      }
+    },
+    {
+      "name": "an Interval line on a command is ignored",
+      "source": "{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Interval: `3`\n*/}}",
+      "header": {
+        "deferMode": 0,
+        "interval": null,
         "slashDescription": null,
         "slash": null
       }
@@ -1139,6 +1233,56 @@
       "name": "context menu bad name",
       "source": "{{/*\n  Trigger type: `Message Context Menu`\n  Trigger: `Quote!`\n*/}}",
       "error": "header: Context menu command name must be 1-32 characters and contain only letters, numbers, spaces, dashes and underscores"
+    },
+    {
+      "name": "hourly interval without Interval",
+      "source": "{{/*\n  Trigger type: `Hourly interval`\n  Group: `Utility`\n*/}}",
+      "error": "header Interval: a `Hourly interval` trigger needs an `Interval:` line"
+    },
+    {
+      "name": "minute interval without Interval",
+      "source": "{{/*\n  Trigger type: `Minute interval`\n  Group: `Utility`\n*/}}",
+      "error": "header Interval: a `Minute interval` trigger needs an `Interval:` line"
+    },
+    {
+      "name": "interval of zero",
+      "source": "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `0`\n*/}}",
+      "error": "header Interval: `0` isn't a positive whole number"
+    },
+    {
+      "name": "interval negative",
+      "source": "{{/*\n  Trigger type: `Minute interval`\n  Interval: `-5`\n*/}}",
+      "error": "header Interval: `-5` isn't a positive whole number"
+    },
+    {
+      "name": "interval not a number",
+      "source": "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `daily`\n*/}}",
+      "error": "header Interval: `daily` isn't a positive whole number"
+    },
+    {
+      "name": "hourly interval above 744",
+      "source": "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `745`\n*/}}",
+      "error": "header Interval: `745` isn't between 1 and 744 hours"
+    },
+    {
+      "name": "minute interval below 5",
+      "source": "{{/*\n  Trigger type: `Minute interval`\n  Interval: `4`\n*/}}",
+      "error": "header Interval: `4` isn't between 5 and 44640 minutes"
+    },
+    {
+      "name": "minute interval above 44640",
+      "source": "{{/*\n  Trigger type: `Minute interval`\n  Interval: `44641`\n*/}}",
+      "error": "header Interval: `44641` isn't between 5 and 44640 minutes"
+    },
+    {
+      "name": "minute interval of whole hours",
+      "source": "{{/*\n  Trigger type: `Minute interval`\n  Interval: `120`\n*/}}",
+      "error": "header Interval: `120` minutes is whole hours: use `Hourly interval`"
+    },
+    {
+      "name": "interval fractional",
+      "source": "{{/*\n  Trigger type: `Hourly interval`\n  Interval: `1.5`\n*/}}",
+      "error": "header Interval: `1.5` isn't a positive whole number"
     }
   ]
 }

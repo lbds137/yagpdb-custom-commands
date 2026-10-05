@@ -20,8 +20,12 @@ interaction defer mode (`Defer mode:`, absent = None), the panel's cosmetic comm
 sets it too), and for a `Slash Command` the
 description (`Slash description:`, absent = left as the panel has it) and the
 `Slash subcommand:` / `Slash option:` rows (replaced wholesale; choices, min/max and channel
-types are posted empty). Everything else on the form (channels, roles, case sensitivity,
-interval, show errors, context channels, ...) stays as the live form has it. Enabling and
+types are posted empty), and for an `Hourly interval` / `Minute interval` the interval
+(`Interval:`, required, within the panel's 1-744 hours / 5-44640 minutes: the unit the
+panel's field shows; a minute interval that is whole hours is refused, since the panel
+shows it as hourly;
+the structure diff calls it `interval`). Everything else on the form (channels, roles,
+case sensitivity, show errors, context channels, ...) stays as the live form has it. Enabling and
 disabling are separate, explicit options. Nothing is ever deleted.
 
 The manual paste (`make changed-since-deploy` / `make mark-deployed`, in this repo's
@@ -49,7 +53,7 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    paste command code back into the conversation (the browser tool's content filter blocks
    some of it anyway, and there's no reason to route it through the model twice). Show her
    the `would-update` list with each `structure` diff (`{field: {live, header}}`: type,
-   name, trigger, group, deferMode, slashDescription, slash). Each result carries the live
+   name, trigger, group, deferMode, interval, slashDescription, slash). Each result carries the live
    `enabled` and `enabledWanted` (true/false from the `enable`/`disable` lists, null =
    untouched): the planned enable/disable is `enabledWanted` where it differs from `enabled`.
    The dry run also builds each post body, so a type or group the panel's selects lack shows
@@ -89,7 +93,9 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
   before retrying. `create` refuses a command whose name (file basename) already exists on
   any list page (`failed: exists as #N`), so a repeat can't duplicate it.
   An interval command also needs its channel set in the panel (the deploy never touches
-  context channels): without one YAGPDB never runs it, silently.
+  context channels): without one YAGPDB never runs it, silently. Its interval comes from
+  the header's `Interval:` on the run after `create` (create leaves it 0, which YAGPDB
+  refuses for an hourly command).
 - **Enable / disable:** only through the `enable` / `disable` options, on her explicit yes.
 - **Retire:** `disable: [id]` in a run, then `git mv` the file to `retired/` and drop it from
   `deploy/panel.json`. Deleting the command in the panel is permanent and stays Lila's.
@@ -108,7 +114,7 @@ for its `Commands`-dict key. Only once that comes up empty is it safe to retire 
 ## Out of scope for this script (stay manual)
 
 - Deleting a command in the panel (permanent): list it for Lila instead of acting on it.
-- Anything the header doesn't express: channels, roles, case sensitivity, interval, show
+- Anything the header doesn't express: channels, roles, case sensitivity, show
   errors, context channels, and an option's choices, min/max and channel types.
 
 ## Landmines

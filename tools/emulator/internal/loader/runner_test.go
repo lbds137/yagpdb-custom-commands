@@ -63,7 +63,7 @@ func TestArgsFollowTheHeaderTrigger(t *testing.T) {
 	}
 	write("kb.gohtml", header("Command", "kb")+`{{json .Args}}|{{.Cmd}}|{{json .CmdArgs}}`)
 	write("link.gohtml", header("Regex", `\d{3}`)+`{{.Cmd}}|{{json .CmdArgs}}`)
-	write("interval.gohtml", header("Minute interval", "")+`ran {{.Message}} {{.User}}`)
+	write("interval.gohtml", "{{/*\n  Trigger type: `Minute interval`\n  Interval: `15`\n*/}}"+`ran {{.Message}} {{.User}}`)
 	write("none.gohtml", header("None", "")+`{{.Message.Author.ID}}`)
 	write("plain.gohtml", `{{.Cmd}}`)
 	write("message.gohtml", header("Command", "m")+`{{.Message.Content}}`)

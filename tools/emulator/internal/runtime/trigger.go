@@ -47,7 +47,35 @@ var (
 	headerShowErrors  = regexp.MustCompile("(?i:Show errors): `([^`]*)`")
 	headerRedirect    = regexp.MustCompile("(?i:Redirect errors): `([^`]*)`")
 	headerDeferMode   = regexp.MustCompile("(?i:Defer mode): `([^`]*)`")
+	headerInterval    = regexp.MustCompile("(?i:Interval): `([^`]*)`")
+	intervalNumber    = regexp.MustCompile(`^[0-9]{1,9}$`)
 )
+
+// The panel's interval bounds (vendor customcommands/customcommands.go:39-42, enforced at
+// :498-504): hours 1-744, minutes 5-44640.
+const (
+	maxIntervalHours   = 744
+	minIntervalMinutes = 5
+	maxIntervalMinutes = 44640
+)
+
+// ReadInterval is the header's `Interval:` line as a positive whole number: hours for an
+// "Hourly interval" trigger, minutes for a "Minute interval" one (the unit the control
+// panel's interval field shows). ok is false without the line or when it isn't one.
+func ReadInterval(source string) (n int, ok bool) {
+	v, has := headerValue(headerInterval, source)
+	if !has || !intervalNumber.MatchString(v) {
+		return 0, false
+	}
+	n, _ = strconv.Atoi(v)
+	return n, n > 0
+}
+
+// IntervalTriggered reports whether the trigger type is one of the panel's two interval
+// types, the ones that take an `Interval:` line.
+func (t Trigger) IntervalTriggered() bool {
+	return strings.EqualFold(t.Type, "Hourly interval") || strings.EqualFold(t.Type, "Minute interval")
+}
 
 // headerComment is the template's leading {{/* ... */}} comment, or "" without one.
 func headerComment(source string) string {
@@ -118,6 +146,24 @@ func ValidateHeader(source string) error {
 	// A slash command's or context menu entry's rows and name, as the panel validates
 	// them (slash.go); the option rows belong to a slash command only
 	t, ok := ReadTrigger(source)
+	if ok && t.IntervalTriggered() {
+		if v, has := headerValue(headerInterval, source); !has {
+			return fmt.Errorf("header Interval: a `%s` trigger needs an `Interval:` line", t.Type)
+		} else if _, valid := ReadInterval(source); !valid {
+			return fmt.Errorf("header Interval: `%s` isn't a positive whole number", v)
+		} else if n, _ := ReadInterval(source); strings.EqualFold(t.Type, "Hourly interval") &&
+			n > maxIntervalHours {
+			return fmt.Errorf("header Interval: `%s` isn't between 1 and %d hours", v, maxIntervalHours)
+		} else if strings.EqualFold(t.Type, "Minute interval") &&
+			(n < minIntervalMinutes || n > maxIntervalMinutes) {
+			return fmt.Errorf("header Interval: `%s` isn't between %d and %d minutes", v,
+				minIntervalMinutes, maxIntervalMinutes)
+		} else if strings.EqualFold(t.Type, "Minute interval") && n%60 == 0 {
+			// The panel stores minutes and shows a multiple of 60 as hourly (vendor
+			// customcommands/web.go tmplGetCCIntervalTriggerType): it could never read back
+			return fmt.Errorf("header Interval: `%s` minutes is whole hours: use `Hourly interval`", v)
+		}
+	}
 	switch {
 	case ok && t.SlashTriggered():
 		def, err := ReadSlashCommand(source)
