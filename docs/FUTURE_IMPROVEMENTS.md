@@ -122,13 +122,13 @@ picks, then the minifier.
   cap; create() it there, deploy embed_exec's Respond/Embeds version first), then retire
   contrast.gohtml and rand_color.gohtml fully (lotv 18, 16; they stay in commands/color/
   only for lotv). The other fleet roots follow the same per-server step.
-  BLOCKED 2026-10-04 (dry run): lotv's panel has no command groups (all 18 commands in
-  "None"), so every header's `Group:` fails there and nothing deploys or creates. Lila
-  wants lotv synced to everything (like The Rose: config_sync, the fleet roots,
-  rules_pager, db_get_text, simple_db_lookup, plus the stale live triggers of hex_to_int
-  and db_get_embed) but skipped it for now. Trigger: Lila creates "Utility" and
-  "Staff Utility" (staff role) in lotv's panel; then full dry run, create, enable, and
-  set config_sync's interval channel by hand.
+  SYNCED 2026-10-04 (3c1311a, after Lila created the groups): all 18 existing lotv
+  commands updated (groups, hex_to_int and db_get_embed triggers); 16 created and enabled
+  (lotv 24-39: the fleet roots, rules_pager, db_get_text, simple_db_lookup, rand_hebrew)
+  except config_sync (24), which failed on the interval (Tooling defects, first bullet)
+  and stays disabled until that fix reruns it and Lila sets its channel. Still open: the
+  lotv text twins (contrast, rand_color, timestamp, atbash, alefbet, pyramid,
+  message_pointer, rand_hebrew) retire after a live check there, per the fleet policy.
 - Prerequisite (met by unit 4, 2026-09-27): the emulator models interactions: Slash
   (.Options, .CmdArgs, subcommands), Component and Modal triggers (.CustomID, .Values,
   .IsButton/.IsMenu), context-menu (.TargetUser/.TargetMember/.Message), sendResponse/
@@ -691,10 +691,11 @@ gets a failing test first.
 - Deferred (found in the same review): /setup doesn't check that a picked role sits below
   the bot's own role, so a Staff role above it can't be removed by hiatus. Trigger: the
   next /setup change, or a live report of hiatus failing on it.
-- Deferred (trigger: Lure of the Void is used again): lotv has no config_sync (no panel
-  id in panel.json, so it isn't deployed there and the generated lotv branch is unused),
-  and its bootstrap no longer writes embed_exec/db. Revive it with a config_sync created
-  there (disabled, a channel set), its id in panel.json, `make config-sync`, deploy.
+- In progress (2026-10-04): lotv's config_sync is created (lotv 24, in panel.json, the
+  generated lotv branch now live in the file) but not yet saved as an hourly command
+  (the interval deploy fix, Tooling defects); then Lila sets its channel and enables it.
+  Until its first run, lotv's Commands dict lacks the new commands' ids, so the new
+  slash roots there answer "isn't set up".
 
 - Shipped (8aa3b70): deploy/deploy.test.js no longer pins the sha256 of real command
   files; the parity test computes the Python-normalized hash at test time (spawnSync
