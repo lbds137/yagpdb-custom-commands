@@ -166,7 +166,7 @@
     "commands/db/db_slash.gohtml": {
       "deferMode": 0,
       "interval": null,
-      "slashDescription": null,
+      "slashDescription": "Database dictionary tools",
       "slash": {
         "subcommands": [
           {
@@ -338,7 +338,7 @@
     "commands/edit/edit_slash.gohtml": {
       "deferMode": 0,
       "interval": null,
-      "slashDescription": null,
+      "slashDescription": "Edit rules and database entries",
       "slash": {
         "subcommands": [
           {
@@ -460,7 +460,7 @@
     "commands/general/prompt.gohtml": {
       "deferMode": 0,
       "interval": null,
-      "slashDescription": null,
+      "slashDescription": "Post a prompt: a date-titled thread in a forum channel, or a message anywhere",
       "slash": {
         "subcommands": [],
         "options": [
@@ -647,7 +647,7 @@
     "commands/members/role_ping_slash.gohtml": {
       "deferMode": 0,
       "interval": null,
-      "slashDescription": null,
+      "slashDescription": "Ping any role with an optional message.",
       "slash": {
         "subcommands": [],
         "options": [
