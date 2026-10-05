@@ -125,8 +125,8 @@ picks, then the minifier.
   SYNCED 2026-10-04 (3c1311a, after Lila created the groups): all 18 existing lotv
   commands updated (groups, hex_to_int and db_get_embed triggers); 16 created and enabled
   (lotv 24-39: the fleet roots, rules_pager, db_get_text, simple_db_lookup, rand_hebrew)
-  except config_sync (24), which failed on the interval (Tooling defects, first bullet)
-  and stays disabled until that fix reruns it and Lila sets its channel. Still open: the
+  (config_sync, 24, first failed on the interval; deployed hourly and enabled after the
+  interval fix, 41c11fa; its channel is Lila's to set). Still open: the
   lotv text twins (contrast, rand_color, timestamp, atbash, alefbet, pyramid,
   message_pointer, rand_hebrew) retire after a live check there, per the fleet policy.
 - Prerequisite (met by unit 4, 2026-09-27): the emulator models interactions: Slash
@@ -692,11 +692,10 @@ gets a failing test first.
 - Deferred (found in the same review): /setup doesn't check that a picked role sits below
   the bot's own role, so a Staff role above it can't be removed by hiatus. Trigger: the
   next /setup change, or a live report of hiatus failing on it.
-- In progress (2026-10-04): lotv's config_sync is created (lotv 24, in panel.json, the
-  generated lotv branch now live in the file) but not yet saved as an hourly command
-  (the interval deploy fix, Tooling defects); then Lila sets its channel and enables it.
-  Until its first run, lotv's Commands dict lacks the new commands' ids, so the new
-  slash roots there answer "isn't set up".
+- Waiting on Lila (2026-10-04): lotv's config_sync (24) is deployed hourly and enabled,
+  but YAGPDB runs an interval command only with a channel set, which the deploy can't
+  set. Until she sets it and the first run lands, lotv's Commands dict lacks the new
+  commands' ids, so the new slash roots there answer "isn't set up".
 
 - Shipped (8aa3b70): deploy/deploy.test.js no longer pins the sha256 of real command
   files; the parity test computes the Python-normalized hash at test time (spawnSync
