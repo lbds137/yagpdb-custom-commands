@@ -111,7 +111,9 @@ cmodal:
     placeholder "current value isn't plain text; type a replacement"
   - rule missing → placeholder "new rule; type its text"
 
-**`/edit entry [category] [key]`** — both options optional. The modal is
+**`/edit entry [section] [name]`** (the options were `category`/`key` until 2026-10-05; the
+modal's field ids and the stored data are unchanged; its labels are now Section / Name / New
+text) — both options optional. The modal is
 self-describing: category and key are editable FIELDS, so it doubles as the
 create path (type `new:Widgets` in the Category field) and no delete record or
 state-in-id is needed beyond the stamp. sendModal:
@@ -132,7 +134,7 @@ state-in-id is needed beyond the stamp. sendModal:
   string. Fields echo the user's RAW input (transformation at store time shows
   up in the ack's "Stored as" field, the text command's behavior).
 
-**`/edit delete`** — exactly one form: `rule`, or `category` AND `key`. Anything
+**`/edit delete`** — exactly one form: `rule`, or `section` AND `name`. Anything
 else → one ephemeral usage error naming both forms. Then:
 
 - rule: `n ≥ 1`; missing rule → ephemeral "⚠️ There is no rule #<n> to delete."

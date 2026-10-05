@@ -357,13 +357,13 @@ tests:
         Operation: "add"
         Key: "Inactivity Prune"
         Value: { Previous Date: "2026-09-30", Next Date: "2027-01-01" }
-        Title: "Inactivity Prune Inactivity Prune Date Editing"
+        Title: "Inactivity Prune Date Editing"
     expected:
       output_equals: ""
     assertions:
       # public, not ephemeral: the ExecData path is db.gohtml's, embed_exec and all
       sent_messages:
-        - { embed_title: "Inactivity Prune Inactivity Prune Date Editing" }
+        - { embed_title: "Inactivity Prune Date Editing" }
       db_checks:
         - user_id: 0
           key: "Inactivity Prune"

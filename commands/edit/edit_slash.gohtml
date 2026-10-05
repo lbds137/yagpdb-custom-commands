@@ -3,7 +3,7 @@
   Trigger type: `Slash Command`
   Trigger: `edit`
   Group: `Staff Utility`
-  Slash description: `Edit rules and database entries`
+  Slash description: `Edit a rule, or a stored setting or message`
   Defer mode: `None`
 
   The modal front end for rule_edit and simple_db_edit (both in retired/ now): /edit
@@ -12,15 +12,15 @@
   one response, and a deferral would eat the slot.
 
   Slash subcommand: `rule edit a rule's text`
-  Slash option: `rule.rule integer! the rule's number`
-  Slash subcommand: `entry edit a database entry`
-  Slash option: `entry.category string category to prefill`
-  Slash option: `entry.key string key to prefill`
-  Slash option: `entry.create boolean make the category if it doesn't exist yet`
+  Slash option: `rule.rule integer! rule number (a number that doesn't exist yet adds a new rule)`
+  Slash subcommand: `entry edit a stored setting or message (advanced)`
+  Slash option: `entry.section string section to edit, e.g. Inactivity Prune (capitals don't matter)`
+  Slash option: `entry.name string name of the entry, e.g. Opening Announcement`
+  Slash option: `entry.create boolean start a brand-new section (only if it doesn't exist yet)`
   Slash subcommand: `delete delete a rule or entry`
-  Slash option: `delete.rule integer rule number`
-  Slash option: `delete.category string category`
-  Slash option: `delete.key string key`
+  Slash option: `delete.rule integer rule number (to delete a rule)`
+  Slash option: `delete.section string section of the entry (to delete an entry, with name)`
+  Slash option: `delete.name string name of the entry (with section)`
 */ -}}
 {{ if .IsSlashCommand }}
 	{{ $rolesDict := (dbGet 0 "Roles").Value }}
@@ -58,27 +58,34 @@
 			{{ else }}
 				{{ $field.Set "placeholder" "new rule; type its text" }}
 			{{ end }}
+			{{ $modalTitle := joinStr "" "Edit rule " $n }}
+			{{ if not $found }}
+				{{ $modalTitle = joinStr "" "New rule " $n " (doesn't exist yet)" }}
+			{{ end }}
 			{{ sendModal (cmodal
-				"title" (joinStr "" "Edit rule " $n)
+				"title" $modalTitle
 				"custom_id" (print "edit:rule:" $n ":" currentTime.Unix)
 				"fields" (cslice $field)
 			) }}
 		{{ end }}
 	{{ else if eq .SubCommand "entry" }}
-		{{ $categoryArg := toString (or .Options.category "") }}
-		{{ $keyArg := toString (or .Options.key "") }}
+		{{/* the options are section/name; the modal ids and the stored keys keep category/key */}}
+		{{ $categoryArg := toString (or .Options.section "") }}
+		{{ $keyArg := toString (or .Options.name "") }}
 		{{/* "or" returns the option's own value: a bool when given, false when absent */}}
 		{{ $create := or .Options.create false }}
-		{{ $catPlaceholder := "e.g. Admin" }}
+		{{ $catPlaceholder := "e.g. Inactivity Prune" }}
 		{{ if $create }}
-			{{ $catPlaceholder = "a new or existing category" }}
+			{{ $catPlaceholder = "a new or existing section" }}
 		{{ end }}
-		{{ $catField := sdict "label" "Category" "custom_id" "category" "style" 1 "required" true
+		{{ $catField := sdict "label" "Section" "custom_id" "category" "style" 1 "required" true
 			"placeholder" $catPlaceholder }}
-		{{ $keyField := sdict "label" "Key" "custom_id" "key" "style" 1 "required" true
-			"placeholder" "the entry's name" }}
-		{{ $valueField := sdict "label" "Value" "custom_id" "value" "style" 2 "required" true
+		{{ $keyField := sdict "label" "Name" "custom_id" "key" "style" 1 "required" true
+			"placeholder" "e.g. Opening Announcement" }}
+		{{ $valueField := sdict "label" "New text" "custom_id" "value" "style" 2 "required" true
 			"placeholder" "the new text" }}
+		{{ $nonText := false }}
+		{{ $nonTextName := "" }}
 		{{/* fields echo the raw input: transformation at store time shows up in the ack */}}
 		{{/* a text input holds 4000: past that the prefill is skipped, never cut (a cut
 			prefill would save the truncation) */}}
@@ -100,8 +107,8 @@
 			{{ if and $create (reFind "(?i)\\A\\s*new:" $categoryArg) }}
 				{{ $refused = "⚠️ Leave out `new:` — the `create` option does that now." }}
 			{{ else if and (not $create) (not $categoryEntry) }}
-				{{ $refused = joinStr "" "⚠️ There is no `" $catShown
-					"` category. Check the spelling, or set `create` to True to make it." }}
+				{{ $refused = joinStr "" "⚠️ There is no section called `" $catShown
+					"`. Check the spelling, or set `create` to True to start a new one." }}
 			{{ end }}
 		{{ end }}
 		{{ if $refused }}
@@ -132,19 +139,33 @@
 							{{ else }}
 								{{ $valueField.Set "value" $old }}
 							{{ end }}
+						{{ else }}
+							{{/* a list or settings group: a text box would overwrite it with text */}}
+							{{ $nonText = true }}
+							{{ $nonTextName = $key }}
 						{{ end }}
 					{{ end }}
 				{{ end }}
 			{{ end }}
-			{{ $modalID := print "edit:entry:" currentTime.Unix }}
-			{{ if $create }}
-				{{ $modalID = print "edit:entry:new:" currentTime.Unix }}
+			{{ if $nonText }}
+				{{ $label := joinStr " › " $catShown $nonTextName }}
+				{{ if gt (len (toRune $label)) 500 }}
+					{{ $label = joinStr "" (slice (split $label "") 0 499) "…" }}
+				{{ end }}
+				{{ sendResponse nil (complexMessage "content" (joinStr "" "⚠️ `" $label
+					"` holds a list or a group of settings, not text, so it can't be edited here. An admin can change it with /db.")
+					"ephemeral" true) }}
+			{{ else }}
+				{{ $modalID := print "edit:entry:" currentTime.Unix }}
+				{{ if $create }}
+					{{ $modalID = print "edit:entry:new:" currentTime.Unix }}
+				{{ end }}
+				{{ sendModal (cmodal
+					"title" "Edit entry"
+					"custom_id" $modalID
+					"fields" (cslice $catField $keyField $valueField)
+				) }}
 			{{ end }}
-			{{ sendModal (cmodal
-				"title" "Edit entry"
-				"custom_id" $modalID
-				"fields" (cslice $catField $keyField $valueField)
-			) }}
 		{{ end }}
 	{{ else if eq .SubCommand "delete" }}
 		{{/* HasKey, not truthiness: an explicit 0 is a given (and refused below), not absent */}}
@@ -152,21 +173,21 @@
 		{{ if .Options.HasKey "rule" }}
 			{{ $ruleGiven = true }}
 		{{ end }}
-		{{ $categoryArg := toString (or .Options.category "") }}
-		{{ $keyArg := toString (or .Options.key "") }}
+		{{ $categoryArg := toString (or .Options.section "") }}
+		{{ $keyArg := toString (or .Options.name "") }}
 		{{ $valid := or
 			(and $ruleGiven (not $categoryArg) (not $keyArg))
 			(and $categoryArg $keyArg (not $ruleGiven)) }}
 		{{ if not $valid }}
 			{{ sendResponse nil (complexMessage
-				"content" "⚠️ Give exactly one form: `rule`, or both `category` and `key`."
+				"content" "⚠️ To delete a rule, give only `rule`. To delete an entry, give both `section` and `name`."
 				"ephemeral" true) }}
 		{{ else if $ruleGiven }}
 			{{ $n := toInt (or .Options.rule 0) }}
 			{{/* no upper bound here: deleting an existing out-of-range rule is the repair path */}}
 			{{ if lt $n 1 }}
 				{{ sendResponse nil (complexMessage
-					"content" "⚠️ You must provide an integer greater than zero!" "ephemeral" true) }}
+					"content" "⚠️ Rule numbers start at 1." "ephemeral" true) }}
 			{{ else }}
 				{{ $key := joinStr "" "Rule #" $n }}
 				{{ $rulesDict := or (dbGet 0 "Rules").Value sdict }}
@@ -219,7 +240,7 @@
 			{{ $refused := "" }}
 			{{ $categoryEntry := dbGet 0 $category }}
 			{{ if not $categoryEntry }}
-				{{ $refused = joinStr "" "⚠️ There is no `" $catShown "` category. Check the spelling." }}
+				{{ $refused = joinStr "" "⚠️ There is no section called `" $catShown "`. Check the spelling." }}
 			{{ end }}
 			{{ $categoryDict := sdict }}
 			{{ if and (not $refused) $categoryEntry }}
@@ -243,8 +264,8 @@
 					{{ if gt (len (toRune $keyShown)) 500 }}
 						{{ $keyShown = joinStr "" (slice (split $keyShown "") 0 499) "…" }}
 					{{ end }}
-					{{ $refused = joinStr "" "⚠️ There is no `" $keyShown "` entry in `" $catShown
-						"` to remove." }}
+					{{ $refused = joinStr "" "⚠️ There is no entry called `" $keyShown "` in `" $catShown
+						"`." }}
 				{{ end }}
 			{{ end }}
 			{{ if $refused }}

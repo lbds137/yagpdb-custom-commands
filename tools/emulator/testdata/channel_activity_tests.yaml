@@ -106,7 +106,7 @@ tests:
         - channel_id: 99
           embed_title: "Channel activity"
           # embed_contains matches the embed's JSON, so a newline is the two characters \n
-          embed_contains: '3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>'
+          embed_contains: '3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>'
           components_contains: '"custom_id": "templates-ca:quiet:1:b"'
       interaction_responses: []
       deletions:
@@ -118,7 +118,7 @@ tests:
       guild: { channels: [] }
     assertions:
       sent_messages:
-        - { channel_id: 99, embed_title: "Channel activity", embed_contains: "channel_tracker is running" }
+        - { channel_id: 99, embed_title: "Channel activity", embed_contains: "Ask an admin to check that activity tracking is on." }
       deletions:
         - { channel_id: 99 }
 
@@ -190,7 +190,7 @@ tests:
     assertions:
       interaction_responses:
         - kind: update
-          embed_contains: '3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\n\n**Never seen**, in channel order — page 1 of 1\n_Bot and webhook posts aren''t seen, nor channels where YAGPDB can''t send._\n<#14>'
+          embed_contains: '3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Never seen**, in channel order — page 1 of 1\n_Bot and webhook posts aren''t seen, nor channels where YAGPDB can''t send._\n<#14>'
           components_contains: '"label": "Never seen (1)"'
 
   - name: "channel_activity_pager: a click deletes nothing (the cleanup is channel_activity's)"
@@ -1037,7 +1037,7 @@ tests:
       sent_messages:
         - channel_id: 99
           embed_title: "Channel activity"
-          embed_contains: '151 channels: 0 active · 0 quiet · 150 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 10'
+          embed_contains: '151 channels: 0 active · 0 quiet · 150 stale · 1 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Stale**, oldest first — page 1 of 10'
           components_contains: "\"label\": \"Never seen (1)\",\n      \"style\": 2,\n      \"disabled\": false"
 
   - name: "channel_activity: deleted-channel cleanup deletes exactly 6 of 8 stale entries, oldest first"

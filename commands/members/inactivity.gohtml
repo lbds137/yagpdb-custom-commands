@@ -51,7 +51,7 @@
   side effect */}}
 {{ if and $staff (or (le $embed_exec 0) (and (eq $action "prune") (le $prunePick 0))) }}
     {{ sendResponse nil (complexMessage
-        "content" "⚠️ This command isn't set up on this server yet."
+        "content" "⚠️ Part of this command isn't installed on this server yet. Please tell an admin."
         "ephemeral" true) }}
     {{ return }}
 {{ end }}
@@ -123,21 +123,17 @@
             {{ $heading = "Inactivity Prune Date Editing" }}
             {{ if $staff }}
                 {{/* the dict is written here: root, inactivity, db_slash, embed_exec would
-                  be depth 3, which YAGPDB refuses. The reply is db_slash's "add" embed */}}
+                  be depth 3, which YAGPDB refuses. The reply is a plain previous/next embed */}}
                 {{ $newPrune := sdict (or $pruneDict (sdict)) }}
                 {{ $_ := $newPrune.Set "Previous Date" $nextDate }}
                 {{ $_ := $newPrune.Set "Next Date" $param }}
                 {{ dbSet 0 $pruneCategory $newPrune }}
-                {{ $shown := sdict "Previous Date" $nextDate "Next Date" $param }}
                 {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
                     "ChannelID" .Channel.ID
-                    "Title" (joinStr " " $pruneCategory $heading)
-                    "Description" (joinStr "" "```\n" (json $shown true) "\n```")
-                    "Fields" (cslice
-                        (sdict "name" "User ID" "value" "```\n0```" "inline" true)
-                        (sdict "name" "Key" "value" (joinStr "" "```\n" $pruneCategory "```") "inline" true)
-                        (sdict "name" "Result" "value" "```\n✅ Value successfully added!```" "inline" false)
-                    )
+                    "Title" "Next prune date updated"
+                    "Description" (joinStr "\n"
+                        (joinStr "" "**Previous:** " (or $nextDate "_not set_"))
+                        (joinStr "" "**Next:** " $param))
                     "Respond" true
                 ) }}
             {{ else }}
@@ -147,14 +143,14 @@
                     "Operation" "add"
                     "Key" $pruneCategory
                     "Value" (sdict "Previous Date" $nextDate "Next Date" $param)
-                    "Title" (joinStr " " $pruneCategory $heading)
+                    "Title" $heading
                 ) }}
             {{ end }}
         {{ else }}
             {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
                 "ChannelID" .Channel.ID
-                "Title" "Missing Date Parameter"
-                "Description" "⚠️ You must enter a non-empty date parameter!"
+                "Title" "Date needed"
+                "Description" "⚠️ Give the new prune date, for example `March 1`."
                 "DeleteResponse" true
                 "DeleteDelay" $deleteResponseDelay
                 "Respond" $staff
@@ -173,8 +169,8 @@
             {{ else }}
                 {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
                     "ChannelID" .Channel.ID
-                    "Title" "Invalid User Parameter"
-                    "Description" "⚠️ You must enter a valid user parameter!"
+                    "Title" "Member not found"
+                    "Description" "⚠️ I couldn't find that member. Pick one with `user`, or leave it empty to choose from a menu."
                     "DeleteResponse" true
                     "DeleteDelay" $deleteResponseDelay
                     "Respond" $staff
@@ -186,8 +182,8 @@
                 "ChannelID" .Channel.ID
                 "Title" $pruneCategory
                 "Description" (joinStr "\n"
-                    (joinStr "" "Previous prune: " (or $prevDate "_not set_"))
-                    (joinStr "" "Next prune: " (or $nextDate "_not set_"))
+                    (joinStr "" "Previous prune: " (or $prevDate "_not set yet (use /staff inactivity, action date)_"))
+                    (joinStr "" "Next prune: " (or $nextDate "_not set yet (use /staff inactivity, action date)_"))
                     ""
                     "Pick a member to review for pruning.")
                 "AuthorID" .Member.User.ID
@@ -195,7 +191,7 @@
                     (cmenu "type" "user"
                         "custom_id" (print "ip:" .Member.User.ID)
                         "max_values" 1
-                        "placeholder" "Pick a member to prune…"))
+                        "placeholder" "Pick a member to review…"))
                 "Respond" $staff
             ) }}
         {{ end }}
@@ -203,8 +199,8 @@
 {{ else }}
     {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
         "ChannelID" .Channel.ID
-        "Title" "Invalid Action Specified"
-        "Description" "⚠️ You must enter a valid action parameter!"
+        "Title" "Unknown action"
+        "Description" "⚠️ Choose one of: `start`, `end`, `remind`, `date` or `prune`."
         "DeleteResponse" true
         "DeleteDelay" $deleteResponseDelay
         "Respond" $staff

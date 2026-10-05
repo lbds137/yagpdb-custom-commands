@@ -6,7 +6,7 @@
             - |-
               {
                 "color": 3447003,
-                "description": "200+ channels: 0 active · 0 quiet · 200 stale · ? never seen\n\n**Stale**, oldest first — page 1 of 14\n_Only the oldest 200 tracked channels were checked; untracked channels can't be listed._\n<#600000001> — <t:2001:R>\n<#600000002> — <t:2002:R>\n<#600000003> — <t:2003:R>\n<#600000004> — <t:2004:R>\n<#600000005> — <t:2005:R>\n<#600000006> — <t:2006:R>\n<#600000007> — <t:2007:R>\n<#600000008> — <t:2008:R>\n<#600000009> — <t:2009:R>\n<#600000010> — <t:2010:R>\n<#600000011> — <t:2011:R>\n<#600000012> — <t:2012:R>\n<#600000013> — <t:2013:R>\n<#600000014> — <t:2014:R>\n<#600000015> — <t:2015:R>",
+                "description": "200+ channels: 0 active · 0 quiet · 200 stale · ? never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Stale**, oldest first — page 1 of 14\n_Only the oldest 200 tracked channels were checked; untracked channels can't be listed._\n<#600000001> — <t:2001:R>\n<#600000002> — <t:2002:R>\n<#600000003> — <t:2003:R>\n<#600000004> — <t:2004:R>\n<#600000005> — <t:2005:R>\n<#600000006> — <t:2006:R>\n<#600000007> — <t:2007:R>\n<#600000008> — <t:2008:R>\n<#600000009> — <t:2009:R>\n<#600000010> — <t:2010:R>\n<#600000011> — <t:2011:R>\n<#600000012> — <t:2012:R>\n<#600000013> — <t:2013:R>\n<#600000014> — <t:2014:R>\n<#600000015> — <t:2015:R>",
                 "title": "Channel activity"
               }
           components:
@@ -707,7 +707,7 @@
             - |-
               {
                 "color": 3447003,
-                "description": "3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>",
+                "description": "3 channels: 0 active · 0 quiet · 2 stale · 1 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Stale**, oldest first — page 1 of 1\n<#11> — <t:2000:R>\n<#12> — <t:5000:R>",
                 "title": "Channel activity"
               }
           components:
@@ -820,7 +820,7 @@
             - |-
               {
                 "color": 3447003,
-                "description": "151 channels: 0 active · 0 quiet · 150 stale · 1 never seen\n\n**Stale**, oldest first — page 1 of 10\n<#700000001> — <t:3001:R>\n<#700000002> — <t:3002:R>\n<#700000003> — <t:3003:R>\n<#700000004> — <t:3004:R>\n<#700000005> — <t:3005:R>\n<#700000006> — <t:3006:R>\n<#700000007> — <t:3007:R>\n<#700000008> — <t:3008:R>\n<#700000009> — <t:3009:R>\n<#700000010> — <t:3010:R>\n<#700000011> — <t:3011:R>\n<#700000012> — <t:3012:R>\n<#700000013> — <t:3013:R>\n<#700000014> — <t:3014:R>\n<#700000015> — <t:3015:R>",
+                "description": "151 channels: 0 active · 0 quiet · 150 stale · 1 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Stale**, oldest first — page 1 of 10\n<#700000001> — <t:3001:R>\n<#700000002> — <t:3002:R>\n<#700000003> — <t:3003:R>\n<#700000004> — <t:3004:R>\n<#700000005> — <t:3005:R>\n<#700000006> — <t:3006:R>\n<#700000007> — <t:3007:R>\n<#700000008> — <t:3008:R>\n<#700000009> — <t:3009:R>\n<#700000010> — <t:3010:R>\n<#700000011> — <t:3011:R>\n<#700000012> — <t:3012:R>\n<#700000013> — <t:3013:R>\n<#700000014> — <t:3014:R>\n<#700000015> — <t:3015:R>",
                 "title": "Channel activity"
               }
           components:
@@ -1408,7 +1408,7 @@
             - |-
               {
                 "color": 3447003,
-                "description": "5 channels: 2 active · 2 quiet · 1 stale · 0 never seen\n\n**Quiet**, oldest first — page 1 of 1\n<#14> — <t:1764720000:R>\n<#12> — <t:1766620800:R>",
+                "description": "5 channels: 2 active · 2 quiet · 1 stale · 0 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Quiet**, oldest first — page 1 of 1\n<#14> — <t:1764720000:R>\n<#12> — <t:1766620800:R>",
                 "title": "Channel activity"
               }
           components:
@@ -1496,7 +1496,7 @@
             - |-
               {
                 "color": 3447003,
-                "description": "5 channels: 2 active · 2 quiet · 1 stale · 0 never seen\n\n**Quiet**, oldest first — page 1 of 1\n<#14> — <t:1764720000:R>\n<#12> — <t:1766620800:R>",
+                "description": "5 channels: 2 active · 2 quiet · 1 stale · 0 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Quiet**, oldest first — page 1 of 1\n<#14> — <t:1764720000:R>\n<#12> — <t:1766620800:R>",
                 "title": "Channel activity"
               }
           components:
@@ -1610,7 +1610,7 @@
             - |-
               {
                 "color": 3447003,
-                "description": "17 channels: 0 active · 0 quiet · 17 stale · 0 never seen\n\n**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>\n<#500000002> — <t:1002:R>\n<#500000003> — <t:1003:R>\n<#500000004> — <t:1004:R>\n<#500000005> — <t:1005:R>\n<#500000006> — <t:1006:R>\n<#500000007> — <t:1007:R>\n<#500000008> — <t:1008:R>\n<#500000009> — <t:1009:R>\n<#500000010> — <t:1010:R>\n<#500000011> — <t:1011:R>\n<#500000012> — <t:1012:R>\n<#500000013> — <t:1013:R>\n<#500000014> — <t:1014:R>\n<#500000015> — <t:1015:R>",
+                "description": "17 channels: 0 active · 0 quiet · 17 stale · 0 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>\n<#500000002> — <t:1002:R>\n<#500000003> — <t:1003:R>\n<#500000004> — <t:1004:R>\n<#500000005> — <t:1005:R>\n<#500000006> — <t:1006:R>\n<#500000007> — <t:1007:R>\n<#500000008> — <t:1008:R>\n<#500000009> — <t:1009:R>\n<#500000010> — <t:1010:R>\n<#500000011> — <t:1011:R>\n<#500000012> — <t:1012:R>\n<#500000013> — <t:1013:R>\n<#500000014> — <t:1014:R>\n<#500000015> — <t:1015:R>",
                 "title": "Channel activity"
               }
           components:
@@ -1698,7 +1698,7 @@
             - |-
               {
                 "color": 3447003,
-                "description": "17 channels: 0 active · 0 quiet · 17 stale · 0 never seen\n\n**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>\n<#500000002> — <t:1002:R>\n<#500000003> — <t:1003:R>\n<#500000004> — <t:1004:R>\n<#500000005> — <t:1005:R>\n<#500000006> — <t:1006:R>\n<#500000007> — <t:1007:R>\n<#500000008> — <t:1008:R>\n<#500000009> — <t:1009:R>\n<#500000010> — <t:1010:R>\n<#500000011> — <t:1011:R>\n<#500000012> — <t:1012:R>\n<#500000013> — <t:1013:R>\n<#500000014> — <t:1014:R>\n<#500000015> — <t:1015:R>",
+                "description": "17 channels: 0 active · 0 quiet · 17 stale · 0 never seen\nActive: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded\n\n**Stale**, oldest first — page 1 of 2\n<#500000001> — <t:1001:R>\n<#500000002> — <t:1002:R>\n<#500000003> — <t:1003:R>\n<#500000004> — <t:1004:R>\n<#500000005> — <t:1005:R>\n<#500000006> — <t:1006:R>\n<#500000007> — <t:1007:R>\n<#500000008> — <t:1008:R>\n<#500000009> — <t:1009:R>\n<#500000010> — <t:1010:R>\n<#500000011> — <t:1011:R>\n<#500000012> — <t:1012:R>\n<#500000013> — <t:1013:R>\n<#500000014> — <t:1014:R>\n<#500000015> — <t:1015:R>",
                 "title": "Channel activity"
               }
           components:

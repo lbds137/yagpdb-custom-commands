@@ -14,20 +14,20 @@
   limit of 2). A handler missing from the Commands dict is an ephemeral refusal of this
   run, with no execCC.
 
-  Slash subcommand: `roles set the staff roles (or open the role picker)`
-  Slash option: `roles.roles string staff role IDs or mentions (omit for the role picker)`
-  Slash subcommand: `inactivity inactivity prune announcements, date and review`
-  Slash option: `inactivity.action string! start, end, remind, date or prune`
-  Slash option: `inactivity.date string the next prune date (for date)`
-  Slash option: `inactivity.user user the member to review (for prune; omit for the picker)`
-  Slash subcommand: `activity channel activity, oldest first`
-  Slash subcommand: `rules post the server rules`
-  Slash option: `rules.from integer first rule to post`
-  Slash option: `rules.to integer last rule to post`
-  Slash subcommand: `bump_reset clear the last bump time`
-  Slash subcommand: `delrep delete members' reputation`
+  Slash subcommand: `roles choose which roles count as staff`
+  Slash option: `roles.roles string leave empty to pick the roles from a menu (recommended)`
+  Slash subcommand: `inactivity inactivity prune: announcements, next date, review a member`
+  Slash option: `inactivity.action string! start/end/remind post that announcement; date sets the next prune date; prune reviews a member`
+  Slash option: `inactivity.date string the next prune date as announcements should show it, e.g. March 1`
+  Slash option: `inactivity.user user member to review (prune only; leave empty to pick from a menu)`
+  Slash subcommand: `activity see which channels have gone quiet`
+  Slash subcommand: `rules post the server rules in this channel`
+  Slash option: `rules.from integer first rule number to post (default: all)`
+  Slash option: `rules.to integer last rule number to post (default: all)`
+  Slash subcommand: `bump_reset reset the bump timer`
+  Slash subcommand: `delrep clear members' reputation`
   Slash option: `delrep.users string! user IDs or mentions, up to 5`
-  Slash subcommand: `bootstrap initialize the server's configuration`
+  Slash subcommand: `bootstrap (admin) first-time setup of stored defaults; run it in the bot channel`
   Slash option: `bootstrap.staff_role role the staff role (omit to keep the current one)`
 */ -}}
 {{ if .IsSlashCommand }}
@@ -74,7 +74,7 @@
 
 	{{ if le $handlerID 0 }}
 		{{ sendResponse nil (complexMessage
-			"content" "⚠️ This command isn't set up on this server yet."
+			"content" "⚠️ Part of this command isn't installed on this server yet. Please tell an admin."
 			"ephemeral" true) }}
 	{{ else }}
 		{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
@@ -83,7 +83,7 @@
 			{{ execCC $handlerID .Channel.ID 0 $execData }}
 		{{ catch }}
 			{{ sendResponse nil (complexMessage
-				"content" "⚠️ This command isn't set up on this server yet."
+				"content" "⚠️ Part of this command isn't installed on this server yet. Please tell an admin."
 				"ephemeral" true) }}
 		{{ end }}
 	{{ end }}

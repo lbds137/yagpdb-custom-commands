@@ -34,7 +34,7 @@
   would leave the interaction unanswered: refuse before the delreps run */}}
 {{ if and $staff (le $embed_exec 0) }}
     {{ sendResponse nil (complexMessage
-        "content" "⚠️ This command isn't set up on this server yet."
+        "content" "⚠️ Part of this command isn't installed on this server yet. Please tell an admin."
         "ephemeral" true) }}
     {{ return }}
 {{ end }}

@@ -78,7 +78,7 @@ tests:
     assertions:
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+        - { kind: message, ephemeral: true, content_contains: "Part of this command isn't installed on this server yet. Please tell an admin." }
 
   - name: "staff_slash inactivity date: still works with inactivity_prune_pick missing from Commands"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -93,7 +93,7 @@ tests:
         - { user_id: 0, key: "Inactivity Prune", value_contains: "\"Next Date\":\"2026-12-01\"" }
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_contains: "Value successfully added!" }
+        - { kind: message, ephemeral: false, embed_title: "Next prune date updated", embed_contains: "**Next:** 2026-12-01" }
 
   - name: "staff_slash inactivity: every execCC id missing from Commands refuses up front, no announcement"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -107,7 +107,7 @@ tests:
     assertions:
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "This command isn't set up on this server yet." }
+        - { kind: message, ephemeral: true, content_contains: "Part of this command isn't installed on this server yet. Please tell an admin." }
 
   # channel_activity runs as the root here, not behind the router: its cleanup loop's
   # warning names an absolute path from an execCC child, which `make test-minified` can't
@@ -194,6 +194,7 @@ tests:
   # ---- inactivity: date
   - name: "staff_slash inactivity date: the dict is written directly (Previous Date = the old Next Date), result public"
     template: "../../../commands/members/staff_slash.gohtml"
+    snapshot: true
     context:
       interaction: { type: slash, subcommand: inactivity, options: { action: "date", date: "2026-11-01" } }
     expected:
@@ -206,7 +207,7 @@ tests:
         - { user_id: 0, key: "Inactivity Prune", value_contains: '"Minute Threshold":"100"' }
         - { user_id: 0, key: "Inactivity Prune", value_contains: '"Closing Announcement":"Prune closed."' }
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_title: "Inactivity Prune Inactivity Prune Date Editing", embed_contains: "Value successfully added!" }
+        - { kind: message, ephemeral: false, embed_title: "Next prune date updated", embed_contains: "**Next:** 2026-11-01" }
 
   - name: "staff_slash inactivity date: no date is an ephemeral refusal, nothing written"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -218,7 +219,7 @@ tests:
       db_checks:
         - { user_id: 0, key: "Inactivity Prune", value_contains: '"Next Date":"2026-10-01"' }
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_title: "Missing Date Parameter" }
+        - { kind: message, ephemeral: true, embed_title: "Date needed" }
 
   # ---- inactivity: prune
   - name: "staff_slash inactivity prune <inactive user>: the confirm panel is the public interaction response"
@@ -232,7 +233,7 @@ tests:
     assertions:
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_contains: "<@700000000000000001> will be kicked!", components_contains: "templates-ip:600000000000000001:kick" }
+        - { kind: message, ephemeral: false, embed_contains: "Kick <@700000000000000001> from the server?", components_contains: "templates-ip:600000000000000001:kick" }
 
   - name: "staff_slash inactivity prune <active user>: the verdict has Kick disabled"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -241,7 +242,7 @@ tests:
       interaction: { type: slash, subcommand: inactivity, options: { action: "prune", user: 700000000000000001 } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: false, embed_contains: "is not inactive.", components_contains: '"disabled": true' }
+        - { kind: message, ephemeral: false, embed_contains: "isn't marked inactive (no Inactive role, or they also have the Active role), so they can't be pruned.", components_contains: '"disabled": true' }
 
   - name: "staff_slash inactivity prune <unknown user>: ephemeral refusal"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -250,7 +251,7 @@ tests:
     assertions:
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_title: "Invalid User Parameter" }
+        - { kind: message, ephemeral: true, embed_title: "Member not found" }
 
   - name: "staff_slash inactivity prune (no user): the picker panel is the public response"
     template: "../../../commands/members/staff_slash.gohtml"
@@ -269,7 +270,7 @@ tests:
     assertions:
       deletions: []
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_title: "Invalid Action Specified" }
+        - { kind: message, ephemeral: true, embed_title: "Unknown action" }
 
   # the picker after a /staff entry: the click handlers read the response message's confirm
   # embed and custom IDs, exactly as on the text path
@@ -279,7 +280,7 @@ tests:
       member_roles: { 700000000000000001: [444444444444444444] }
       messages:
         - { id: 7, channel_id: 123456789012345678, author_id: 1234567890,
-            embeds: [{ title: "Inactivity Prune", description: "🥾 <@700000000000000001> will be kicked!" }] }
+            embeds: [{ title: "Inactivity Prune", description: "🥾 Kick <@700000000000000001> from the server? Press Kick to confirm, or Cancel." }] }
       interaction: { type: component, custom_id: "ip:600000000000000001:kick", message_id: 7 }
       exec_responses:
         'kick 700000000000000001 "pruned due to inactivity"': "👢 Kicked `Target#0`"
@@ -287,7 +288,7 @@ tests:
       execs:
         - { line: 'kick 700000000000000001 "pruned due to inactivity"' }
       interaction_responses:
-        - { kind: update, components_contains: "Pick a member to prune" }
+        - { kind: update, components_contains: "Pick a member to review" }
       sent_messages:
         - { embed_contains: "has been kicked!" }
 

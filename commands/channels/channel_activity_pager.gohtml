@@ -189,8 +189,9 @@
   {{ $order := "oldest first" }}
   {{- if eq $bucket "never" -}}{{- $order = "in channel order" -}}{{- end -}}
   {{ $desc := cslice $summary }}
+  {{- $desc = $desc.Append "Active: a message in the last 7 days · Quiet: 7-29 days · Stale: 30+ days · Never seen: none recorded" -}}
   {{- if eq (len $all) 0 -}}
-    {{- $desc = $desc.Append "_No activity has been recorded yet. Make sure channel_tracker is running._" -}}
+    {{- $desc = $desc.Append "_No channel activity has been recorded yet. Ask an admin to check that activity tracking is on._" -}}
   {{- end -}}
   {{- $desc = $desc.Append "" -}}
   {{- $desc = $desc.Append (printf "**%s**, %s — page %d of %d"

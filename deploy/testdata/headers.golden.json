@@ -166,131 +166,131 @@
     "commands/db/db_slash.gohtml": {
       "deferMode": 0,
       "interval": null,
-      "slashDescription": "Database dictionary tools",
+      "slashDescription": "Advanced: read or change stored server settings",
       "slash": {
         "subcommands": [
           {
             "name": "view",
-            "description": "show one value",
+            "description": "show one stored value",
             "options": [
               {
                 "name": "key",
                 "type": "string",
-                "description": "database key, nest with :",
+                "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
                 "required": true
               },
               {
                 "name": "user",
                 "type": "user",
-                "description": "another member (staff)",
+                "description": "another member's own data (staff)",
                 "required": false
               }
             ]
           },
           {
             "name": "browse",
-            "description": "list a dictionary's keys",
+            "description": "list the names inside a group",
             "options": [
               {
                 "name": "key",
                 "type": "string",
-                "description": "dictionary key, nest with :",
+                "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
                 "required": true
               },
               {
                 "name": "user",
                 "type": "user",
-                "description": "another member (staff)",
+                "description": "another member's own data (staff)",
                 "required": false
               }
             ]
           },
           {
             "name": "set",
-            "description": "set a value",
+            "description": "replace a stored value",
             "options": [
               {
                 "name": "key",
                 "type": "string",
-                "description": "database key, nest with :",
+                "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
                 "required": true
               },
               {
                 "name": "value",
                 "type": "string",
-                "description": "value, JSON for dicts",
+                "description": "the new value (JSON for lists and groups)",
                 "required": true
               },
               {
                 "name": "user",
                 "type": "user",
-                "description": "another member (staff)",
+                "description": "another member's own data (staff)",
                 "required": false
               }
             ]
           },
           {
             "name": "add",
-            "description": "add to a dict or array",
+            "description": "add an item to a list or group",
             "options": [
               {
                 "name": "key",
                 "type": "string",
-                "description": "array or dictionary key, nest with :",
+                "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
                 "required": true
               },
               {
                 "name": "value",
                 "type": "string",
-                "description": "value, JSON for dicts",
+                "description": "the new value (JSON for lists and groups)",
                 "required": true
               },
               {
                 "name": "user",
                 "type": "user",
-                "description": "another member (staff)",
+                "description": "another member's own data (staff)",
                 "required": false
               }
             ]
           },
           {
             "name": "remove",
-            "description": "remove from a dict or array",
+            "description": "take an item out of a list or group",
             "options": [
               {
                 "name": "key",
                 "type": "string",
-                "description": "array or dictionary key, nest with :",
+                "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
                 "required": true
               },
               {
                 "name": "value",
                 "type": "string",
-                "description": "value, JSON for dicts",
+                "description": "the item to take out (JSON for lists and groups)",
                 "required": true
               },
               {
                 "name": "user",
                 "type": "user",
-                "description": "another member (staff)",
+                "description": "another member's own data (staff)",
                 "required": false
               }
             ]
           },
           {
             "name": "delete",
-            "description": "delete a key",
+            "description": "delete a stored entry",
             "options": [
               {
                 "name": "key",
                 "type": "string",
-                "description": "database key, nest with :",
+                "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
                 "required": true
               },
               {
                 "name": "user",
                 "type": "user",
-                "description": "another member (staff)",
+                "description": "another member's own data (staff)",
                 "required": false
               }
             ]
@@ -308,7 +308,7 @@
               {
                 "name": "user",
                 "type": "user",
-                "description": "another member (staff)",
+                "description": "another member's own data (staff)",
                 "required": false
               }
             ]
@@ -338,7 +338,7 @@
     "commands/edit/edit_slash.gohtml": {
       "deferMode": 0,
       "interval": null,
-      "slashDescription": "Edit rules and database entries",
+      "slashDescription": "Edit a rule, or a stored setting or message",
       "slash": {
         "subcommands": [
           {
@@ -348,31 +348,31 @@
               {
                 "name": "rule",
                 "type": "integer",
-                "description": "the rule's number",
+                "description": "rule number (a number that doesn't exist yet adds a new rule)",
                 "required": true
               }
             ]
           },
           {
             "name": "entry",
-            "description": "edit a database entry",
+            "description": "edit a stored setting or message (advanced)",
             "options": [
               {
-                "name": "category",
+                "name": "section",
                 "type": "string",
-                "description": "category to prefill",
+                "description": "section to edit, e.g. Inactivity Prune (capitals don't matter)",
                 "required": false
               },
               {
-                "name": "key",
+                "name": "name",
                 "type": "string",
-                "description": "key to prefill",
+                "description": "name of the entry, e.g. Opening Announcement",
                 "required": false
               },
               {
                 "name": "create",
                 "type": "boolean",
-                "description": "make the category if it doesn't exist yet",
+                "description": "start a brand-new section (only if it doesn't exist yet)",
                 "required": false
               }
             ]
@@ -384,19 +384,19 @@
               {
                 "name": "rule",
                 "type": "integer",
-                "description": "rule number",
+                "description": "rule number (to delete a rule)",
                 "required": false
               },
               {
-                "name": "category",
+                "name": "section",
                 "type": "string",
-                "description": "category",
+                "description": "section of the entry (to delete an entry, with name)",
                 "required": false
               },
               {
-                "name": "key",
+                "name": "name",
                 "type": "string",
-                "description": "key",
+                "description": "name of the entry (with section)",
                 "required": false
               }
             ]
@@ -692,71 +692,71 @@
         "subcommands": [
           {
             "name": "roles",
-            "description": "set the staff roles (or open the role picker)",
+            "description": "choose which roles count as staff",
             "options": [
               {
                 "name": "roles",
                 "type": "string",
-                "description": "staff role IDs or mentions (omit for the role picker)",
+                "description": "leave empty to pick the roles from a menu (recommended)",
                 "required": false
               }
             ]
           },
           {
             "name": "inactivity",
-            "description": "inactivity prune announcements, date and review",
+            "description": "inactivity prune: announcements, next date, review a member",
             "options": [
               {
                 "name": "action",
                 "type": "string",
-                "description": "start, end, remind, date or prune",
+                "description": "start/end/remind post that announcement; date sets the next prune date; prune reviews a member",
                 "required": true
               },
               {
                 "name": "date",
                 "type": "string",
-                "description": "the next prune date (for date)",
+                "description": "the next prune date as announcements should show it, e.g. March 1",
                 "required": false
               },
               {
                 "name": "user",
                 "type": "user",
-                "description": "the member to review (for prune; omit for the picker)",
+                "description": "member to review (prune only; leave empty to pick from a menu)",
                 "required": false
               }
             ]
           },
           {
             "name": "activity",
-            "description": "channel activity, oldest first",
+            "description": "see which channels have gone quiet",
             "options": []
           },
           {
             "name": "rules",
-            "description": "post the server rules",
+            "description": "post the server rules in this channel",
             "options": [
               {
                 "name": "from",
                 "type": "integer",
-                "description": "first rule to post",
+                "description": "first rule number to post (default: all)",
                 "required": false
               },
               {
                 "name": "to",
                 "type": "integer",
-                "description": "last rule to post",
+                "description": "last rule number to post (default: all)",
                 "required": false
               }
             ]
           },
           {
             "name": "bump_reset",
-            "description": "clear the last bump time",
+            "description": "reset the bump timer",
             "options": []
           },
           {
             "name": "delrep",
-            "description": "delete members' reputation",
+            "description": "clear members' reputation",
             "options": [
               {
                 "name": "users",
@@ -768,7 +768,7 @@
           },
           {
             "name": "bootstrap",
-            "description": "initialize the server's configuration",
+            "description": "(admin) first-time setup of stored defaults; run it in the bot channel",
             "options": [
               {
                 "name": "staff_role",

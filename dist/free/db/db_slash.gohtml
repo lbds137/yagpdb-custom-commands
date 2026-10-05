@@ -3,7 +3,7 @@
   Trigger type: `Slash Command`
   Trigger: `db`
   Group: `Utility`
-  Slash description: `Database dictionary tools`
+  Slash description: `Advanced: read or change stored server settings`
   Defer mode: `None`
   Dependencies: `embed_exec` (the ExecData path only)
 
@@ -11,30 +11,30 @@
   ephemeral sendResponse instead of embed_exec. inactivity's "date" execCC still
   arrives on the ExecData path, which keeps db.gohtml's behavior, embed_exec included.
 
-  Slash subcommand: `view show one value`
-  Slash option: `view.key string! database key, nest with :`
-  Slash option: `view.user user another member (staff)`
-  Slash subcommand: `browse list a dictionary's keys`
-  Slash option: `browse.key string! dictionary key, nest with :`
-  Slash option: `browse.user user another member (staff)`
-  Slash subcommand: `set set a value`
-  Slash option: `set.key string! database key, nest with :`
-  Slash option: `set.value string! value, JSON for dicts`
-  Slash option: `set.user user another member (staff)`
-  Slash subcommand: `add add to a dict or array`
-  Slash option: `add.key string! array or dictionary key, nest with :`
-  Slash option: `add.value string! value, JSON for dicts`
-  Slash option: `add.user user another member (staff)`
-  Slash subcommand: `remove remove from a dict or array`
-  Slash option: `remove.key string! array or dictionary key, nest with :`
-  Slash option: `remove.value string! value, JSON for dicts`
-  Slash option: `remove.user user another member (staff)`
-  Slash subcommand: `delete delete a key`
-  Slash option: `delete.key string! database key, nest with :`
-  Slash option: `delete.user user another member (staff)`
+  Slash subcommand: `view show one stored value`
+  Slash option: `view.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
+  Slash option: `view.user user another member's own data (staff)`
+  Slash subcommand: `browse list the names inside a group`
+  Slash option: `browse.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
+  Slash option: `browse.user user another member's own data (staff)`
+  Slash subcommand: `set replace a stored value`
+  Slash option: `set.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
+  Slash option: `set.value string! the new value (JSON for lists and groups)`
+  Slash option: `set.user user another member's own data (staff)`
+  Slash subcommand: `add add an item to a list or group`
+  Slash option: `add.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
+  Slash option: `add.value string! the new value (JSON for lists and groups)`
+  Slash option: `add.user user another member's own data (staff)`
+  Slash subcommand: `remove take an item out of a list or group`
+  Slash option: `remove.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
+  Slash option: `remove.value string! the item to take out (JSON for lists and groups)`
+  Slash option: `remove.user user another member's own data (staff)`
+  Slash subcommand: `delete delete a stored entry`
+  Slash option: `delete.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
+  Slash option: `delete.user user another member's own data (staff)`
   Slash subcommand: `export export entries as a JSON file`
   Slash option: `export.key string empty = all entries`
-  Slash option: `export.user user another member (staff)`
+  Slash option: `export.user user another member's own data (staff)`
 
   view = get, browse = keys, export = dump. Rows: staff default to the global row 0
   (the old `:0` without the colon), a picked `user` targets that member, everyone

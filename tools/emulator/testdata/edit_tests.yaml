@@ -69,7 +69,7 @@ tests:
       interaction: { type: slash, subcommand: rule, options: { rule: 9 } }
     assertions:
       interaction_responses:
-        - { kind: modal, title: "Edit rule 9", custom_id: "edit:rule:9:1767366245",
+        - { kind: modal, title: "New rule 9 (doesn't exist yet)", custom_id: "edit:rule:9:1767366245",
             fields: ["rule_text"] }
 
   - name: "edit rule: a non-string rule value opens a no-prefill modal"
@@ -110,7 +110,7 @@ tests:
       interaction: { type: slash, subcommand: rule, options: { rule: 9999 } }
     assertions:
       interaction_responses:
-        - { kind: modal, title: "Edit rule 9999", custom_id: "edit:rule:9999:1767366245",
+        - { kind: modal, title: "New rule 9999 (doesn't exist yet)", custom_id: "edit:rule:9999:1767366245",
             fields: ["rule_text"] }
 
   - name: "edit delete rule: 10000 is not bounded (the repair path)"
@@ -138,7 +138,7 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: entry,
-                     options: { category: "Admin", key: "greeting" } }
+                     options: { section: "Admin", name: "greeting" } }
     assertions:
       interaction_responses:
         - { kind: modal, title: "Edit entry", custom_id: "edit:entry:1767366245",
@@ -150,7 +150,45 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: entry,
-                     options: { category: "Admin", key: "nowhere" } }
+                     options: { section: "Admin", name: "nowhere" } }
+    assertions:
+      interaction_responses:
+        - { kind: modal, title: "Edit entry", custom_id: "edit:entry:1767366245",
+            fields: ["category", "key", "value"] }
+
+  - name: "edit entry: a list entry is refused ephemerally, no modal (F2)"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Lists", value: { Staff: [1, 2], Tone: { a: 1 }, Greeting: "hi" } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { section: "lists", name: "staff" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "`Lists › Staff` holds a list or a group of settings, not text, so it can't be edited here. An admin can change it with /db." }
+
+  - name: "edit entry: a group of settings is refused too, a text entry still opens (F2)"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Lists", value: { Staff: [1, 2], Tone: { a: 1 }, Greeting: "hi" } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { section: "Lists", name: "tone" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "`Lists › Tone` holds a list" }
+
+  - name: "edit entry: a text entry in the same section still opens the modal (F2)"
+    template: "../../../commands/edit/edit_slash.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Lists", value: { Staff: [1, 2], Tone: { a: 1 }, Greeting: "hi" } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: slash, subcommand: entry,
+                     options: { section: "Lists", name: "greeting" } }
     assertions:
       interaction_responses:
         - { kind: modal, title: "Edit entry", custom_id: "edit:entry:1767366245",
@@ -182,7 +220,7 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: entry,
-                     options: { category: "Admin", key: "greeting", create: true } }
+                     options: { section: "Admin", name: "greeting", create: true } }
     assertions:
       interaction_responses:
         - { kind: modal, title: "Edit entry", custom_id: "edit:entry:new:1767366245",
@@ -193,18 +231,18 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: entry,
-                     options: { category: "Nope", key: "a" } }
+                     options: { section: "Nope", name: "a" } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "There is no `Nope` category. Check the spelling, or set `create` to True to make it." }
+            content_contains: "There is no section called `Nope`. Check the spelling, or set `create` to True to start a new one." }
 
   - name: "edit entry: an unknown category with create true opens the modal"
     template: "../../../commands/edit/edit_slash.gohtml"
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: entry,
-                     options: { category: "Nope", key: "a", create: true } }
+                     options: { section: "Nope", name: "a", create: true } }
     assertions:
       interaction_responses:
         - { kind: modal, title: "Edit entry", custom_id: "edit:entry:new:1767366245",
@@ -215,7 +253,7 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: entry,
-                     options: { category: "new:Widgets", key: "a", create: true } }
+                     options: { section: "new:Widgets", name: "a", create: true } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
@@ -226,10 +264,10 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: entry,
-                     options: { category: "Nope", create: false } }
+                     options: { section: "Nope", create: false } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "There is no `Nope` category" }
+        - { kind: message, ephemeral: true, content_contains: "There is no section called `Nope`" }
 
   - name: "edit delete rule: a seeded rule gets a danger confirm, record written"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -251,7 +289,7 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: delete,
-                     options: { category: "admin", key: "greeting" } }
+                     options: { section: "admin", name: "greeting" } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true, embed_title: "Delete Admin › Greeting?",
@@ -277,22 +315,22 @@ tests:
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: delete,
-                     options: { category: "Admin", key: "nowhere" } }
+                     options: { section: "Admin", name: "nowhere" } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "There is no `Nowhere` entry in `Admin` to remove." }
+            content_contains: "There is no entry called `Nowhere` in `Admin`." }
 
   - name: "edit delete entry: an unknown category is refused with the text command's wording"
     template: "../../../commands/edit/edit_slash.gohtml"
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: delete,
-                     options: { category: "Nope", key: "greeting" } }
+                     options: { section: "Nope", name: "greeting" } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "There is no `Nope` category. Check the spelling." }
+            content_contains: "There is no section called `Nope`. Check the spelling." }
 
   - name: "edit delete: no form at all is a usage error naming both forms"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -302,18 +340,18 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "exactly one form: `rule`, or both `category` and `key`" }
+            content_contains: "To delete a rule, give only `rule`. To delete an entry, give both `section` and `name`" }
 
   - name: "edit delete: both forms at once is a usage error"
     template: "../../../commands/edit/edit_slash.gohtml"
     context:
       user: { roles: [888888888] }
       interaction: { type: slash, subcommand: delete,
-                     options: { rule: 3, category: "Admin", key: "greeting" } }
+                     options: { rule: 3, section: "Admin", name: "greeting" } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "exactly one form: `rule`, or both `category` and `key`" }
+            content_contains: "To delete a rule, give only `rule`. To delete an entry, give both `section` and `name`" }
 
   - name: "edit delete rule: rule 0 is refused (an explicit 0 is a given, not absent)"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -323,7 +361,7 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "You must provide an integer greater than zero!" }
+            content_contains: "Rule numbers start at 1." }
 
   - name: "edit rule: a non-staff member is refused"
     template: "../../../commands/edit/edit_slash.gohtml"
@@ -497,6 +535,21 @@ tests:
             Greeting: "hi there"
             Motd: "stay golden"
 
+  - name: "submit entry: a list entry is refused, nothing written (F2)"
+    template: "../../../commands/edit/edit_modal.gohtml"
+    setup_db:
+      - { user_id: 0, key: "Lists", value: { Staff: [1, 2], Greeting: "hi" } }
+    context:
+      user: { roles: [888888888] }
+      interaction: { type: modal, custom_id: "edit:entry:1767366245",
+                     fields: { category: "lists", key: "staff", value: "oops" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            content_contains: "`Lists › Staff` holds a list or a group of settings, not text, so it can't be edited here. An admin can change it with /db." }
+      db_checks:
+        - { user_id: 0, key: "Lists", value_equals: { Staff: [1, 2], Greeting: "hi" } }
+
   - name: "submit entry: the same value acks unchanged"
     template: "../../../commands/edit/edit_modal.gohtml"
     snapshot: true
@@ -551,7 +604,7 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "There is no `New:widgets` category. Check the spelling, or set `create` to True to make it." }
+            content_contains: "There is no section called `New:widgets`. Check the spelling, or set `create` to True to start a new one." }
       db_checks:
         - { user_id: 0, key: "Widgets", not_exists: true }
         - { user_id: 0, key: "New:Widgets", not_exists: true }
@@ -579,7 +632,7 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            content_contains: "There is no `Nope` category. Check the spelling, or set `create` to True to make it." }
+            content_contains: "There is no section called `Nope`. Check the spelling, or set `create` to True to start a new one." }
       db_checks:
         - { user_id: 0, key: "Nope", not_exists: true }
 

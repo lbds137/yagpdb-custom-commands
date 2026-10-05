@@ -18,7 +18,7 @@ described as "private" shows "Only you can see this".
 3. `/staff roles roles:hello`: falls back to the picker panel (no IDs found).
 
 ### /staff bump_reset
-1. `/staff bump_reset`: private "`Last Bump` reset!".
+1. `/staff bump_reset`: private "✅ Bump timer reset.".
 
 ### /staff delrep
 1. `/staff delrep users:<one member ID>`: a public "Batch Reputation Deletion" embed
@@ -30,13 +30,13 @@ described as "private" shows "Only you can see this".
 
 ### /staff inactivity
 1. `/staff inactivity action:date date:<the real next prune date>`: a public embed
-   showing Previous Date (the old next date) and Next Date (yours). Check with
-   `/db view key:Inactivity Prune` if you like.
-2. `/staff inactivity action:date` (no date): a private refusal.
+   "Next prune date updated" with **Previous:** (the old next date) and **Next:** (yours).
+   Check with `/db view key:Inactivity Prune` if you like.
+2. `/staff inactivity action:date` (no date): a private "Date needed" refusal.
 3. `/staff inactivity action:prune`: a public picker panel; pick a member, then Cancel.
 4. `/staff inactivity action:prune user:<a member>`: the public confirm (or "active,
    Kick disabled" verdict); press Cancel. Don't press Kick unless you mean it.
-5. `/staff inactivity action:nonsense`: a private "must enter a valid action" refusal.
+5. `/staff inactivity action:nonsense`: a private "Unknown action" refusal.
 6. Only if you actually want to post one: `action:start`, `end` or `remind` posts the
    announcement and pings the role as normal channel messages, and you get a private
    "Posted the …" confirmation. Check the ping notified.
@@ -51,7 +51,7 @@ described as "private" shows "Only you can see this".
 2. `/staff rules from:2 to:2`: private "Posted rule 2.".
 
 ### /staff bootstrap
-Skip (it rewrites the server config).
+Skip (it rewrites the server config; only an Administrator can run it, anyone else gets "Only an Administrator can run bootstrap.").
 
 ### /pointer
 1. `/pointer link:<a message link from a public channel> comment:test`: a public
@@ -131,16 +131,19 @@ Which steps passed.
 
 ## /edit entry: `create` replaces `new:` (any server, after its deploy)
 
-Use a throwaway category name (e.g. `Scratch`) and clean up with `/edit delete` after.
-1. `/edit entry category:Scratch` (no `create`): refused right away, privately, "There
-   is no `Scratch` category… set `create` to True to make it." No form opens.
-2. `/edit entry category:Scratch create:True`: the form opens; fill key `test`, value
-   `hi`, submit: "Scratch › Test added".
-3. `/edit entry category:new:Scratch create:True`: refused, "Leave out `new:`".
-4. `/edit entry category:Admin` (an existing category, no `create`): the form opens as
+Use a throwaway section name (e.g. `Scratch`) and clean up with `/edit delete` after. The
+options are `section` and `name` (renamed from `category` and `key` 2026-10-05).
+1. `/edit entry section:Scratch` (no `create`): refused right away, privately, "There
+   is no section called `Scratch`… set `create` to True to start a new one." No form opens.
+2. `/edit entry section:Scratch create:True`: the form (Section / Name / New text) opens;
+   fill name `test`, text `hi`, submit: "Scratch › Test added".
+3. `/edit entry section:new:Scratch create:True`: refused, "Leave out `new:`".
+4. `/edit entry section:Admin` (an existing section, no `create`): the form opens as
    before.
-5. Cleanup: `/edit delete category:Scratch key:test`, confirm (an empty `Scratch`
-   category stays behind; harmless).
+5. `/edit entry section:Roles name:Staff` (a list): refused privately, "holds a list or a
+   group of settings, not text". No form opens.
+6. Cleanup: `/edit delete section:Scratch name:test`, confirm (an empty `Scratch`
+   section stays behind; harmless).
 
 ### Report back
 Which steps passed.

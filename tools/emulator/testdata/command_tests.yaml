@@ -972,7 +972,7 @@ tests:
         - { user_id: 0, key: "Commands", value_contains: '"db":"129"' }
         - { user_id: 0, key: "Channels", value_contains: '"YAGPDB":"999999999"' }
       sent_messages:
-        - { channel_id: 999999999, embed_title: "Bootstrap Execution Complete" }
+        - { channel_id: 999999999, embed_title: "Server defaults saved" }
 
   - name: "bootstrap - Without a staff role ID, the Staff role already set stays"
     template: "../../../commands/plumbing/bootstrap.gohtml"
@@ -983,7 +983,7 @@ tests:
         - { user_id: 0, key: "Roles", value_contains: '"Staff":111111111' }
         - { user_id: 0, key: "Commands", value_contains: '"db":"129"' }
       sent_messages:
-        - { channel_id: 999999999, embed_title: "Bootstrap Execution Complete" }
+        - { channel_id: 999999999, embed_title: "Server defaults saved" }
 
   - name: "bootstrap - The old three-ID form is refused, not stored as the Staff role"
     template: "../../../commands/plumbing/bootstrap.gohtml"
@@ -996,6 +996,22 @@ tests:
         - { user_id: 0, key: "Roles", value_contains: '"Staff":111111111' }
       sent_messages:
         - { channel_id: 999999999, content_contains: "Usage: [staff role ID]" }
+
+  - name: "bootstrap - A non-Administrator is refused and nothing is written (F16)"
+    template: "../../../commands/plumbing/bootstrap.gohtml"
+    context:
+      # not the guild owner and holding no Administrator role: the refusal comes first
+      args: ["999888777"]
+      channel: { id: 777777777, name: "introduction-archive" }
+      guild: { owner_id: 1 }
+      members: [987654321098765432]
+    assertions:
+      db_checks:
+        - { user_id: 0, key: "Roles", value_contains: '"Staff":111111111' }
+        # the bot channel isn't repointed to the channel the refused run was typed in
+        - { user_id: 0, key: "Channels", value_contains: '"YAGPDB":999999999' }
+      sent_messages:
+        - { channel_id: 777777777, content_contains: "Only an Administrator can run bootstrap." }
 
   - name: "inactivity - Prune an inactive member"
     snapshot: true
@@ -1066,7 +1082,7 @@ tests:
     context:
       args: ["date"]
     assertions:
-      sent_messages: [{ embed_title: "Missing Date Parameter" }]
+      sent_messages: [{ embed_title: "Date needed" }]
 
   - name: "inactivity - start action posts the opening announcement with placeholders filled in"
     template: "../../../commands/members/inactivity.gohtml"
@@ -1159,7 +1175,7 @@ tests:
     context:
       args: ["bogus"]
     assertions:
-      sent_messages: [{ embed_title: "Invalid Action Specified" }]
+      sent_messages: [{ embed_title: "Unknown action" }]
 
   - name: "role_ping - Ping a role"
     snapshot: true
