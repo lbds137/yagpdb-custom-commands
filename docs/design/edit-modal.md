@@ -79,9 +79,9 @@ design language's delete vocabulary):
 
 | subcommand | option rows |
 |---|---|
-| rule | `rule integer! the rule's number` |
-| entry | `category string category to prefill` · `key string key to prefill` |
-| delete | `rule integer rule number` · `category string category` · `key string key` |
+| rule | `rule integer! rule number (a number that doesn't exist yet adds a new rule)` |
+| entry | `section string section to edit, e.g. Inactivity Prune (capitals don't matter)` · `name string name of the entry, e.g. Opening Announcement` · `create boolean start a brand-new section (only if it doesn't exist yet)` |
+| delete | `rule integer rule number (to delete a rule)` · `section string section of the entry (to delete an entry, with name)` · `name string name of the entry (with section)` |
 
 Flow, every branch:
 
@@ -165,7 +165,7 @@ sendResponse nil (complexMessage "ephemeral" true
 
 ```
 Trigger type: `Modal Submission`
-Trigger: `^edit:(rule:\d+|entry):\d+$`
+Trigger: `^edit:(rule:\d+|entry(?::new)?):\d+$`
 Group: `Staff Utility`
 Defer mode: `None`
 ```
@@ -296,23 +296,24 @@ Confirm buttons (seed a clicked message, pager-style `message_id: 7`):
 ## §Panel — Lila's creation rows (three DISABLED commands, main server)
 
 **1. edit_slash** — Trigger type **Slash Command**, name **edit**, slash
-description `Edit rules and database entries`, Group **Staff Utility**, Defer
+description `Edit a rule, or a stored setting or message`, Group **Staff Utility**, Defer
 mode **None**, disabled.
 
 | row | type | required | description |
 |---|---|---|---|
 | sub rule | — | — | edit a rule's text |
-| · rule | integer | ✓ | the rule's number |
-| sub entry | — | — | edit a database entry |
-| · category | string | — | category to prefill |
-| · key | string | — | key to prefill |
+| · rule | integer | ✓ | rule number (a number that doesn't exist yet adds a new rule) |
+| sub entry | — | — | edit a stored setting or message (advanced) |
+| · section | string | — | section to edit, e.g. Inactivity Prune (capitals don't matter) |
+| · name | string | — | name of the entry, e.g. Opening Announcement |
+| · create | boolean | — | start a brand-new section (only if it doesn't exist yet) |
 | sub delete | — | — | delete a rule or entry |
-| · rule | integer | — | rule number |
-| · category | string | — | category |
-| · key | string | — | key |
+| · rule | integer | — | rule number (to delete a rule) |
+| · section | string | — | section of the entry (to delete an entry, with name) |
+| · name | string | — | name of the entry (with section) |
 
 **2. edit_modal** — Trigger type **Modal Submission**, Trigger
-`^edit:(rule:\d+|entry):\d+$`, Group **Staff Utility**, Defer mode **None**,
+`^edit:(rule:\d+|entry(?::new)?):\d+$`, Group **Staff Utility**, Defer mode **None**,
 disabled. (No subcommand/option rows.)
 
 **3. edit_confirm** — Trigger type **Message Component**, Trigger

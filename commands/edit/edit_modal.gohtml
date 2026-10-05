@@ -160,13 +160,9 @@
 				{{ if $found }}
 					{{ $old = $categoryDict.Get $key }}
 				{{ end }}
-				{{ $oldIsString := eq "string" (printf "%T" $old) }}
-				{{/* "and" isn't short-circuiting in Go templates: eq $old $value would still
-					run (and error) on a non-comparable $old if inlined into one "and" */}}
-				{{ $isUnchanged := false }}
-				{{ if $oldIsString }}
-					{{ $isUnchanged = eq $old $value }}
-				{{ end }}
+				{{/* the guard above refused any non-string existing value, and a missing
+					key leaves $old as "", so $old is always a string here */}}
+				{{ $isUnchanged := eq $old $value }}
 				{{/* the title holds 256: the longest suffix, " unchanged", takes 10 of them */}}
 				{{ $label := joinStr " › " $category $key }}
 				{{ if gt (len (toRune $label)) 246 }}
@@ -200,21 +196,9 @@
 					{{ $title = joinStr " " $label "updated" }}
 					{{ $description = $value }}
 					{{ $was := $old }}
-					{{ if $oldIsString }}
-						{{ if gt (len (toRune $was)) 1024 }}
-							{{ $kept := slice (split $was "") 0 1023 }}
-							{{ $was = joinStr "" $kept "…" }}
-						{{ end }}
-					{{ else }}
-						{{/* cut the json first, then fence: fencing after a truncation drops
-							the closing fence and breaks the embed's markdown */}}
-						{{ $wasJSON := json $was true }}
-						{{ $wasJSONMax := sub 1024 8 }}
-						{{ if gt (len (toRune $wasJSON)) $wasJSONMax }}
-							{{ $kept := slice (split $wasJSON "") 0 (sub $wasJSONMax 1) }}
-							{{ $wasJSON = joinStr "" $kept "…" }}
-						{{ end }}
-						{{ $was = joinStr "" "```\n" $wasJSON "\n```" }}
+					{{ if gt (len (toRune $was)) 1024 }}
+						{{ $kept := slice (split $was "") 0 1023 }}
+						{{ $was = joinStr "" $kept "…" }}
 					{{ end }}
 					{{ $fields = $fields.Append (sdict "name" "Was" "value" $was) }}
 					{{ if $storedKeyDiffers }}
