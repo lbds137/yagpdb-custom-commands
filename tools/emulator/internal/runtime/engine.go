@@ -1068,7 +1068,8 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		ExecCCDepth:              e.ctx.ExecCCDepth + 1,
 		MaxExecCCDepth:           e.ctx.MaxExecCCDepth,
 		TemplateBaseDir:          e.ctx.TemplateBaseDir,
-		SourceName:               templatePath,
+		// named as the test's command_map wrote it, not the remapped path actually read
+		SourceName: DisplayPath(e.ctx.TemplateBaseDir, e.ctx.CommandIDMap[commandID]),
 		// The same server; a copy, since YAGPDB runs the child in a goroutine alongside the
 		// caller (the emulator runs it inline, so messages are in call order)
 		Messages:        append([]types.CtxMessage(nil), e.ctx.Messages...),

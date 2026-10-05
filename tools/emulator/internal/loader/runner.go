@@ -108,7 +108,7 @@ func (r *Runner) RunTest(tc *TestCase) *TestResult {
 	}
 
 	ctx := r.newContext(tc, db)
-	ctx.SourceName = displayPath(r.config.BaseDir, tc.Template)
+	ctx.SourceName = runtime.DisplayPath(r.config.BaseDir, tc.Template)
 	if ctx.SourceName == "" {
 		ctx.SourceName = fmt.Sprintf("inline template of %q", tc.Name)
 	}
@@ -480,7 +480,7 @@ func (r *Runner) runSetupTemplate(tc *TestCase, db *state.MockDB, path string) e
 		return fmt.Errorf("setup template: %w", err)
 	}
 	ctx := r.newContext(tc, db)
-	ctx.SourceName = displayPath(r.config.BaseDir, path)
+	ctx.SourceName = runtime.DisplayPath(r.config.BaseDir, path)
 	ctx.ExecData = nil
 	if _, err := runtime.NewEngine(ctx).Execute(string(source)); err != nil {
 		return fmt.Errorf("setup template %s: %w", path, err)
@@ -1022,24 +1022,6 @@ func describeRuns(runs []runtime.ScheduledRun) string {
 		parts = append(parts, s+" with "+compactJSON(r.ExecData))
 	}
 	return "[" + strings.Join(parts, "; ") + "]"
-}
-
-// displayPath returns a template path relative to the working directory, so warnings
-// print as clickable file:line locations.
-func displayPath(baseDir, template string) string {
-	if template == "" {
-		return ""
-	}
-	p := template
-	if !filepath.IsAbs(p) {
-		p = filepath.Join(baseDir, p)
-	}
-	if wd, err := os.Getwd(); err == nil {
-		if rel, err := filepath.Rel(wd, p); err == nil {
-			return rel
-		}
-	}
-	return p
 }
 
 func containsAny(items []string, substr string) bool {
