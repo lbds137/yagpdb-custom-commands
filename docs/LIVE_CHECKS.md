@@ -124,7 +124,9 @@ the normal answers still arrive (any server; Gay Night House for /staff):
    "2 words follows" line, then two embeds), `/define`, `/timestamp`, `/rule number:1`.
 2. `/staff activity`: the channel-activity browse view opens, as before (read-only;
    inactivity date would rewrite the real prune date, so it is not a smoke step).
-3. Nothing answers "isn't set up on this server yet".
+3. Nothing answers "isn't set up on this server yet" (or, on the staff paths
+   /staff, /hiatus and /unhiatus, "Part of this command isn't installed on this
+   server yet. Please tell an admin.").
 
 ### Report back
 Which steps passed.

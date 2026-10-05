@@ -297,7 +297,7 @@
           },
           {
             "name": "export",
-            "description": "export entries as a JSON file",
+            "description": "download entries as a JSON file",
             "options": [
               {
                 "name": "key",
