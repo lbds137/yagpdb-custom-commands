@@ -238,7 +238,20 @@ tests:
         - { channel_id: 123456789012345678, has_embed: true, embed_contains: "https://cdn.discordapp.com/icons/111222333444555666/abc123.png?size=256" }
     snapshot: true
 
-  - name: "avatar_viewer: a boosted server's icon is a gif"
+  - name: "avatar_viewer: an animated (a_) server icon is a gif"
+    template: "../../../commands/general/avatar_viewer.gohtml"
+    context:
+      args: ["111222333444555666", "256"]
+      members: [987654321098765432]
+      guild:
+        icon: "a_abc123"
+    strict: true
+    assertions:
+      sent_messages:
+        - { channel_id: 123456789012345678, has_embed: true, embed_contains: "https://cdn.discordapp.com/icons/111222333444555666/a_abc123.gif?size=256" }
+    snapshot: true
+
+  - name: "avatar_viewer: a plain server icon stays a png even with Guild Premium Tier 1"
     template: "../../../commands/general/avatar_viewer.gohtml"
     setup_db:
       - user_id: 0
@@ -252,5 +265,5 @@ tests:
     strict: true
     assertions:
       sent_messages:
-        - { channel_id: 123456789012345678, has_embed: true, embed_contains: "https://cdn.discordapp.com/icons/111222333444555666/abc123.gif?size=256" }
+        - { channel_id: 123456789012345678, has_embed: true, embed_contains: "https://cdn.discordapp.com/icons/111222333444555666/abc123.png?size=256" }
     snapshot: true

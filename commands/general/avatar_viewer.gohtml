@@ -9,7 +9,6 @@
 {{ $yagpdbUserID := 204255221017214977 }}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
-{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
@@ -151,7 +150,8 @@
         {{ $avatarOwner = .Guild.Name }}
 
         {{ $gIconExtension := ".png" }}
-        {{ if ge $guildPremiumTier 1 }}
+        {{/* a_ marks an animated icon (YAGPDB's GuildSet.IconURL does the same) */}}
+        {{ if hasPrefix .Guild.Icon "a_" }}
             {{ $gIconExtension = ".gif" }}
         {{ end }}
         {{/* no icon: leave it empty, so the Default Avatar fallback below applies */}}

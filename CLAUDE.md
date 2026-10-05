@@ -75,7 +75,8 @@ Retired commands (`retired/`) are kept for reference and never deployed.
    - `embed_exec` - Universal embed creation service
    - `db_slash` (`/db`) - Database operations interface; inactivity execCCs it
    - `message_link` - Message reference and linking service, called by log_user
-     (commands/plumbing/, unmanaged: never deployed, the live copy holds the real watched ID)
+     (both in commands/plumbing/; message_link deploys normally, log_user is the unmanaged
+     one: never deployed, its live copy holds the real watched ID)
    - `simple_db_lookup` - Database lookup utility; editing is `/edit` (edit_slash)
 
 3. **Command Structure**

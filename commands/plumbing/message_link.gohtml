@@ -2,8 +2,8 @@
   Author: Vladlena Costescu (@lbds137)
   Trigger type: `None`
   Group: `Utility`
-  Called by: log_user (commands/plumbing/, unmanaged: never deployed, the live copy holds
-  the real watched ID)
+  Called by: log_user (commands/plumbing/; log_user is unmanaged: never deployed, its live
+  copy holds the real watched ID. This file deploys normally.)
   Dependencies: `embed_exec`
 */ -}}
 
@@ -16,7 +16,6 @@
 {{ $prefix := $globalDict.Get "Command Prefix" }}
 {{ $defaultAvatar := $globalDict.Get "Default Avatar" }}
 {{ $defaultEmbedColor := toInt ($globalDict.Get "Embed Color") }}
-{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
@@ -207,10 +206,16 @@
     {{ $fields = $fields.Append (sdict "name" "Original Message" "value" $msgLink "inline" false) }}
 
     {{ $gIconType := ".png" }}
-    {{ if ge $guildPremiumTier 1 }}
+    {{/* a_ marks an animated icon (YAGPDB's GuildSet.IconURL does the same) */}}
+    {{ if hasPrefix .Guild.Icon "a_" }}
       {{ $gIconType = ".gif" }}
     {{ end }}
-    {{ $gIcon := (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconType) }}
+    {{ $gIcon := "" }}
+    {{ if .Guild.Icon }}
+      {{ $gIcon = (joinStr "" "https://cdn.discordapp.com/icons/" (toString .Guild.ID) "/" .Guild.Icon $gIconType) }}
+    {{ else }}
+      {{ $gIcon = $defaultAvatar }}
+    {{ end }}
     {{ $footText := (joinStr "" "Author ID: " $mAuthor.ID) }}
 
     {{ if .ExecData.Color }}

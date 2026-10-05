@@ -245,7 +245,8 @@ Keys:
 - "Delete Response Delay" (string): Seconds before response deletion
 - "Default Avatar" (string): URL for default avatar image
 - "Command Prefix" (string): Server command prefix
-- "Guild Premium Tier" (string): Server nitro boost level
+- "Guild Premium Tier" (string): Server nitro boost level (no command reads it since
+  2026-10-04: animated guild icons are detected by the icon hash's `a_` prefix)
 - "ExecCC Limit" (string): How many `execCC` calls a command may make in one run (YAGPDB allows
   10 `execCC` and `scheduleUniqueCC` calls per run together on premium, 1 on free; the
   commands that read it cap it at 10)

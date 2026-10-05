@@ -126,8 +126,9 @@ folder mixes both. Staff-group commands are marked below.
 
 #### Plumbing (`commands/plumbing/`)
 - **`embed_exec.gohtml`** - Universal embed creation and execution
-- **`message_link.gohtml`** - Generate message links (called by log_user, unmanaged: never
-  deployed, the live copy holds the real watched ID)
+- **`message_link.gohtml`** - Generate message links (called by log_user, which is
+  unmanaged: never deployed, its live copy holds the real watched ID; message_link itself
+  deploys normally)
 - **`ticket_clean.gohtml`** - Ticket cleanup utility
 - **`bootstrap.gohtml`** (staff) - Initial system setup and configuration
 - **`config_sync.gohtml`** (staff, hourly) - Writes every command's panel ID into the

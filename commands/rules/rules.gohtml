@@ -10,7 +10,6 @@
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}
 {{ $serverURL := or ($globalDict.Get "Server URL") "" }}
 {{ $dbEmbedColor := toInt ($globalDict.Get "Embed Color") }}
-{{ $guildPremiumTier := toInt ($globalDict.Get "Guild Premium Tier") }}
 
 {{ $commandsDict := (dbGet 0 "Commands").Value }}
 {{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
@@ -79,7 +78,8 @@
     {{/* embed_exec's guild-author branch (no AuthorID in ExecData): the same author on
       every rule embed here, computed once */}}
     {{ $gIconExtension := ".png" }}
-    {{ if ge (toInt $guildPremiumTier) 1 }}
+    {{/* a_ marks an animated icon (YAGPDB's GuildSet.IconURL does the same) */}}
+    {{ if hasPrefix .Guild.Icon "a_" }}
         {{ $gIconExtension = ".gif" }}
     {{ end }}
     {{ $gIcon := "" }}
