@@ -1,0 +1,146 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `setup`
+  Group: `Staff Utility`
+  Slash description: `Set the server's roles and channels`
+  Dependencies: none
+
+  Sets the single-ID roles and channels the commands read, with Discord's own role and
+  channel pickers instead of typing IDs into /db or /edit. Every reply is an ephemeral
+  sendResponse of this run (settings): the saved section(s) as an embed, each key as a
+  mention or "not set", and the keys changed by this run marked "(updated)".
+
+  `roles` and `channels` validate EVERY given option first; any refusal is one ephemeral
+  reply naming the option, and nothing is written. Refused: a role whose ID is the guild's
+  (@everyone) or that is managed (a bot's or integration's: no one can be given it), and
+  a channel that isn't a text or announcement channel (types 0 and 5: the helpers and
+  logs post there). Then one dbGet of the dict, one Set per given option, one dbSet. With
+  no options the section is shown as it is, with no write; `view` shows both sections.
+  Values are stored as strings, as bootstrap writes them.
+
+  Unsetting a key is /edit's job: a picker can't send "none".
+
+  Slash subcommand: `view show the configured roles and channels`
+  Slash subcommand: `roles set the configured roles`
+  Slash option: `roles.staff role the staff role (most staff commands check it)`
+  Slash option: `roles.member role the role inactivity pings at start and end`
+  Slash option: `roles.active role the role the inactivity prune picker treats as active`
+  Slash option: `roles.inactive role the role inactivity reminders ping and the prune picker checks`
+  Slash option: `roles.bump role the role the bump reminder pings`
+  Slash subcommand: `channels set the configured channels`
+  Slash option: `channels.bot channel where helper commands run`
+  Slash option: `channels.mod_log channel where hiatus and unhiatus post their record`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $globalDict := or (dbGet 0 "Global").Value sdict }}
+	{{ $embedColor := toInt ($globalDict.Get "Embed Color") }}
+
+	{{/* each section's options in display order: the option name, its dict key and label */}}
+	{{ $layout := sdict
+		"Roles" (cslice
+			(sdict "opt" "staff" "key" "Staff" "label" "Staff")
+			(sdict "opt" "member" "key" "Member" "label" "Member")
+			(sdict "opt" "active" "key" "Active" "label" "Active")
+			(sdict "opt" "inactive" "key" "Inactive" "label" "Inactive")
+			(sdict "opt" "bump" "key" "Bump" "label" "Bump"))
+		"Channels" (cslice
+			(sdict "opt" "bot" "key" "YAGPDB" "label" "Bot")
+			(sdict "opt" "mod_log" "key" "Mod Log" "label" "Mod log"))
+	}}
+
+	{{ $sub := .SubCommand }}
+	{{ $opts := or .Options sdict }}
+	{{ $sections := cslice "Roles" "Channels" }}
+	{{ $writes := false }}
+	{{ if eq $sub "roles" }}
+		{{ $sections = cslice "Roles" }}
+		{{ $writes = true }}
+	{{ else if eq $sub "channels" }}
+		{{ $sections = cslice "Channels" }}
+		{{ $writes = true }}
+	{{ end }}
+
+	{{/* validate every given option before anything is written */}}
+	{{ $refusal := "" }}
+	{{ if $writes }}
+		{{ range $layout.Get (index $sections 0) }}
+			{{ $given := $opts.Get .opt }}
+			{{ if and $given (not $refusal) }}
+				{{ if eq (index $sections 0) "Roles" }}
+					{{ if eq (toString $given.ID) (toString $.Guild.ID) }}
+						{{ $refusal = joinStr "" "⚠️ `" .opt "`: @everyone can't be the " .label " role." }}
+					{{ else if $given.Managed }}
+						{{ $refusal = joinStr "" "⚠️ `" .opt "`: " $given.Name " is managed by a bot or integration, so no one can be given it." }}
+					{{ end }}
+				{{ else if and (ne (toInt $given.Type) 0) (ne (toInt $given.Type) 5) }}
+					{{ $refusal = joinStr "" "⚠️ `" .opt "`: pick a text or announcement channel." }}
+				{{ end }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+
+	{{ if $refusal }}
+		{{ sendResponse nil (complexMessage "ephemeral" true "content" $refusal) }}
+	{{ else }}
+		{{/* one dbGet per section shown (the dict, or an empty one when never written) */}}
+		{{ $rolesDict := sdict }}
+		{{ $channelsDict := sdict }}
+		{{ if in $sections "Roles" }}
+			{{ $rolesDict = or (dbGet 0 "Roles").Value sdict }}
+		{{ end }}
+		{{ if in $sections "Channels" }}
+			{{ $channelsDict = or (dbGet 0 "Channels").Value sdict }}
+		{{ end }}
+		{{ $dicts := sdict "Roles" $rolesDict "Channels" $channelsDict }}
+
+		{{/* roles/channels: Set each given key, ONE dbSet, none when no option was given */}}
+		{{ if $writes }}
+			{{ $written := index $sections 0 }}
+			{{ $writeDict := $dicts.Get $written }}
+			{{ $changed := false }}
+			{{ range $layout.Get $written }}
+				{{ $given := $opts.Get .opt }}
+				{{ if $given }}
+					{{ $writeDict.Set .key (toString $given.ID) }}
+					{{ $changed = true }}
+				{{ end }}
+			{{ end }}
+			{{ if $changed }}
+				{{ dbSet 0 $written $writeDict }}
+			{{ end }}
+		{{ end }}
+
+		{{ $fields := cslice }}
+		{{ range $section := $sections }}
+			{{ $dict := $dicts.Get $section }}
+			{{ $lines := cslice }}
+			{{ range $layout.Get $section }}
+				{{ $id := toInt (or ($dict.Get .key) "") }}
+				{{ $shown := "not set" }}
+				{{ if gt $id 0 }}
+					{{ if eq $section "Roles" }}
+						{{ $shown = joinStr "" "<@&" (toString $id) ">" }}
+					{{ else }}
+						{{ $shown = joinStr "" "<#" (toString $id) ">" }}
+					{{ end }}
+				{{ end }}
+				{{ $mark := "" }}
+				{{ if $opts.Get .opt }}
+					{{ $mark = " (updated)" }}
+				{{ end }}
+				{{ $lines = $lines.Append (joinStr "" "**" .label "** " $shown $mark) }}
+			{{ end }}
+			{{ $fields = $fields.Append (sdict "name" $section "value" (joinStr "\n" $lines) "inline" false) }}
+		{{ end }}
+
+		{{ $embed := cembed
+			"title" "Server setup"
+			"color" $embedColor
+			"fields" $fields
+		}}
+		{{ sendResponse nil (complexMessage "embed" $embed "ephemeral" true) }}
+	{{ end }}
+{{ else }}
+Use /setup as a slash command: view, roles or channels
+{{ end }}

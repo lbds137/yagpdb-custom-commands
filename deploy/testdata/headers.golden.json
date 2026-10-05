@@ -762,6 +762,74 @@
       "slashDescription": null,
       "slash": null
     },
+    "commands/plumbing/setup_slash.gohtml": {
+      "deferMode": 0,
+      "slashDescription": "Set the server's roles and channels",
+      "slash": {
+        "subcommands": [
+          {
+            "name": "view",
+            "description": "show the configured roles and channels",
+            "options": []
+          },
+          {
+            "name": "roles",
+            "description": "set the configured roles",
+            "options": [
+              {
+                "name": "staff",
+                "type": "role",
+                "description": "the staff role (most staff commands check it)",
+                "required": false
+              },
+              {
+                "name": "member",
+                "type": "role",
+                "description": "the role inactivity pings at start and end",
+                "required": false
+              },
+              {
+                "name": "active",
+                "type": "role",
+                "description": "the role the inactivity prune picker treats as active",
+                "required": false
+              },
+              {
+                "name": "inactive",
+                "type": "role",
+                "description": "the role inactivity reminders ping and the prune picker checks",
+                "required": false
+              },
+              {
+                "name": "bump",
+                "type": "role",
+                "description": "the role the bump reminder pings",
+                "required": false
+              }
+            ]
+          },
+          {
+            "name": "channels",
+            "description": "set the configured channels",
+            "options": [
+              {
+                "name": "bot",
+                "type": "channel",
+                "description": "where helper commands run",
+                "required": false
+              },
+              {
+                "name": "mod_log",
+                "type": "channel",
+                "description": "where hiatus and unhiatus post their record",
+                "required": false
+              }
+            ]
+          }
+        ],
+        "options": []
+      }
+    },
     "commands/plumbing/ticket_clean.gohtml": {
       "deferMode": 0,
       "slashDescription": null,
