@@ -28,7 +28,7 @@ tests:
   - name: "gematria: a Hebrew word and its reduction"
     template: "../../../commands/gematria/gematria.gohtml"
     context:
-      args: ["אמת"]
+      exec_data: { Description: "אמת" }
     assertions:
       sent_messages:
         # א 1 + מ 40 + ת 400 = 441, reduced 4+4+1 = 9
@@ -40,7 +40,7 @@ tests:
   - name: "gematria: a single letter gets its tarot number"
     template: "../../../commands/gematria/gematria.gohtml"
     context:
-      args: ["ת"]
+      exec_data: { Description: "ת" }
     assertions:
       sent_messages:
         # ת is 400, reduced to 4, and the 22nd letter
@@ -52,7 +52,7 @@ tests:
   - name: "gematria: several words, with per-word and total values"
     template: "../../../commands/gematria/gematria.gohtml"
     context:
-      args: ["hello world"]
+      exec_data: { Description: "hello world" }
     assertions:
       sent_messages:
         # hello = 103, world = 1054; total 1157 > 14 > 5
@@ -64,7 +64,7 @@ tests:
 
   # A caller answering a slash command's interaction passes Respond: embed_exec then
   # answers it (sendResponse). The interaction reaches gematria as the delayed shape
-  # (exec_data with the stored interaction), as a Command-trigger template can't take a click.
+  # (exec_data with the stored interaction): the renderer is a None-trigger service.
   - name: "gematria: ExecData Respond is passed on, so the embed answers the interaction"
     template: "../../../commands/gematria/gematria.gohtml"
     context:
