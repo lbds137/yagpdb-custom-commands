@@ -54,7 +54,8 @@ folder mixes both. Staff-group commands are marked below.
 - **`edit_confirm.gohtml`** (staff) - The `/edit delete` confirm's buttons
 
 #### Gematria (`commands/gematria/`)
-- **`gematria.gohtml`** - Advanced gematria calculator with tarot associations
+- **`gematria.gohtml`** - Advanced gematria calculator with tarot associations: the
+  renderer behind `/gematria` and `/hebrew` (no text trigger since 2026-10-04)
 - **`gematria_bootstrap.gohtml`** (staff) - Initialize gematria calculation system
 
 #### Hebrew (`commands/hebrew/`)

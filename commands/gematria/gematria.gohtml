@@ -1,13 +1,18 @@
 {{- /*
   Author: Vladlena Costescu (@lbds137)
-  Trigger type: `Command`
-  Trigger: `gematria`
+  Trigger type: `None`
   Group: `Utility`
   Dependencies: `embed_exec`, `gematria_bootstrap`
+  Called by: /gematria and /hebrew (the renderer), with the text in ExecData.Description.
+  Slash-only since 2026-10-04 (Lila): the text trigger is gone.
 */ -}}
 
-{{ $args := parseArgs 1 "Usage: [text]" (carg "string" "text") }}
-{{ $text := or .ExecData.Description ($args.Get 0) }}
+{{ $text := "" }}
+{{ if .ExecData }}{{ $text = toString (or .ExecData.Description "") }}{{ end }}
+{{ if not $text }}
+	{{ print "Usage: /gematria text, or /hebrew (this command renders their results)" }}
+	{{ return }}
+{{ end }}
 
 {{ $globalDict := (dbGet 0 "Global").Value }}
 {{ $deleteTriggerDelay := toInt ($globalDict.Get "Delete Trigger Delay") }}

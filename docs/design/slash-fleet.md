@@ -177,8 +177,9 @@ Emulator support (this unit): `scheduled_runs` takes `interaction: none|pending|
 `interaction: { type: slash, delayed: true, responded_to: true }` plus `exec_data`.
 - Retired on main 2026-10-04 after Lila's live check: atbash (68), alefbet (83), pyramid
   (75) and rand_hebrew (65) disabled by the deploy; the files stay in commands/hebrew/
-  because lotv and The Rose still run them. gematria (52) stays: it is the roots' renderer,
-  and its text trigger is the one Lila uses most. A pyramid line of 2+ letters now ends in
+  because lotv and The Rose still run them. gematria (52) stays: it is the roots' renderer.
+  Its text trigger stayed too, until Lila made it slash-only on every server (2026-10-04:
+  trigger type None, so /gematria and /hebrew still call it). A pyramid line of 2+ letters now ends in
   its final form (display only: the Gematria Values give final letters their plain values).
 
 ## Unit 3: /rule, /timestamp, /define
