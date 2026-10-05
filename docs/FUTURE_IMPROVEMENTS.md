@@ -97,7 +97,8 @@ picks, then the minifier.
   / /setup (roadmap item 4) and the new: cleanup; the cheap teaching layer (option
   descriptions, modal placeholders) already shipped with the slash work.
   AUDITED 2026-10-05: docs/design/staff-lens-audit.md (24 findings F1-F25, recommended
-  batch, copy-only first). Waiting on Lila: which batch to build (user-visible copy).
+  batch, copy-only first). DECIDED (Lila 2026-10-05): build recommended items 1-12 as the
+  doc proposes them (copy, F15, F2 guard, F16 Administrator gate); 13-17 later.
 
 
 - Deferred, trigger: the six picks above shipped. A slash-first pass over the rest (Lila
@@ -264,8 +265,8 @@ gets a failing test first.
   whose stored value isn't text (a list or nested dict) opens an empty Value box
   (edit_slash.gohtml prefills strings only), and submitting overwrites the value with the
   typed text (edit_modal.gohtml's update branch sets it unconditionally). Fix shape: refuse
-  non-text entries at /edit and at submit, pointing to /db. Waiting on Lila with the audit
-  batch (the refusal is user-visible).
+  non-text entries at /edit and at submit, pointing to /db. Approved with the audit batch
+  (Lila 2026-10-05).
 - Found 2026-10-05 (staff-lens audit F15, confirmed by reading): `/staff inactivity date`
   replies with the title "Inactivity Prune Inactivity Prune Date Editing" (inactivity
   .gohtml joins $pruneCategory with a heading that already contains it). Fix with the
