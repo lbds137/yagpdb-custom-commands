@@ -268,7 +268,8 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
 
 Rulings (Lila, AskUserQuestion 2026-10-07):
 - v1 ciphers: Vigenère + frequency-analysis cracker (new), OldCipher port, NewCipher port.
-  LFSR: undecided, she wants details first (proposal: use it as the key layer of hide/reveal).
+  LFSR (her follow-up ruling): the optional-password key layer of hide/reveal only, not a
+  standalone method.
 - OldCipher/NewCipher ports are bit-compatible with her 2009 Java (old ciphertexts decode).
 - Text steganography replaces image stego: hide/reveal with an optional key, after a live
   check that Discord keeps the zero-width characters.
