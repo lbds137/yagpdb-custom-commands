@@ -264,7 +264,17 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   for better UX. If it happens, everyone/general/ticket_clean (nags about the YAGPDB
   `tickets open` syntax in #ticket-submission) becomes a candidate for retirement. Nothing to do until she decides.
 
-## Cipher and steganography commands (idea, Lila 2026-10-07, via the Chats session; DESIGN, rulings pending)
+## Cipher and steganography commands (idea, Lila 2026-10-07, via the Chats session; DESIGN)
+
+Rulings (Lila, AskUserQuestion 2026-10-07):
+- v1 ciphers: Vigenère + frequency-analysis cracker (new), OldCipher port, NewCipher port.
+  LFSR: undecided, she wants details first (proposal: use it as the key layer of hide/reveal).
+- OldCipher/NewCipher ports are bit-compatible with her 2009 Java (old ciphertexts decode).
+- Text steganography replaces image stego: hide/reveal with an optional key, after a live
+  check that Discord keeps the zero-width characters.
+- Shape: one `/cipher` slash command with subcommands; encode and hide post publicly, decode,
+  crack and reveal reply ephemerally.
+- Deploy only on her go.
 
 Port and improve her own old Java toys (all hers, public or being published):
 `lbds137/cipher-experiments-2009` (OldCipher: polyalphabetic, 4 hand-scrambled alphabets plus
