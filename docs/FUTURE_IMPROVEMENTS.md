@@ -264,6 +264,36 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   for better UX. If it happens, everyone/general/ticket_clean (nags about the YAGPDB
   `tickets open` syntax in #ticket-submission) becomes a candidate for retirement. Nothing to do until she decides.
 
+## Cipher and steganography commands (idea, Lila 2026-10-07, via the Chats session; DESIGN, rulings pending)
+
+Port and improve her own old Java toys (all hers, public or being published):
+`lbds137/cipher-experiments-2009` (OldCipher: polyalphabetic, 4 hand-scrambled alphabets plus
+~250 generated from hardcoded `java.util.Random` seeds, alphabet picked per word from word
+position, word length and line count; NewCipher: middle char is a plaintext seed, others shifted
+by `Random(seed + length).nextInt(125) - 25`, which can land on control code points),
+`lbds137/ap-cs-assignments-2008-2009` Assignment-2.2 (frequency-analysis decoder),
+`lbds137/cos126-assignments-2009` Assignment-5 PhotoMagic (LFSR XOR stream, text-password
+variant), and the 2009 image steganography (`lbds137/steganography-2009`, LSB-subtract with the
+original image as key). Present all of them as toys, never as secure. No deploy without her go.
+
+Constraints, checked against vendor/yagpdb (c579722):
+- Image steganography can't be ported: the template funcs (common/templates/context.go,
+  general.go) have no HTTP fetch and no image decode or encode. The port is TEXT steganography:
+  the secret as invisible zero-width characters inside a cover message, optional key on top.
+  Whether Discord keeps every zero-width code point intact is unverified; a live check decides
+  the alphabet (U+200B/200C/200D/2060 first candidates).
+- `java.util.Random` CAN be reproduced exactly (code reading, not yet run): it is a 48-bit LCG
+  (`seed*0x5DEECE66D + 0xB` masked to 48 bits), and `mult`/`add` on ints are Go 64-bit int
+  arithmetic that wraps (general.go:790 tmplMult), so the low 48 bits stay correct, and
+  `bitwiseAnd`/`bitwiseRightShift` exist (general.go:977-1010). So decoding her 2009
+  ciphertexts is feasible, op-limit permitting (OldCipher generates alphabets by shuffling;
+  generate only the alphabet each word needs). Prove it in the emulator against a Java run.
+- Output must stay printable: NewCipher's raw shift breaks in Discord, so a port maps into a
+  printable alphabet (the 2009 format is then decode-only, if kept at all).
+- Size: panel counts newlines twice, 20k premium; a 4-alphabet table plus the LCG fits one
+  command, but a combined /cipher may need execCC splits like /db.
+- Style: `commands/hebrew/atbash.gohtml` (dict-driven substitution) is the sibling to match.
+
 ## Known command bugs
 
 The snapshot audit's list (2026-09-25) is fixed (see Completed Improvements). Each fix
