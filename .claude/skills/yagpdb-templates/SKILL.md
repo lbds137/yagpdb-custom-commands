@@ -53,6 +53,11 @@ retired/          - Commands no longer deployed (see retired/README.md)
 ) }}
 ```
 
+**Looping with `seq`** (stop-exclusive, unlike bash's inclusive `seq`: `seq 1 6` is five iterations):
+```gohtml
+{{ range $i := seq 1 6 }}{{ $i }}{{ end }}
+```
+
 ### Database Dictionaries
 
 | Key | Purpose |
