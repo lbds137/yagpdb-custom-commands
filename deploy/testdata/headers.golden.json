@@ -129,6 +129,18 @@
                 "required": true
               }
             ]
+          },
+          {
+            "name": "newcipher",
+            "description": "decode a 2009 NewCipher ciphertext (private answer)",
+            "options": [
+              {
+                "name": "text",
+                "type": "string",
+                "description": "the ciphertext, up to 2000 characters",
+                "required": true
+              }
+            ]
           }
         ],
         "options": []
