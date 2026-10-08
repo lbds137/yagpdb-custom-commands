@@ -179,5 +179,11 @@ can see this").
    TAB/CR/DEL code points, paste the ciphertext into a Discord message, copy it back
    out and decode that. Lila runs it once and reports which code points survived.
 
+6. `/cipher oldcipher text:<a multi-line ciphertext from a 2009 OldCipher console
+   run>`: a private "OldCipher plaintext" embed showing the original back. Use two or
+   more lines on purpose: the decode's line-count metric needs real newlines, and a
+   slash option may flatten pasted newlines — if the lines come back garbled, that is
+   the finding (note whether the paste kept its newlines).
+
 ### Report back
 Which steps passed (for step 5, which control code points survived the round trip).
