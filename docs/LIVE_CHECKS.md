@@ -160,3 +160,18 @@ options are `section` and `name` (renamed from `category` and `key` 2026-10-05).
 
 ### Report back
 Which steps passed.
+
+## /cipher (any server, after its deploy)
+
+The Vigenère toy: encode posts publicly, decode and crack reply privately ("Only you
+can see this").
+1. `/cipher encode key:LEMON text:ATTACK AT DAWN`: a public "Vigenère ciphertext" embed
+   whose text starts `LXFOPV` (the canonical vector continues `EFRNHR`).
+2. `/cipher decode key:LEMON text:<that ciphertext>`: a private "Vigenère plaintext"
+   embed showing `ATTACK AT DAWN` back (spaces and case kept).
+3. `/cipher crack text:<a ciphertext of 300+ letters>` (encode any long English text
+   with a keyword of 5+ letters first): a private "Vigenère crack" embed whose Key
+   field is that keyword, with a confidence line.
+
+### Report back
+Which steps passed.

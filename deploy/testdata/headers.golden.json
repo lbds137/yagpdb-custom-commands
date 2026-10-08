@@ -76,6 +76,64 @@
         ]
       }
     },
+    "commands/cipher/cipher_slash.gohtml": {
+      "deferMode": 0,
+      "interval": null,
+      "slashDescription": "Classical cipher toys (not secure)",
+      "slash": {
+        "subcommands": [
+          {
+            "name": "encode",
+            "description": "Vigenère-encode a message (posted publicly)",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "the keyword, letters only",
+                "required": true
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "description": "the plaintext, up to 2000 characters",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "decode",
+            "description": "Vigenère-decode a message (private answer)",
+            "options": [
+              {
+                "name": "key",
+                "type": "string",
+                "description": "the keyword, letters only",
+                "required": true
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "description": "the ciphertext, up to 2000 characters",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "crack",
+            "description": "attack a Vigenère ciphertext without the key (private answer)",
+            "options": [
+              {
+                "name": "text",
+                "type": "string",
+                "description": "the ciphertext, up to 2000 characters",
+                "required": true
+              }
+            ]
+          }
+        ],
+        "options": []
+      }
+    },
     "commands/color/color_slash.gohtml": {
       "deferMode": 0,
       "interval": null,

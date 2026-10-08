@@ -1,0 +1,183 @@
+name: "cipher_slash (/cipher encode, decode, crack)"
+
+# Vigenère encode answers publicly; decode and crack answer ephemerally, and every
+# refusal is ephemeral. The canonical vector is Wikipedia's (LEMON / ATTACKATDAWN ->
+# LXFOPVEFRNHR). The crack fixture is the 581-letter prose below encoded with the
+# 10-letter keyword NIGHTHOUSE; the encode test pins the whole ciphertext byte for
+# byte, so the crack input is exactly what this command's own encode produces.
+# The command reads no database, so there is no setup_db.
+
+defaults:
+  user: { id: 500000000000000001, username: "Invoker" }
+  channel: { id: 123456789012345678 }
+  guild:
+    id: 333333333333333333
+    name: "Test Server"
+
+tests:
+  - name: "encode: the canonical vector LEMON / ATTACKATDAWN answers publicly with LXFOPVEFRNHR"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: encode, options: { key: "LEMON", text: "ATTACKATDAWN" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Vigenère ciphertext"
+          embed_contains: "LXFOPVEFRNHR"
+
+  - name: "encode: case is preserved, non-letters pass through, the key advances on letters only"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: encode, options: { key: "night", text: "Attack at dawn!" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: false, embed_contains: "Nbzhvx iz ktjv!" }
+
+  - name: "decode: the roundtrip with a mixed-case key answers privately with the plaintext"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: decode, options: { key: "NiGhT", text: "Nbzhvx iz ktjv!" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "Vigenère plaintext"
+          embed_contains: "Attack at dawn!"
+
+  - name: "encode: a keyword with non-letters is an ephemeral refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: encode, options: { key: "L3MON", text: "ATTACKATDAWN" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "letters only" }
+
+  - name: "encode: text with no letters at all is an ephemeral refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: encode, options: { key: "LEMON", text: "12345 !!!" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "no letters" }
+
+  - name: "decode: text with no letters at all is an ephemeral refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: decode, options: { key: "LEMON", text: "12345 !!!" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "no letters" }
+
+  - name: "crack: text with no letters at all is an ephemeral not-enough-text refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: crack, options: { text: "12345 !!!" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "Not enough text to attack" }
+
+  - name: "crack: seven letters is under the eight-letter minimum"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: crack, options: { text: "Hi there!" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "need at least 8 letters" }
+
+  - name: "crack: structureless letters get no key guessed, privately"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: crack
+        options: { text: "dbvjuehinqkgylznazyumrrgxcbxnotyeujpbref" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          content_contains: "No clear Vigenère key found."
+
+  - name: "encode: the crack fixture, prose with NIGHTHOUSE, is pinned byte for byte"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: encode
+        options:
+          key: "NIGHTHOUSE"
+          text: >-
+            The old lighthouse keeper wrote every evening in a small blue
+            notebook. She recorded the weather, the ships that passed beyond
+            the rocks, and the small repairs she made to the lamp. Visitors
+            rarely climbed the long stair, so the notebook became her
+            closest companion. Each page began with the date and ended with
+            a single sentence about the sea. In winter the waves struck the
+            tower like a fist, and she learned to read their rhythm the way
+            a doctor reads a pulse. When the fog arrived, thick and grey,
+            she sounded the horn at steady intervals and trusted the pattern
+            more than her own eyes. Years later a young historian found the
+            notebooks in a wooden box and discovered a whole life recorded
+            in plain, patient sentences.
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Vigenère ciphertext"
+          embed_contains: >-
+            Gpk vek zcylgpubll yywtrz cyhas ynieg kcxuwhy ma i yttsz vdyr
+            vuaxicic. Wum xlvvfxwh gpk dxhhbwv, gpk zapdm llnb vhlzsx tilwtk
+            mos lggxa, guw avy kqntr yxwocjw fpk ttks ng xum rhfw. Jckmgwxz
+            khfydc ptotulr nzi ywtn laocj, wb bnl gvhytsbs hlvhay zie
+            krvllgn uszxgubvb. Ysgu xgnx isasr jqzo mos xsxr itk xuryv avbn
+            h lpbadi fmtaxuqy sfbcz aal gys. Ma eoumlf nzi jibll zhlmgx bnl
+            mvkyj pvsk h ypgn, srq anl elolfiq bu yxhr nzivz xoravg llr egf
+            t kcwlse zkhwz o jmpfm. Coxu hbw jbo gykpjyv, xuqir tur ajil,
+            anl lvihviq bnl avfh sx fbkhwf whliedgsl hbx lvhazlw avy hegbkyg
+            tclw xuit oxy cqf ilmy. Fxhfm degmx h rvihy lvazvkpoh xshvj aal
+            biliowurl pb u osblku uvl ufh qqyjhcslwh n envel zcxi emivkksx
+            ar ctgpg, wonaiab ylgashuif.
+
+  - name: "crack: the NIGHTHOUSE ciphertext is cracked, privately, with a confidence line"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: crack
+        options:
+          text: >-
+            Gpk vek zcylgpubll yywtrz cyhas ynieg kcxuwhy ma i yttsz vdyr
+            vuaxicic. Wum xlvvfxwh gpk dxhhbwv, gpk zapdm llnb vhlzsx tilwtk
+            mos lggxa, guw avy kqntr yxwocjw fpk ttks ng xum rhfw. Jckmgwxz
+            khfydc ptotulr nzi ywtn laocj, wb bnl gvhytsbs hlvhay zie
+            krvllgn uszxgubvb. Ysgu xgnx isasr jqzo mos xsxr itk xuryv avbn
+            h lpbadi fmtaxuqy sfbcz aal gys. Ma eoumlf nzi jibll zhlmgx bnl
+            mvkyj pvsk h ypgn, srq anl elolfiq bu yxhr nzivz xoravg llr egf
+            t kcwlse zkhwz o jmpfm. Coxu hbw jbo gykpjyv, xuqir tur ajil,
+            anl lvihviq bnl avfh sx fbkhwf whliedgsl hbx lvhazlw avy hegbkyg
+            tclw xuit oxy cqf ilmy. Fxhfm degmx h rvihy lvazvkpoh xshvj aal
+            biliowurl pb u osblku uvl ufh qqyjhcslwh n envel zcxi emivkksx
+            ar ctgpg, wonaiab ylgashuif.
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "Vigenère crack"
+          embed_contains: "NIGHTHOUSE"
+      # the same private response, one substring per entry
+      sent_messages:
+        - { ephemeral: true, embed_contains: "Confidence" }
+        - { ephemeral: true, embed_contains: "high" }
+        - { ephemeral: true, embed_contains: "average index of coincidence" }
+        - { ephemeral: true, embed_contains: "lighthouse keeper" }
+
+  - name: "encode: text over 2000 characters is an ephemeral refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "2000" }
+    context:
+      interaction:
+        type: slash
+        subcommand: encode
+        options: { key: "LEMON", text: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }

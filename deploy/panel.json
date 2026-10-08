@@ -61,7 +61,8 @@
     "commands/members/staff_slash.gohtml": {"main": 111, "rose": 33, "lotv": 34},
     "commands/channels/pointer_slash.gohtml": {"main": 112, "rose": 34, "lotv": 35},
     "commands/plumbing/setup_slash.gohtml": {"main": 113, "rose": 35, "lotv": 36},
-    "commands/plumbing/message_link.gohtml": {"main": 32, "lotv": 11, "rose": 4}
+    "commands/plumbing/message_link.gohtml": {"main": 32, "lotv": 11, "rose": 4},
+    "commands/cipher/cipher_slash.gohtml": {"main": 0}
   },
   "unmanaged": ["commands/plumbing/log_user.gohtml"]
 }
