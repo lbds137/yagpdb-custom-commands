@@ -266,3 +266,219 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "2000" }
+
+  # oldcipher forwards to the cipher_old child by execCC. The truth vectors are her
+  # actual 2009 Cipher.java output (eclipse-temurin:8, podman, roundtrip-verified): the
+  # two-line vector pins the line-count and word-index metrics, the quirk vector pins
+  # punctuation and digits passing through the stream while only the metrics strip them
+  # (leaving an empty token between "number" and "lives").
+  - name: "oldcipher: the two-line truth vector decodes privately through the child"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "Vcs kealb heuny dug\nlomsz mauo zqi gxsj ebg" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "OldCipher plaintext"
+          embed_contains: "The quick brown fox"
+      # the child's one response is also listed here, so exactly one entry means the root
+      # added nothing of its own; line 2 of the plaintext is asserted here
+      sent_messages:
+        - { embed_title: "OldCipher plaintext", embed_contains: "jumps over the lazy dog" }
+
+  - name: "oldcipher: the quirk truth vector keeps punctuation and digits and strips them from the metrics"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "Gszz... apgxod 42 megia msis, qb?" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Well... number 42 lives here, ok?" }
+
+  - name: "oldcipher: no cipher_old id is an ephemeral not-set-up refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "Vcs" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { embed_exec: "9" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "isn't set up on this server yet" }
+
+  - name: "oldcipher: a disabled child is the try/catch refusal, answered once"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "Vcs" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    command_status:
+      1: disabled
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "OldCipher isn't available right now." }
+
+  - name: "oldcipher: text over 2000 characters is an ephemeral refusal from the child"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "2000" }
+
+  - name: "oldcipher: empty text is an ephemeral refusal from the child"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "empty" }
+
+  - name: "oldcipher: text with no letters is an ephemeral refusal from the child"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "1234 ... !!" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "no letters" }
+
+  - name: "cipher_old: a direct run with no ExecData prints nothing"
+    template: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      sent_messages: []
+
+  # Java-differential cases (review 2026-10-08): her Cipher.java (temurin 8, podman)
+  # vs this port on inputs the two truth vectors don't reach — trailing, interior and
+  # leading empty tokens, empty and spaces-only lines, and the stale nextChar across a
+  # lone-space line ("ab\n \ncd", run through her decrypt() 2026-10-08). Expected
+  # strings are her Java's getResults() split back per input line (output line i has
+  # input line i's character count); each case pins one line via interaction_responses
+  # and the rest via the child's response in sent_messages.
+  - name: "oldcipher: an interior double space keeps its empty token in the metrics"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "Vcs kealb  heuny dug\nlomsz mauo zqi" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "The quick  sornl adi" }
+      sent_messages:
+        - { embed_contains: "ocvwr vtdc orf" }
+
+  - name: "oldcipher: a line's trailing space drops the trailing empty token"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "ab cd \nx y z" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "co xu" }
+      sent_messages:
+        - { embed_contains: "q v d" }
+
+  - name: "oldcipher: a leading newline counts its empty first line"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "\nab cd ef gh" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "nx xu mp jg" }
+
+  - name: "oldcipher: a leading-space line walks the shared word index"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "ab\n c d\ne f g" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "kg" }
+      sent_messages:
+        - { embed_contains: "w q r" }
+
+  - name: "oldcipher: an empty middle line keeps the line count"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "ab cd ef\n\ngh ij" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "kg nq rg" }
+      sent_messages:
+        - { embed_contains: "xb en" }
+
+  - name: "oldcipher: leading spaces keep their leading empty tokens"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "  ab cd" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "nx hy" }
+
+  - name: "oldcipher: a spaces-only line adds no words"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "ab cd   \n   \nef gh ij kl mn op" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "kg nq" }
+      sent_messages:
+        - { embed_contains: "mp xb wd tw ha zj" }
+
+  - name: "oldcipher: a lone-space line advances on the stale next char"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "ab\n \ncd" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "sj" }
+      sent_messages:
+        - { embed_contains: "xu" }

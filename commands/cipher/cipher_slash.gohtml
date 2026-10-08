@@ -28,6 +28,11 @@
   format lands on control code points that Discord can mangle, so real use waits on the
   live round-trip check in docs/LIVE_CHECKS.md.
 
+  OldCipher (oldcipher) is the 2009 polyalphabetic toy (224 alphabets), also DECODE ONLY.
+  Its table is too big for this root, so the branch only forwards the ciphertext by
+  execCC to the cipher_old child (id from the Commands dict, written by config_sync),
+  which answers the interaction ephemerally; this run prints nothing on that path.
+
   Slash subcommand: `encode Vigenère-encode a message (posted publicly)`
   Slash option: `encode.key string! the keyword, letters only`
   Slash option: `encode.text string! the plaintext, up to 2000 characters`
@@ -38,6 +43,8 @@
   Slash option: `crack.text string! the ciphertext, up to 2000 characters`
   Slash subcommand: `newcipher decode a 2009 NewCipher ciphertext (private answer)`
   Slash option: `newcipher.text string! the ciphertext, up to 2000 characters`
+  Slash subcommand: `oldcipher decode a 2009 OldCipher ciphertext (private answer)`
+  Slash option: `oldcipher.text string! the ciphertext, up to 2000 characters`
 */ -}}
 {{ if .IsSlashCommand }}
 	{{ $alphabet := sdict
@@ -329,6 +336,22 @@
 				) }}
 			{{ end }}
 		{{ end }}
+	{{ else if eq $subcommand "oldcipher" }}
+		{{ $commandsDict := or (dbGet 0 "Commands").Value (sdict) }}
+		{{ $cid := toInt (or ($commandsDict.Get "cipher_old") 0) }}
+		{{ if le $cid 0 }}
+			{{ $refusal = "⚠️ This command isn't set up on this server yet." }}
+		{{ else }}
+			{{/* an execCC error (a stale id, a disabled handler) would otherwise leave the
+				interaction unanswered: YAGPDB sends no response for a run that errors */}}
+			{{ try }}
+				{{ execCC $cid .Channel.ID 0 (sdict "Text" .Options.text) }}
+			{{ catch }}
+				{{ sendResponse nil (complexMessage
+					"content" "⚠️ OldCipher isn't available right now."
+					"ephemeral" true) }}
+			{{ end }}
+		{{ end }}
 	{{ else }}
 		{{ $refusal = "⚠️ Unknown subcommand." }}
 	{{ end }}
@@ -337,5 +360,5 @@
 		{{ sendResponse nil (complexMessage "content" $refusal "ephemeral" true) }}
 	{{ end }}
 {{ else }}
-Use /cipher as a slash command: encode, decode, crack or newcipher
+Use /cipher as a slash command: encode, decode, crack, newcipher or oldcipher
 {{ end }}
