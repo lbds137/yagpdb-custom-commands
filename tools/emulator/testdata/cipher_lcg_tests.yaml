@@ -1,0 +1,82 @@
+# java.util.Random's LCG, proven in YAGPDB template arithmetic (FUTURE_IMPROVEMENTS.md,
+# "Cipher and steganography", unit 1). The expected block is the raw stdout of Ref.java
+# (four fresh Random(seed) instances per seed: 5x nextInt(), 5x nextInt(125), 5x
+# nextInt(64), 5x nextInt(1073741825)), run identically on eclipse-temurin:8-jdk-alpine
+# and :21-jdk-alpine via podman on 2026-10-08 — both printed these bytes, so the
+# 2009-era nextInt(bound) (rejection loop) is what current JDKs run too, and old
+# ciphertexts decode with it.
+#
+# The iB column (bound 2^30+1) exists because the rejection loop is nearly untestable at
+# small bounds: 2^31 mod 125 = 124, so ~5.8e-8 of draws reject (none of the 30 i125 draws
+# here do), while 2^31 mod (2^30+1) = 2^30-1 makes ~half of iB draws reject (21 do). The
+# rejection condition is Java INT wraparound: `u - (r = u % bound) + m < 0` in 32 bits
+# means the true sum u-r+m (always < 2^32) wrapped negative, i.e. `ge (u-r+m) 2147483648`
+# in YAGPDB's 64-bit add. Keep every link of the seed chain an INT: mult of ~2^48 x
+# ~2^35 must wrap in int64 (mod 2^64 preserves the low 48 bits), and any float operand
+# (e.g. a div result) silently switches add/mult to float64, which dies at 2^53.
+#
+# next(bits): seed = (seed*25214903917 + 11) & (2^48-1); result = seed >>> (48-bits),
+# then the (int) cast for bits=32. mult/add wrap as 64-bit ints so the low 48 bits stay
+# exact; bitwiseAnd masks; bitwiseRightShift is arithmetic >>, but the seed stays < 2^48
+# so >> == >>>. YAGPDB's seq is stop-exclusive (bash seq is inclusive; general.go
+# sequence()), hence seq 1 6 for five iterations.
+# Note: the runner trims both sides of output_equals before comparing; byte-identity to
+# the JVM files was established by raw diff during the unit, this test pins the trimmed
+# block.
+name: "java.util.Random LCG in template arithmetic (cipher unit 1)"
+
+tests:
+  - name: "matches a real JVM: nextInt, nextInt(125), nextInt(64), nextInt(2^30+1) with live rejections, six seeds"
+    strict: true
+    template_source: |
+      {{range $s := cslice 0 1 42 95 2009 123456789}}
+      {{- $seed := bitwiseAnd (bitwiseXor $s 25214903917) 281474976710655}}
+      {{- $next := "next:"}}
+      {{- range $k := seq 1 6}}
+      {{- $seed = bitwiseAnd (add (mult $seed 25214903917) 11) 281474976710655}}
+      {{- $v := bitwiseRightShift $seed 16}}
+      {{- if ge $v 2147483648}}{{$v = sub $v 4294967296}}{{end}}
+      {{- $next = print $next " " $v}}
+      {{- end}}
+      {{- $seed = bitwiseAnd (bitwiseXor $s 25214903917) 281474976710655}}
+      {{- $i125 := "i125:"}}
+      {{- range $k := seq 1 6}}
+      {{- $seed = bitwiseAnd (add (mult $seed 25214903917) 11) 281474976710655}}
+      {{- $u := bitwiseRightShift $seed 17}}
+      {{- $r := toInt (mod $u 125)}}
+      {{- while ge (add (sub $u $r) 124) 2147483648}}
+      {{- $seed = bitwiseAnd (add (mult $seed 25214903917) 11) 281474976710655}}
+      {{- $u = bitwiseRightShift $seed 17}}
+      {{- $r = toInt (mod $u 125)}}
+      {{- end}}
+      {{- $i125 = print $i125 " " $r}}
+      {{- end}}
+      {{- $seed = bitwiseAnd (bitwiseXor $s 25214903917) 281474976710655}}
+      {{- $i64 := "i64:"}}
+      {{- range $k := seq 1 6}}
+      {{- $seed = bitwiseAnd (add (mult $seed 25214903917) 11) 281474976710655}}
+      {{- $i64 = print $i64 " " (bitwiseRightShift (mult 64 (bitwiseRightShift $seed 17)) 31)}}
+      {{- end}}
+      {{- $seed = bitwiseAnd (bitwiseXor $s 25214903917) 281474976710655}}
+      {{- $iB := "iB:"}}
+      {{- range $k := seq 1 6}}
+      {{- $seed = bitwiseAnd (add (mult $seed 25214903917) 11) 281474976710655}}
+      {{- $u := bitwiseRightShift $seed 17}}
+      {{- $r := toInt (mod $u 1073741825)}}
+      {{- while ge (add (sub $u $r) 1073741824) 2147483648}}
+      {{- $seed = bitwiseAnd (add (mult $seed 25214903917) 11) 281474976710655}}
+      {{- $u = bitwiseRightShift $seed 17}}
+      {{- $r = toInt (mod $u 1073741825)}}
+      {{- end}}
+      {{- $iB = print $iB " " $r}}
+      {{- end}}
+      {{- print "seed=" $s " " $next " " $i125 " " $i64 " " $iB "\n"}}
+      {{- end}}
+    expected:
+      output_equals: |
+        seed=0 next: -1155484576 -723955400 1033096058 -1690734402 -1557280266 i125: 110 73 29 72 15 i64: 46 53 15 38 40 iB: 516548029 663681053 251269761 715581077 542832677
+        seed=1 next: -1155869325 431529176 1761283695 1749940626 892128508 i125: 110 88 97 63 4 i64: 46 6 26 26 13 iB: 215764588 880641847 874970313 446064254 77814904
+        seed=42 next: -1170105035 234785527 -1360544799 205897768 1325939940 i125: 5 13 123 9 95 i64: 46 3 43 3 19 iB: 117392763 102948884 662969970 595021505 196118093
+        seed=95 next: -1178184762 -1269842154 1046493695 -554370684 1223916647 i125: 17 71 97 56 73 i64: 46 45 15 55 18 iB: 523246847 611958323 457316640 186366891 944832791
+        seed=2009 next: -1620645997 392525735 943653791 557031473 545460857 i125: 24 117 20 111 53 i64: 39 5 14 8 8 iB: 196262867 471826895 278515736 272730428 1021110960
+        seed=123456789 next: -1442945365 -1016548095 1962592967 1094656688 1677212580 i125: 90 100 108 94 40 i64: 42 48 29 16 24 iB: 981296483 547328344 838606290 465137554 913732807

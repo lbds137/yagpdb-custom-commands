@@ -293,12 +293,27 @@ Constraints, checked against vendor/yagpdb (c579722):
   the secret as invisible zero-width characters inside a cover message, optional key on top.
   Whether Discord keeps every zero-width code point intact is unverified; a live check decides
   the alphabet (U+200B/200C/200D/2060 first candidates).
-- `java.util.Random` CAN be reproduced exactly (code reading, not yet run): it is a 48-bit LCG
-  (`seed*0x5DEECE66D + 0xB` masked to 48 bits), and `mult`/`add` on ints are Go 64-bit int
-  arithmetic that wraps (general.go:790 tmplMult), so the low 48 bits stay correct, and
-  `bitwiseAnd`/`bitwiseRightShift` exist (general.go:977-1010). So decoding her 2009
-  ciphertexts is feasible, op-limit permitting (OldCipher generates alphabets by shuffling;
-  generate only the alphabet each word needs). Prove it in the emulator against a Java run.
+- `java.util.Random` IS reproducible exactly (PROVEN 2026-10-08, cipher unit 1): 48-bit LCG
+  (`seed*25214903917 + 11` masked to 48 bits); `mult`/`add` wrap as Go 64-bit ints
+  (general.go:790 tmplMult) so the low 48 bits stay correct; `bitwiseAnd`/`bitwiseRightShift`
+  (general.go:977-1010) mask and shift (the seed stays < 2^48, so arithmetic >> equals the
+  logical >>>); the (int) cast of next(32) is `if ge $v 2147483648: sub $v 4294967296`;
+  nextInt(bound) is next(31) plus the rejection loop, whose Java condition `u-(r=u%bound)+m<0`
+  is INT (32-bit) arithmetic: in YAGPDB's 64-bit add it must be tested as
+  `ge (add (sub $u $r) m) 2147483648` (a literal `< 0` never fires — review-caught, the test
+  was red on the old form before the fix); power-of-two bounds take `(bound*r)>>31`; build the
+  loop with `while` + `mod` + `toInt` (while is YAGPDB's, vendor lib/template fork). Evidence:
+  tools/emulator/testdata/cipher_lcg_tests.yaml is byte-identical to Ref.java (four fresh
+  Random(seed) instances per seed: 5x nextInt, 5x nextInt(125), 5x nextInt(64), 5x
+  nextInt(1073741825) — the 2^30+1 bound rejects ~half the time so the loop is really
+  exercised; 21 rejections in the matrix; at bound 125 the rate is ~5.8e-8/draw and none
+  reject) run on eclipse-temurin 8-jdk-alpine AND 21-jdk-alpine via podman 2026-10-08 —
+  JDK 8 and 21 agree, so her 2009 ciphertexts decode with current-JDK semantics. Gotchas the
+  proof caught: each `Random(seed)` column must restart from its own scramble (a shared chain
+  drifts silently); keep the whole seed chain INT (a float operand switches add/mult to
+  float64, which dies at 2^53 — the ~2^82 product must wrap in int64); YAGPDB's `seq` is
+  stop-exclusive. Decoding is feasible, op-limit permitting (OldCipher generates alphabets by
+  shuffling; generate only the alphabet each word needs).
 - Output must stay printable: NewCipher's raw shift breaks in Discord, so a port maps into a
   printable alphabet (the 2009 format is then decode-only, if kept at all).
 - Size: panel counts newlines twice, 20k premium; a 4-alphabet table plus the LCG fits one
