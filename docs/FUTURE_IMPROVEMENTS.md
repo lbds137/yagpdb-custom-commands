@@ -276,15 +276,14 @@ Rulings (Lila, AskUserQuestion 2026-10-07):
 - Shape: one `/cipher` slash command with subcommands; encode and hide post publicly, decode,
   crack and reveal reply ephemerally.
 - Deploy only on her go.
-- Status 2026-10-08: the Vigenère slice shipped (cipher_slash: encode public, decode and
-  crack ephemeral, deterministic IoC + chi-square crack, input cap 2000; panel main 0 until
-  its deploy round creates the command; LIVE_CHECKS has the /cipher steps). Naming ruled
-  2026-10-08 (Lila, via Deck): the 2009 ports join as `/cipher newcipher` and
-  `/cipher oldcipher`, decode-only. Also proven this
-  day: the java.util.Random anchor test (below). Next: NewCipher decode port (truth vectors
-  from her 2009 Java + template prototype proven; needs a live check that control code points
-  survive Discord), OldCipher decode port (224 alphabets, 5824-char embeddable blob), then
-  hide/reveal after Lila's zero-width live check.
+- Status 2026-10-08: cipher v1 is feature-complete on main (b288b4d): the Vigenère slice
+  (cipher_slash: encode public, decode and crack ephemeral, deterministic IoC + chi-square
+  crack, input cap 2000), the java.util.Random anchor test, `/cipher newcipher` (decode)
+  and `/cipher oldcipher` (decode, execCC child cipher_old with the 224-alphabet blob;
+  Java-differential-tested). Nothing cipher is deployed (panel main 0 / -1 until the
+  deploy round creates them; LIVE_CHECKS has /cipher steps 1-6, step 6 multi-line and
+  probes whether a slash option keeps pasted newlines). Next: hide/reveal after Lila's
+  zero-width live check; the LFSR key layer after that. Deploy only on her go.
 
 Port and improve her own old Java toys (all hers, public or being published):
 `lbds137/cipher-experiments-2009` (OldCipher: polyalphabetic, 4 hand-scrambled alphabets plus
