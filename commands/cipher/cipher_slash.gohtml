@@ -1,0 +1,267 @@
+{{- /*
+  Author: Vladlena Costescu (@lbds137)
+  Trigger type: `Slash Command`
+  Trigger: `cipher`
+  Group: `Utility`
+  Slash description: `Classical cipher toys (not secure)`
+  Defer mode: `None`
+
+  Vigenère encode, decode and crack, self-contained (no execCC). Encode answers
+  publicly; decode and crack answer ephemerally, so recovered plaintext never sits in
+  the channel. Only A-Z and a-z are ciphered, case is preserved, every other character
+  passes through unchanged, and the keyword advances only on ciphered letters (the
+  standard rule). The keyword is case-insensitive; the text is capped at 2000
+  bytes after trimming (counts heavier for multi-byte characters).
+
+  The crack is deterministic frequency analysis (no randomness): key lengths 1-16,
+  never more than an eighth of the letters; each length splits the letters into columns
+  and is scored by the average index of coincidence of its columns (sum c*(c-1) /
+  (n*(n-1)) per column, English about 0.0667, random about 0.0385); the highest score
+  wins, ties to the shorter key. The winning columns' shifts are picked by chi-square
+  against English letter frequencies. An average IoC under 0.045 is reported as no key
+  found rather than a guess. A toy, never secure.
+
+  Slash subcommand: `encode Vigenère-encode a message (posted publicly)`
+  Slash option: `encode.key string! the keyword, letters only`
+  Slash option: `encode.text string! the plaintext, up to 2000 characters`
+  Slash subcommand: `decode Vigenère-decode a message (private answer)`
+  Slash option: `decode.key string! the keyword, letters only`
+  Slash option: `decode.text string! the ciphertext, up to 2000 characters`
+  Slash subcommand: `crack attack a Vigenère ciphertext without the key (private answer)`
+  Slash option: `crack.text string! the ciphertext, up to 2000 characters`
+*/ -}}
+{{ if .IsSlashCommand }}
+	{{ $alphabet := sdict
+		"A" 0 "B" 1 "C" 2 "D" 3 "E" 4 "F" 5 "G" 6 "H" 7 "I" 8 "J" 9 "K" 10 "L" 11 "M" 12
+		"N" 13 "O" 14 "P" 15 "Q" 16 "R" 17 "S" 18 "T" 19 "U" 20 "V" 21 "W" 22 "X" 23
+		"Y" 24 "Z" 25
+	}}
+	{{ $letters := cslice
+		"A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M"
+		"N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z"
+	}}
+	{{/* English letter frequencies in percent, A to Z */}}
+	{{ $englishFreq := cslice
+		8.17 1.49 2.78 4.25 12.70 2.23 2.02 6.09 6.97 0.15 0.77 4.03 2.41
+		6.75 7.51 1.93 0.095 5.99 6.33 9.06 2.76 0.98 2.36 0.15 1.97 0.074
+	}}
+	{{ $subcommand := .SubCommand }}
+	{{ $refusal := "" }}
+
+	{{ if eq $subcommand "encode" }}
+		{{ $key := trimSpace .Options.key }}
+		{{ $text := trimSpace .Options.text }}
+		{{ if not (reFind "\\A[A-Za-z]+\\z" $key) }}
+			{{ $refusal = "⚠️ The keyword must be letters only, like `lemon`." }}
+		{{ else if gt (len $text) 2000 }}
+			{{ $refusal = "⚠️ That text is over 2000 characters; shorten it and try again." }}
+		{{ else if not (reReplace "[^A-Za-z]" $text "") }}
+			{{ $refusal = "⚠️ The text has no letters to cipher." }}
+		{{ else }}
+			{{/* the key's shifts (A=0), cycled only on ciphered letters */}}
+			{{ $keyShifts := cslice }}
+			{{- range $ch := split (upper $key) "" -}}
+				{{- $keyShifts = $keyShifts.Append (index $alphabet $ch) -}}
+			{{- end }}
+			{{ $keyLen := len $keyShifts }}
+			{{ $out := "" }}
+			{{ $ki := 0 }}
+			{{- range $ch := split $text "" -}}
+				{{- if reFind "\\A[A-Z]\\z" $ch -}}
+					{{- $k := index $keyShifts (toInt (mod $ki $keyLen)) -}}
+					{{- $out = joinStr "" $out (index $letters
+						(toInt (mod (add (index $alphabet $ch) $k) 26))) -}}
+					{{- $ki = add $ki 1 -}}
+				{{- else if reFind "\\A[a-z]\\z" $ch -}}
+					{{- $k := index $keyShifts (toInt (mod $ki $keyLen)) -}}
+					{{- $out = joinStr "" $out (lower (index $letters
+						(toInt (mod (add (index $alphabet (upper $ch)) $k) 26)))) -}}
+					{{- $ki = add $ki 1 -}}
+				{{- else -}}
+					{{- $out = joinStr "" $out $ch -}}
+				{{- end -}}
+			{{- end }}
+			{{ sendResponse nil (cembed
+				"title" "Vigenère ciphertext"
+				"description" $out
+				"footer" (sdict "text" "Vigenère — a toy, not secure")
+			) }}
+		{{ end }}
+	{{ else if eq $subcommand "decode" }}
+		{{ $key := trimSpace .Options.key }}
+		{{ $text := trimSpace .Options.text }}
+		{{ if not (reFind "\\A[A-Za-z]+\\z" $key) }}
+			{{ $refusal = "⚠️ The keyword must be letters only, like `lemon`." }}
+		{{ else if gt (len $text) 2000 }}
+			{{ $refusal = "⚠️ That text is over 2000 characters; shorten it and try again." }}
+		{{ else if not (reReplace "[^A-Za-z]" $text "") }}
+			{{ $refusal = "⚠️ The text has no letters to cipher." }}
+		{{ else }}
+			{{ $keyShifts := cslice }}
+			{{- range $ch := split (upper $key) "" -}}
+				{{- $keyShifts = $keyShifts.Append (index $alphabet $ch) -}}
+			{{- end }}
+			{{ $keyLen := len $keyShifts }}
+			{{ $out := "" }}
+			{{ $ki := 0 }}
+			{{- range $ch := split $text "" -}}
+				{{- if reFind "\\A[A-Z]\\z" $ch -}}
+					{{- $k := index $keyShifts (toInt (mod $ki $keyLen)) -}}
+					{{- $out = joinStr "" $out (index $letters
+						(toInt (mod (sub (add (index $alphabet $ch) 26) $k) 26))) -}}
+					{{- $ki = add $ki 1 -}}
+				{{- else if reFind "\\A[a-z]\\z" $ch -}}
+					{{- $k := index $keyShifts (toInt (mod $ki $keyLen)) -}}
+					{{- $out = joinStr "" $out (lower (index $letters
+						(toInt (mod (sub (add (index $alphabet (upper $ch)) 26) $k) 26)))) -}}
+					{{- $ki = add $ki 1 -}}
+				{{- else -}}
+					{{- $out = joinStr "" $out $ch -}}
+				{{- end -}}
+			{{- end }}
+			{{ sendResponse nil (complexMessage
+				"embed" (cembed
+					"title" "Vigenère plaintext"
+					"description" $out
+					"footer" (sdict "text" "Vigenère — a toy, not secure")
+				)
+				"ephemeral" true
+			) }}
+		{{ end }}
+	{{ else if eq $subcommand "crack" }}
+		{{ $text := trimSpace .Options.text }}
+		{{ if gt (len $text) 2000 }}
+			{{ $refusal = "⚠️ That text is over 2000 characters; shorten it and try again." }}
+		{{ else }}
+			{{/* the letters alone, uppercased: the analysis string */}}
+			{{ $Lchars := split (upper (reReplace "[^A-Za-z]" $text "")) "" }}
+			{{ $Llen := len $Lchars }}
+			{{ if lt $Llen 8 }}
+				{{ $refusal = "⚠️ Not enough text to attack (need at least 8 letters)." }}
+			{{ else }}
+				{{/* every key length k: column letter counts, then the columns' average
+					index of coincidence; the best k wins, ties to the smaller k */}}
+				{{ $maxK := toInt (min 16 (div $Llen 8)) }}
+				{{ $bestK := 0 }}
+				{{ $bestAvg := 0.0 }}
+				{{- range $k := seq 1 (add $maxK 1) -}}
+					{{- $counts := sdict -}}
+					{{- range $i, $ch := $Lchars -}}
+						{{- $ck := joinStr ":" (toInt (mod $i $k)) (index $alphabet $ch) -}}
+						{{- $counts.Set $ck (add (toInt (or (index $counts $ck) 0)) 1) -}}
+					{{- end -}}
+					{{- $iocSum := 0.0 -}}
+					{{- range $j := seq 0 $k -}}
+						{{- $n := 0 -}}
+						{{- $pairs := 0 -}}
+						{{- range $v := seq 0 26 -}}
+							{{- $c := toInt (or (index $counts (joinStr ":" $j $v)) 0) -}}
+							{{- $n = add $n $c -}}
+							{{- $pairs = add $pairs (mult $c (sub $c 1)) -}}
+						{{- end -}}
+						{{/* n is at least 8 here (k <= an eighth of the letters) */}}
+						{{- $iocSum = add $iocSum (fdiv $pairs (mult $n (sub $n 1))) -}}
+					{{- end -}}
+					{{- if gt (fdiv $iocSum $k) $bestAvg -}}
+						{{- $bestAvg = fdiv $iocSum $k -}}
+						{{- $bestK = $k -}}
+					{{- end -}}
+				{{- end }}
+				{{ if lt $bestAvg 0.045 }}
+					{{ sendResponse nil (complexMessage
+						"content" "No clear Vigenère key found."
+						"ephemeral" true
+					) }}
+				{{ else }}
+					{{/* the winning length's columns again: each column's shift by
+						chi-square against English letter frequencies */}}
+					{{ $counts := sdict }}
+					{{- range $i, $ch := $Lchars -}}
+						{{- $ck := joinStr ":" (toInt (mod $i $bestK)) (index $alphabet $ch) -}}
+						{{- $counts.Set $ck (add (toInt (or (index $counts $ck) 0)) 1) -}}
+					{{- end }}
+					{{ $shifts := cslice }}
+					{{- range $j := seq 0 $bestK -}}
+						{{- $n := 0 -}}
+						{{- range $v := seq 0 26 -}}
+							{{- $n = add $n (toInt (or (index $counts (joinStr ":" $j $v)) 0)) -}}
+						{{- end -}}
+						{{- $bestS := 0 -}}
+						{{- $bestChi := -1.0 -}}
+						{{- range $s := seq 0 26 -}}
+							{{- $chi := 0.0 -}}
+							{{- range $v := seq 0 26 -}}
+								{{- /* cipher letter (v+s) mod 26 is plain letter v under
+									shift s */ -}}
+								{{- $obs := toInt (or (index $counts
+									(joinStr ":" $j (toInt (mod (add $v $s) 26)))) 0) -}}
+								{{- /* the float goes first: an int-first mult/sub would
+									truncate to integer arithmetic */ -}}
+								{{- $expected := fdiv (mult (index $englishFreq $v) $n) 100.0 -}}
+								{{- $diff := sub $expected $obs -}}
+								{{- $chi = add $chi (fdiv (mult $diff $diff) $expected) -}}
+							{{- end -}}
+							{{- if or (lt $bestChi 0.0) (lt $chi $bestChi) -}}
+								{{- $bestChi = $chi -}}
+								{{- $bestS = $s -}}
+							{{- end -}}
+						{{- end -}}
+						{{- $shifts = $shifts.Append $bestS -}}
+					{{- end }}
+					{{ $crackedKey := "" }}
+					{{- range $s := $shifts -}}
+						{{- $crackedKey = joinStr "" $crackedKey (index $letters $s) -}}
+					{{- end }}
+					{{/* the shown plaintext: the original text decoded with the recovered
+						key, case and non-letters preserved */}}
+					{{ $keyLen := len $shifts }}
+					{{ $plain := "" }}
+					{{ $ki := 0 }}
+					{{- range $ch := split $text "" -}}
+						{{- if reFind "\\A[A-Z]\\z" $ch -}}
+							{{- $k := index $shifts (toInt (mod $ki $keyLen)) -}}
+							{{- $plain = joinStr "" $plain (index $letters
+								(toInt (mod (sub (add (index $alphabet $ch) 26) $k) 26))) -}}
+							{{- $ki = add $ki 1 -}}
+						{{- else if reFind "\\A[a-z]\\z" $ch -}}
+							{{- $k := index $shifts (toInt (mod $ki $keyLen)) -}}
+							{{- $plain = joinStr "" $plain (lower (index $letters
+								(toInt (mod (sub (add (index $alphabet (upper $ch)) 26) $k) 26)))) -}}
+							{{- $ki = add $ki 1 -}}
+						{{- else -}}
+							{{- $plain = joinStr "" $plain $ch -}}
+						{{- end -}}
+					{{- end }}
+					{{ $confidence := "low" }}
+					{{ if ge $bestAvg 0.06 }}
+						{{ $confidence = "high" }}
+					{{ end }}
+					{{ sendResponse nil (complexMessage
+						"embed" (cembed
+							"title" "Vigenère crack"
+							"description" $plain
+							"fields" (cslice
+								(sdict "name" "Key length" "value" (joinStr "" "`" $bestK "`") "inline" true)
+								(sdict "name" "Key" "value" (joinStr "" "`" $crackedKey "`") "inline" true)
+								(sdict "name" "Confidence" "value" (joinStr "" $confidence
+									" — average index of coincidence "
+									(fdiv (round (mult $bestAvg 10000)) 10000)
+									" (English 0.0667, random 0.0385)") "inline" false)
+							)
+							"footer" (sdict "text" "Vigenère — a toy, not secure")
+						)
+						"ephemeral" true
+					) }}
+				{{ end }}
+			{{ end }}
+		{{ end }}
+	{{ else }}
+		{{ $refusal = "⚠️ Unknown subcommand." }}
+	{{ end }}
+
+	{{ if $refusal }}
+		{{ sendResponse nil (complexMessage "content" $refusal "ephemeral" true) }}
+	{{ end }}
+{{ else }}
+Use /cipher as a slash command: encode, decode or crack
+{{ end }}
