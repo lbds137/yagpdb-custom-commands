@@ -172,6 +172,12 @@ can see this").
 3. `/cipher crack text:<a ciphertext of 300+ letters>` (encode any long English text
    with a keyword of 5+ letters first): a private "Vigenère crack" embed whose Key
    field is that keyword, with a confidence line.
+4. `/cipher newcipher text:<a ciphertext produced by the 2009 NewCipher applet>`: a
+   private "NewCipher plaintext" embed showing the original plaintext back.
+5. Before trusting decodes of Discord-carried ciphertexts, the control-character
+   round-trip check: encode (in the 2009 applet) a plaintext whose ciphertext includes
+   TAB/CR/DEL code points, paste the ciphertext into a Discord message, copy it back
+   out and decode that. Lila runs it once and reports which code points survived.
 
 ### Report back
-Which steps passed.
+Which steps passed (for step 5, which control code points survived the round trip).

@@ -21,6 +21,13 @@
   against English letter frequencies. An average IoC under 0.045 is reported as no key
   found rather than a guess. A toy, never secure.
 
+  NewCipher (newcipher) is the 2009 self-keying toy: the plaintext's middle character
+  is the seed, every other character is shifted by Random(seed + length).nextInt(125) -
+  25, and the seed position (length/2, integer division) passes through unshifted on
+  both the encode and the decode. This subcommand is DECODE ONLY: the raw ciphertext
+  format lands on control code points that Discord can mangle, so real use waits on the
+  live round-trip check in docs/LIVE_CHECKS.md.
+
   Slash subcommand: `encode Vigenère-encode a message (posted publicly)`
   Slash option: `encode.key string! the keyword, letters only`
   Slash option: `encode.text string! the plaintext, up to 2000 characters`
@@ -29,6 +36,8 @@
   Slash option: `decode.text string! the ciphertext, up to 2000 characters`
   Slash subcommand: `crack attack a Vigenère ciphertext without the key (private answer)`
   Slash option: `crack.text string! the ciphertext, up to 2000 characters`
+  Slash subcommand: `newcipher decode a 2009 NewCipher ciphertext (private answer)`
+  Slash option: `newcipher.text string! the ciphertext, up to 2000 characters`
 */ -}}
 {{ if .IsSlashCommand }}
 	{{ $alphabet := sdict
@@ -255,6 +264,71 @@
 				{{ end }}
 			{{ end }}
 		{{ end }}
+	{{ else if eq $subcommand "newcipher" }}
+		{{/* not trimmed: a NewCipher ciphertext can legitimately start or end with
+			a space or a control code point, and trimming would move the seed
+			position and corrupt the decode */}}
+		{{ $text := .Options.text }}
+		{{ if gt (len $text) 2000 }}
+			{{ $refusal = "⚠️ That text is over 2000 characters; shorten it and try again." }}
+		{{ else if not $text }}
+			{{ $refusal = "⚠️ The ciphertext is empty; paste in the whole ciphertext." }}
+		{{ else }}
+			{{/* ord over code points 1..1024: every character a real NewCipher
+				ciphertext can hold */}}
+			{{ $ord := sdict }}
+			{{- range $cp := seq 1 1025 -}}
+				{{- $ord.Set (printf "%c" $cp) $cp -}}
+			{{- end }}
+			{{ $chars := split $text "" }}
+			{{ $n := len $chars }}
+			{{ $mid := div $n 2 }}
+			{{ $midOrd := index $ord (index $chars $mid) }}
+			{{ if not $midOrd }}
+				{{ $refusal = "⚠️ That text has characters a NewCipher ciphertext can't contain (code points over 1024)." }}
+			{{ else }}
+				{{/* Random(seed + length), the seed being the middle character's
+					code point; the LCG chain is java.util.Random's, proven against
+					a real JVM in cipher_lcg_tests.yaml */}}
+				{{ $s := bitwiseAnd (bitwiseXor (add $midOrd $n) 25214903917) 281474976710655 }}
+				{{ $out := "" }}
+				{{- range $i := seq 0 $n -}}
+					{{- $s = bitwiseAnd (add (mult $s 25214903917) 11) 281474976710655 -}}
+					{{- $u := bitwiseRightShift $s 17 -}}
+					{{- $r := toInt (mod $u 125) -}}
+					{{- while ge (add (sub $u $r) 124) 2147483648}}
+					{{- $s = bitwiseAnd (add (mult $s 25214903917) 11) 281474976710655}}
+					{{- $u = bitwiseRightShift $s 17}}
+					{{- $r = toInt (mod $u 125)}}
+					{{- end}}
+					{{- $shift := sub $r 25 -}}
+					{{- $ch := index $chars $i -}}
+					{{- if eq $i $mid -}}
+						{{- /* the seed position is never shifted */ -}}
+						{{- $out = joinStr "" $out $ch -}}
+					{{- else if not (index $ord $ch) -}}
+						{{- /* off-table characters pass through unchanged: pasted-in
+							mangling must not error the decode */ -}}
+						{{- $out = joinStr "" $out $ch -}}
+					{{- else -}}
+						{{- $cp := sub (index $ord $ch) $shift -}}
+						{{- if lt $cp 0 -}}
+							{{- /* Java's (char) cast wraps at 2^16 */ -}}
+							{{- $cp = add $cp 65536 -}}
+						{{- end -}}
+						{{- $out = joinStr "" $out (printf "%c" $cp) -}}
+					{{- end -}}
+				{{- end }}
+				{{ sendResponse nil (complexMessage
+					"embed" (cembed
+						"title" "NewCipher plaintext"
+						"description" $out
+						"footer" (sdict "text" "NewCipher (2009) — decode only; a toy, not secure")
+					)
+					"ephemeral" true
+				) }}
+			{{ end }}
+		{{ end }}
 	{{ else }}
 		{{ $refusal = "⚠️ Unknown subcommand." }}
 	{{ end }}
@@ -263,5 +337,5 @@
 		{{ sendResponse nil (complexMessage "content" $refusal "ephemeral" true) }}
 	{{ end }}
 {{ else }}
-Use /cipher as a slash command: encode, decode or crack
+Use /cipher as a slash command: encode, decode, crack or newcipher
 {{ end }}

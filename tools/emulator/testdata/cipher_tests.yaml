@@ -1,4 +1,4 @@
-name: "cipher_slash (/cipher encode, decode, crack)"
+name: "cipher_slash (/cipher encode, decode, crack, newcipher)"
 
 # Vigenère encode answers publicly; decode and crack answer ephemerally, and every
 # refusal is ephemeral. The canonical vector is Wikipedia's (LEMON / ATTACKATDAWN ->
@@ -6,6 +6,16 @@ name: "cipher_slash (/cipher encode, decode, crack)"
 # 10-letter keyword NIGHTHOUSE; the encode test pins the whole ciphertext byte for
 # byte, so the crack input is exactly what this command's own encode produces.
 # The command reads no database, so there is no setup_db.
+#
+# newcipher decodes her 2009 NewCipher: the seed is the middle character's code
+# point (Random(seed + length)), every other position is unshifted by nextInt(125)
+# - 25, and the seed position (length/2) passes through untouched. The two truth
+# vectors are external truth: produced by her actual 2009 Cipher.java on a real
+# JVM (eclipse-temurin:8, podman) in cipher unit 1, pinned in the spec. Vector 1's
+# seed character is a space at position 25 (the odd-length edge); vector 2's is an
+# 'e' at position 42. The full-plaintext assertions pin the seed-position
+# pass-through: any shift applied there would break them. The ciphertexts are
+# written as \uXXXX escapes because the raw format lands on control code points.
 
 defaults:
   user: { id: 500000000000000001, username: "Invoker" }
@@ -181,3 +191,78 @@ tests:
         type: slash
         subcommand: encode
         options: { key: "LEMON", text: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+
+  - name: "newcipher: truth vector 1 (her 2009 Cipher.java, JDK 8) decodes exactly, privately"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: newcipher, options: { text: "\u0045\u008A\u0092\u0068\u00B1\u00C7\u0075\u006D\u0078\u0025\u007C\u0095\u005A\u006A\u009E\u0010\u0055\u00AD\u00A1\u005C\u009C\u00D5\u005D\u00A6\u006D\u0020\u00AE\u00B9\u008B\u00C7\u0028\u00CF\u008A\u0097\u002F\u00B3\u0087\u00CA\u00B7\u0074\u0060\u008F\u0083\u0081\u0024\u009E\u0088\u0065\u007B\u00A5\u001E" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          # 51 chars, odd length: the seed character is a space at position 25 and
+          # passes through unshifted; the full-sentence assert pins that pass-through
+          embed_contains: "The quick brown fox jumps over the lazy dog, twice!"
+
+  - name: "newcipher: truth vector 2 (her 2009 Cipher.java, JDK 8) decodes exactly, privately"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: newcipher, options: { text: "\u0067\u008E\u0079\u0099\u0075\u0078\u005D\u000C\u0095\u00CD\u002B\u00CD\u0097\u00C6\u0017\u00A3\u00CB\u00D0\u007E\u00BC\u0011\u006F\u00A6\u0085\u0097\u00B2\u0073\u00C6\u00CB\u00AD\u00B1\u0098\u00D3\u007F\u00A2\u0047\u004B\u00A7\u003F\u00B6\u00C4\u0061\u0065\u0073\u00A7\u00A1\u00A3\u0050\u006C\u009A\u00B2\u00C1\u00A5\u002A\u0062\u00C2\u005B\u0064\u009F\u00A7\u00AA\u0084\u000D\u00BF\u0050\u004D\u00B7\u0089\u00C8\u00B2\u0098\u0060\u00BE\u008B\u0099\u0017\u005D\u0060\u009A\u0092\u0009\u00AE\u00C5\u0073\u00CC" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          # 85 chars: the seed character is an 'e' at position 42 and passes
+          # through unshifted, pinned by the full-sentence assert
+          embed_contains: "Meet me at the usual place tomorrow at nine and bring the maps we discussed last week"
+
+  - name: "newcipher: a draw shift past the character code wraps like Java's (char) cast"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      # '!<' (2 chars): position 0's draw shift is 99, so cp 33 - 99 = -66 wraps
+      # to 65536 - 66 = 0xFFBE; the seed char '<' at position 1 passes through
+      interaction: { type: slash, subcommand: newcipher, options: { text: "!<" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_contains: "\uFFBE<"
+
+  - name: "newcipher: a code point over 1024 as the middle character is an ephemeral refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: newcipher, options: { text: "🙂" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "can't contain" }
+
+  - name: "newcipher: an off-table character at a non-middle position passes through"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      # n=2, so '<' at position 1 is the seed; the emoji at position 0 is off-table
+      # (code point over 1024) and passes through unchanged
+      interaction: { type: slash, subcommand: newcipher, options: { text: "🙂<" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "🙂<" }
+
+  - name: "newcipher: empty text is an ephemeral refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: newcipher, options: { text: "" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "empty" }
+
+  - name: "newcipher: text over 2000 characters is an ephemeral refusal"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: newcipher
+        options: { text: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "2000" }
