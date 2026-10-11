@@ -280,8 +280,8 @@ Rulings (Lila, AskUserQuestion 2026-10-07):
   (cipher_slash: encode public, decode and crack ephemeral, deterministic IoC + chi-square
   crack, input cap 2000), the java.util.Random anchor test, `/cipher newcipher` (decode)
   and `/cipher oldcipher` (decode, execCC child cipher_old with the 224-alphabet blob;
-  Java-differential-tested). Nothing cipher is deployed (panel main 0 / -1 until the
-  deploy round creates them; LIVE_CHECKS has /cipher steps 1-6, step 6 multi-line and
+  Java-differential-tested). Deployed to Gay Night House 2026-10-11 (cipher_slash #114,
+  cipher_old #115; not on The Rose or lotv); LIVE_CHECKS has /cipher steps 1-6, step 6 multi-line and
   probes whether a slash option keeps pasted newlines). Next: hide/reveal after Lila's
   zero-width live check; the LFSR key layer after that. Deploy only on her go.
 
