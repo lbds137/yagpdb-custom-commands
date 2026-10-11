@@ -136,11 +136,11 @@ picks, then the minifier.
   cap; create() it there, deploy embed_exec's Respond/Embeds version first), then retire
   contrast.gohtml and rand_color.gohtml fully (lotv 18, 16; they stay in commands/color/
   only for lotv). The other fleet roots follow the same per-server step.
-  SYNCED 2026-10-04 (3c1311a, after Lila created the groups): all 18 existing lotv
+  SYNCED 2026-10-04 (4502681, after Lila created the groups): all 18 existing lotv
   commands updated (groups, hex_to_int and db_get_embed triggers); 16 created and enabled
   (lotv 24-39: the fleet roots, rules_pager, db_get_text, simple_db_lookup, rand_hebrew)
   (config_sync, 24, first failed on the interval; deployed hourly and enabled after the
-  interval fix, 41c11fa; its channel is Lila's to set). Still open: the
+  interval fix, 75a8dcd; its channel is Lila's to set). Still open: the
   lotv text twins (contrast, rand_color, timestamp, atbash, alefbet, pyramid,
   message_pointer, rand_hebrew) retire after a live check there, per the fleet policy.
 - Prerequisite (met by unit 4, 2026-09-27): the emulator models interactions: Slash
@@ -276,7 +276,7 @@ Rulings (Lila, AskUserQuestion 2026-10-07):
 - Shape: one `/cipher` slash command with subcommands; encode and hide post publicly, decode,
   crack and reveal reply ephemerally.
 - Deploy only on her go.
-- Status 2026-10-08: cipher v1 is feature-complete on main (b288b4d): the Vigenère slice
+- Status 2026-10-08: cipher v1 is feature-complete on main (ad04189): the Vigenère slice
   (cipher_slash: encode public, decode and crack ephemeral, deterministic IoC + chi-square
   crack, input cap 2000), the java.util.Random anchor test, `/cipher newcipher` (decode)
   and `/cipher oldcipher` (decode, execCC child cipher_old with the 224-alphabet blob;
@@ -461,7 +461,7 @@ gets a failing test first.
   63-73, 161-169). Deliberate shape left as is: for destructive operations, naming the row
   is the safety catch; dump defaults to 0 because it only reads. Documented here so nobody
   "fixes" it into a fat-fingered global delete. Applies to the retired text /db only:
-  slash /db deliberately differs (30ab6ef, Lila's call 2026-10-01) — staff without
+  slash /db deliberately differs (468f79d, Lila's call 2026-10-01) — staff without
   `user` default to row 0 on EVERY subcommand, since a user picker can't express row 0.
 - Shipped (2026-10-04, GLM-week audit A-F1): rule numbers. `/edit` refuses rule numbers
   outside 1..9999 (slash and modal; `/edit delete_rule` stays unbounded as the repair path),
@@ -810,7 +810,7 @@ gets a failing test first.
   set. Until she sets it and the first run lands, lotv's Commands dict lacks the new
   commands' ids, so the new slash roots there answer "isn't set up".
 
-- Shipped (8aa3b70): deploy/deploy.test.js no longer pins the sha256 of real command
+- Shipped (0787aec): deploy/deploy.test.js no longer pins the sha256 of real command
   files; the parity test computes the Python-normalized hash at test time (spawnSync
   python3) and compares it with deploy.js's.
 - Fix next: port the vendor refresh. `vendor/yagpdb` was refreshed 2026-09-27 (Lila's
@@ -823,7 +823,7 @@ gets a failing test first.
   `hasAnyPermissions`, `targetHasAnyPermissions`, `memberAbove`, `memberAboveRole`;
   components.go grew. Do this BEFORE the emulator components unit ("Interactive UX").
   Analysis 2026-09-27 (read-only, c579722 line numbers) split the port into units after
-  the lib/template re-sync (shipped 9e12156): (1) message builders (shipped): complexMessageEdit =
+  the lib/template re-sync (shipped c2e9bfb): (1) message builders (shipped): complexMessageEdit =
   complexMessage (general.go:263, returns *MessageSend, error text "send message builder"),
   editMessage on parseMessageInput (context_funcs.go:32-70, 457; accepts MessageSend, no
   null check, an embed-only edit sends content "" — pin with a test), a repeated "embed" key

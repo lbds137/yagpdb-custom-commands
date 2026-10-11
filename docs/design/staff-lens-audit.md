@@ -222,7 +222,7 @@ Alternative: drop it from `/staff` entirely (7 to 6 subcommands). Owner's call.
 **F17. "This command isn't set up on this server yet." has no next step** (copy).
 8 staff-surface sites in 7 files: `staff_slash:77,86`, `staff_roles:42`, `inactivity:54`, `batch_delrep:37`,
 `channel_activity:32`, `hiatus_slash:41`, `unhiatus_slash:51`; the same sentence is in 15 command
-files total (the Utility slash commands too, from commit de2afc3).
+files total (the Utility slash commands too, from commit 32fb428).
 Why: a moderator cannot act on it, and "set up" suggests they should do something.
 Proposed (82): `⚠️ Part of this command isn't installed on this server yet. Please tell an admin.`
 

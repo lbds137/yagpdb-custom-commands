@@ -7,7 +7,7 @@ consult of 2026-09-30 (design language of record). Staff-only → no Night House
 /commands/ change.
 
 Shipped (panel 90). The text `/db` this spec describes as current was retired on
-2026-10-01 (9c7fd87): its engine now lives at `retired/db.gohtml`, and "Current
+2026-10-01 (98a87a8): its engine now lives at `retired/db.gohtml`, and "Current
 behavior" below is the pre-slash state, kept as the record.
 
 ## Current behavior

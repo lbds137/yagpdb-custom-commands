@@ -18,7 +18,7 @@ language of 2026-09-30. Staff-only → no Night House /commands/ change.
 Nothing execCCs INTO either command (checked: no `execCC` references to their ids;
 `embed_exec` is their dependency, not the reverse), so both can retire cleanly when
 Lila calls it. Until then the text commands stay live, untouched. (Retired 2026-10-01,
-9c7fd87: both now live in `retired/`.)
+98a87a8: both now live in `retired/`.)
 
 ## Design
 

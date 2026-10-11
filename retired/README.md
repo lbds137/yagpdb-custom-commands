@@ -18,7 +18,7 @@ does the same with fuller dice syntax. Its tests stay in
 
 `agree.gohtml` (a guest accepts the rules) and `agree_clean.gohtml` (regex `.*` cleanup of
 off-format messages in the agreement channel) were the guest-era rules-agreement pair,
-deleted from the repo by accident in 75f9a9b on 2026-01-03. Restored here 2026-09-27,
+deleted from the repo by accident in 973f9ae on 2026-01-03. Restored here 2026-09-27,
 byte-identical to the copies still live in the panel, which are being deleted from YAGPDB
 alongside this restoration.
 

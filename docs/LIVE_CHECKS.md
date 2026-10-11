@@ -5,7 +5,7 @@ a larger pass with these instructions. A unit's follow-up (retiring its text twi
 for its section to pass. Remove a section once it passes, and record the result in the
 unit's design-doc section.
 
-## Unit 5: /staff and /pointer (live 2026-10-04, c7b6099)
+## Unit 5: /staff and /pointer (live 2026-10-04, f83fb9c)
 
 Server: Gay Night House, as a staff member, unless a step says otherwise. Every reply
 described as "private" shows "Only you can see this".
@@ -119,7 +119,7 @@ Which steps passed, and what step 1 showed as "not set".
 ### Report back
 Which steps passed.
 
-## Set-up guards: nothing normal changed (all three servers, de2afc3)
+## Set-up guards: nothing normal changed (all three servers, 32fb428)
 
 The guards only fire when a command is missing from setup, so this is a smoke check that
 the normal answers still arrive (any server; Gay Night House for /staff):

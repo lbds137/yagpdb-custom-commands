@@ -3,15 +3,15 @@
 Every live command in the `Utility` group (26) and the `Staff Utility` group (13), with a
 recommendation (at the time in `everyone/` and `staff/`; since moved to `commands/<topic>/`).
 Nothing here is changed yet: each retire or fix waits on Lila's call. Retiring = move to
-`retired/` and remove it from YAGPDB. Line numbers are as of 9079236.
+`retired/` and remove it from YAGPDB. Line numbers are as of 0f72927.
 
 **Lila's decisions (2026-09-27):** retire `dice_roll` (done, moved to `retired/`); keep
 `db_get_text`, `ticket_clean`, the bump trio and `inactivity` (prune cycles still run).
 The bugs below are fixed. Later the same day she approved all four improvement groups:
 clearer errors (atbash, channel_link, hiatus/unhiatus Mod Log), first tests for the
 zero-coverage commands, tests for the untested branches, and clamping ExecCC Limit to 10.
-All four shipped the same day (4dfa4cb, 63baa64, b84030f, b1c03d9 and the branch tests);
-the new tests found three staff_roles bugs, fixed in b1c03d9.
+All four shipped the same day (7d532d4, c53de90, 9e814f0, 250a30f and the branch tests);
+the new tests found three staff_roles bugs, fixed in 250a30f.
 
 hugemoji used to refuse a non-staff user's link to an NSFW channel from a non-NSFW one in
 silence; she chose "explain it", so it now warns (without naming the channel), and input

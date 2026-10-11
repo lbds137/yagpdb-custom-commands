@@ -1,7 +1,7 @@
 # Lint Report - 2025-05-21 23:50:03
 # Command: python3 tools/linter/yagpdb_lint.py --dir .
 # Exit code: 0
-# Git commit: b8035dcd
+# Git commit: 779baa08
 
 ⚠️ guests/agree.gohtml:37:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
 ⚠️ guests/agree.gohtml:39:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
