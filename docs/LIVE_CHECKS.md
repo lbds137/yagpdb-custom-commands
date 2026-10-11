@@ -161,10 +161,12 @@ options are `section` and `name` (renamed from `category` and `key` 2026-10-05).
 ### Report back
 Which steps passed.
 
-## /cipher (any server, after its deploy)
+## /cipher (Gay Night House only, live 2026-10-11)
 
 The Vigenère toy: encode posts publicly, decode and crack reply privately ("Only you
-can see this").
+can see this"). Steps 4-6 can use ready-made inputs from her 2009 Java (run in podman):
+`.claude/dispatch/live-pass-inputs.txt` (untracked; regenerate from
+`~/Projects/cipher-experiments-2009` if gone).
 1. `/cipher encode key:LEMON text:ATTACK AT DAWN`: a public "Vigenère ciphertext" embed
    whose text starts `LXFOPV` (the canonical vector continues `EFRNHR`).
 2. `/cipher decode key:LEMON text:<that ciphertext>`: a private "Vigenère plaintext"
