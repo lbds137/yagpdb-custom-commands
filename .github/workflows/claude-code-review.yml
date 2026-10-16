@@ -43,7 +43,7 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@v1.0.231
+        uses: anthropics/claude-code-action@v1.0.251
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -68,7 +68,7 @@ jobs:
 
             Label every finding's severity as critical, high, medium or low. The LAST line of your comment must be exactly `VERDICT: BLOCK <HEAD SHA>` if any finding is critical, high or medium, otherwise exactly `VERDICT: PASS <HEAD SHA>`, with the full 40-character HEAD SHA given above and no other formatting. This line gates auto-merge: BLOCK stops the merge until a new push gets a passing review; low findings don't block.
 
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--model claude-opus-5-5 --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 
       # This job is the check auto-merge waits on, so it passes only on a posted review
       # whose verdict names this run's head commit: VERDICT: PASS <sha>. The action can
