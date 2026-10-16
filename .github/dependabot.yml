@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # GitHub Actions pins (claude-code-action, checkout, ...): weekly bumps keep
+  # every repo on the latest action version. Same schedule as Tzurot's entry.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'America/New_York'
+    open-pull-requests-limit: 5
+    reviewers:
+      - 'lbds137'
+    commit-message:
+      prefix: 'chore(ci)'
+      include: 'scope'
