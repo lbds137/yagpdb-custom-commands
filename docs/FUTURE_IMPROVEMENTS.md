@@ -283,7 +283,9 @@ Rulings (Lila, AskUserQuestion 2026-10-07):
   Java-differential-tested). Deployed to Gay Night House 2026-10-11 (cipher_slash #114,
   cipher_old #115; not on The Rose or lotv); the live-checks page has /cipher steps 1-6, step 6 multi-line and
   probes whether a slash option keeps pasted newlines). Next: hide/reveal after Lila's
-  zero-width live check; the LFSR key layer after that. Deploy only on her go.
+  zero-width live check; the LFSR key layer after that. Deploy only on her go. 2026-10-18
+  (GLM audit #2): newcipher now decodes on Java chars (UTF-16 code units; any BMP or astral
+  character, was code points 1-1024 only), and the 2000 cap counts characters, not bytes.
 
 Port and improve her own old Java toys (all hers, public or being published):
 `lbds137/cipher-experiments-2009` (OldCipher: polyalphabetic, 4 hand-scrambled alphabets plus

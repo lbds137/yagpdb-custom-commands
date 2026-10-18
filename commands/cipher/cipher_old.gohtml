@@ -28,7 +28,7 @@
 {{ end }}
 {{ if $hasData }}
 	{{ $refusal := "" }}
-	{{ if gt (len $text) 2000 }}
+	{{ if gt (len (toRune $text)) 2000 }}
 		{{ $refusal = "⚠️ That text is over 2000 characters; shorten it and try again." }}
 	{{ else if not $text }}
 		{{ $refusal = "⚠️ The ciphertext is empty; paste in the whole ciphertext." }}

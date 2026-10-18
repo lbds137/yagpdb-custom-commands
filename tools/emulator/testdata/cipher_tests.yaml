@@ -16,6 +16,9 @@ name: "cipher_slash (/cipher encode, decode, crack, newcipher)"
 # 'e' at position 42. The full-plaintext assertions pin the seed-position
 # pass-through: any shift applied there would break them. The ciphertexts are
 # written as \uXXXX escapes because the raw format lands on control code points.
+# The six newcipher non-ASCII vectors below (Cyrillic to the lone surrogate) come
+# from her Cipher.java on JDK 8 (podman, 2026-10-18) and pin the
+# UTF-16 code-unit behaviour (astral = two units, (char) wrap both ways).
 
 defaults:
   user: { id: 500000000000000001, username: "Invoker" }
@@ -192,6 +195,19 @@ tests:
         subcommand: encode
         options: { key: "LEMON", text: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 
+  - name: "encode: the 2000 cap counts characters, not bytes"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: encode
+        options: { key: "LEMON", text: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééabc" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: false
+          embed_title: "Vigenère ciphertext"
+
   - name: "newcipher: truth vector 1 (her 2009 Cipher.java, JDK 8) decodes exactly, privately"
     template: "../../../commands/cipher/cipher_slash.gohtml"
     context:
@@ -230,23 +246,75 @@ tests:
           ephemeral: true
           embed_contains: "\uFFBE<"
 
-  - name: "newcipher: a code point over 1024 as the middle character is an ephemeral refusal"
+  - name: "newcipher: Cyrillic plaintext (ciphertext above U+0400) decodes exactly"
     template: "../../../commands/cipher/cipher_slash.gohtml"
     context:
-      interaction: { type: slash, subcommand: newcipher, options: { text: "🙂" } }
+      interaction: { type: slash, subcommand: newcipher, options: { text: "M³iÁf§NiсШѮсЯ҅xcoO\u0088¾-8a¼YÃ\u009E<\u0085 ¶\u008Do" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, content_contains: "can't contain" }
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          embed_contains: "He said привет to me, twice over!"
 
-  - name: "newcipher: an off-table character at a non-middle position passes through"
+  - name: "newcipher: a Hebrew seed character (code point above 1024) decodes exactly"
     template: "../../../commands/cipher/cipher_slash.gohtml"
     context:
-      # n=2, so '<' at position 1 is the seed; the emoji at position 0 is off-table
-      # (code point over 1024) and passes through unchanged
-      interaction: { type: slash, subcommand: newcipher, options: { text: "🙂<" } }
+      interaction: { type: slash, subcommand: newcipher, options: { text: "\u05DF\u0633\u061F\u05E7\u0030\u063B\u05D5\u0635\u05E8\u0070\u0605\u0626" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "🙂<" }
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          embed_contains: "שלום עולם מה"
+
+  - name: "newcipher: curly quotes and an em dash decode exactly"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: newcipher, options: { text: "‘¯q°Çⁱ¿\u0098Ug ”x¢\u0099\u0099\u0018tTËN," } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          embed_contains: "“Wait—what?” she said."
+
+  - name: "newcipher: an emoji plaintext (a surrogate pair, two Java chars) decodes exactly"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      # U+1EE94 is the pair D83B DE94 in Java; the length is 11 code units
+      interaction: { type: slash, subcommand: newcipher, options: { text: "U\u0083J\U0001EE94 ¤ÃRÈ}" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          embed_contains: "hi 🙂 there"
+
+  - name: "newcipher: a decoded unit past U+FFFF wraps like Java's (char) cast"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      # position 0's shift is -6 (U+FFFD + 6 = 0x10003 wraps to U+0003); embed_contains
+      # matches the embed as JSON, which escapes the control characters as \u0003
+      interaction: { type: slash, subcommand: newcipher, options: { text: "\uFFFD@@<@@" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          embed_contains: "\\u00034$<\\u0003\uFFFE"
+
+  - name: "newcipher: a lone surrogate in the decode comes out as U+FFFD"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      # 3 units; the seed is the lone low surrogate DE94; Java gives D7DB DE94 004D
+      interaction: { type: slash, subcommand: newcipher, options: { text: "\U0001EE94<" } }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
+          embed_contains: "\uD7DB\uFFFDM"
 
   - name: "newcipher: empty text is an ephemeral refusal"
     template: "../../../commands/cipher/cipher_slash.gohtml"
@@ -266,6 +334,19 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "2000" }
+
+  - name: "newcipher: the 2000 cap counts characters, not bytes"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction:
+        type: slash
+        subcommand: newcipher
+        options: { text: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé" }
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "NewCipher plaintext"
 
   # oldcipher forwards to the cipher_old child by execCC. The truth vectors are her
   # actual 2009 Cipher.java output (eclipse-temurin:8, podman, roundtrip-verified): the
@@ -338,6 +419,20 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true, content_contains: "2000" }
+
+  - name: "oldcipher: the 2000 cap counts characters, not bytes"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: oldcipher, options: { text: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééabc" } }
+    setup_db:
+      - { user_id: 0, key: "Commands", value: { cipher_old: "1" } }
+    command_map:
+      1: "../../../commands/cipher/cipher_old.gohtml"
+    assertions:
+      interaction_responses:
+        - kind: message
+          ephemeral: true
+          embed_title: "OldCipher plaintext"
 
   - name: "oldcipher: empty text is an ephemeral refusal from the child"
     template: "../../../commands/cipher/cipher_slash.gohtml"
