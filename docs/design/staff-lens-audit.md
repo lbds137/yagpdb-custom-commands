@@ -4,7 +4,7 @@
 branches of Utility commands), against the hypothesis in `docs/FUTURE_IMPROVEMENTS.md`
 ("Staff-facing tools are still techy"): storage shape leaks into tasks. Sources: command
 headers and templates under `commands/`, `docs/design/*.md`, `docs/LIVE_CHECKS.md`
-(since retired 10-16; its sections now live on the Deck's live-checks page). No
+(since retired 10-16; its sections now live on the live-checks page, source docs/live-checks.html). No
 usage data exists in the repo, so "staff-routine" below is a judgement from the job each
 command does, not from how often it runs.
 

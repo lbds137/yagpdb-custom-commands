@@ -1,0 +1,609 @@
+<title>YAGPDB Live Checks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: single column, sections as cards; header carries the run's progress. */
+  :root {
+    --bg: #f6f6f9;
+    --surface: #ffffff;
+    --line: #d9dae3;
+    --fg: #23232e;
+    --muted: #6e6e80;
+    --accent: #4c56c8;
+    --accent-tint: #ecedf8;
+    --ok: #2e7d4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16161d;
+      --surface: #1f1f29;
+      --line: #34343f;
+      --fg: #e8e8ef;
+      --muted: #9c9cad;
+      --accent: #98a0f2;
+      --accent-tint: #26263a;
+      --ok: #6cc79a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16161d;
+    --surface: #1f1f29;
+    --line: #34343f;
+    --fg: #e8e8ef;
+    --muted: #9c9cad;
+    --accent: #98a0f2;
+    --accent-tint: #26263a;
+    --ok: #6cc79a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px 48px;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  .eyebrow {
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 8px; text-wrap: balance; }
+  .brief { color: var(--muted); margin: 0 0 12px; }
+  .brief code, .step code, .skipline code, .afterpass code, li code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    background: var(--accent-tint);
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .progressbar {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+  #done { color: var(--fg); font-weight: 700; font-size: 15px; }
+  #saved { color: var(--ok); font-size: 12.5px; }
+  #saved.stuck { color: var(--muted); }
+  section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin: 0 0 14px;
+  }
+  summary {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-weight: 650;
+    font-size: 15.5px;
+    list-style-position: inside;
+  }
+  summary .where { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+  summary .chip {
+    margin-left: auto;
+    flex: none;
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    padding: 1px 8px;
+  }
+  summary .chip.full { color: var(--ok); border-color: var(--ok); }
+  .secbody { padding: 2px 14px 14px; border-top: 1px solid var(--line); }
+  .secbody h3 {
+    font-size: 13px;
+    margin: 14px 0 4px;
+    color: var(--fg);
+  }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 4px; }
+  ol.steps { margin: 4px 0 0; padding-left: 22px; }
+  ol.steps li { margin: 0 0 8px; }
+  ol.steps li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+  label.step { display: block; cursor: pointer; }
+  label.step input { accent-color: var(--accent); width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; }
+  label.step.done { color: var(--muted); }
+  .skipline, .afterpass {
+    color: var(--muted);
+    font-size: 13px;
+    border-left: 2px solid var(--line);
+    padding: 2px 0 2px 10px;
+    margin: 10px 0 0;
+  }
+  .afterpass { border-left-color: var(--accent); }
+  .ct {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin: 8px 0 4px;
+    background: var(--bg);
+  }
+  .ctbar {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    min-width: 0;
+  }
+  code.ctext {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    flex: 1;
+    min-width: 0;
+  }
+  button.copy {
+    flex: none;
+    font: inherit;
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 99px;
+    padding: 2px 10px;
+    cursor: pointer;
+  }
+  button.copy:active { background: var(--accent-tint); }
+  .ctmeta { color: var(--muted); font-size: 12px; margin: 0; padding: 0 10px 8px; font-variant-numeric: tabular-nums; }
+  .note { display: block; margin-top: 12px; }
+  .note span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  .note textarea {
+    width: 100%;
+    min-height: 58px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    resize: vertical;
+  }
+  .note textarea:focus-visible, button.copy:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 20px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">YAGPDB custom commands</p>
+  <h1>Live Checks</h1>
+  <p class="brief">Batched live tests for <strong>Gay Night House</strong>, <strong>The Rose</strong> and <strong>Lure of the Void</strong>. Each shipped unit adds its checks here, and a unit's follow-up (retiring its text twins) waits for its section to pass. Tick steps as you go and note anything odd; ticks and notes save to this page, on every device, and Claude reads them from there. Tell Claude in chat when a section is done &mdash; it records the result and retires the section here.</p>
+  <p class="progressbar"><span><span id="done">0</span> of <span id="total">0</span> steps ticked</span><span id="saved" role="status"></span></p>
+
+  <section>
+    <details open>
+      <summary>Unit 5: /staff and /pointer <span class="where">Gay Night House, as staff &middot; live 10-04, f83fb9c</span><span class="chip" data-chip-for="u5">0/19</span></summary>
+      <div class="secbody">
+        <p class="hint">Every reply described as &ldquo;private&rdquo; shows &ldquo;Only you can see this&rdquo;.</p>
+        <h3>/staff roles</h3>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="u5-roles-1"><code>/staff roles</code> with no option: a public &ldquo;Staff Roles Configuration&rdquo; panel with a role picker, your current staff roles preselected. Change nothing; dismiss it or leave it.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-roles-2"><code>/staff roles roles:&lt;paste the current staff role mentions or IDs&gt;</code>: a public &ldquo;Staff Roles Configuration&rdquo; embed listing them. (Same roles in = nothing changes.)</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-roles-3"><code>/staff roles roles:hello</code>: falls back to the picker panel (no IDs found).</label></li>
+        </ol>
+        <h3>/staff bump_reset</h3>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="u5-bump-1"><code>/staff bump_reset</code>: private &ldquo;&#9989; Bump timer reset.&rdquo;.</label></li>
+        </ol>
+        <h3>/staff delrep</h3>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="u5-delrep-1"><code>/staff delrep user1:&lt;one member&gt;</code>: a public &ldquo;Batch Reputation Deletion&rdquo; embed naming them; their reputation is cleared.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-delrep-2">With <code>user1</code> to <code>user5</code> all picked (members whose rep you're fine clearing): the reply must arrive (Discord's limit is 3 seconds; &ldquo;The application did not respond&rdquo; means it was too slow &mdash; note it).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-delrep-3"><code>/staff delrep</code> with <code>user1</code> empty: Discord itself won't send it (<code>user1</code> is required). Picking the same member in <code>user1</code> and <code>user2</code> clears them once (one line in the embed).</label></li>
+        </ol>
+        <h3>/staff announce, prune, prune_date</h3>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="u5-ann-1"><code>/staff prune_date date:&lt;the real next prune date&gt;</code>: a public embed &ldquo;Next prune date updated&rdquo; with <strong>Previous:</strong> (the old next date) and <strong>Next:</strong> (yours). Check with <code>/db view key:Inactivity Prune</code> if you like.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-ann-2"><code>/staff prune_date</code> with <code>date</code> empty: Discord itself won't send it (<code>date</code> is required).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-ann-3"><code>/staff prune</code>: a public picker panel; pick a member, then Cancel.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-ann-4"><code>/staff prune user:&lt;a member&gt;</code>: the public confirm (or &ldquo;active, Kick disabled&rdquo; verdict); press Cancel. Don't press Kick unless you mean it.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-ann-5"><code>/staff announce which:nonsense</code>: a private &ldquo;&#9888;&#65039; Unknown announcement: choose start, end or remind.&rdquo; refusal.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-ann-6">Only if you actually want to post one: <code>/staff announce which:start</code>, <code>end</code> or <code>remind</code> posts the announcement and pings the role as normal channel messages, and you get a private &ldquo;Posted the &hellip;&rdquo; confirmation. Check the ping notified.</label></li>
+        </ol>
+        <h3>/staff activity</h3>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="u5-act-1"><code>/staff activity</code>: a public &ldquo;Channel activity&rdquo; page. Press the next-page button and the CSV button; both must work. Note if the first reply was slow.</label></li>
+        </ol>
+        <h3>/staff rules</h3>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="u5-rules-1"><code>/staff rules from:1 to:2</code> in a test or staff channel: rules 1&ndash;2 post as normal messages, plus a private &ldquo;Posted rules 1-2.&rdquo;. Delete the posted rules after.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-rules-2"><code>/staff rules from:2 to:2</code>: private &ldquo;Posted rule 2.&rdquo;.</label></li>
+        </ol>
+        <p class="skipline">/staff bootstrap &mdash; skip (it rewrites the server config; only an Administrator can run it, anyone else gets &ldquo;Only an Administrator can run bootstrap.&rdquo;).</p>
+        <h3>/pointer</h3>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="u5-pointer-1"><code>/pointer link:&lt;a message link from a public channel&gt; comment:test</code>: a public &ldquo;Message Pointer&rdquo; embed with the comment and links.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-pointer-2"><code>/pointer link:hello</code>: a private &ldquo;does not match any valid message&rdquo; refusal.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="u5-pointer-3">From a NON-staff account (if you have one): <code>/pointer</code> with a link into a staff-only channel: the same private refusal, and the channel name never shows.</label></li>
+        </ol>
+        <p class="afterpass">After this section passes: the old text commands' triggers switch to None (not disabled &mdash; /staff calls them), and the text <code>message_pointer</code> is disabled on main.</p>
+        <label class="note"><span>Notes &mdash; anything slow or odd here (your ticks plus this note are the report)</span><textarea data-note="u5"></textarea></label>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <details open>
+      <summary>config_sync part 2: /setup <span class="where">Gay Night House, as staff &middot; main 113, rose 35</span><span class="chip" data-chip-for="setup">0/9</span></summary>
+      <div class="secbody">
+        <p class="hint">Every reply is private (&ldquo;Only you can see this&rdquo;). Nothing here changes a setting unless you pick the role or channel it already has, so re-picking the current values is the safe way to test the save path.</p>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="setup-1"><code>/setup view</code>: a &ldquo;Server setup&rdquo; embed with a Roles field (Staff, Member, Active, Inactive, Bump) and a Channels field (Bot, Mod log), each line a mention and what it is for, or &ldquo;not set, pick one with /setup roles&rdquo; (<code>/setup channels</code> for channels). Note anything marked &ldquo;not set&rdquo; that you expected to be set.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-2"><code>/setup roles</code> with no options: the Roles field only, no &ldquo;(updated)&rdquo; marks.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-3"><code>/setup roles staff:&lt;the current staff role&gt;</code>: the Roles field, Staff marked &ldquo;(updated)&rdquo; and unchanged. Run <code>/setup view</code> again: still the same.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-4"><code>/setup roles bump:@everyone</code>: a private refusal naming <code>bump</code>; nothing changes.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-5"><code>/setup roles bump:&lt;a bot's own role, e.g. YAGPDB's&gt;</code>: a private &ldquo;managed by a bot or integration&rdquo; refusal.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-6"><code>/setup channels mod_log:&lt;a category&gt;</code>: a private &ldquo;pick a text or announcement channel&rdquo; refusal.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-7"><code>/setup channels mod_log:&lt;the current mod log channel&gt;</code>: Channels field, Mod log marked &ldquo;(updated)&rdquo;.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-8">From a staff account WITHOUT Administrator (if you have one): <code>/setup roles staff:&lt;any role&gt;</code>: a private &ldquo;only an Administrator can change the staff role&rdquo; refusal; <code>/setup roles bump:&lt;the current bump role&gt;</code> still works.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="setup-9">Only if you want to change one for real: pick the new role or channel, then check the command that uses it (the table in docs/design/slash-fleet.md says which).</label></li>
+        </ol>
+        <label class="note"><span>Notes &mdash; what step 1 showed as &ldquo;not set&rdquo;, anything odd</span><textarea data-note="setup"></textarea></label>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <details open>
+      <summary>/prompt pins its prompt <span class="where">Gay Night House, after its deploy</span><span class="chip" data-chip-for="prompt">0/5</span></summary>
+      <div class="secbody">
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="prompt-1"><code>/prompt</code> in thread mode into a forum channel: the new post's first message is pinned inside the post (the post's pin list shows it).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="prompt-2"><code>/prompt</code> in thread mode into a text channel: the prompt message inside the new thread is pinned there.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="prompt-3"><code>/prompt</code> inline into a test channel: the message is pinned in that channel.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="prompt-4">If a channel's pins are full (or you remove the bot's Pin Messages permission in a test channel): the prompt still posts, and the private confirmation ends &ldquo;(couldn't pin it: the pin list may be full, or I can't pin there)&rdquo;.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="prompt-5">Forum check worth a look: step 1 relies on a forum post's first message having the post's own ID (Discord's documented behaviour, not yet seen live). If the post isn't pinned while steps 2&ndash;3 work, tell me.</label></li>
+        </ol>
+        <label class="note"><span>Notes &mdash; anything odd, especially on step 5</span><textarea data-note="prompt"></textarea></label>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <details open>
+      <summary>Lure of the Void and The Rose <span class="where">both servers &middot; synced 10-04</span><span class="chip" data-chip-for="sync">0/2</span></summary>
+      <div class="secbody">
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="sync-1">In each: <code>/gematria text:&#1488;&#1502;&#1514;</code>, <code>/rule</code> (bare: the browse view with buttons), <code>/db</code> and <code>/edit</code> open without &ldquo;isn't set up&rdquo;.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="sync-2">Typing <code>gematria &#1488;&#1502;&#1514;</code> no longer answers (slash-only now, all servers).</label></li>
+        </ol>
+        <label class="note"><span>Notes</span><textarea data-note="sync"></textarea></label>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <details open>
+      <summary>Set-up guards: nothing normal changed <span class="where">all three servers &middot; 32fb428</span><span class="chip" data-chip-for="guards">0/3</span></summary>
+      <div class="secbody">
+        <p class="hint">The guards only fire when a command is missing from setup, so this is a smoke check that the normal answers still arrive (any server; Gay Night House for /staff).</p>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="guards-1"><code>/color random</code>, <code>/gematria text:&#1488;&#1502;&#1514;</code>, <code>/hebrew pyramid text:&#1488;&#1502;&#1514; &#1513;&#1500;&#1493;&#1501;</code> (the &ldquo;2 words follows&rdquo; line, then two embeds), <code>/define</code>, <code>/timestamp</code>, <code>/rule number:1</code>.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="guards-2"><code>/staff activity</code>: the channel-activity browse view opens, as before (read-only; inactivity date would rewrite the real prune date, so it is not a smoke step).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="guards-3">Nothing answers &ldquo;isn't set up on this server yet&rdquo; (or, on the staff paths /staff, /hiatus and /unhiatus, &ldquo;Part of this command isn't installed on this server yet. Please tell an admin.&rdquo;).</label></li>
+        </ol>
+        <label class="note"><span>Notes</span><textarea data-note="guards"></textarea></label>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <details open>
+      <summary>/edit entry: create replaces new: <span class="where">any server, after its deploy</span><span class="chip" data-chip-for="edit">0/9</span></summary>
+      <div class="secbody">
+        <p class="hint">Use a throwaway section name (e.g. <code>Scratch</code>) and clean up with <code>/edit delete_entry</code> after. The options are <code>section</code> and <code>name</code> (renamed from <code>category</code> and <code>key</code> 10-05).</p>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="edit-1"><code>/edit entry section:Scratch</code> (no <code>create</code>): refused right away, privately, &ldquo;There is no section called <code>Scratch</code>&hellip; set <code>create</code> to True to start a new one.&rdquo; No form opens.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-2"><code>/edit entry section:Scratch create:True</code>: the form (Section / Name / New text) opens; fill name <code>test</code>, text <code>hi</code>, submit: &ldquo;Scratch &rsaquo; Test added&rdquo;.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-3"><code>/edit entry section:new:Scratch create:True</code>: refused, &ldquo;Leave out <code>new:</code>&rdquo;.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-4"><code>/edit entry section:Admin</code> (an existing section, no <code>create</code>): the form opens as before.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-5"><code>/edit entry section:Staff name:Roles</code> (the staff role list): refused privately, &ldquo;holds a list or a group of settings, not text&rdquo;. No form opens.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-6">Cleanup: <code>/edit delete_entry section:Scratch name:test</code>, confirm (an empty <code>Scratch</code> section stays behind; harmless).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-7">Before step 6, <code>/edit delete_rule rule:&lt;a rule number that doesn't exist&gt;</code>: refused, &ldquo;There is no rule #N to delete.&rdquo;. Delete subcommands are now <code>delete_rule</code> and <code>delete_entry</code>, both with required options (no <code>delete</code> any more).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-8">Submit step 2's form with a lowercase name: the ack has a &ldquo;Saved as&rdquo; field reading <code>Test</code> (first letters are capitalised for you).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="edit-9"><code>/db view key:Notes</code> (any key): the embed's first field is &ldquo;Whose data&rdquo; (a mention for a member's own row, &ldquo;Server-wide&rdquo; for the global row), and <code>/db view key:Nope</code> says &ldquo;Nothing is stored under that name.&rdquo;.</label></li>
+        </ol>
+        <label class="note"><span>Notes</span><textarea data-note="edit"></textarea></label>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <details open>
+      <summary>/cipher <span class="where">Gay Night House only &middot; live 10-11</span><span class="chip" data-chip-for="cipher">0/6</span></summary>
+      <div class="secbody">
+        <p class="hint">The Vigen&egrave;re toy: encode posts publicly, decode and crack reply privately (&ldquo;Only you can see this&rdquo;). Steps 4&ndash;6 use ready-made inputs from the 2009 Java runs (regenerable from cipher-experiments-2009 if ever needed).</p>
+        <ol class="steps">
+          <li><label class="step"><input type="checkbox" data-step="cipher-1"><code>/cipher encode key:LEMON text:ATTACK AT DAWN</code>: a public &ldquo;Vigen&egrave;re ciphertext&rdquo; embed whose text starts <code>LXFOPV</code> (the canonical vector continues <code>EFRNHR</code>).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="cipher-2"><code>/cipher decode key:LEMON text:&lt;that ciphertext&gt;</code>: a private &ldquo;Vigen&egrave;re plaintext&rdquo; embed showing <code>ATTACK AT DAWN</code> back (spaces and case kept).</label></li>
+          <li><label class="step"><input type="checkbox" data-step="cipher-3"><code>/cipher crack text:&lt;a ciphertext of 300+ letters&gt;</code> (encode any long English text with a keyword of 5+ letters first): a private &ldquo;Vigen&egrave;re crack&rdquo; embed whose Key field is that keyword, with a confidence line.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="cipher-4"><code>/cipher newcipher text:&lt;this ciphertext&gt;</code>: a private &ldquo;NewCipher plaintext&rdquo; embed showing &ldquo;Hello Lila&rdquo; back.
+            <div class="ct"><div class="ctbar"><code class="ctext" data-ct="step4"></code><button type="button" class="copy" data-copy="step4">Copy</button></div><p class="ctmeta">2009 NewCipher output &middot; <span class="ctlen" data-ctlen="step4"></span> &middot; should decode to: Hello Lila</p></div></label></li>
+          <li><label class="step"><input type="checkbox" data-step="cipher-5">Before trusting decodes of Discord-carried ciphertexts, the control-character round-trip check. This ciphertext (2009 NewCipher) already contains code points 18 and 128&ndash;159, several of which render invisibly &mdash; the Copy button gives the exact bytes. Paste it into a Discord message, copy it back out, run <code>/cipher newcipher</code> on it: a private plaintext embed showing &ldquo;Meet me at the night house at nine&rdquo;. Report which code points survived (compare the character count before and after the round trip).
+            <div class="ct"><div class="ctbar"><code class="ctext" data-ct="step5"></code><button type="button" class="copy" data-copy="step5">Copy</button></div><p class="ctmeta">2009 NewCipher output &middot; <span class="ctlen" data-ctlen="step5"></span> &middot; should decode to: Meet me at the night house at nine</p></div></label></li>
+          <li><label class="step"><input type="checkbox" data-step="cipher-6"><code>/cipher oldcipher text:&lt;this ciphertext&gt;</code>, both lines with the line break kept: a private &ldquo;OldCipher plaintext&rdquo; embed showing the original back &mdash; &ldquo;The night house keeps its lamps lit / for every guest who finds the door.&rdquo; Two or more lines on purpose: the decode's line-count metric needs real newlines, and a slash option may flatten pasted newlines &mdash; if the lines come back garbled, that is the finding (note whether the paste kept its newlines).
+            <div class="ct"><div class="ctbar"><code class="ctext" data-ct="step6"></code><button type="button" class="copy" data-copy="step6">Copy</button></div><p class="ctmeta">2009 OldCipher console run &middot; <span class="ctlen" data-ctlen="step6"></span> &middot; two lines, keep the line break</p></div></label></li>
+        </ol>
+        <label class="note"><span>Notes &mdash; for step 5, which control code points survived the round trip</span><textarea data-note="cipher"></textarea></label>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <p>Ticks and notes save to this page's own store on claude.ai: they follow you between devices, and Claude reads them directly, so &ldquo;section done&rdquo; in chat is enough. Results are recorded in the repo (the unit's design doc) and the section is retired from this page.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var CT = {
+    step4: "4YÎ\\µ 8{f¥",
+    step5: "`s\u0096Ì\u0012o\u008d=\u0089Ã<Àv´;Ælg\u008bu$\u008atj³}2\u009a\u0098p\u0089_Ä\u0081",
+    step6: "Vcs daymo vuozj wxxpn gan gxnay gwk \nizq kxkbw iatxk hiw stroz lzn eoov. "
+  };
+  // Ticks and notes live in the artifact's db (one doc, checks/state), so they
+  // follow Lila across devices and Claude reads them back with ArtifactData.
+  // Saves send only the changed keys through update(), which merges nested
+  // objects, so two open devices never overwrite each other's ticks. An untick
+  // is stored as false (the page API has no field delete); only true counts.
+  var ticks = {};
+  var notes = {};
+  var remote = { ticks: {}, notes: {} };
+  var recent = { ticks: {}, notes: {} };
+  var pending = { ticks: {}, notes: {} };
+  var inflight = null;
+  var ref = null;
+  var stopped = false;
+  var saveTimer = null;
+  var savedTimer = null;
+
+  function isEmpty(p) { return !Object.keys(p.ticks).length && !Object.keys(p.notes).length; }
+
+  // Later layers win: server state, acked edits, edits being sent, unsent edits.
+  function layered(field) {
+    return Object.assign({}, remote[field], recent[field],
+      inflight ? inflight[field] : {}, pending[field]);
+  }
+
+  function recompute() {
+    ticks = layered("ticks");
+    notes = layered("notes");
+  }
+
+  function $(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  function status(text, stuck) {
+    var el = document.getElementById("saved");
+    if (!el) return;
+    el.textContent = text;
+    el.className = stuck ? "stuck" : "";
+    if (savedTimer) clearTimeout(savedTimer);
+    if (!stuck && text) savedTimer = setTimeout(function () { el.textContent = ""; }, 1400);
+  }
+
+  function setInputsEnabled(on) {
+    $("input[data-step], textarea[data-note]").forEach(function (el) { el.disabled = !on; });
+  }
+
+  function render() {
+    $("input[data-step]").forEach(function (b) {
+      var on = ticks[b.getAttribute("data-step")] === true;
+      b.checked = on;
+      var label = b.closest("label.step");
+      if (label) label.classList.toggle("done", on);
+    });
+    $("textarea[data-note]").forEach(function (t) {
+      if (t === document.activeElement) return;
+      t.value = notes[t.getAttribute("data-note")] || "";
+    });
+    recount();
+  }
+
+  function stop(text) {
+    stopped = true;
+    setInputsEnabled(false);
+    status(text, true);
+  }
+
+  // One write at a time: edits made while a save is in flight wait in
+  // `pending` and go out when it settles. A failure never retries on its own
+  // (beyond one retry for a transient "unavailable"); the next edit does.
+  function save() {
+    if (!ref || stopped || inflight || isEmpty(pending)) return;
+    inflight = pending;
+    pending = { ticks: {}, notes: {} };
+    // update() rejects invalid_argument when the doc is missing (first save, or
+    // deleted since); only then fall back to set() with the whole layered state.
+    var write = function () {
+      return ref.update({ ticks: inflight.ticks, notes: inflight.notes }).catch(function (e) {
+        if (!(e && e.code === "invalid_argument")) throw e;
+        return ref.set({ ticks: layered("ticks"), notes: layered("notes") });
+      });
+    };
+    var attempt = function (retried) {
+      return write().then(function () {
+        // Keep acked keys above a stale snapshot until a confirmed one arrives.
+        recent = {
+          ticks: Object.assign({}, recent.ticks, inflight.ticks),
+          notes: Object.assign({}, recent.notes, inflight.notes)
+        };
+        inflight = null;
+        status("Saved ✓", false);
+        if (!isEmpty(pending)) scheduleSave();
+      }, function (e) {
+        var code = e && e.code;
+        if (code === "unavailable" && !retried) {
+          return new Promise(function (r) { setTimeout(r, 800 + Math.random() * 1200); })
+            .then(function () { return attempt(true); });
+        }
+        if (code === "invalid_argument" || code === "not_granted") {
+          stop("read-only — your access can't save here");
+        } else if (code === "quota_exceeded" || code === "revoked" ||
+                   code === "capability_disabled" || code === "capability_removed") {
+          stop("not saving (" + code + ") — reload the page");
+        } else {
+          // Put the failed edits back under any newer ones; the next edit resends them.
+          pending = {
+            ticks: Object.assign({}, inflight.ticks, pending.ticks),
+            notes: Object.assign({}, inflight.notes, pending.notes)
+          };
+          inflight = null;
+          status("not saved (" + (code || "error") + ") — your next change retries", true);
+        }
+      });
+    };
+    attempt(false);
+  }
+
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 600);
+  }
+
+  function recount() {
+    var boxes = $("input[data-step]");
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var doneEl = document.getElementById("done");
+    var totalEl = document.getElementById("total");
+    if (doneEl) doneEl.textContent = String(done);
+    if (totalEl) totalEl.textContent = String(boxes.length);
+    var sections = {};
+    boxes.forEach(function (b) {
+      var slug = b.getAttribute("data-step").split("-")[0];
+      if (!sections[slug]) sections[slug] = [0, 0];
+      sections[slug][1]++;
+      if (b.checked) sections[slug][0]++;
+    });
+    $("span.chip[data-chip-for]").forEach(function (chip) {
+      var key = chip.getAttribute("data-chip-for");
+      var c = sections[key];
+      if (!c) return;
+      chip.textContent = c[0] + "/" + c[1];
+      if (c[0] === c[1]) chip.className = "chip full";
+      else chip.className = "chip";
+    });
+  }
+
+  $("code.ctext[data-ct]").forEach(function (el) {
+    var key = el.getAttribute("data-ct");
+    if (CT[key] !== undefined) el.textContent = CT[key];
+  });
+  $("span.ctlen[data-ctlen]").forEach(function (el) {
+    var key = el.getAttribute("data-ctlen");
+    if (CT[key] !== undefined) el.textContent = CT[key].length + " chars";
+  });
+
+  $("input[data-step]").forEach(function (b) {
+    var id = b.getAttribute("data-step");
+    b.addEventListener("change", function () {
+      pending.ticks[id] = b.checked;
+      recompute();
+      var label = b.closest("label.step");
+      if (label) label.classList.toggle("done", b.checked);
+      recount();
+      scheduleSave();
+    });
+  });
+
+  $("textarea[data-note]").forEach(function (t) {
+    var id = t.getAttribute("data-note");
+    t.addEventListener("input", function () {
+      pending.notes[id] = t.value;
+      recompute();
+      scheduleSave();
+    });
+    // render() leaves the focused box alone; catch up on another device's edit on blur.
+    t.addEventListener("blur", render);
+  });
+
+  setInputsEnabled(false);
+  status("connecting…", true);
+  var connected = false;
+  setTimeout(function () {
+    if (!connected && !stopped) stop("not saving — couldn't reach the page's store; reload");
+  }, 15000);
+  var claudeApi = window.claude;
+  var dbReady = claudeApi && typeof claudeApi.use === "function"
+    ? claudeApi.use("db").catch(function () { return null; })
+    : Promise.resolve(null);
+  dbReady.then(function (db) {
+    if (stopped) return;
+    if (!db) {
+      stop("not saving — open this page on claude.ai to save ticks");
+      return;
+    }
+    ref = db.doc("checks/state");
+    ref.onSnapshot(function (snap) {
+      // Server state sits under this view's unsent and in-flight edits (layered()).
+      var d = snap.exists ? snap.data() : null;
+      if (!snap.metadata.hasPendingWrites && !snap.metadata.fromCache) {
+        recent = { ticks: {}, notes: {} };
+      }
+      remote = {
+        ticks: Object.assign({}, (d && d.ticks) || {}),
+        notes: Object.assign({}, (d && d.notes) || {})
+      };
+      recompute();
+      render();
+      if (!connected && !stopped) {
+        connected = true;
+        setInputsEnabled(true);
+        status("", false);
+      }
+    }, function (e) {
+      stop("not saving (" + ((e && e.code) || "error") + ") — reload the page");
+    });
+  });
+
+  $("button.copy[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var key = btn.getAttribute("data-copy");
+      var text = CT[key];
+      if (text === undefined) return;
+      function fallback() {
+        var code = document.querySelector('code.ctext[data-ct="' + key + '"]');
+        if (!code) return;
+        var range = document.createRange();
+        range.selectNodeContents(code);
+        var sel = window.getSelection();
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        btn.textContent = "Selected — copy it";
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = "Copied ✓";
+          setTimeout(function () { btn.textContent = "Copy"; }, 1400);
+        }, fallback);
+      } else {
+        fallback();
+      }
+    });
+  });
+
+  recount();
+})();
+</script>
