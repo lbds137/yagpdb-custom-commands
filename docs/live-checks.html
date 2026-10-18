@@ -186,7 +186,7 @@
 <div class="wrap">
   <p class="eyebrow">YAGPDB custom commands</p>
   <h1>Live Checks</h1>
-  <p class="brief">Batched live tests for <strong>Gay Night House</strong>, <strong>The Rose</strong> and <strong>Lure of the Void</strong>. Each shipped unit adds its checks here, and a unit's follow-up (retiring its text twins) waits for its section to pass. Tick steps as you go and note anything odd; ticks and notes save to this page, on every device, and Claude reads them from there. Tell Claude in chat when a section is done &mdash; it records the result and retires the section here.</p>
+  <p class="brief">Batched live tests for <strong>Gay Night House</strong>, <strong>The Rose</strong> and <strong>Lure of the Void</strong>. Each shipped unit adds its checks here, and a unit's follow-up (retiring its text twins) waits for its section to pass. Tick steps as you go and note anything odd; ticks and notes save and sync across devices, and Claude reads them from there. Tell Claude in chat when a section is done &mdash; it records the result and retires the section here.</p>
   <p class="progressbar"><span><span id="done">0</span> of <span id="total">0</span> steps ticked</span><span id="saved" role="status"></span></p>
 
   <section>
@@ -349,7 +349,7 @@
   </section>
 
   <footer>
-    <p>Ticks and notes save to this page's own store on claude.ai: they follow you between devices, and Claude reads them directly, so &ldquo;section done&rdquo; in chat is enough. Results are recorded in the repo (the unit's design doc) and the section is retired from this page.</p>
+    <p>Ticks and notes save on whichever copy you use: the tailnet copy saves to the Deck at once, the claude.ai copy to its own store, and the Deck syncs the two at :17 and :57 past each hour. They follow you between devices, and Claude reads them directly, so &ldquo;section done&rdquo; in chat is enough. Results are recorded in the repo (the unit's design doc) and the section is retired from this page.</p>
   </footer>
 </div>
 
@@ -372,7 +372,12 @@
   var recent = { ticks: {}, notes: {} };
   var pending = { ticks: {}, notes: {} };
   var inflight = null;
-  var ref = null;
+  // write(changes) resolves with the merged doc (tailnet) or nothing (claude.ai db),
+  // and rejects {code, message}; set once the page knows where it is running.
+  var write = null;
+  var refreshNow = null;
+  var writeSeq = 0;
+  var NOTE_MAX = 3900; // the Deck endpoint caps a note at 4000 characters
   var stopped = false;
   var saveTimer = null;
   var savedTimer = null;
@@ -388,6 +393,13 @@
   function recompute() {
     ticks = layered("ticks");
     notes = layered("notes");
+  }
+
+  function applyRemote(d) {
+    remote = {
+      ticks: Object.assign({}, (d && d.ticks) || {}),
+      notes: Object.assign({}, (d && d.notes) || {})
+    };
   }
 
   function $(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -429,25 +441,26 @@
   // `pending` and go out when it settles. A failure never retries on its own
   // (beyond one retry for a transient "unavailable"); the next edit does.
   function save() {
-    if (!ref || stopped || inflight || isEmpty(pending)) return;
+    if (!write || stopped || inflight || isEmpty(pending)) return;
     inflight = pending;
     pending = { ticks: {}, notes: {} };
-    // update() rejects invalid_argument when the doc is missing (first save, or
-    // deleted since); only then fall back to set() with the whole layered state.
-    var write = function () {
-      return ref.update({ ticks: inflight.ticks, notes: inflight.notes }).catch(function (e) {
-        if (!(e && e.code === "invalid_argument")) throw e;
-        return ref.set({ ticks: layered("ticks"), notes: layered("notes") });
-      });
-    };
     var attempt = function (retried) {
-      return write().then(function () {
-        // Keep acked keys above a stale snapshot until a confirmed one arrives.
-        recent = {
-          ticks: Object.assign({}, recent.ticks, inflight.ticks),
-          notes: Object.assign({}, recent.notes, inflight.notes)
-        };
+      return write(inflight).then(function (doc) {
+        if (doc) {
+          // The Deck answers with its merged state, our edit included.
+          applyRemote(doc);
+          recent = { ticks: {}, notes: {} };
+        } else {
+          // Keep acked keys above a stale snapshot until a confirmed one arrives.
+          recent = {
+            ticks: Object.assign({}, recent.ticks, inflight.ticks),
+            notes: Object.assign({}, recent.notes, inflight.notes)
+          };
+        }
         inflight = null;
+        writeSeq++;
+        recompute();
+        render();
         status("Saved ✓", false);
         if (!isEmpty(pending)) scheduleSave();
       }, function (e) {
@@ -456,7 +469,19 @@
           return new Promise(function (r) { setTimeout(r, 800 + Math.random() * 1200); })
             .then(function () { return attempt(true); });
         }
-        if (code === "invalid_argument" || code === "not_granted") {
+        if (code === "refused") {
+          // The Deck rejected this batch's content: resending it can't succeed, so
+          // drop it and reload the Deck's copy, so the reverted boxes show it.
+          inflight = null;
+          writeSeq++;
+          recompute();
+          render();
+          if (refreshNow) refreshNow();
+          status("not saved — the Deck refused it (" + e.message + "); tell Claude", true);
+          if (!isEmpty(pending)) scheduleSave();
+        } else if (code === "gone") {
+          stop("not saving — the Deck's sync endpoint is missing (" + e.message + "); tell Claude");
+        } else if (code === "invalid_argument" || code === "not_granted") {
           stop("read-only — your access can't save here");
         } else if (code === "quota_exceeded" || code === "revoked" ||
                    code === "capability_disabled" || code === "capability_removed") {
@@ -528,7 +553,13 @@
 
   $("textarea[data-note]").forEach(function (t) {
     var id = t.getAttribute("data-note");
+    t.maxLength = NOTE_MAX;
     t.addEventListener("input", function () {
+      // maxlength doesn't hold against every paste or IME commit.
+      if (t.value.length > NOTE_MAX) {
+        // Don't leave half an emoji (a lone surrogate) at the cut.
+        t.value = t.value.slice(0, NOTE_MAX).replace(/[\uD800-\uDBFF]$/, "");
+      }
       pending.notes[id] = t.value;
       recompute();
       scheduleSave();
@@ -540,40 +571,152 @@
   setInputsEnabled(false);
   status("connecting…", true);
   var connected = false;
-  setTimeout(function () {
-    if (!connected && !stopped) stop("not saving — couldn't reach the page's store; reload");
-  }, 15000);
+  // Started once the mode is chosen, so claude.use()'s own wait doesn't eat it.
+  function startConnectTimer() {
+    setTimeout(function () {
+      if (!connected && !stopped) stop("not saving — couldn't reach the page's store; reload");
+    }, 15000);
+  }
   var claudeApi = window.claude;
   var dbReady = claudeApi && typeof claudeApi.use === "function"
     ? claudeApi.use("db").catch(function () { return null; })
     : Promise.resolve(null);
-  dbReady.then(function (db) {
-    if (stopped) return;
-    if (!db) {
-      stop("not saving — open this page on claude.ai to save ticks");
-      return;
-    }
-    ref = db.doc("checks/state");
+  function markConnected() {
+    if (connected || stopped) return;
+    connected = true;
+    setInputsEnabled(true);
+    status("", false);
+  }
+
+  // claude.ai: the artifact's db, live through onSnapshot.
+  function startDb(db) {
+    var ref = db.doc("checks/state");
+    // update() rejects invalid_argument when the doc is missing (first save, or
+    // deleted since); only then fall back to set() with the whole layered state.
+    write = function (changes) {
+      return ref.update({ ticks: changes.ticks, notes: changes.notes }).catch(function (e) {
+        if (!(e && e.code === "invalid_argument")) throw e;
+        return ref.set({ ticks: layered("ticks"), notes: layered("notes") });
+      }).then(function () { return null; });
+    };
     ref.onSnapshot(function (snap) {
       // Server state sits under this view's unsent and in-flight edits (layered()).
-      var d = snap.exists ? snap.data() : null;
       if (!snap.metadata.hasPendingWrites && !snap.metadata.fromCache) {
         recent = { ticks: {}, notes: {} };
       }
-      remote = {
-        ticks: Object.assign({}, (d && d.ticks) || {}),
-        notes: Object.assign({}, (d && d.notes) || {})
-      };
+      applyRemote(snap.exists ? snap.data() : null);
       recompute();
       render();
-      if (!connected && !stopped) {
-        connected = true;
-        setInputsEnabled(true);
-        status("", false);
-      }
+      markConnected();
     }, function (e) {
       stop("not saving (" + ((e && e.code) || "error") + ") — reload the page");
     });
+  }
+
+  // Tailnet: the Deck's outbox endpoint. GET answers the claude.ai copy (pulled
+  // each sync pass) with edits queued here on top; POST queues per-key edits and
+  // answers the same merged body. The sync pushes the queue up to claude.ai.
+  var API = "/api/yagpdb-live-checks/checks/state";
+
+  function request(method, body) {
+    var opts = { method: method, headers: { "Accept": "application/json" }, cache: "no-store" };
+    if (body) {
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
+    return fetch(API, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.ok && j && j.doc !== undefined) return j;
+        var msg = (j && j.error) || ("HTTP " + r.status);
+        // 400/413/422: this content is refused, resending can't help. 403/404/
+        // 405/415: the endpoint itself is wrong. Anything else (507 full queue,
+        // 408, 429, 5xx) clears up on its own, so the next edit retries.
+        var code = "unavailable";
+        if (r.status === 400 || r.status === 413 || r.status === 422) code = "refused";
+        else if ([403, 404, 405, 415].indexOf(r.status) !== -1) code = "gone";
+        throw { code: code, message: msg };
+      });
+    }, function () {
+      throw { code: "unavailable", message: "network" };
+    });
+  }
+
+  // The endpoint takes at most 16 KB and 200 keys a body: send in smaller chunks.
+  function chunkSet(set) {
+    var enc = new TextEncoder();
+    var chunks = [];
+    var cur = {};
+    var n = 0;
+    Object.keys(set).forEach(function (k) {
+      var next = Object.assign({}, cur);
+      next[k] = set[k];
+      if (n > 0 && (n >= 150 || enc.encode(JSON.stringify({ set: next })).length > 12000)) {
+        chunks.push(cur);
+        cur = {};
+        n = 0;
+        next = {};
+        next[k] = set[k];
+      }
+      cur = next;
+      n++;
+    });
+    if (n) chunks.push(cur);
+    return chunks;
+  }
+
+  function startTailnet() {
+    write = function (changes) {
+      var set = {};
+      Object.keys(changes.ticks).forEach(function (k) { set["ticks." + k] = changes.ticks[k]; });
+      Object.keys(changes.notes).forEach(function (k) { set["notes." + k] = changes.notes[k]; });
+      // Sequential; a failed chunk fails the batch, and resending the chunks
+      // that did land is harmless (per-key last value).
+      return chunkSet(set).reduce(function (p, chunk) {
+        return p.then(function () { return request("POST", { set: chunk }); });
+      }, Promise.resolve(null)).then(function (j) { return (j && j.doc) || {}; });
+    };
+    // Another device's ticks reach this view on a refresh: every minute, and
+    // whenever the page comes back to the foreground.
+    var getSeq = 0;
+    var refresh = function () {
+      if (stopped) return Promise.resolve();
+      var seq = writeSeq;
+      var g = ++getSeq;
+      return request("GET").then(function (j) {
+        // Skip a GET that began before our last save landed (it may predate it)
+        // or that a newer GET has overtaken.
+        if (stopped || seq !== writeSeq || inflight || g !== getSeq) return;
+        applyRemote(j.doc);
+        recompute();
+        render();
+        markConnected();
+      });
+    };
+    refreshNow = function () { refresh().catch(function () {}); };
+    var first = function (tries) {
+      refresh().catch(function (e) {
+        if (stopped) return;
+        if (e.code === "unavailable" && tries < 3) {
+          setTimeout(function () { first(tries + 1); }, 1500 * tries);
+        } else {
+          stop("not saving — the Deck's sync endpoint didn't answer (" + e.message + ")");
+        }
+      });
+    };
+    first(1);
+    setInterval(refreshNow, 60000);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") refreshNow();
+    });
+  }
+
+  dbReady.then(function (db) {
+    if (stopped) return;
+    startConnectTimer();
+    if (db) startDb(db);
+    // claude.ai without its store is not the tailnet: don't go looking for the Deck.
+    else if (claudeApi && typeof claudeApi.use === "function") stop("not saving — this view can't reach the page's store; reload");
+    else startTailnet();
   });
 
   $("button.copy[data-copy]").forEach(function (btn) {
