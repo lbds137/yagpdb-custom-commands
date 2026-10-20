@@ -93,6 +93,36 @@ func TestExecCCChildChannels(t *testing.T) {
 	}
 }
 
+// An execCC child copies the caller's declared threads (YAGPDB's child shares the caller's
+// GS, tmplextensions.go:235): a thread is a send target by ID, and resolves by name
+func TestExecCCChildThreads(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir+"/send.gohtml", `{{sendMessage 77 "hi from the child"}}`)
+	writeFile(t, dir+"/named.gohtml", `{{sendMessage nil (print (getChannelOrThread "a-thread").ID)}}`)
+	threadID := int64(77)
+	declare := func() *ExecutionContext {
+		ctx := channelCtx()
+		ctx.ChannelDetails = map[int64]types.CtxChannel{threadID: {ID: threadID, Name: "a-thread", Type: channelTypeGuildPublicThread, ParentID: ctx.ChannelID}}
+		ctx.Threads = map[int64]string{threadID: "a-thread"}
+		ctx.ThreadOrder = []int64{threadID}
+		ctx.TemplateBaseDir = dir
+		ctx.CommandIDMap = map[int64]string{7: "send.gohtml", 8: "named.gohtml"}
+		return ctx
+	}
+
+	ctx := declare()
+	if _, err := run(t, ctx, `{{execCC 7 nil 0 nil}}`); err != nil || len(ctx.SentMessages) != 1 ||
+		ctx.SentMessages[0].ChannelID != threadID || ctx.SentMessages[0].Content != "hi from the child" {
+		t.Errorf("send by ID: sent %+v, %v; want one message in %d", ctx.SentMessages, err, threadID)
+	}
+
+	ctx = declare()
+	if _, err := run(t, ctx, `{{execCC 8 nil 0 nil}}`); err != nil || len(ctx.SentMessages) != 1 ||
+		ctx.SentMessages[0].Content != fmt.Sprint(threadID) {
+		t.Errorf("resolve by name: sent %+v, %v; want %d", ctx.SentMessages, err, threadID)
+	}
+}
+
 // dcmd cuts a mention's "<#" and its last character, whatever that is
 func TestParseArgsChannelMentionCut(t *testing.T) {
 	ctx := channelCtx()

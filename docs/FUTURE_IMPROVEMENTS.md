@@ -502,11 +502,17 @@ gets a failing test first.
   stricter limit so a later save from the panel also passes.
 
 ### Remaining emulator gaps
-- Found 2026-10-04 (review of the /prompt pin): the execCC child context (engine.go
-  execCC, the childCtx literal) does not copy the declared `Threads`, so a child resolving
-  a thread by ID or name may see it as unknown where YAGPDB would not. Not hit by any
-  current command (code reading only). Fix: copy Threads like Channels, with a test of a
-  child pinning or sending into a declared thread. Trigger: the next execCC-into-thread unit.
+- Shipped (2026-10-20): the execCC child context copies the declared `Threads` and
+  `ThreadOrder` like `Channels` (engine.go execCC, the childCtx literal), so a child sends
+  into a thread by ID and resolves it by name, as YAGPDB's shared GS does. Found
+  2026-10-04 by code reading (no command hit it). Pinned by `TestExecCCChildThreads`
+  (channels_test.go), which failed before the fix: the send was dropped, and the name
+  lookup errored with a nil pointer. `ChannelOverwrites` is still not copied to the child;
+  not yet pinned by any test. Also not copied: `createdThreads` (context.go, nextThreadID's
+  counter), so a child creating a forum post after the caller created threads reuses IDs
+  and overwrites the caller's `Threads` entry (forum.go) — before the Threads copy this
+  failed loudly (nil map write). Not hit by any current command (code reading only).
+  Trigger: the next unit where a child creates a thread or forum post.
 - Shipped (2026-10-05): a test or suite declares `command_status: { <id>: missing |
   disabled | group_disabled }`, so execCC and scheduleUniqueCC of that id fail with
   YAGPDB's own text (tmplextensions.go:189-201, 296-307), and a child sees it. Pinned

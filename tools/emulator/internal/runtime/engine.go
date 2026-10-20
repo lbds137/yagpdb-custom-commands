@@ -1061,6 +1061,8 @@ func (e *Engine) execCC(ccID int, channel, delay interface{}, data interface{}) 
 		Channels:                 e.ctx.Channels,
 		ChannelOrder:             e.ctx.ChannelOrder,
 		ChannelDetails:           e.ctx.ChannelDetails,
+		Threads:                  e.ctx.Threads,
+		ThreadOrder:              e.ctx.ThreadOrder,
 		BotCannotMentionEveryone: e.ctx.BotCannotMentionEveryone,
 		CommandIDMap:             e.ctx.CommandIDMap,
 		CommandStatus:            e.ctx.CommandStatus,
