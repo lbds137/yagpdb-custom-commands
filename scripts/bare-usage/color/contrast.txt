@@ -1,0 +1,1 @@
+Usage: `[color as hex]` OR `[role ID]`

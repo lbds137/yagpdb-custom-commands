@@ -1,9 +1,10 @@
 #!/bin/bash
 # Smoke test: run every command once, with no arguments, on the database a fresh
 # bootstrap plus config_sync leave (tools/emulator/testdata/initial_db.json). A command that answers with
-# its parseArgs usage message passes; regex-trigger commands are skipped, since an empty
-# message can't match their trigger. What's left failing is a real error. The YAML suites
-# (make test) test commands with arguments.
+# its parseArgs usage message passes, as does one that exits 0 and prints a Usage: line; either way its
+# usage text must match the pin in scripts/bare-usage/ (same path, .txt), so a wording change
+# fails. Regex-trigger commands are skipped, since an empty message can't match their trigger.
+# What's left failing is a real error. The YAML suites (make test) test commands with arguments.
 # Usage: ./scripts/test-all-templates.sh [--verbose] [--stop-on-fail]
 
 set -euo pipefail
@@ -74,6 +75,8 @@ echo ""
 test_template() {
     local template="$1"
     local name="${template#"$PROJECT_ROOT"/}"
+    local pin="$SCRIPT_DIR/bare-usage/${name#commands/}"
+    pin="${pin%.gohtml}.txt"
 
     if grep -q 'Trigger type: `Regex`' "$template"; then
         echo -e "${YELLOW}SKIP${NC}: $name (regex trigger)"
@@ -84,6 +87,55 @@ test_template() {
     local output
     local exit_code=0
     output=$(timeout 5 "$YAGTEST" run -db "$DB" "$template" 2>&1) || exit_code=$?
+    local plain
+    plain=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
+
+    # A run that asks for arguments prints its usage between the Execution Error line and
+    # the Hint line. A run that exits 0 and prints a Usage: line (gematria) prints it all.
+    # Match the line start only: a loose "usage" also hits the checkout path in yagtest warnings.
+    local asks_for_args=false
+    local prints_usage=false
+    local usage=""
+    if [[ $exit_code -ne 0 ]] && echo "$plain" | grep -q 'executing "yagtest" at <parseArgs'; then
+        asks_for_args=true
+        prints_usage=true
+        usage=$(echo "$plain" | awk '/^Execution Error:/{on=1; next} /^Hint:/{exit} on')
+    elif [[ $exit_code -eq 0 ]] && echo "$plain" | grep -q '^Usage:'; then
+        prints_usage=true
+        usage="$plain"
+    fi
+
+    local usage_problem=""
+    if [[ -f "$pin" ]]; then
+        if [[ "$prints_usage" != "true" ]]; then
+            usage_problem="pinned, but prints no usage"
+        elif [[ "$usage" != "$(cat "$pin")" ]]; then
+            usage_problem="usage text changed"
+        fi
+    elif [[ "$prints_usage" == "true" ]]; then
+        usage_problem="no pinned usage text"
+    fi
+
+    if [[ -n "$usage_problem" ]]; then
+        echo -e "${RED}FAIL${NC}: $name ($usage_problem)"
+        ((FAIL++)) || true
+        if [[ -f "$pin" ]]; then
+            echo "  expected (${pin#"$PROJECT_ROOT"/}):"
+            sed 's/^/    /' "$pin"
+        fi
+        echo "  actual:"
+        if [[ "$prints_usage" == "true" ]]; then
+            printf '%s\n' "$usage" | sed 's/^/    /'
+        else
+            echo "$plain" | head -5 | sed 's/^/    /'
+        fi
+        echo ""
+        if [[ "$STOP_ON_FAIL" == "true" ]]; then
+            echo -e "\n${RED}Stopping on first failure${NC}"
+            exit 1
+        fi
+        return
+    fi
 
     if [[ $exit_code -eq 0 ]]; then
         echo -e "${GREEN}PASS${NC}: $name"
@@ -92,7 +144,7 @@ test_template() {
             echo "$output" | head -5 | sed 's/^/  /'
             echo ""
         fi
-    elif echo "$output" | grep -q 'executing "yagtest" at <parseArgs'; then
+    elif [[ "$asks_for_args" == "true" ]]; then
         echo -e "${GREEN}PASS${NC}: $name (asks for arguments)"
         ((USAGE++)) || true
     else

@@ -1,0 +1,1 @@
+Usage: [text from which to generate pyramid gematria]

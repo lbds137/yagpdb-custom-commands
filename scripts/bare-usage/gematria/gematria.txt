@@ -1,0 +1,1 @@
+Usage: /gematria text, or /hebrew (this command renders their results)

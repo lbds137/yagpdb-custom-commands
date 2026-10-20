@@ -1,0 +1,1 @@
+Usage: [number of letters] OR [number of groups]x[number of letters per group]

@@ -1,0 +1,3 @@
+Usage: `[Category]` `[Key]`
+
+The category is the section of the database that you want to look at (e.g. "Admin" or "Knowledge"), and the key is the name of the entry to retrieve.

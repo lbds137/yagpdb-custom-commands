@@ -769,12 +769,22 @@ gets a failing test first.
   MIT license; PRs target `dev`, not master. No known upstream issue/PR covers forum
   thread creation (it shipped). Openly-AI-labelled contribution remains Lila's call
   if one ever happens.
-- `scripts/test-all-templates.sh` asserts each bare run's exit code only, and the yaml
-  runner refuses bare runs of Slash/Modal/Component triggers by design
-  (loader/runner.go:374-383) — so the one-line usage messages those runs print (e.g.
-  /edit's three) are pinned nowhere: a wording regression in a bare line cannot redden
-  any gate. Shape: the script (or a generated fixture) asserts each bare output against
-  the file's expected line.
+- Shipped (2026-10-20): `scripts/test-all-templates.sh` pins each bare run's usage text.
+  Ten commands have a pinned file under `scripts/bare-usage/` (same path, `.txt`): the nine
+  that ask for arguments (their parseArgs block, from the `Execution Error:` line to the
+  `Hint:` line) and gematria (exit 0; its `Usage:` line, which is its whole output). The
+  script strips ANSI and compares. A mismatch fails and prints the expected and actual text;
+  a command that prints usage with no pin fails; a pin whose command prints no usage fails.
+  Not pinned: the bare redirect lines ("Use /x as a slash command …", "Reached by …"), which
+  the `Usage:` check cannot see; see the deferred entry below.
+- Deferred (2026-10-20, found while pinning the entry above): the bare redirect lines are
+  unpinned. Sweep of the 54 non-Regex commands (2026-10-20): 43 exit 0 with non-empty
+  output, of which gematria is pinned, 22 are redirects, 1 is `### Missing Argument`
+  (db_get_text), and 19 are warnings, embed dicts, bump or staff-permission lines. Shape: the same file-per-command check,
+  keyed on the whole output, with no `Usage:` prefix needed. Also unchecked: a pin whose
+  command file is deleted, renamed, or has a Regex trigger (the script skips Regex before
+  any pin check; it walks `commands/`, not the pins). Trigger:
+  Lila's go, or the next unit that edits one of those messages.
 - DECIDED (Lila 2026-09-27, both parts; part 1 after the channel_activity + db_get
   deploys, part 2 with the slash work). Shape for part 1: a generated
   commands/plumbing/config_sync.gohtml (Hourly interval) with panel.json's ids baked in
