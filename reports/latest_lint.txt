@@ -1,60 +1,136 @@
-# Lint Report - 2025-05-21 23:50:03
+# Lint Report - 2026-10-22 16:06:36
 # Command: python3 tools/linter/yagpdb_lint.py --dir .
 # Exit code: 0
-# Git commit: 779baa08
+# Git commit: 0c0cc411
 
-⚠️ guests/agree.gohtml:37:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-⚠️ guests/agree.gohtml:39:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-⚠️ guests/agree.gohtml:42:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-⚠️ guests/agree.gohtml:45:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-⚠️ utility/bump_check.gohtml:1:1 [permission-conditional-staff] Command performs staff operations but lacks permission checks
-⚠️ utility/bump_check.gohtml:22:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_check.gohtml:24:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_check.gohtml:29:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_check.gohtml:33:1 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
-ℹ️ utility/bump_check.gohtml:21:1 [database-global-write] Global database write - verify this is intentional and properly secured
-ℹ️ utility/bump_check.gohtml:28:1 [database-global-write] Global database write - verify this is intentional and properly secured
-⚠️ utility/pyramid.gohtml:42:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/message_link.gohtml:237:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/channel_link.gohtml:30:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/channel_link.gohtml:32:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_remind.gohtml:25:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_remind.gohtml:29:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_remind.gohtml:33:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_remind.gohtml:37:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/bump_remind.gohtml:39:1 [trigger-deletion-missing] Command should include deleteTrigger call
-⚠️ utility/embed_exec.gohtml:65:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/embed_exec.gohtml:67:1 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
-⚠️ utility/embed_exec.gohtml:68:1 [trigger-deletion-missing] Command should include deleteTrigger call
-⚠️ utility/unhiatus.gohtml:1:1 [permission-conditional-staff] Command performs staff operations but lacks permission checks
-⚠️ utility/unhiatus.gohtml:29:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-ℹ️ utility/unhiatus.gohtml:33:1 [database-global-write] Global database write - verify this is intentional and properly secured
-⚠️ utility/hugemoji.gohtml:120:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/hugemoji.gohtml:123:1 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
-⚠️ utility/db_get_text.gohtml:86:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ utility/gematria.gohtml:11:1 [variable-naming-dict] Dictionary variable should be named 'globalDict', got 'dGlob'
-⚠️ utility/gematria.gohtml:14:1 [variable-naming-dict] Dictionary variable should be named 'gematriaDict', got 'dGem'
-⚠️ utility/gematria.gohtml:18:1 [variable-naming-dict] Dictionary variable should be named 'commandsDict', got 'dComm'
-⚠️ utility/gematria.gohtml:21:1 [variable-naming-dict] Dictionary variable should be named 'channelsDict', got 'dChan'
-⚠️ staff_utility/ticket_adduser_exec.gohtml:12:1 [trigger-deletion-missing] Command should include deleteTrigger call
-⚠️ staff_utility/hiatus.gohtml:30:1 [error-no-try-catch] Discord API call 'takeRoleID' should be wrapped in try-catch block
-⚠️ staff_utility/rules.gohtml:53:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/directory.gohtml:152:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/directory.gohtml:156:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/directory.gohtml:158:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/directory.gohtml:169:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/directory.gohtml:169:1 [trigger-deletion-missing] Command should include deleteTrigger call
-⚠️ staff_utility/admit_user.gohtml:74:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-⚠️ staff_utility/admit_user.gohtml:77:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-⚠️ staff_utility/admit_user.gohtml:81:1 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
-⚠️ staff_utility/admit_user.gohtml:82:1 [error-no-try-catch] Discord API call 'takeRoleID' should be wrapped in try-catch block
-⚠️ staff_utility/admit_user.gohtml:105:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/screen_user.gohtml:72:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/screen_user.gohtml:79:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/role_ping.gohtml:39:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/archive.gohtml:75:1 [error-no-try-catch] Discord API call 'addMessageReactions' should be wrapped in try-catch block
-⚠️ staff_utility/bump_reset.gohtml:15:1 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
-⚠️ staff_utility/bump_reset.gohtml:18:1 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
-⚠️ staff_utility/reject_user.gohtml:57:1 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ retired/hiatus.gohtml:31:16 [error-no-try-catch] Discord API call 'takeRoleID' should be wrapped in try-catch block
+⚠️ retired/admit_user.gohtml:84:24 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ retired/admit_user.gohtml:87:24 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ retired/admit_user.gohtml:91:16 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ retired/admit_user.gohtml:92:16 [error-no-try-catch] Discord API call 'takeRoleID' should be wrapped in try-catch block
+⚠️ retired/admit_user.gohtml:114:20 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ retired/screen_user.gohtml:82:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ retired/screen_user.gohtml:89:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ retired/role_ping.gohtml:43:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ retired/archive.gohtml:85:16 [error-no-try-catch] Discord API call 'addMessageReactions' should be wrapped in try-catch block
+⚠️ retired/contrasts.gohtml:56:33 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ retired/contrasts.gohtml:69:23 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ retired/contrasts.gohtml:72:8 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ retired/reject_user.gohtml:67:12 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ retired/db.gohtml:195:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ retired/unhiatus.gohtml:30:16 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ retired/role_ping_pick.gohtml:49:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ retired/agree.gohtml:37:8 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ retired/agree.gohtml:39:12 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ retired/agree.gohtml:42:12 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ retired/agree.gohtml:45:12 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ commands/edit/edit_modal.gohtml:230:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/edit/edit_slash.gohtml:305:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/edit/edit_confirm.gohtml:144:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/knowledge/define_slash.gohtml:80:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/plumbing/message_link.gohtml:254:20 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/plumbing/log_user.gohtml:29:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/plumbing/setup_slash.gohtml:160:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/plumbing/bootstrap.gohtml:31:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/plumbing/bootstrap.gohtml:45:16 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/plumbing/bootstrap.gohtml:119:8 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/plumbing/embed_exec.gohtml:119:17 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/plumbing/embed_exec.gohtml:122:25 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/plumbing/embed_exec.gohtml:124:25 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/plumbing/embed_exec.gohtml:127:12 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/general/emoji_menu.gohtml:108:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/general/timestamp_slash.gohtml:80:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/general/prompt.gohtml:61:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/general/avatar_menu.gohtml:68:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/general/hugemoji.gohtml:85:56 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/general/hugemoji.gohtml:101:21 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/general/hugemoji.gohtml:104:6 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/general/hugemoji.gohtml:114:27 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/general/hugemoji.gohtml:118:6 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/general/prompt_post.gohtml:259:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/general/dismiss.gohtml:20:6 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/general/dismiss.gohtml:29:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/bump/bump_check.gohtml:25:25 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_check.gohtml:27:25 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_check.gohtml:33:21 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_check.gohtml:37:4 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_reset.gohtml:28:22 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_reset.gohtml:31:8 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_remind.gohtml:26:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_remind.gohtml:30:16 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_remind.gohtml:34:8 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/bump/bump_remind.gohtml:38:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/directory.gohtml:153:30 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/directory.gohtml:157:11 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/directory.gohtml:160:11 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/directory.gohtml:162:8 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/directory.gohtml:174:5 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/channel_tracker.gohtml:15:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/channels/channel_activity_pager.gohtml:246:11 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/channel_activity_pager.gohtml:251:9 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/channel_activity_pager.gohtml:253:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/channels/channel_link.gohtml:47:26 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/channels/pointer_slash.gohtml:104:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/rules/rule_slash.gohtml:92:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/rules/rules.gohtml:157:13 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/rules/rules_pager.gohtml:10:52 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/rules/rules_pager.gohtml:110:13 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/rules/rules_pager.gohtml:132:13 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/rules/rules_pager.gohtml:211:13 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/rules/rules_pager.gohtml:213:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/gematria/gematria_slash.gohtml:42:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/color/color_slash.gohtml:235:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/db/db_slash.gohtml:200:16 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/db/db_get_text.gohtml:93:4 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/staff_slash.gohtml:123:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/members/inactivity.gohtml:107:71 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/inactivity.gohtml:111:20 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/staff_roles_pick.gohtml:70:13 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/staff_roles_pick.gohtml:78:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/staff_roles_pick.gohtml:80:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/members/hiatus_slash.gohtml:49:8 [error-no-try-catch] Discord API call 'takeRoleID' should be wrapped in try-catch block
+⚠️ commands/members/hiatus_slash.gohtml:87:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/members/role_ping_slash.gohtml:13:3 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/role_ping_slash.gohtml:45:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/members/unhiatus_slash.gohtml:72:1 [permission-conditional-staff] Command performs staff operations but lacks permission checks
+⚠️ commands/members/unhiatus_slash.gohtml:61:8 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ commands/members/unhiatus_slash.gohtml:102:1 [trigger-deletion-missing] Command should include deleteTrigger call
+ℹ️ commands/members/unhiatus_slash.gohtml:72:7 [database-global-write] Global database write - verify this is intentional and properly secured
+⚠️ commands/members/inactivity_prune_pick.gohtml:141:12 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/inactivity_prune_pick.gohtml:171:16 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/inactivity_prune_pick.gohtml:188:13 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/inactivity_prune_pick.gohtml:196:13 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/members/inactivity_prune_pick.gohtml:198:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/cipher/cipher_slash.gohtml:388:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ commands/hebrew/pyramid.gohtml:65:30 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ commands/hebrew/pyramid.gohtml:68:9 [error-no-try-catch] Discord API call 'deleteMessage' should be wrapped in try-catch block
+⚠️ commands/hebrew/hebrew_slash.gohtml:354:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ docs/cookbook/moderation_log.gohtml:6:1 [header-author-format] Author should include 'Vladlena Costescu (@lbds137)'
+⚠️ docs/cookbook/moderation_log.gohtml:25:5 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ docs/cookbook/moderation_log.gohtml:36:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ docs/cookbook/economy.gohtml:6:1 [header-author-format] Author should include 'Vladlena Costescu (@lbds137)'
+⚠️ docs/cookbook/economy.gohtml:31:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ docs/cookbook/leaderboard.gohtml:6:1 [header-author-format] Author should include 'Vladlena Costescu (@lbds137)'
+⚠️ docs/cookbook/leaderboard.gohtml:18:5 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ docs/cookbook/leaderboard.gohtml:19:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ docs/cookbook/leveling.gohtml:6:1 [header-author-format] Author should include 'Vladlena Costescu (@lbds137)'
+⚠️ docs/cookbook/leveling.gohtml:21:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ docs/cookbook/reaction_roles.gohtml:6:1 [header-author-format] Author should include 'Vladlena Costescu (@lbds137)'
+⚠️ docs/cookbook/reaction_roles.gohtml:23:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ docs/cookbook/welcome.gohtml:6:1 [header-author-format] Author should include 'Vladlena Costescu (@lbds137)'
+⚠️ docs/cookbook/welcome.gohtml:11:4 [error-no-try-catch] Discord API call 'giveRoleID' should be wrapped in try-catch block
+⚠️ docs/cookbook/welcome.gohtml:12:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ dist/free/edit/edit_slash.gohtml:28:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ dist/free/general/prompt_post.gohtml:30:20 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ dist/free/general/prompt_post.gohtml:57:18 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ dist/free/general/prompt_post.gohtml:73:21 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ dist/free/general/prompt_post.gohtml:97:16 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ dist/free/general/prompt_post.gohtml:99:16 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ dist/free/general/prompt_post.gohtml:123:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ dist/free/channels/channel_activity_pager.gohtml:8:5547 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ dist/free/channels/channel_activity_pager.gohtml:8:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ dist/free/db/db_slash.gohtml:41:2913 [error-no-try-catch] Discord API call 'sendMessage' should be wrapped in try-catch block
+⚠️ dist/free/cipher/cipher_slash.gohtml:53:1 [trigger-deletion-missing] Command should include deleteTrigger call
+⚠️ dist/free/hebrew/hebrew_slash.gohtml:35:1 [trigger-deletion-missing] Command should include deleteTrigger call
 
-📊 Summary: 50 warnings, 3 info
+📊 Summary: 128 warnings, 1 info
