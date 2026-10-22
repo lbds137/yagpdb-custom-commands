@@ -218,11 +218,12 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   every manifest refuses, listing each one, a command over the tier's cap by the panel
   count (runes plus newlines); yagmin's `-over` threshold is that same panel count. A
   free-tier manifest also refuses a stale dist/free (yagmin check).
-- Test gaps (review of part 2, 2026-10-04): no test pins that the manifest lists EVERY
-  over-cap entry (only hebrew_slash's free copy is over any cap, so one case exists), the
-  premium 20,000 cap is never hit, and the stale-dist/free refusal has no test (it needs
-  a stale tree). Shape: load deploy-manifest.py as a module and drive main() over a
-  temporary tree. Trigger: the next change to deploy-manifest.py.
+- Shipped (2026-10-22): `scripts/deploy_manifest_test.py` now pins that the manifest lists
+  every over-cap entry (two synthetic 10,001-rune temp sources alongside an under-cap
+  command on a free server), refuses a command over the premium 20,000 cap (a 20,001-rune
+  temp source on a premium server), and refuses a stale `dist/free` (loading
+  `scripts/deploy-manifest.py` via `importlib` and wrapping `subprocess.run` so the
+  `["go", "run", ...]` yagmin check returns nonzero while `git` calls pass through).
 - Known gap (slash-fleet unit 2, 2026-10-04): `/hebrew` (hebrew_slash) minifies to ~11.3k
   runes, still over the free 10k cap, so a FREE server can't take it as one root
   (atbash's dict alone is ~7k). Options: move the atbash dict into the DB (Gematria dict,

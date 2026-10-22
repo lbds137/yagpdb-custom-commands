@@ -9,10 +9,13 @@ shas match a direct hash computed here independently of deploy-manifest.py's own
 
 Then, with throwaway panel.json files (the --panel option), the per-tier cases: a free server
 takes a command's dist/free copy (source, sha, raw) and the command itself when there is no
-copy, a premium server never takes the copy, a command over the free cap (hebrew_slash's
-minified copy) is refused by name with exit 1, and a server with no tier is refused.
+copy, a premium server never takes the copy, over-cap commands (hebrew_slash's minified copy,
+multiple free-tier entries, and a premium 20,000-cap entry) are all refused by name with exit 1,
+a stale dist/free is refused on a free server, and a server with no tier is refused.
 """
 import hashlib
+import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -169,6 +172,109 @@ def check_free_tier(env):
                       f"the cap: {proc.stderr!r}")
     if minified in proc.stderr:
         errors.append(f"{minified} is under the cap but was named: {proc.stderr!r}")
+
+    # multiple over-cap entries on a free server: every over-cap entry is listed, not just
+    # the first, and the under-cap entry alongside them is not
+    with tempfile.TemporaryDirectory(prefix="yagpdb-deploy-manifest-caps-") as cap_dir:
+        over_a = os.path.join(cap_dir, "over_a.gohtml")
+        over_b = os.path.join(cap_dir, "over_b.gohtml")
+        for path in (over_a, over_b):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("x" * 10001)
+        with open(over_a, encoding="utf-8") as f:
+            count_a = panel_count(f.read())
+        with open(over_b, encoding="utf-8") as f:
+            count_b = panel_count(f.read())
+        if count_a <= 10000 or count_b <= 10000:
+            errors.append(
+                f"fixture premise broken: {over_a} ({count_a}), {over_b} ({count_b}) <= 10000"
+            )
+        proc = run_with_panel(
+            env,
+            {"free": free},
+            {over_a: {"free": 1}, plain: {"free": 2}, over_b: {"free": 3}},
+            "free",
+        )
+        if proc.returncode != 1:
+            errors.append(f"multi over-cap free manifest exited {proc.returncode}, want 1")
+        if proc.stdout.strip():
+            errors.append("multi over-cap free manifest printed a manifest to stdout")
+        if (over_a not in proc.stderr or over_b not in proc.stderr
+                or str(count_a) not in proc.stderr or str(count_b) not in proc.stderr
+                or "10000" not in proc.stderr):
+            errors.append(
+                f"multi over-cap stderr should name {over_a}, {over_b}, {count_a}, "
+                f"{count_b} and 10000: {proc.stderr!r}"
+            )
+        if plain in proc.stderr:
+            errors.append(f"{plain} is under the cap but was named: {proc.stderr!r}")
+
+        # premium 20,000 cap: a source over 20,000 on a premium server is refused with 20000
+        over_prem = os.path.join(cap_dir, "over_prem.gohtml")
+        with open(over_prem, "w", encoding="utf-8") as f:
+            f.write("x" * 20001)
+        with open(over_prem, encoding="utf-8") as f:
+            prem_count = panel_count(f.read())
+        if prem_count <= 20000:
+            errors.append(
+                f"fixture premise broken: {over_prem} panel count {prem_count} <= 20000"
+            )
+        proc = run_with_panel(
+            env, {"prem": premium}, {over_prem: {"prem": 1}}, "prem",
+        )
+        if proc.returncode != 1:
+            errors.append(f"over-cap premium manifest exited {proc.returncode}, want 1")
+        if proc.stdout.strip():
+            errors.append("over-cap premium manifest printed a manifest to stdout")
+        if (over_prem not in proc.stderr or str(prem_count) not in proc.stderr
+                or "20000" not in proc.stderr):
+            errors.append(
+                f"over-cap premium stderr should name {over_prem}, {prem_count} and "
+                f"20000: {proc.stderr!r}"
+            )
+
+    # stale dist/free on a free server is refused before building the manifest
+    with tempfile.TemporaryDirectory(prefix="yagpdb-deploy-manifest-stale-") as stale_dir:
+        panel_path = os.path.join(stale_dir, "panel.json")
+        with open(panel_path, "w", encoding="utf-8") as f:
+            json.dump({"servers": {"free": free}, "commands": {plain: {"free": 1}}}, f)
+        spec = importlib.util.spec_from_file_location(
+            "deploy_manifest", "scripts/deploy-manifest.py"
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        real_run = mod.subprocess.run
+        orig_argv = sys.argv[:]
+        orig_env = os.environ.copy()
+        orig_stderr = sys.stderr
+        captured_err = io.StringIO()
+
+        def fake_run(args, *a, **kw):
+            if list(args[:2]) == ["go", "run"]:
+                return subprocess.CompletedProcess(
+                    args, returncode=1, stdout="", stderr="yagmin: stale\n"
+                )
+            return real_run(args, *a, **kw)
+
+        try:
+            mod.subprocess.run = fake_run
+            sys.argv = ["scripts/deploy-manifest.py", "free", "--panel", panel_path]
+            os.environ["DEPLOY_MANIFEST_SKIP_ORIGIN_CHECK"] = "1"
+            os.environ["DEPLOY_MANIFEST_SKIP_DIRTY_CHECK"] = "1"
+            sys.stderr = captured_err
+            rc = mod.main()
+        finally:
+            mod.subprocess.run = real_run
+            sys.argv = orig_argv
+            os.environ.clear()
+            os.environ.update(orig_env)
+            sys.stderr = orig_stderr
+
+        err_text = captured_err.getvalue()
+        if rc != 1 or "stale" not in err_text:
+            errors.append(
+                f"stale dist/free should exit 1 naming stale, got rc={rc}: {err_text!r}"
+            )
 
     # a server with no (or a bad) tier is refused
     proc = run_with_panel(
