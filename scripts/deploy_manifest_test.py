@@ -271,9 +271,9 @@ def check_free_tier(env):
             sys.stderr = orig_stderr
 
         err_text = captured_err.getvalue()
-        if rc != 1 or "stale" not in err_text:
+        if rc != 1 or "refusing: dist/free is stale" not in err_text:
             errors.append(
-                f"stale dist/free should exit 1 naming stale, got rc={rc}: {err_text!r}"
+                f"stale dist/free should exit 1 naming the refusal, got rc={rc}: {err_text!r}"
             )
 
     # a server with no (or a bad) tier is refused
