@@ -1,5 +1,5 @@
 #!/bin/bash
-# Lint all YAGPDB templates using the Python linter
+# Lint all YAGPDB templates in commands/ with a single Python linter invocation
 # Usage: ./scripts/lint-all.sh [--fix] [--verbose]
 
 set -euo pipefail
@@ -10,9 +10,6 @@ LINTER="$PROJECT_ROOT/tools/linter/yagpdb_lint.py"
 
 # Colors
 RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Options
@@ -57,49 +54,14 @@ if [[ ! -f "$LINTER" ]]; then
     exit 1
 fi
 
-echo -e "${BLUE}=== Linting All Templates ===${NC}"
-echo ""
-
-# Counters
-PASS=0
-FAIL=0
-TOTAL=0
-
-lint_template() {
-    local template="$1"
-    ((TOTAL++)) || true
-
-    local output
-    local exit_code=0
-    output=$(python3 "$LINTER" "$template" 2>&1) || exit_code=$?
-
-    if [[ $exit_code -eq 0 ]] && [[ -z "$output" || "$output" == *"OK"* || "$output" == *"pass"* ]]; then
-        echo -e "${GREEN}✓${NC} $template"
-        ((PASS++)) || true
-        if [[ "$VERBOSE" == "true" && -n "$output" ]]; then
-            echo "$output" | sed 's/^/  /'
-        fi
-    else
-        echo -e "${RED}✗${NC} $template"
-        ((FAIL++)) || true
-        if [[ -n "$output" ]]; then
-            echo "$output" | sed 's/^/  /'
-        fi
-    fi
-}
-
-# Lint every command (commands/<topic>/, both panel groups)
-echo -e "${BLUE}--- Commands ---${NC}"
-while IFS= read -r template; do
-    lint_template "$template"
-done < <(find "$PROJECT_ROOT/commands" -name '*.gohtml' | sort)
-
-echo ""
-
-# Summary
-echo -e "${BLUE}=== Summary ===${NC}"
-echo -e "Total: $TOTAL | ${GREEN}Passed: $PASS${NC} | ${RED}Failed: $FAIL${NC}"
-
-if [[ $FAIL -gt 0 ]]; then
-    exit 1
+ARGS=()
+if [[ "$VERBOSE" == "true" ]]; then
+    ARGS+=(-v)
 fi
+if [[ "$FIX" == "true" ]]; then
+    ARGS+=(--fix)
+fi
+
+exit_code=0
+python3 "$LINTER" --dir "$PROJECT_ROOT/commands" "${ARGS[@]}" || exit_code=$?
+exit $exit_code

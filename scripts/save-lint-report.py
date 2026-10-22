@@ -27,7 +27,7 @@ def main():
 
     try:
         result = subprocess.run(
-            [sys.executable, str(linter_path), "--dir", str(project_root)],
+            [sys.executable, str(linter_path), "--dir", "."],
             capture_output=True,
             text=True,
             cwd=str(project_root)
