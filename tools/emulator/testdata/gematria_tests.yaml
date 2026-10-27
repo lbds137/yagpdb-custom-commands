@@ -62,6 +62,88 @@ tests:
         - { embed_contains: "`X` - The Wheel of Fortune (3)" }
     snapshot: true
 
+  # Pack my box with five dozen liquor jugs: every Latin letter once; the eight letters in
+  # four value collisions (g/v→6, h/j→7, s/w→17, x/z→20) leave all 22 arcana drawn, and the
+  # half-deck cap (11) suppresses the fields entirely. Word values: 74 430 352 1017 720
+  # 599 429 897, total 4518 > 18 > 9
+  - name: "gematria: a full-alphabet pangram draws all 22 arcana, so the fields are suppressed"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "Pack my box with five dozen liquor jugs" }
+    assertions:
+      sent_messages:
+        - { embed_contains: "`[ 74 430 352 1017 720 599 429 897 ]` > `[ 11 7 10 9 9 23 15 24 ]` > `[ 2 7 1 9 9 5 6 6 ]`" }
+        - { embed_contains: "`4518` > `18` > `9`" }
+        - { embed_contains: "`[ 4 2 3 4 4 5 6 4 ]`" }
+        - { embed_contains: "`32`" }
+    snapshot: true # pins the absence of any Major Arcana field
+
+  # The tables past the Hebrew range are per-value, so each script's surplus letters land
+  # wherever their value says: Greek covers 500-800 (and the final sigma ς = 200 like σ),
+  # Arabic reaches the table's 1000 cap, runic stops at 600.
+  - name: "gematria: a Greek word exercises the 500-800 range and final sigma"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "φως" } # φ 500 + ω 800 + ς 200 = 1500 > 6
+    assertions:
+      sent_messages:
+        - { embed_contains: "`1500` > `6`" }
+        # first-appearance order: φ→XX, ω→XVII, ς→XIX; XVII splits the decks
+        - { embed_contains: "`XX` - Judgement" }
+        - { embed_contains: "`XIX` - The Sun" }
+    snapshot: true # pins the RWS Star vs Thoth Emperor split
+
+  - name: "gematria: Arabic ghayn reaches the 1000 cap and The Devil"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "غ" } # the only letter valued 1000; 1000 → index 15
+    assertions:
+      sent_messages:
+        - { embed_contains: "`1000` > `1`" }
+        - { embed_contains: "`16`" } # Letter Number: index 15, shown 1-based
+        - { embed_contains: "`XV` - The Devil" }
+    snapshot: true # pins the single unsuffixed "Major Arcana" field (XV is identical in both decks)
+
+  - name: "gematria: a runic word draws The Fool with numeral 0"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "ᚠᛟ" } # ᚠ 1 + ᛟ 600 = 601 > 7; 600 wraps to index 7
+    assertions:
+      sent_messages:
+        - { embed_contains: "`601` > `7`" }
+        - { embed_contains: "`0` - The Fool" } # arabic-numeral 0, not a Roman numeral
+        - { embed_contains: "`VII` - The Chariot" }
+    snapshot: true
+
+  # The tarot layer never sees the script — cards key off values, so a Hebrew word and a
+  # Latin word pool into shared counts: א and a both draw The Fool (2), ב and b The Magician (2)
+  - name: "gematria: Hebrew and Latin letters pool into shared card counts"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "אב abc" }
+    assertions:
+      sent_messages:
+        - { embed_contains: "`[ 3 6 ]`" }
+        - { embed_contains: "`9`" }
+        - { embed_contains: "`0` - The Fool (2)" }
+        - { embed_contains: "`I` - The Magician (2)" }
+        - { embed_contains: "`II` - The High Priestess" }
+    snapshot: true
+
+  # The diacritic-variant block is the biggest chunk of the values table; one accented
+  # letter pins that the variants resolve at all (a mangled key would read as an unknown
+  # character: no Letter Number, no cards)
+  - name: "gematria: a Greek diacritic variant resolves to its base value"
+    template: "../../../commands/gematria/gematria.gohtml"
+    context:
+      exec_data: { Description: "ά" } # ά = α = 1 → The Fool
+    assertions:
+      sent_messages:
+        - { embed_contains: "Letter Gematria" }
+        - { embed_contains: "`1`" }
+        - { embed_contains: "`0` - The Fool" }
+    snapshot: true
+
   # A caller answering a slash command's interaction passes Respond: embed_exec then
   # answers it (sendResponse). The interaction reaches gematria as the delayed shape
   # (exec_data with the stored interaction): the renderer is a None-trigger service.
