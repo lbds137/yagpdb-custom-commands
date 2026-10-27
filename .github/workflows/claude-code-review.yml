@@ -90,24 +90,30 @@ jobs:
       - name: Verify the review passed
         env:
           GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.repository.default_branch }}
+          SINCE: ${{ steps.review-start.outputs.ts }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          COMMENTS: repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments?per_page=100
         run: |
-          base="${{ github.event.repository.default_branch }}"
-          git fetch --quiet --depth=1 origin "$base"
+          git fetch --quiet --depth=1 origin "$BASE"
           if ! git diff --quiet FETCH_HEAD -- .github/workflows/claude-code-review.yml; then
             echo "::error::This PR changes the review workflow, so no review ran (the action skips itself). Merge it manually after reading it."
             exit 1
           fi
-          since="${{ steps.review-start.outputs.ts }}"
-          body=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments?per_page=100" \
-            --paginate \
-            --jq "[.[] | select(.user.login == \"claude[bot]\" and .created_at >= \"$since\")] | sort_by(.created_at) | .[] | .body" )
-          if [ -z "$body" ]; then
-            echo "::error::claude-review completed without posting a comment (no claude[bot] comment since $since). Re-run this job."
+          # One line per claude[bot] comment posted since the review started: its LAST non-empty
+          # line, where the prompt puts the verdict. A VERDICT quoted mid-comment (an @claude
+          # reply, a code block) never counts.
+          lasts=$(gh api "$COMMENTS" --paginate --slurp | jq -r '
+            [.[][] | select(.user.login == "claude[bot]" and .created_at >= env.SINCE)]
+            | sort_by(.created_at) | .[]
+            | .body | gsub("\r"; "") | split("\n") | map(select(test("\\S"))) | last // ""')
+          if [ -z "$lasts" ]; then
+            echo "::error::claude-review completed without posting a comment (no claude[bot] comment since $SINCE). Re-run this job."
             exit 1
           fi
           # Bold or backtick wrapping is stripped; only verdicts naming this commit count.
-          sha="${{ github.event.pull_request.head.sha }}"
-          verdict=$(printf '%s\n' "$body" | tr -d '*`\r' | grep -E "^VERDICT: (PASS|BLOCK) $sha[[:space:]]*\$" | tail -n1 | awk '{print $2}')
+          verdict=$(printf '%s\n' "$lasts" | tr -d '*`' | grep -E "^VERDICT: (PASS|BLOCK) $SHA[[:space:]]*\$" | tail -n1 | awk '{print $2}')
+          sha=$SHA
           case "$verdict" in
             PASS) echo "Review of $sha passed." ;;
             BLOCK) echo "::error::The review found critical, high or medium issues. Fix them and push; the new review decides."; exit 1 ;;
@@ -135,6 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
+      actions: read
       contents: write
       pull-requests: write
       checks: read
@@ -144,36 +151,48 @@ jobs:
       REPO: ${{ github.repository }}
       PR: ${{ github.event.pull_request.number }}
       SHA: ${{ github.event.pull_request.head.sha }}
+      RUN_ID: ${{ github.run_id }}
     steps:
       - name: Wait for the other checks
         run: |
-          # Only the latest run of each check counts: a run cancelled by a newer one
-          # on the same commit must not block the merge.
+          # Three views of the head commit, all of which must be settled and green:
+          #  - workflow runs, the latest per workflow other than this one. A run exists as soon
+          #    as its workflow is triggered, before any of its jobs, so a CI job that hasn't been
+          #    created yet still holds the merge; a red job anywhere makes its run red.
+          #  - check runs from every app (CodeQL, GitGuardian...), the latest per app and name,
+          #    so a check cancelled and redone on the same commit doesn't block.
+          #  - legacy commit statuses (with none, the combined state reads "pending").
+          # Every pull_request workflow is triggered by the same event, so their runs appear
+          # together; the 30 s head start and the rule that something besides the review must
+          # be listed keep a Dependabot PR (whose review is skipped at once) from merging on an
+          # empty list before they do. The rule counts any workflow, so a repo whose only other
+          # workflow is a trivial one still merges on it: CI coverage is the repo's job.
+          own=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq .workflow_id)
+          sleep 30
           for _ in $(seq 80); do
-            runs=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-              --jq '[.check_runs[] | select(.name != "automerge")] | group_by(.name) | map(max_by(.id))
-                    | .[] | "\(.status) \(.conclusion) \(.name)"')
-            # Legacy commit statuses too; with none, the combined state reads "pending".
+            wf=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --paginate --slurp | jq -r --argjson own "$own" '
+              [.[].workflow_runs[] | select(.workflow_id != $own)] | group_by(.workflow_id) | map(max_by(.id))
+              | .[] | "\(.status) \(.conclusion) workflow \(.name)"')
+            checks=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" --paginate --slurp | jq -r '
+              [.[].check_runs[] | select(.name != "automerge" and .name != "claude-review")]
+              | group_by([.app.id, .name]) | map(max_by(.id))
+              | .[] | "\(.status) \(.conclusion) check \(.name)"')
             status=$(gh api "repos/$REPO/commits/$SHA/status" --jq 'if .total_count == 0 then "none" else .state end')
-            if [ -n "$runs" ] && ! grep -qv '^completed ' <<< "$runs" && [ "$status" != pending ]; then
-              bad=$(grep -vE '^completed (success|skipped|neutral) ' <<< "$runs" || true)
+            all=$(printf '%s\n%s\n' "$wf" "$checks" | grep . || true)
+            if [ -n "$all" ] && ! grep -qv '^completed ' <<< "$all" && [ "$status" != pending ]; then
+              bad=$(grep -vE '^completed (success|skipped|neutral) ' <<< "$all" || true)
               case "$status" in failure|error) bad="$bad${bad:+$'\n'}commit status: $status" ;; esac
               if [ -n "$bad" ]; then
-                echo "::error::Not merging; these checks did not pass:"; echo "$bad"; exit 1
+                echo "::error::Not merging; these did not pass:"; echo "$bad"; exit 1
               fi
-              echo "All checks passed:"; echo "$runs"; exit 0
+              echo "All checks passed:"; echo "$all"; exit 0
             fi
             sleep 30
           done
-          echo "::error::Checks still running after 40 minutes; merge by hand or re-run this job."
+          echo "::error::Checks still running (or none besides the review) after 40 minutes; merge by hand or re-run this job."
           exit 1
       - name: Merge
         # --match-head-commit refuses if anything was pushed after the reviewed commit.
-        # The branch is deleted through the API: this job has no checkout for gh's
-        # --delete-branch to work in.
-        env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: |
-          gh pr merge "$PR" --repo "$REPO" --rebase --match-head-commit "$SHA"
-          gh api -X DELETE "repos/$REPO/git/refs/heads/$HEAD_REF" ||
-            echo "::warning::Merged, but deleting branch $HEAD_REF failed."
+        # Branch cleanup is the repo's "delete branch on merge" setting (the fleet repo
+        # standard), which also spares protected branches and bases of other open PRs.
+        run: gh pr merge "$PR" --repo "$REPO" --rebase --match-head-commit "$SHA"
