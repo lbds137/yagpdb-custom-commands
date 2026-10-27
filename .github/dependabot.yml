@@ -19,3 +19,17 @@ updates:
     commit-message:
       prefix: 'chore(ci)'
       include: 'scope'
+  # Go modules of the emulator (tools/emulator/go.mod). Same cooldown reason as above.
+  - package-ecosystem: 'gomod'
+    directory: '/tools/emulator'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'America/New_York'
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: 'chore(deps)'
+      include: 'scope'
