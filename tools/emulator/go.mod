@@ -1,12 +1,12 @@
 module github.com/lbds137/yagpdb-custom-commands/tools/emulator
 
-go 1.24.0
+go 1.26.0
 
 require gopkg.in/yaml.v3 v3.0.1
 
 require (
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/text v0.31.0
+	golang.org/x/text v0.43.0
 )
 
 require (
