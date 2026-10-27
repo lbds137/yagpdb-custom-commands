@@ -14,8 +14,12 @@ updates:
     # hijacked release is usually caught. Security updates ignore the cooldown.
     cooldown:
       default-days: 3
-    reviewers:
-      - 'lbds137'
+    # One PR for every action bump: separate PRs that rewrite the same workflow file collide,
+    # and the workflow token can't merge the rebased one (it lacks the workflows permission).
+    groups:
+      github-actions:
+        patterns:
+          - '*'
     commit-message:
       prefix: 'chore(ci)'
       include: 'scope'

@@ -193,6 +193,29 @@ jobs:
           exit 1
       - name: Merge
         # --match-head-commit refuses if anything was pushed after the reviewed commit.
-        # Branch cleanup is the repo's "delete branch on merge" setting (the fleet repo
-        # standard), which also spares protected branches and bases of other open PRs.
         run: gh pr merge "$PR" --repo "$REPO" --rebase --match-head-commit "$SHA"
+      # The repo's "delete branch on merge" setting cleans up after merges made with a user
+      # token, but a merge made with this workflow's token leaves the head branch behind.
+      # Skipped for a fork's branch (not this repo's to delete); the step itself spares the
+      # default branch and any branch another open PR is based on, and a refused delete (a
+      # protected branch) only warns, since the merge already happened.
+      - name: Delete the merged branch
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "$HEAD_REF" = "$DEFAULT_BRANCH" ]; then echo "Head is the default branch; kept."; exit 0; fi
+          # In the API path a "#" starts a fragment and "%" an escape, so the call could name
+          # another branch: leave such a name for a hand delete.
+          case "$HEAD_REF" in *[#%]*) echo "::warning::$HEAD_REF has # or % in its name; delete it by hand."; exit 0 ;; esac
+          for side in base head; do
+            n=$(gh pr list --repo "$REPO" --"$side" "$HEAD_REF" --state open --json number --jq length) \
+              || { echo "::warning::Could not list open PRs with $side $HEAD_REF; kept."; exit 0; }
+            if [ "$n" != 0 ]; then echo "$n other open PR(s) use $HEAD_REF as their $side; kept."; exit 0; fi
+          done
+          if gh api -X DELETE "repos/$REPO/git/refs/heads/$HEAD_REF" --silent; then
+            echo "Deleted $HEAD_REF."
+          else
+            echo "::warning::Could not delete $HEAD_REF (already gone, or protected); delete it by hand if it remains."
+          fi
