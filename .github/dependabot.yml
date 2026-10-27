@@ -10,6 +10,10 @@ updates:
       time: '09:00'
       timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    # These PRs merge on green checks with no review, so wait out the days in which a
+    # hijacked release is usually caught. Security updates ignore the cooldown.
+    cooldown:
+      default-days: 3
     reviewers:
       - 'lbds137'
     commit-message:
