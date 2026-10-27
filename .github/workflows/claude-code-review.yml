@@ -1,11 +1,12 @@
 name: Claude Code Review
-
 # Template from ~/Documents/dev-docs/templates/claude-review (adapted from Tzurot's).
+
 # Needs the CLAUDE_CODE_OAUTH_TOKEN repo secret and the Claude GitHub App on the repo.
 # The action skips itself on the PR that adds or changes this file (it validates
 # against the default branch's copy), so that PR gets no review and a red check:
 # it is merged by hand. The automerge job below merges the owner's non-draft PRs
-# once the review passes and every other check is green.
+# once the review passes and every other check is green, and Dependabot's PRs
+# (which get no review) once every other check is green.
 
 on:
   pull_request:
@@ -31,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
 
@@ -43,7 +44,7 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@v1.0.251
+        uses: anthropics/claude-code-action@16f9f71ab9c490faf367f94dd294897edc25be33 # v1.0.261
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -69,6 +70,18 @@ jobs:
             Label every finding's severity as critical, high, medium or low. The LAST line of your comment must be exactly `VERDICT: BLOCK <HEAD SHA>` if any finding is critical, high or medium, otherwise exactly `VERDICT: PASS <HEAD SHA>`, with the full 40-character HEAD SHA given above and no other formatting. This line gates auto-merge: BLOCK stops the merge until a new push gets a passing review; low findings don't block.
 
           claude_args: '--model claude-opus-5-5 --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+
+      # With show_full_output off, a failed run logs only is_error:true. The result text says
+      # why (a usage limit, an auth error), so a failure prints it, capped at 500 characters.
+      - name: Show why the review failed
+        if: always() && steps.claude-review.outcome == 'failure'
+        env:
+          EXEC_FILE: ${{ steps.claude-review.outputs.execution_file }}
+        run: |
+          f=${EXEC_FILE:-$RUNNER_TEMP/claude-execution-output.json}
+          if [ ! -s "$f" ]; then echo "No execution file at $f."; exit 0; fi
+          jq -r '[.[]? | select(.type == "result")] | last | .result // "no result text" | tostring | .[0:500]' "$f" \
+            || echo "The execution file is not the expected JSON."
 
       # This job is the check auto-merge waits on, so it passes only on a posted review
       # whose verdict names this run's head commit: VERDICT: PASS <sha>. The action can
@@ -105,11 +118,20 @@ jobs:
   # finished green. Done in-workflow rather than with GitHub's auto-merge, which
   # needs required checks, and those need GitHub Pro on private repos. A merge made
   # with GITHUB_TOKEN triggers no push workflows on the default branch.
+  #
+  # A Dependabot PR skips the review, so this job merges it on green checks alone (its action
+  # pin bumps to this file included: Dependabot only rewrites `uses:` versions). It also
+  # requires Dependabot to have triggered the run (github.actor keeps the original actor on a
+  # re-run): if anyone else pushes to its branch, the PR waits for a hand merge. !cancelled()
+  # replaces the implicit success() that would skip this job behind a skipped review.
   automerge:
     needs: claude-review
     if: >-
-      github.event.pull_request.user.login == github.repository_owner &&
-      !github.event.pull_request.draft
+      github.event.pull_request.draft == false && !cancelled() && (
+        (github.event.pull_request.user.login == github.repository_owner &&
+         needs.claude-review.result == 'success') ||
+        (github.event.pull_request.user.login == 'dependabot[bot]' &&
+         github.actor == 'dependabot[bot]' && needs.claude-review.result == 'skipped'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
