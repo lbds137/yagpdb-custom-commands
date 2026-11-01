@@ -11,14 +11,15 @@
   never a mention: a bot-created thread's messages don't notify until a human has
   spoken in it (Discord's human-speech gate, probed 2026-10-02), so the role ping, if
   the form has one, goes to the run channel as a normal message — one that always
-  notifies. Inline mode: a plain message, mention-first, because a normal channel's
-  sends do notify. The date is local time by the Global dict's `Timezone Offset` in
-  hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
+  notifies, previewing the title (without the date) above the link, since the link
+  alone doesn't say what the prompt is. Inline mode: a plain message, mention-first,
+  because a normal channel's sends do notify. The date is local time by the Global
+  dict's `Timezone Offset` in hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
   is the public artifact. Each post's prompt message is pinned where it landed, in its
   own try, so a refused pin (full pin list, missing permission) never fails the post and
   only adds "(couldn't pin it ...)" to the ack.
 */ -}}
-{{if .IsModal}}{{$v := ((dbGet 0 "Roles")).Value}}{{$w := toInt ($v.Get "Staff")}}{{if not (hasRoleID $w)}}{{sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true)}}{{else}}{{$g := split .CustomID ":"}}{{if ne (len $g) 5}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$h := index $g 2}}{{$f := toInt (index $g 3)}}{{$c := toInt (index $g 4)}}{{if or (and (ne $h "t") (ne $h "i")) (not (reFind "\\A\\d+\\z" (index $g 3))) (not (reFind "\\A\\d+\\z" (index $g 4)))}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$p := ""}}{{if eq $h "t"}}{{$p = .ModalValues.prompt_title.value}}{{end}}{{$i := .ModalValues.prompt_body.value}}{{$m := $i}}{{if ne $c 0}}{{$m = joinStr " " (mentionRoleID $c) $i}}{{end}}{{$q := false}}{{if eq $h "t"}}{{$n := ""}}{{try}}{{$n = getChannelOrThread $f}}{{catch}}{{end}}{{if $n}}{{$q = eq $n.Type 15}}{{end}}{{end}}{{$r := len (toRune $i)}}{{$s := len (toRune $m)}}{{if gt $r 2000}}{{sendResponse nil (complexMessage "content" (print "⚠️ The prompt is " $r " characters — the limit is 2000.") "ephemeral" true)}}{{else}}{{if and (gt $s 2000) (eq $h "i")}}{{sendResponse nil (complexMessage "content" (print "⚠️ The role ping puts the prompt at " $s " characters — the limit is 2000. Shorten the prompt or drop the role.") "ephemeral" true)}}{{else}}{{$t := -4}}{{$o := ((dbGet 0 "Global")).Value}}{{if $o}}{{if $o.HasKey "Timezone Offset"}}{{$t = toInt ($o.Get "Timezone Offset")}}{{end}}{{end}}{{$x := currentTime.Add (toInt64 (mult $t 3600000000000))}}{{$y := $x.Format "2006-01-02"}}{{if eq $h "t"}}{{$j := print $y ": " $p}}{{$u := len (toRune $j)}}{{if gt $u 100}}{{sendResponse nil (complexMessage "content" (print "⚠️ The thread title is " $u " characters — the limit is 100.") "ephemeral" true)}}{{else}}{{if $q}}{{$b := ""}}{{try}}{{$b = createForumPost $f $j (complexMessage "content" $i)}}{{catch}}{{end}}{{if not $b}}{{sendResponse nil (complexMessage "content" "⚠️ Couldn't create the post." "ephemeral" true)}}{{else}}{{$k := print "https://discord.com/channels/" .Guild.ID "/" $b.ID}}{{$e := true}}{{try}}{{pinMessage $b.ID $b.ID}}
+{{if .IsModal}}{{$v := ((dbGet 0 "Roles")).Value}}{{$w := toInt ($v.Get "Staff")}}{{if not (hasRoleID $w)}}{{sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true)}}{{else}}{{$g := split .CustomID ":"}}{{if ne (len $g) 5}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$h := index $g 2}}{{$f := toInt (index $g 3)}}{{$c := toInt (index $g 4)}}{{if or (and (ne $h "t") (ne $h "i")) (not (reFind "\\A\\d+\\z" (index $g 3))) (not (reFind "\\A\\d+\\z" (index $g 4)))}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$m := ""}}{{if eq $h "t"}}{{$m = .ModalValues.prompt_title.value}}{{end}}{{$i := .ModalValues.prompt_body.value}}{{$n := $i}}{{if ne $c 0}}{{$n = joinStr " " (mentionRoleID $c) $i}}{{end}}{{$q := false}}{{if eq $h "t"}}{{$o := ""}}{{try}}{{$o = getChannelOrThread $f}}{{catch}}{{end}}{{if $o}}{{$q = eq $o.Type 15}}{{end}}{{end}}{{$r := len (toRune $i)}}{{$s := len (toRune $n)}}{{if gt $r 2000}}{{sendResponse nil (complexMessage "content" (print "⚠️ The prompt is " $r " characters — the limit is 2000.") "ephemeral" true)}}{{else}}{{if and (gt $s 2000) (eq $h "i")}}{{sendResponse nil (complexMessage "content" (print "⚠️ The role ping puts the prompt at " $s " characters — the limit is 2000. Shorten the prompt or drop the role.") "ephemeral" true)}}{{else}}{{$t := -4}}{{$p := ((dbGet 0 "Global")).Value}}{{if $p}}{{if $p.HasKey "Timezone Offset"}}{{$t = toInt ($p.Get "Timezone Offset")}}{{end}}{{end}}{{$x := currentTime.Add (toInt64 (mult $t 3600000000000))}}{{$y := $x.Format "2006-01-02"}}{{if eq $h "t"}}{{$j := print $y ": " $m}}{{$u := len (toRune $j)}}{{if gt $u 100}}{{sendResponse nil (complexMessage "content" (print "⚠️ The thread title is " $u " characters — the limit is 100.") "ephemeral" true)}}{{else}}{{if $q}}{{$b := ""}}{{try}}{{$b = createForumPost $f $j (complexMessage "content" $i)}}{{catch}}{{end}}{{if not $b}}{{sendResponse nil (complexMessage "content" "⚠️ Couldn't create the post." "ephemeral" true)}}{{else}}{{$k := print "https://discord.com/channels/" .Guild.ID "/" $b.ID}}{{$e := true}}{{try}}{{pinMessage $b.ID $b.ID}}
 									{{catch}}
 										
 										{{$e = false}}
@@ -27,7 +28,7 @@
 									{{if ne $c 0}}
 										{{try}}
 											
-											{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": " $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
+											{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": **" $m "**\n" $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
 										{{catch}}
 											
 											{{$l = false}}
@@ -70,7 +71,7 @@
 										{{if ne $c 0}}
 											{{try}}
 												
-												{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": " $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
+												{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": **" $m "**\n" $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
 											{{catch}}
 												
 												{{$l = false}}
@@ -94,7 +95,7 @@
 						{{try}}
 							{{$d := 0}}
 							{{if ne $c 0}}
-								{{$d = sendMessageRetID $f (complexMessage "content" $m "allowed_mentions" (sdict "parse" (cslice "users" "roles")))}}
+								{{$d = sendMessageRetID $f (complexMessage "content" $n "allowed_mentions" (sdict "parse" (cslice "users" "roles")))}}
 							{{else}}
 								{{$d = sendMessageRetID $f (complexMessage "content" $i)}}
 							{{end}}

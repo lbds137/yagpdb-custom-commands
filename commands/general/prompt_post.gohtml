@@ -11,9 +11,10 @@
   never a mention: a bot-created thread's messages don't notify until a human has
   spoken in it (Discord's human-speech gate, probed 2026-10-02), so the role ping, if
   the form has one, goes to the run channel as a normal message — one that always
-  notifies. Inline mode: a plain message, mention-first, because a normal channel's
-  sends do notify. The date is local time by the Global dict's `Timezone Offset` in
-  hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
+  notifies, previewing the title (without the date) above the link, since the link
+  alone doesn't say what the prompt is. Inline mode: a plain message, mention-first,
+  because a normal channel's sends do notify. The date is local time by the Global
+  dict's `Timezone Offset` in hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
   is the public artifact. Each post's prompt message is pinned where it landed, in its
   own try, so a refused pin (full pin list, missing permission) never fails the post and
   only adds "(couldn't pin it ...)" to the ack.
@@ -136,7 +137,7 @@
 												template output becomes a followup message */}}
 											{{ $pingID := sendMessageRetID nil (complexMessage
 												"content" (print "🔔 New prompt for "
-												(mentionRoleID $roleID) ": " $link)
+												(mentionRoleID $roleID) ": **" $titleInput "**\n" $link)
 												"allowed_mentions" (sdict "roles" (cslice $roleID))) }}
 										{{ catch }}
 											{{/* the post landed; only the ping failed */}}
@@ -195,7 +196,7 @@
 													template output becomes a followup message */}}
 												{{ $pingID := sendMessageRetID nil (complexMessage
 													"content" (print "🔔 New prompt for "
-													(mentionRoleID $roleID) ": " $link)
+													(mentionRoleID $roleID) ": **" $titleInput "**\n" $link)
 													"allowed_mentions" (sdict "roles" (cslice $roleID))) }}
 											{{ catch }}
 												{{/* the prompt landed; only the ping failed */}}

@@ -91,8 +91,9 @@ tests:
         - channel_id: 1200000000000000000
           content_equals: "hello"
           pings: {}
+        # the ping previews the bare title (no date prefix), the link on its own line
         - channel_id: 123456789012345678
-          content_contains: "🔔 New prompt for <@&222222222222222222>"
+          content_equals: "🔔 New prompt for <@&222222222222222222>: **A Cool Topic**\nhttps://discord.com/channels/462036216909398026/1200000000000000000"
           pings: { roles: [222222222222222222] }
         - channel_id: 123456789012345678
           nth: 2
@@ -124,7 +125,7 @@ tests:
           content_equals: "hello"
           pings: {}
         - channel_id: 123456789012345678
-          content_contains: "🔔 New prompt for <@&222222222222222222>"
+          content_equals: "🔔 New prompt for <@&222222222222222222>: **A Text Topic**\nhttps://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001"
           pings: { roles: [222222222222222222] }
         - channel_id: 123456789012345678
           nth: 2
@@ -134,6 +135,41 @@ tests:
         - { kind: message, ephemeral: true,
             content_contains:
               "✅ Created 2026-01-01: A Text Topic: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001" }
+
+  # the title is staff text inside a message that pings: only the form's role may fire
+  - name: "prompt_post: mentions typed in the title render in the forum ping but never fire"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields: { prompt_title: "<@&111111111111111111> <@555555555555555555> @everyone", prompt_body: "hello" }
+    assertions:
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "hello"
+          pings: {}
+        - channel_id: 123456789012345678
+          content_contains: "**<@&111111111111111111> <@555555555555555555> @everyone**"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: mentions typed in the title render in the thread ping but never fire"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:222222222222222222"
+        fields: { prompt_title: "<@&111111111111111111> <@555555555555555555> @everyone", prompt_body: "hello" }
+    assertions:
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "hello"
+          pings: {}
+        - channel_id: 123456789012345678
+          content_contains: "**<@&111111111111111111> <@555555555555555555> @everyone**"
+          pings: { roles: [222222222222222222] }
 
   - name: "prompt_post: inline mode sends to the target channel and links the message"
     template: "../../../commands/general/prompt_post.gohtml"
