@@ -91,9 +91,9 @@ tests:
         - channel_id: 1200000000000000000
           content_equals: "hello"
           pings: {}
-        # the ping previews the bare title (no date prefix), the link on its own line
+        # the ping links the post, with the body excerpt quoted below it
         - channel_id: 123456789012345678
-          content_equals: "🔔 New prompt for <@&222222222222222222>: **A Cool Topic**\nhttps://discord.com/channels/462036216909398026/1200000000000000000"
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000\n>>> hello"
           pings: { roles: [222222222222222222] }
         - channel_id: 123456789012345678
           nth: 2
@@ -125,7 +125,7 @@ tests:
           content_equals: "hello"
           pings: {}
         - channel_id: 123456789012345678
-          content_equals: "🔔 New prompt for <@&222222222222222222>: **A Text Topic**\nhttps://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001"
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001\n>>> hello"
           pings: { roles: [222222222222222222] }
         - channel_id: 123456789012345678
           nth: 2
@@ -136,39 +136,150 @@ tests:
             content_contains:
               "✅ Created 2026-01-01: A Text Topic: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001" }
 
-  # the title is staff text inside a message that pings: only the form's role may fire
-  - name: "prompt_post: mentions typed in the title render in the forum ping but never fire"
+  # the body is staff text inside a message that pings: only the form's role may fire
+  - name: "prompt_post: mentions typed in the body render in the forum ping but never fire"
     template: "../../../commands/general/prompt_post.gohtml"
     context:
       user: { roles: [111111111111111111] }
       interaction:
         type: modal
         custom_id: "prompt:post:t:333333333333333333:222222222222222222"
-        fields: { prompt_title: "<@&111111111111111111> <@555555555555555555> @everyone", prompt_body: "hello" }
+        fields: { prompt_title: "A Cool Topic", prompt_body: "<@&111111111111111111> <@555555555555555555> @everyone" }
     assertions:
       sent_messages:
         - channel_id: 1200000000000000000
-          content_equals: "hello"
+          content_equals: "<@&111111111111111111> <@555555555555555555> @everyone"
           pings: {}
         - channel_id: 123456789012345678
-          content_contains: "**<@&111111111111111111> <@555555555555555555> @everyone**"
+          content_contains: "<@&111111111111111111> <@555555555555555555> @everyone"
           pings: { roles: [222222222222222222] }
 
-  - name: "prompt_post: mentions typed in the title render in the thread ping but never fire"
+  - name: "prompt_post: mentions typed in the body render in the thread ping but never fire"
     template: "../../../commands/general/prompt_post.gohtml"
     context:
       user: { roles: [111111111111111111] }
       interaction:
         type: modal
         custom_id: "prompt:post:t:123456789012345678:222222222222222222"
-        fields: { prompt_title: "<@&111111111111111111> <@555555555555555555> @everyone", prompt_body: "hello" }
+        fields: { prompt_title: "A Text Topic", prompt_body: "<@&111111111111111111> <@555555555555555555> @everyone" }
     assertions:
       sent_messages:
         - channel_id: 1200000000000000000
-          content_equals: "hello"
+          content_equals: "<@&111111111111111111> <@555555555555555555> @everyone"
+          pings: { users: [555555555555555555] }
+        - channel_id: 123456789012345678
+          content_contains: "<@&111111111111111111> <@555555555555555555> @everyone"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: excerpt A, forum ping cuts before a word straddling character 300"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields:
+          prompt_title: "Excerpt A"
+          prompt_body: "abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd wordwordword"
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000\n>>> abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd…"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: excerpt B, thread ping keeps a word ending at character 300"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:222222222222222222"
+        fields:
+          prompt_title: "Excerpt B"
+          prompt_body: "abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd wxyzv next"
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001\n>>> abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd wxyzv…"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: excerpt C, forum ping keeps a 300-character body whole without ellipsis"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields:
+          prompt_title: "Excerpt C"
+          prompt_body: "abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd wxyzv"
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000\n>>> abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd abcd wxyzv"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: excerpt D, thread ping hard-cuts a 396-rune whitespace-free body at 300 runes"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:123456789012345678:222222222222222222"
+        fields:
+          prompt_title: "Excerpt D"
+          prompt_body: "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא"
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000/1100000000000000001\n>>> אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא…"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: excerpt E, forum ping keeps line breaks in a short multi-line body"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields: { prompt_title: "Excerpt E", prompt_body: "line one\nline two" }
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000\n>>> line one\nline two"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: excerpt F, forum ping trims outer whitespace while the post keeps it"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields: { prompt_title: "Excerpt F", prompt_body: "  hello  " }
+    assertions:
+      sent_messages:
+        - channel_id: 1200000000000000000
+          content_equals: "  hello  "
           pings: {}
         - channel_id: 123456789012345678
-          content_contains: "**<@&111111111111111111> <@555555555555555555> @everyone**"
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000\n>>> hello"
+          pings: { roles: [222222222222222222] }
+
+  - name: "prompt_post: excerpt G, forum ping cut crosses line breaks and keeps them"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:222222222222222222"
+        fields:
+          prompt_title: "Excerpt G"
+          prompt_body: "abcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\n"
+    assertions:
+      sent_messages:
+        - channel_id: 123456789012345678
+          content_equals: "🔔 New prompt for <@&222222222222222222>: https://discord.com/channels/462036216909398026/1200000000000000000\n>>> abcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd…"
           pings: { roles: [222222222222222222] }
 
   - name: "prompt_post: inline mode sends to the target channel and links the message"

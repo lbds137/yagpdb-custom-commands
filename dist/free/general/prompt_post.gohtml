@@ -11,31 +11,31 @@
   never a mention: a bot-created thread's messages don't notify until a human has
   spoken in it (Discord's human-speech gate, probed 2026-10-02), so the role ping, if
   the form has one, goes to the run channel as a normal message — one that always
-  notifies, previewing the title (without the date) above the link, since the link
-  alone doesn't say what the prompt is. Inline mode: a plain message, mention-first,
-  because a normal channel's sends do notify. The date is local time by the Global
-  dict's `Timezone Offset` in hours (default -4 = ET). Everything the staff member sees is ephemeral; the post
-  is the public artifact. Each post's prompt message is pinned where it landed, in its
-  own try, so a refused pin (full pin list, missing permission) never fails the post and
-  only adds "(couldn't pin it ...)" to the ack.
+  notifies, carrying the link, whose thread name is the title, above a body excerpt of
+  about 300 characters. Inline mode: a plain message, mention-first, because a normal
+  channel's sends do notify. The date is local time by the Global dict's
+  `Timezone Offset` in hours (default -4 = ET). Everything the staff member sees is
+  ephemeral; the post is the public artifact. Each post's prompt message is pinned where
+  it landed, in its own try, so a refused pin (full pin list, missing permission) never
+  fails the post and only adds "(couldn't pin it ...)" to the ack.
 */ -}}
-{{if .IsModal}}{{$v := ((dbGet 0 "Roles")).Value}}{{$w := toInt ($v.Get "Staff")}}{{if not (hasRoleID $w)}}{{sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true)}}{{else}}{{$g := split .CustomID ":"}}{{if ne (len $g) 5}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$h := index $g 2}}{{$f := toInt (index $g 3)}}{{$c := toInt (index $g 4)}}{{if or (and (ne $h "t") (ne $h "i")) (not (reFind "\\A\\d+\\z" (index $g 3))) (not (reFind "\\A\\d+\\z" (index $g 4)))}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$m := ""}}{{if eq $h "t"}}{{$m = .ModalValues.prompt_title.value}}{{end}}{{$i := .ModalValues.prompt_body.value}}{{$n := $i}}{{if ne $c 0}}{{$n = joinStr " " (mentionRoleID $c) $i}}{{end}}{{$q := false}}{{if eq $h "t"}}{{$o := ""}}{{try}}{{$o = getChannelOrThread $f}}{{catch}}{{end}}{{if $o}}{{$q = eq $o.Type 15}}{{end}}{{end}}{{$r := len (toRune $i)}}{{$s := len (toRune $n)}}{{if gt $r 2000}}{{sendResponse nil (complexMessage "content" (print "⚠️ The prompt is " $r " characters — the limit is 2000.") "ephemeral" true)}}{{else}}{{if and (gt $s 2000) (eq $h "i")}}{{sendResponse nil (complexMessage "content" (print "⚠️ The role ping puts the prompt at " $s " characters — the limit is 2000. Shorten the prompt or drop the role.") "ephemeral" true)}}{{else}}{{$t := -4}}{{$p := ((dbGet 0 "Global")).Value}}{{if $p}}{{if $p.HasKey "Timezone Offset"}}{{$t = toInt ($p.Get "Timezone Offset")}}{{end}}{{end}}{{$x := currentTime.Add (toInt64 (mult $t 3600000000000))}}{{$y := $x.Format "2006-01-02"}}{{if eq $h "t"}}{{$j := print $y ": " $m}}{{$u := len (toRune $j)}}{{if gt $u 100}}{{sendResponse nil (complexMessage "content" (print "⚠️ The thread title is " $u " characters — the limit is 100.") "ephemeral" true)}}{{else}}{{if $q}}{{$b := ""}}{{try}}{{$b = createForumPost $f $j (complexMessage "content" $i)}}{{catch}}{{end}}{{if not $b}}{{sendResponse nil (complexMessage "content" "⚠️ Couldn't create the post." "ephemeral" true)}}{{else}}{{$k := print "https://discord.com/channels/" .Guild.ID "/" $b.ID}}{{$e := true}}{{try}}{{pinMessage $b.ID $b.ID}}
+{{if .IsModal}}{{$x := ((dbGet 0 "Roles")).Value}}{{$y := toInt ($x.Get "Staff")}}{{if not (hasRoleID $y)}}{{sendResponse nil (complexMessage "content" "⚠️ Staff only." "ephemeral" true)}}{{else}}{{$h := split .CustomID ":"}}{{if ne (len $h) 5}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$i := index $h 2}}{{$f := toInt (index $h 3)}}{{$c := toInt (index $h 4)}}{{if or (and (ne $i "t") (ne $i "i")) (not (reFind "\\A\\d+\\z" (index $h 3))) (not (reFind "\\A\\d+\\z" (index $h 4)))}}{{sendResponse nil (complexMessage "content" "⚠️ Malformed prompt form — run /prompt again." "ephemeral" true)}}{{else}}{{$r := ""}}{{if eq $i "t"}}{{$r = .ModalValues.prompt_title.value}}{{end}}{{$g := .ModalValues.prompt_body.value}}{{$n := $g}}{{if ne $c 0}}{{$n = joinStr " " (mentionRoleID $c) $g}}{{end}}{{$s := false}}{{if eq $i "t"}}{{$o := ""}}{{try}}{{$o = getChannelOrThread $f}}{{catch}}{{end}}{{if $o}}{{$s = eq $o.Type 15}}{{end}}{{end}}{{$t := len (toRune $g)}}{{$u := len (toRune $n)}}{{if gt $t 2000}}{{sendResponse nil (complexMessage "content" (print "⚠️ The prompt is " $t " characters — the limit is 2000.") "ephemeral" true)}}{{else}}{{if and (gt $u 2000) (eq $i "i")}}{{sendResponse nil (complexMessage "content" (print "⚠️ The role ping puts the prompt at " $u " characters — the limit is 2000. Shorten the prompt or drop the role.") "ephemeral" true)}}{{else}}{{$v := -4}}{{$p := ((dbGet 0 "Global")).Value}}{{if $p}}{{if $p.HasKey "Timezone Offset"}}{{$v = toInt ($p.Get "Timezone Offset")}}{{end}}{{end}}{{$z := currentTime.Add (toInt64 (mult $v 3600000000000))}}{{$A := $z.Format "2006-01-02"}}{{if eq $i "t"}}{{$j := print $A ": " $r}}{{$w := len (toRune $j)}}{{if gt $w 100}}{{sendResponse nil (complexMessage "content" (print "⚠️ The thread title is " $w " characters — the limit is 100.") "ephemeral" true)}}{{else}}{{$k := trimSpace $g}}{{if gt (len (toRune $k)) 300}}{{$q := reFind "(?s)\\A.{1,300}\\s" $k}}{{if not $q}}{{$q = reFind "(?s)\\A.{300}" $k}}{{end}}{{$k = print (trimSpace $q) "…"}}{{end}}{{if $s}}{{$b := ""}}{{try}}{{$b = createForumPost $f $j (complexMessage "content" $g)}}{{catch}}{{end}}{{if not $b}}{{sendResponse nil (complexMessage "content" "⚠️ Couldn't create the post." "ephemeral" true)}}{{else}}{{$l := print "https://discord.com/channels/" .Guild.ID "/" $b.ID}}{{$e := true}}{{try}}{{pinMessage $b.ID $b.ID}}
 									{{catch}}
 										
 										{{$e = false}}
 									{{end}}
-									{{$l := true}}
+									{{$m := true}}
 									{{if ne $c 0}}
 										{{try}}
 											
-											{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": **" $m "**\n" $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
+											{{$B := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": " $l "\n>>> " $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
 										{{catch}}
 											
-											{{$l = false}}
+											{{$m = false}}
 										{{end}}
 									{{end}}
-									{{$a := print "✅ Posted " $j ": " $k}}
-									{{if not $l}}
+									{{$a := print "✅ Posted " $j ": " $l}}
+									{{if not $m}}
 										{{$a = print $a " (couldn't send the ping)"}}
 									{{end}}
 									{{if not $e}}
@@ -55,11 +55,11 @@
 								{{else}}
 									{{$d := 0}}
 									{{try}}
-										{{$d = sendMessageRetID $b.ID (complexMessage "content" $i)}}
+										{{$d = sendMessageRetID $b.ID (complexMessage "content" $g)}}
 									{{catch}}
 									{{end}}
 									{{if $d}}
-										{{$k := print "https://discord.com/channels/" .Guild.ID "/" $b.ID "/" $d}}
+										{{$l := print "https://discord.com/channels/" .Guild.ID "/" $b.ID "/" $d}}
 										{{$e := true}}
 										{{try}}
 											{{pinMessage $b.ID $d}}
@@ -67,18 +67,18 @@
 											
 											{{$e = false}}
 										{{end}}
-										{{$l := true}}
+										{{$m := true}}
 										{{if ne $c 0}}
 											{{try}}
 												
-												{{$z := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": **" $m "**\n" $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
+												{{$B := sendMessageRetID nil (complexMessage "content" (print "🔔 New prompt for " (mentionRoleID $c) ": " $l "\n>>> " $k) "allowed_mentions" (sdict "roles" (cslice $c)))}}
 											{{catch}}
 												
-												{{$l = false}}
+												{{$m = false}}
 											{{end}}
 										{{end}}
-										{{$a := print "✅ Created " $j ": " $k}}
-										{{if not $l}}
+										{{$a := print "✅ Created " $j ": " $l}}
+										{{if not $m}}
 											{{$a = print $a " (couldn't send the ping)"}}
 										{{end}}
 										{{if not $e}}
@@ -97,7 +97,7 @@
 							{{if ne $c 0}}
 								{{$d = sendMessageRetID $f (complexMessage "content" $n "allowed_mentions" (sdict "parse" (cslice "users" "roles")))}}
 							{{else}}
-								{{$d = sendMessageRetID $f (complexMessage "content" $i)}}
+								{{$d = sendMessageRetID $f (complexMessage "content" $g)}}
 							{{end}}
 							{{$e := true}}
 							{{try}}
