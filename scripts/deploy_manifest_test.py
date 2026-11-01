@@ -233,6 +233,59 @@ def check_free_tier(env):
                 f"20000: {proc.stderr!r}"
             )
 
+        # free 10,000 boundary: pins exactly-at-cap being accepted
+        at_free = os.path.join(cap_dir, "at_free.gohtml")
+        with open(at_free, "w", encoding="utf-8") as f:
+            f.write("x" * 10000)
+        proc = run_with_panel(
+            env, {"free": free}, {at_free: {"free": 1}}, "free",
+        )
+        if proc.returncode != 0 or not proc.stdout.strip():
+            errors.append(
+                f"at-cap (10000) free manifest exited {proc.returncode}, want 0 with stdout: "
+                f"{proc.stderr!r}"
+            )
+
+        # premium 20,000 boundary: pins exactly-at-cap being accepted
+        at_prem = os.path.join(cap_dir, "at_prem.gohtml")
+        with open(at_prem, "w", encoding="utf-8") as f:
+            f.write("x" * 20000)
+        proc = run_with_panel(
+            env, {"prem": premium}, {at_prem: {"prem": 1}}, "prem",
+        )
+        if proc.returncode != 0 or not proc.stdout.strip():
+            errors.append(
+                f"at-cap (20000) premium manifest exited {proc.returncode}, want 0 with stdout: "
+                f"{proc.stderr!r}"
+            )
+
+        # newline doubling: 6,668 chars (3,334 lines of "x\n") has panel count 10,002 > 10,000
+        nl_over = os.path.join(cap_dir, "nl_over.gohtml")
+        with open(nl_over, "w", encoding="utf-8") as f:
+            f.write("x\n" * 3334)
+        proc = run_with_panel(
+            env, {"free": free}, {nl_over: {"free": 1}}, "free",
+        )
+        if proc.returncode != 1 or "10002" not in proc.stderr:
+            errors.append(
+                f"newline-doubled over-cap free manifest exited {proc.returncode}, want 1 with "
+                f"10002 in stderr: {proc.stderr!r}"
+            )
+
+        # trailing whitespace counted: "x" * 9998 + "\n\n" is panel count 10,002 (only 9,998
+        # once stripped)
+        trailing_over = os.path.join(cap_dir, "trailing_over.gohtml")
+        with open(trailing_over, "w", encoding="utf-8") as f:
+            f.write("x" * 9998 + "\n\n")
+        proc = run_with_panel(
+            env, {"free": free}, {trailing_over: {"free": 1}}, "free",
+        )
+        if proc.returncode != 1 or "10002" not in proc.stderr:
+            errors.append(
+                f"trailing-whitespace over-cap free manifest exited {proc.returncode}, want 1 "
+                f"with 10002 in stderr: {proc.stderr!r}"
+            )
+
     # stale dist/free on a free server is refused before building the manifest
     with tempfile.TemporaryDirectory(prefix="yagpdb-deploy-manifest-stale-") as stale_dir:
         panel_path = os.path.join(stale_dir, "panel.json")
@@ -243,6 +296,11 @@ def check_free_tier(env):
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
+        # CRLF fold in panel_count: direct call because test mode's open(..., encoding="utf-8")
+        # read applies universal newlines before panel_count sees it
+        crlf_count = mod.panel_count("x\r\n" * 2600)
+        if crlf_count != 7800:
+            errors.append(f"panel_count('x\\r\\n' * 2600) = {crlf_count}, want 7800")
         real_run = mod.subprocess.run
         orig_argv = sys.argv[:]
         orig_env = os.environ.copy()
@@ -280,8 +338,13 @@ def check_free_tier(env):
     proc = run_with_panel(
         env, {"x": {"name": "X", "guild": "3"}}, {plain: {"x": 1}}, "x",
     )
-    if proc.returncode != 1 or "tier" not in proc.stderr:
+    if proc.returncode != 1 or "tier must be one of" not in proc.stderr:
         errors.append(f"a server with no tier should be refused naming tier: {proc.stderr!r}")
+    proc = run_with_panel(
+        env, {"x": {"name": "X", "guild": "3", "tier": "gold"}}, {plain: {"x": 1}}, "x",
+    )
+    if proc.returncode != 1 or "tier must be one of" not in proc.stderr:
+        errors.append(f"a server with a bad tier should be refused naming tier: {proc.stderr!r}")
     return errors
 
 

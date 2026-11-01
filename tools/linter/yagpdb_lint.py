@@ -556,7 +556,8 @@ class YAGPDBLinter:
         # source, git internals, and agent worktrees (whole repo copies under .claude/)
         skip_dirs = {"tools", "vendor", ".git", ".claude"}
 
-        for gohtml_file in path.rglob("*.gohtml"):
+        # sorted: the tracked report's order must not depend on the filesystem
+        for gohtml_file in sorted(path.rglob("*.gohtml")):
             parts = gohtml_file.relative_to(path).parts
             if len(parts) > 1 and parts[0] in skip_dirs:
                 continue
