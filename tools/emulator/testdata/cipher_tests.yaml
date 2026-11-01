@@ -577,3 +577,56 @@ tests:
         - { kind: message, ephemeral: true, embed_contains: "sj" }
       sent_messages:
         - { embed_contains: "xu" }
+
+  # Operation limit: the promised 2000 characters at the costliest shapes. Ciphertexts come
+  # from an independent encoder, not this command. strict fails on the 2.5M limit.
+  - name: "crack: 2000 letters under a 16-letter key stays inside the operation limit"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    strict: true
+    context:
+      interaction:
+        type: slash
+        subcommand: crack
+        options: { text: "moibtjsbnvnzsewcdlicmxdkvhywzovwxciaqtnbuomeevpzebiawzluvceklovcvvvqmjaalkysxripmoifpowlavultkwqxkfrguuwavyjsmoqtuhgpkzfhzfjizegkzwumshwlhillopyfwzvaoahyglsvopwvsmzjkkmosfgrqwrtpvfwzoxucnwfysiulgnukoxyqfgwowrvvqcitphusuulzeexiititdbavnzinerxhrqmtkxkkcllkwggnprakumlbwwelssmalrakhbukcfxovralandkzlafouodlcmvarzrpdlozawdelwzlrtkhkusxlsbiywalrqxyafhbexriutfeqwiahyfyshcennswrenlgavyxsqepkpzrlzobjyufhqvcrzlraubgksxllolmkuegazltkmcfxovttswnvjakbgnwhdlcihxgmxufvfyllkrfxysjvkfxzmysvcpymlvngubgnvckxyvgtujbctkmoshgxofmhrwvvgdhvryffybygkhvaivolfyveglmelpvnkyxjclvinmlisevvvhmpshlworrxugrazoxvzxdmqlravyfmqlxwslovyxcxciegkcxuwhymxeqfhpyjrbxucnwfysiloiemivkksxlloactalrzzoxzvchwdlymwefakkulmifhdlckvgxaguwavykqkpjkltnqxzlosgshoxmmoiyiswopgclsbwptyiygisbtpyvxrijhukfbgpkzcnzixsrxisbshlvhayzibgjhzifbivfwohasxiyvotnokixnohomdlralhnbkhgkshvinagmoefqtnelgyfxoraxhfbczaalgysmxaggaiebnlphjykwdvsvrxumzvplffaooedbzxnvjzalzysvxibmvvrijaalwljlixffalregftkcwlsbvctkwnxasllkbwrdlcyvknzxpolrnzmmoygkkemezalgimrnibmoiuwxutagnwencggaiedgslhbxlvewrxkxumvhmaslfqyvcmoeapkyhdbyqiccctywyizlkhmimrqlglaseqguyvihvxrilhaiowurlpbuosyhcgiskitkwpgwgzovcwhauwrleptyjimspwlhvvvstpbjsxsilmziabkuvlgnziypbepkubnvnzsewizippysgmkcxymynixmlzprnashespfmixsrxisbsyoxyswgvnibmoijmgaalfnziclgizxuizwtzgyvfocmgkxumxvvrgufhdlclteytxlihwlkwriktkigwzoxsoghzswgmvvfzgyxsmwdmwfcwalrtuuzzhuavcsralrbbkihvyvwgkqcalvptuzxzhwgqzelbvrriioihuytiqelppxubnlwhhysrnilwlhjqzotzwhypowcgaiakkhuvinllowctprjqtaxyhbwakzclzxecirmosngaovjbrinnozmhbxklopctyrrlzvkloxllompkocgpsaalkuqensamvvemgklhdodwoafxuxumlvzhflazohrapgxitkzyssklowmnuhrlzoxoclfedwrxhhlqtaxyjudwkrbmyyfbkkmosjsxdipgtsemzotuvyjsgrcrlwlmgylsonwvkcmnukuqyahywufjyylwalrvuaxicicwsrypvsqmtiheohvhswahciemjhpocfwpsjcklgbzjlwpbjdesrntamrvzzxuhyfgowralsylrpzohbgyciixltrzcyhasynibccolrvvmpghggspvfjnlrbbkihvymzibiahyhrlzoxdsullovralwuqvzmoonhecwcwiilwtkmoslgguwygkxumyttszlwtkmplzlrugkxacnzivekicmfqzvkzfujivcaepqomjaalzifkcxybywbbnlgvhytsyozxjezmnlkjzikicxahttnvovglowztkkculknvcpmohbwhkxctuhrvjlwdwnzecml" }
+    assertions:
+      sent_messages:
+        - { ephemeral: true, embed_contains: "`16`" }
+        - { ephemeral: true, embed_contains: "`THENIGHTHOUSEKEY`" }
+  - name: "crack: 2000 characters of prose under a 5-letter key stays inside the operation limit"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    strict: true
+    context:
+      interaction:
+        type: slash
+        subcommand: crack
+        options: { text: "Elq cyo puuuelaifp oqscpv ifbei qjrcc qjrymzu vy e eanwp nzhp rahrmsay. Fsi dspzvpsq elq krlxtse, elq gutte hulx bofdip prjszr gsi dcpvw, mbq elq gzlpx fraeuff dlq anoi fc gsi xoza. Zugvesdg elvqzl npuaoph fvr wszu feeuf, fz xts azxqpbzo nsplqq vrc gxcfpwf qbxtmbvzr. Qops tmur misoa hmfv gsi pogp ezr ryhqr jtxt o ftrszr dizhrygq oozyf hup wqo. Vy aubgpv fvr hehsf dxdipv xts gzaqf ytoq o stwf, oao wts ypedbro xa frlh fvrtv dvlely hup amm n osohbc vqoqd e biydi. Ivry xts szk mfetzqr, gsmoy nyh sfrj, wts fzyzrro xts uzvz og dxqoqj mzhrczmzf lrp hefwfsq elq dnexqfa xsds gsez vrc sib rjie. Mrlve zneid o lzyzu utwfcetez tbfrp hup rahrmsayf tr m kbzhqb ozb mbq omeqbgidsq l atcyp putr cioceoip wa apmwa, aefwryx esaeizqrd. Xts bwh xwtsxtchdi wsraid kezxq sipvk siprubt tr m gzlpx pyfi zcgpfacx. Dlq frnsdrro xts jpefvrc, xts fsmbg gsef dndwqr opcabq elq fbnoe, oao xts fxexz eptmwed wts zlhq hb elq znxt. Hwftxaff cedsyj gxwzmip hup pabt dxmwe, ds fvr ysfsozsw prneys upv ozbdieh pzqboatsz. Snnl botp fquny auhu elq rnei mbq prpsq hmfv n dmzuyp wqbgpros nmsgh gsi esn. Tr iwaeid hup amjrd wffhno fvr esise wmws n qmeh, nyh evr wimfaph fc epep hupmd fujxta gsi iol l haqgzv dsnow m dhwwq. Kupr fvr qss oecmhsq, eluqx lrp uepc, evr dsgbqph fvr ssdb ne wfsnoc ubgpvhoyd ezr gcyehro xts clxfsey qafr elmb upv aka pcqg. Lpedg ylxqf n jsgbt smehbcmmb szyzr gsi zcgpfacxd mz o jzspsa msj oao hugpzzqfro e ivbwi xwsp vqqbchqr vy txovy, tmhvprf gryxqbppw. Fvr zpp zvrlfvbfwq yrptqf jcsfs rgidm rgizwar mz o fxexz owyq bbeincbv. Wts epgafqph fvr himhupv, fvr dludf elmh clwesq mikcao xts ezgwg, nyh fvr dqmzy cibovcw evr xeps gz xts ylqb. Jvdmfced vmfrwc ozvxfqr gsi xcar wfovc, wa hup rahrmsay opgmar sid qyzwqgg nsydnymab. Rlgt dnri nstlr iwgs xts qlxq oao izrro auhu l wubtwi esaeizqr lfaig elq grl. Mz kvyxqf gsi ioipw ehefgw hup xakrc puyr l jugg, lrp gup pqoeyip hb cimr gsiuf escfvz elq knj e pcpesd frlhe o cfpes. Jsiz hup jau ncvujro, xtwpv ezr tcik, gup waiaoip hup lafa lx ehrlhk waeidjnww mbq evgg" }
+    assertions:
+      sent_messages:
+        - { ephemeral: true, embed_contains: "`5`" }
+        - { ephemeral: true, embed_contains: "`LEMON`" }
+
+  # A multiple of the true length scores as well as it, so the smallest near the best wins.
+  - name: "crack: a 6-letter key is reported as itself, not doubled"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    strict: true
+    context:
+      interaction:
+        type: slash
+        subcommand: crack
+        options: { text: "Llg fpw dmiyxagyuv oxwtgi akgxg vzxjc gmigari zr t kqccp udyg esmwfqfo. Lzi tvghjhgu xaw agrxawv, vyi lzmrj xasx rrwlwh dvchfh vyi kggmj, egv xjv wfspn iiismtj waw qcui mg xjv ptet. Xzwblstj vtjinp geaqdvh mzi nfrz kxczv, lg xjv rhlidfsd tierqx zit tphkiuk ghetcemhf. Ictl iskg sizsr yzxa llg uemw epu igvif nmmz e uzrzdi uvrmwrev eugyv klx kic. Zr parvvv mzi yrzxk wviyvc xjv xhoit cmdw e hzwm, srf jlx dicirxv xq iitv xjvmk jlaklf llg ner s hqtxhj vgrhl s twcwx. Olge xaw jqx ekjmxvh, mzmeb egv ktvc, lzi ufygvif klx zste em kxgrhr arvvvospu rrw lvwjxxv xjv ttlxgir fgvg kltf lgi spf iavw. Rwetj ptlit r chmri ymllstzeg xsweh mzi pfxxtsqbw bf e yfswwr dfb tfh fzwvgzgiiw s ajfpx dmhv vxustuiw ar rcebf, tckmxfx uvrmwrevw." }
+    assertions:
+      sent_messages:
+        - { ephemeral: true, embed_contains: "`6`" }
+        - { ephemeral: true, embed_contains: "`SECRET`" }
+  - name: "crack: a 2-letter key is reported as itself, not as a multiple"
+    template: "../../../commands/cipher/cipher_slash.gohtml"
+    strict: true
+    context:
+      interaction:
+        type: slash
+        subcommand: crack
+        options: { text: "Tie ple ljgitiovsf kfeqes wsoue fvfrz eweoiog jn b snaml clve oouecopk. Thf rfcpreee tie xebties, tie thjpt tiau pbstee bfypne tie sodkt, aod uhf snaml seqajrt sie naee uo uhf lbmq. Vjsjtprt rbrflz cminbfd uhf lpnh suajr, to uhf nptfbpol bfcbmf hfr dlpsfsu cpmqaoipn. Fadh qahe cehao wjti tie eaue bne eodfd xiuh b sjnhlf sfnueocf acovt uhf sfa. Jn xiotfr uhf wbvfs ttsudk uhf tpwfr mile b fjsu, aod thf lfasnfd uo sebd uhfis riyuhn tie xaz a eodtpr sebdt a qumsf. Wieo tie goh asrjvfd, uhjcl aod hrfy, thf spuodfd uhf hpro au suebdz iotfrwams bne tsuttfd uhf pbtuesn nose uhbn ies oxn fyfs. Zebrt lbtfr b ypuog iittprjao fpuod uhf nptfbpols jn b wpoeeo bpx bne djsdowesee a xhplf ljff rfcpreee io pmajn, qauifnu sfnueocfs." }
+    assertions:
+      sent_messages:
+        - { ephemeral: true, embed_contains: "`2`" }
+        - { ephemeral: true, embed_contains: "`AB`" }

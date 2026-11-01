@@ -287,6 +287,15 @@ Rulings (Lila, AskUserQuestion 2026-10-07):
   zero-width live check; the LFSR key layer after that. Deploy only on her go. 2026-10-18
   (GLM audit #2): newcipher now decodes on Java chars (UTF-16 code units; any BMP or astral
   character, was code points 1-1024 only), and the 2000 cap counts characters, not bytes.
+  2026-11-01 (re-review): crack ran out of operations well under its 2000 characters (500
+  letters errored at the 2.5M premium limit with no reply, 300 passed). It now judges key
+  length on the first 320 letters and picks shifts over all of them; the worst case
+  measured (2000 lowercase letters, 16-letter key) keeps about 13% of the limit spare, and
+  320, 400 and 480 scored the same on a 65-case key matrix. It takes the smallest length
+  within 15% of the best, since multiples score as well as the true length (decrypted text
+  right on 56/66 at 0.85, 55 at 0.9, 53 at 0.95, 51 at 0.8).
+  Known limits: about 150 characters is too short for most keys, and a key that nearly
+  repeats (abcabd) reports its near-period, with a few wrong letters in the plaintext.
 
 Port and improve her own old Java toys (all hers, public or being published):
 `lbds137/cipher-experiments-2009` (OldCipher: polyalphabetic, 4 hand-scrambled alphabets plus

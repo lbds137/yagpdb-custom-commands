@@ -14,12 +14,14 @@
   characters (code points) after trimming.
 
   The crack is deterministic frequency analysis (no randomness): key lengths 1-16,
-  never more than an eighth of the letters; each length splits the letters into columns
-  and is scored by the average index of coincidence of its columns (sum c*(c-1) /
-  (n*(n-1)) per column, English about 0.0667, random about 0.0385); the highest score
-  wins, ties to the shorter key. The winning columns' shifts are picked by chi-square
-  against English letter frequencies. An average IoC under 0.045 is reported as no key
-  found rather than a guess. A toy, never secure.
+  never more than an eighth of the letters analysed; the key length is judged on the
+  first 320 letters so a 2000-character text stays inside YAGPDB's operation limit; each
+  length splits the sample into columns and is scored by the average index of
+  coincidence of its columns (sum c*(c-1) / (n*(n-1)) per column, English about 0.0667,
+  random about 0.0385); the smallest length within 15% of the best average wins, because
+  multiples of the true length score as well as it does; shifts are picked over all the
+  letters by chi-square against English letter frequencies. An average IoC under 0.045
+  at every length is reported as no key found rather than a guess. A toy, never secure.
 
   NewCipher (newcipher) is the 2009 self-keying toy: the plaintext's middle character
   is the seed, every other character is shifted by Random(seed + length).nextInt(125) -
@@ -157,14 +159,17 @@
 			{{ if lt $Llen 8 }}
 				{{ $refusal = "⚠️ Not enough text to attack (need at least 8 letters)." }}
 			{{ else }}
+				{{ $analysisMax := 320 }}
+				{{ $sample := $Lchars }}
+				{{ if gt $Llen $analysisMax }}{{ $sample = slice $Lchars 0 $analysisMax }}{{ end }}
 				{{/* every key length k: column letter counts, then the columns' average
-					index of coincidence; the best k wins, ties to the smaller k */}}
-				{{ $maxK := toInt (min 16 (div $Llen 8)) }}
-				{{ $bestK := 0 }}
-				{{ $bestAvg := 0.0 }}
+					index of coincidence; the smallest k within 15% of the best wins */}}
+				{{ $maxK := toInt (min 16 (div (len $sample) 8)) }}
+				{{ $avgs := cslice }}
+				{{ $maxAvg := 0.0 }}
 				{{- range $k := seq 1 (add $maxK 1) -}}
 					{{- $counts := sdict -}}
-					{{- range $i, $ch := $Lchars -}}
+					{{- range $i, $ch := $sample -}}
 						{{- $ck := joinStr ":" (toInt (mod $i $k)) (index $alphabet $ch) -}}
 						{{- $counts.Set $ck (add (toInt (or (index $counts $ck) 0)) 1) -}}
 					{{- end -}}
@@ -180,12 +185,22 @@
 						{{/* n is at least 8 here (k <= an eighth of the letters) */}}
 						{{- $iocSum = add $iocSum (fdiv $pairs (mult $n (sub $n 1))) -}}
 					{{- end -}}
-					{{- if gt (fdiv $iocSum $k) $bestAvg -}}
-						{{- $bestAvg = fdiv $iocSum $k -}}
-						{{- $bestK = $k -}}
+					{{- $avg := fdiv $iocSum $k -}}
+					{{- $avgs = $avgs.Append $avg -}}
+					{{- if gt $avg $maxAvg -}}
+						{{- $maxAvg = $avg -}}
 					{{- end -}}
 				{{- end }}
-				{{ if lt $bestAvg 0.045 }}
+				{{ $bestK := 0 }}
+				{{ $bestAvg := 0.0 }}
+				{{- range $k := seq 1 (add $maxK 1) -}}
+					{{- $avg := index $avgs (sub $k 1) -}}
+					{{- if and (eq $bestK 0) (ge $avg (mult $maxAvg 0.85)) -}}
+						{{- $bestK = $k -}}
+						{{- $bestAvg = $avg -}}
+					{{- end -}}
+				{{- end }}
+				{{ if lt $maxAvg 0.045 }}
 					{{ sendResponse nil (complexMessage
 						"content" "No clear Vigenère key found."
 						"ephemeral" true
@@ -200,24 +215,29 @@
 					{{- end }}
 					{{ $shifts := cslice }}
 					{{- range $j := seq 0 $bestK -}}
+						{{- $obs := cslice -}}
 						{{- $n := 0 -}}
 						{{- range $v := seq 0 26 -}}
-							{{- $n = add $n (toInt (or (index $counts (joinStr ":" $j $v)) 0)) -}}
+							{{- $c := toInt (or (index $counts (joinStr ":" $j $v)) 0) -}}
+							{{- $obs = $obs.Append $c -}}
+							{{- $n = add $n $c -}}
+						{{- end -}}
+						{{- $obs = $obs.AppendSlice $obs -}}
+						{{- /* the float goes first: an int-first mult/sub would
+							truncate to integer arithmetic */ -}}
+						{{- $expected := cslice -}}
+						{{- range $v := seq 0 26 -}}
+							{{- $expected = $expected.Append (fdiv (mult (index $englishFreq $v) $n) 100.0) -}}
 						{{- end -}}
 						{{- $bestS := 0 -}}
 						{{- $bestChi := -1.0 -}}
 						{{- range $s := seq 0 26 -}}
 							{{- $chi := 0.0 -}}
 							{{- range $v := seq 0 26 -}}
-								{{- /* cipher letter (v+s) mod 26 is plain letter v under
+								{{- /* cipher letter (v+s) is plain letter v under
 									shift s */ -}}
-								{{- $obs := toInt (or (index $counts
-									(joinStr ":" $j (toInt (mod (add $v $s) 26)))) 0) -}}
-								{{- /* the float goes first: an int-first mult/sub would
-									truncate to integer arithmetic */ -}}
-								{{- $expected := fdiv (mult (index $englishFreq $v) $n) 100.0 -}}
-								{{- $diff := sub $expected $obs -}}
-								{{- $chi = add $chi (fdiv (mult $diff $diff) $expected) -}}
+								{{- $diff := sub (index $expected $v) (index $obs (add $v $s)) -}}
+								{{- $chi = add $chi (fdiv (mult $diff $diff) (index $expected $v)) -}}
 							{{- end -}}
 							{{- if or (lt $bestChi 0.0) (lt $chi $bestChi) -}}
 								{{- $bestChi = $chi -}}
