@@ -746,11 +746,14 @@ gets a failing test first.
   be runtime-verified in Lila's deploy smoke (the content-vs-pings lesson).
   Filed from the unit: (a) the emulator stores a modal field's max_length but never
   enforces it (Discord enforces client-side; prompt_post re-checks server-side and
-  the 2100-char test pins that) — emulator submissions could validate it; (b) thread
-  dates use the Global dict's `Timezone Offset` hours (default -4) because
-  tmplCurrentTime is UTC (general.go:1495) and templates have no tz math; DST is NOT
-  automated — during EST the derived date runs 1h fast, wrong only for runs between
-  00:00-00:59 ET in Nov-Mar (fix then: set the key to -5, or automate the DST table);
+  the 2100-char test pins that) — emulator submissions could validate it; (b) Fixed
+  2026-11-01, the day DST ended: thread dates used a fixed offset (Global
+  `Timezone Offset`, default -4), which this note excused with "templates have no tz
+  math". They do: `loadLocation` (context.go:143) and `time.Time.In`. The dates now come
+  from `currentTime.In (loadLocation "America/New_York")` and the key is gone from the
+  code (a copy left in a live Global dict is inert). The old note's failure window was
+  also wrong: a -4 clock runs 1h ahead of EST, so the bad dates were 23:00-23:59 ET
+  (dated tomorrow), not 00:00-00:59;
   (c) upstream SlashCommandOption.ChannelTypes exists but the repo's `Slash option:`
   header syntax and the emulator's parser don't express it, so the runtime forum-type
   check stays the guard; (d) the port records a first message's file upload and

@@ -3,10 +3,10 @@ name: "prompt (/prompt opens the form; the form posts it)"
 # The role_ping_slash world: Mod 111111111111111111 is the Staff role, the invoker
 # 500000000000000001 (staff tests give them Mod), 555555555555555555 is a non-staff
 # member, Helper 222222222222222222 is the role being pinged. The clock is frozen at
-# 2026-01-02T03:04:05Z, where the default -4 offset's date (2026-01-01) differs from
-# UTC's (2026-01-02) — that is the point of the offset. The guild is the main server,
-# so the success links are exact; channels: prompts (forum), staff-chat (text),
-# a-thread (a thread the inline mode posts straight into).
+# 2026-01-02T03:04:05Z, where Eastern's date (2026-01-01) differs from UTC's
+# (2026-01-02). The guild is the main server, so the success links are exact;
+# channels: prompts (forum), staff-chat (text), a-thread (a thread the inline mode
+# posts straight into).
 
 defaults:
   user: { id: 500000000000000001, username: "Invoker" }
@@ -99,8 +99,7 @@ tests:
           nth: 2
           ephemeral: true
       # the date-prefixed title and the post link, ephemerally (clock 2026-01-02T03:04Z
-      # at the default -4 offset is the evening of 2026-01-01); the ack still links the
-      # POST
+      # in Eastern time is the evening of 2026-01-01); the ack still links the POST
       interaction_responses:
         - { kind: message, ephemeral: true,
             content_contains:
@@ -380,23 +379,31 @@ tests:
         - channel_id: 123456789012345678
           ephemeral: true
 
-  - name: "prompt_post: the Global Timezone Offset drives the date prefix (0 = UTC here)"
+  - name: "prompt_post: the date is Eastern in winter (23:30 EST is still the 1st)"
     template: "../../../commands/general/prompt_post.gohtml"
     context:
       user: { roles: [111111111111111111] }
+      clock: 2026-01-02T04:30:00Z
       interaction:
         type: modal
         custom_id: "prompt:post:t:333333333333333333:0"
-        fields: { prompt_title: "Later Topic", prompt_body: "hi" }
-    setup_db:
-      - user_id: 0
-        key: "Global"
-        value: { Timezone Offset: 0 }
+        fields: { prompt_title: "Winter Topic", prompt_body: "hi" }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true,
-            content_contains:
-              "✅ Posted 2026-01-02: Later Topic: https://discord.com/channels/462036216909398026/1200000000000000000" }
+        - { kind: message, ephemeral: true, content_contains: "✅ Posted 2026-01-01: Winter Topic: " }
+
+  - name: "prompt_post: the date is Eastern in summer (00:30 EDT is already the 2nd)"
+    template: "../../../commands/general/prompt_post.gohtml"
+    context:
+      user: { roles: [111111111111111111] }
+      clock: 2026-07-02T04:30:00Z
+      interaction:
+        type: modal
+        custom_id: "prompt:post:t:333333333333333333:0"
+        fields: { prompt_title: "Summer Topic", prompt_body: "hi" }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, content_contains: "✅ Posted 2026-07-02: Summer Topic: " }
 
   - name: "prompt_post: a hand-made over-length title is refused server-side (the field caps at 88)"
     template: "../../../commands/general/prompt_post.gohtml"

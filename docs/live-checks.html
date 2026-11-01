@@ -273,6 +273,7 @@
           <li><label class="step"><input type="checkbox" data-step="prompt-4">If a channel's pins are full (or you remove the bot's Pin Messages permission in a test channel): the prompt still posts, and the private confirmation ends &ldquo;(couldn't pin it: the pin list may be full, or I can't pin there)&rdquo;.</label></li>
           <li><label class="step"><input type="checkbox" data-step="prompt-5">Forum check worth a look: step 1 relies on a forum post's first message having the post's own ID (Discord's documented behaviour, not yet seen live). If the post isn't pinned while steps 2&ndash;3 work, tell me.</label></li>
           <li><label class="step"><input type="checkbox" data-step="prompt-6">After the next deploy round: <code>/prompt</code> in thread mode with a role: the ping in the channel you ran it from shows the thread link on the first line and the prompt's text as a quote below it, a long prompt cut at a word with &ldquo;…&rdquo; (about 300 characters), line breaks kept, and the role is notified.</label></li>
+          <li><label class="step"><input type="checkbox" data-step="prompt-7">After the next deploy round, on that same run: the post goes through at all (it now asks YAGPDB's server for Eastern time, which only the live bot can prove) and the thread title starts with today's date in Eastern time.</label></li>
         </ol>
         <label class="note"><span>Notes &mdash; anything odd, especially on step 5</span><textarea data-note="prompt"></textarea></label>
       </div>

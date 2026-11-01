@@ -13,11 +13,11 @@
   the form has one, goes to the run channel as a normal message — one that always
   notifies, carrying the link, whose thread name is the title, above a body excerpt of
   about 300 characters. Inline mode: a plain message, mention-first, because a normal
-  channel's sends do notify. The date is local time by the Global dict's
-  `Timezone Offset` in hours (default -4 = ET). Everything the staff member sees is
-  ephemeral; the post is the public artifact. Each post's prompt message is pinned where
-  it landed, in its own try, so a refused pin (full pin list, missing permission) never
-  fails the post and only adds "(couldn't pin it ...)" to the ack.
+  channel's sends do notify. The date is Eastern time, DST included. Everything the
+  staff member sees is ephemeral; the post is the public artifact. Each post's prompt
+  message is pinned where it landed, in its own try, so a refused pin (full pin list,
+  missing permission) never fails the post and only adds "(couldn't pin it ...)" to the
+  ack.
 */ -}}
 {{ if .IsModal }}
 	{{ $rolesDict := (dbGet 0 "Roles").Value }}
@@ -86,14 +86,7 @@
 						" characters — the limit is 2000. Shorten the prompt or drop the role.")
 						"ephemeral" true) }}
 				{{ else }}
-					{{ $offset := -4 }}
-					{{ $globalDict := (dbGet 0 "Global").Value }}
-					{{ if $globalDict }}
-						{{ if $globalDict.HasKey "Timezone Offset" }}
-							{{ $offset = toInt ($globalDict.Get "Timezone Offset") }}
-						{{ end }}
-					{{ end }}
-					{{ $local := currentTime.Add (toInt64 (mult $offset 3600000000000)) }}
+					{{ $local := currentTime.In (loadLocation "America/New_York") }}
 					{{ $date := $local.Format "2006-01-02" }}
 					{{ if eq $mode "t" }}
 						{{ $title := print $date ": " $titleInput }}
