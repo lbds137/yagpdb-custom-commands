@@ -100,24 +100,27 @@ jobs:
             echo "::error::This PR changes the review workflow, so no review ran (the action skips itself). Merge it manually after reading it."
             exit 1
           fi
-          # One line per claude[bot] comment posted since the review started: its LAST non-empty
-          # line, where the prompt puts the verdict. A VERDICT quoted mid-comment (an @claude
-          # reply, a code block) never counts.
-          lasts=$(gh api "$COMMENTS" --paginate --slurp | jq -r '
-            [.[][] | select(.user.login == "claude[bot]" and .created_at >= env.SINCE)]
-            | sort_by(.created_at) | .[]
-            | .body | gsub("\r"; "") | split("\n") | map(select(test("\\S"))) | last // ""')
-          if [ -z "$lasts" ]; then
-            echo "::error::claude-review completed without posting a comment (no claude[bot] comment since $SINCE). Re-run this job."
-            exit 1
-          fi
-          # Bold or backtick wrapping is stripped; only verdicts naming this commit count, and a
-          # BLOCK stands whatever comes after it (a later PASS could be an @claude reply).
-          verdicts=$(printf '%s\n' "$lasts" | tr -d '*`' | grep -E "^VERDICT: (PASS|BLOCK) $SHA[[:space:]]*\$" | awk '{print $2}')
+          comments=$(gh api "$COMMENTS" --paginate --slurp)
+          # One line per claude[bot] comment from $1 on: its LAST non-empty line, where the prompt
+          # puts the verdict. A VERDICT quoted mid-comment (an @claude reply, a code block) never
+          # counts. Bold or backtick wrapping is stripped. Nothing is piped after jq, so a jq
+          # failure ends the step instead of dropping comments.
+          lasts() {
+            jq -r --arg since "$1" '
+              [.[][] | select(.user.login == "claude[bot]" and .created_at >= $since)]
+              | sort_by(.created_at) | .[]
+              | .body | gsub("\r|\\*|`"; "") | split("\n") | map(select(test("\\S"))) | last // ""' <<< "$comments"
+          }
+          all=$(lasts "")
+          fresh=$(lasts "$SINCE")
+          # A BLOCK naming this commit stands from any run, so re-running can't roll a new review
+          # until one passes: only a push clears it. A PASS must come from this run.
           sha=$SHA
-          if grep -qx BLOCK <<< "$verdicts"; then
+          if grep -qE "^VERDICT: BLOCK $sha[[:space:]]*\$" <<< "$all"; then
             echo "::error::The review found critical, high or medium issues. Fix them and push; the new review decides."; exit 1
-          elif grep -qx PASS <<< "$verdicts"; then
+          elif [ -z "$fresh" ]; then
+            echo "::error::claude-review completed without posting a comment (no claude[bot] comment since $SINCE). Re-run this job."; exit 1
+          elif grep -qE "^VERDICT: PASS $sha[[:space:]]*\$" <<< "$fresh"; then
             echo "Review of $sha passed."
           else
             echo "::error::No VERDICT line naming $sha, so this review can't gate a merge. Re-run this job."; exit 1
@@ -125,7 +128,7 @@ jobs:
 
   # Merges the PR once the review passed and every other check on the head commit
   # finished green. Done in-workflow rather than with GitHub's auto-merge, which
-  # needs required checks, and those need GitHub Pro on private repos. A merge made
+  # waits only on required checks. A merge made
   # with GITHUB_TOKEN triggers no push workflows on the default branch; the post-merge
   # job below starts the ones a repo needs.
   #
