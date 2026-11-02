@@ -111,19 +111,23 @@ jobs:
             echo "::error::claude-review completed without posting a comment (no claude[bot] comment since $SINCE). Re-run this job."
             exit 1
           fi
-          # Bold or backtick wrapping is stripped; only verdicts naming this commit count.
-          verdict=$(printf '%s\n' "$lasts" | tr -d '*`' | grep -E "^VERDICT: (PASS|BLOCK) $SHA[[:space:]]*\$" | tail -n1 | awk '{print $2}')
+          # Bold or backtick wrapping is stripped; only verdicts naming this commit count, and a
+          # BLOCK stands whatever comes after it (a later PASS could be an @claude reply).
+          verdicts=$(printf '%s\n' "$lasts" | tr -d '*`' | grep -E "^VERDICT: (PASS|BLOCK) $SHA[[:space:]]*\$" | awk '{print $2}')
           sha=$SHA
-          case "$verdict" in
-            PASS) echo "Review of $sha passed." ;;
-            BLOCK) echo "::error::The review found critical, high or medium issues. Fix them and push; the new review decides."; exit 1 ;;
-            *) echo "::error::No VERDICT line naming $sha, so this review can't gate a merge. Re-run this job."; exit 1 ;;
-          esac
+          if grep -qx BLOCK <<< "$verdicts"; then
+            echo "::error::The review found critical, high or medium issues. Fix them and push; the new review decides."; exit 1
+          elif grep -qx PASS <<< "$verdicts"; then
+            echo "Review of $sha passed."
+          else
+            echo "::error::No VERDICT line naming $sha, so this review can't gate a merge. Re-run this job."; exit 1
+          fi
 
   # Merges the PR once the review passed and every other check on the head commit
   # finished green. Done in-workflow rather than with GitHub's auto-merge, which
   # needs required checks, and those need GitHub Pro on private repos. A merge made
-  # with GITHUB_TOKEN triggers no push workflows on the default branch.
+  # with GITHUB_TOKEN triggers no push workflows on the default branch; the post-merge
+  # job below starts the ones a repo needs.
   #
   # A Dependabot PR skips the review, so this job merges it on green checks alone (its action
   # pin bumps to this file included: Dependabot only rewrites `uses:` versions). It also
@@ -139,7 +143,7 @@ jobs:
         (github.event.pull_request.user.login == 'dependabot[bot]' &&
          github.actor == 'dependabot[bot]' && needs.claude-review.result == 'skipped'))
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     permissions:
       actions: read
       contents: write
@@ -155,6 +159,9 @@ jobs:
     steps:
       - name: Wait for the other checks
         run: |
+          # With no `shell:` the step runs `bash -e` without pipefail, so a failed `gh api` in
+          # the pipes below would read as an empty view and could merge on the other view alone.
+          set -o pipefail
           # Three views of the head commit, all of which must be settled and green:
           #  - workflow runs, the latest per workflow other than this one. A run exists as soon
           #    as its workflow is triggered, before any of its jobs, so a CI job that hasn't been
@@ -174,7 +181,7 @@ jobs:
               [.[].workflow_runs[] | select(.workflow_id != $own)] | group_by(.workflow_id) | map(max_by(.id))
               | .[] | "\(.status) \(.conclusion) workflow \(.name)"')
             checks=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" --paginate --slurp | jq -r '
-              [.[].check_runs[] | select(.name != "automerge" and .name != "claude-review")]
+              [.[].check_runs[] | select(.name != "automerge" and .name != "claude-review" and .name != "post-merge")]
               | group_by([.app.id, .name]) | map(max_by(.id))
               | .[] | "\(.status) \(.conclusion) check \(.name)"')
             status=$(gh api "repos/$REPO/commits/$SHA/status" --jq 'if .total_count == 0 then "none" else .state end')
@@ -192,8 +199,14 @@ jobs:
           echo "::error::Checks still running (or none besides the review) after 40 minutes; merge by hand or re-run this job."
           exit 1
       - name: Merge
-        # --match-head-commit refuses if anything was pushed after the reviewed commit.
-        run: gh pr merge "$PR" --repo "$REPO" --rebase --match-head-commit "$SHA"
+        # --match-head-commit refuses if anything was pushed after the reviewed commit. The job's
+        # `if` read draft when the run started, and the wait above can take 40 minutes.
+        run: |
+          draft=$(gh pr view "$PR" --repo "$REPO" --json isDraft --jq .isDraft)
+          if [ "$draft" != false ]; then
+            echo "::error::Not merging; the PR's draft state reads '$draft'. Mark it ready to start a new run."; exit 1
+          fi
+          gh pr merge "$PR" --repo "$REPO" --rebase --match-head-commit "$SHA"
       # The repo's "delete branch on merge" setting cleans up after merges made with a user
       # token, but a merge made with this workflow's token leaves the head branch behind.
       # Skipped for a fork's branch (not this repo's to delete); the step itself spares the
@@ -219,3 +232,44 @@ jobs:
           else
             echo "::warning::Could not delete $HEAD_REF (already gone, or protected); delete it by hand if it remains."
           fi
+
+  # A merge made with GITHUB_TOKEN starts no push workflows, but workflow_dispatch is exempt.
+  # A repo that needs one after a merge (a Pages deploy, say) lists its file names, one per
+  # line, in .github/post-merge-workflows, and each needs a workflow_dispatch trigger. Its own
+  # job, so only this job holds actions: write. A red job here means the merge landed and the
+  # listed workflow didn't start: run it by hand.
+  post-merge:
+    needs: automerge
+    # !cancelled() for the same reason as automerge's: on a Dependabot PR the review upstream is
+    # skipped, and the implicit success() would skip this job behind it. A PR merged into any
+    # other branch left the default branch unchanged, so there is nothing to start.
+    if: ${{ !cancelled() && needs.automerge.result == 'success' && github.event.pull_request.base.ref == github.event.repository.default_branch }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      BASE: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Start the listed workflows
+        run: |
+          if ! out=$(gh api "repos/$REPO/contents/.github/post-merge-workflows?ref=$BASE" --jq .content 2>&1); then
+            case "$out" in
+              *"HTTP 404"*) echo "No .github/post-merge-workflows here; nothing to start."; exit 0 ;;
+              *) echo "::error::Could not read .github/post-merge-workflows: $out"; exit 1 ;;
+            esac
+          fi
+          names=$(base64 -d <<< "$out")
+          rc=0
+          while read -r wf; do
+            wf=${wf%$'\r'}
+            case "$wf" in ''|'#'*) continue ;; esac
+            if gh workflow run "$wf" --repo "$REPO" --ref "$BASE" </dev/null; then
+              echo "Started $wf."
+            else
+              echo "::error::Could not start $wf; run it by hand."; rc=1
+            fi
+          done <<< "$names"
+          exit $rc
