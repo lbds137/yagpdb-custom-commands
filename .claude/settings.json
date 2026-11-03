@@ -1,14 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Read(*)",
-      "Write(*)",
-      "Edit(*)",
+      "Read",
+      "Write",
+      "Edit",
       "Edit(.claude/**)",
       "MultiEdit(*)",
       "LS(*)",
-      "Glob(*)",
-      "Grep(*)",
+      "Glob",
+      "Grep",
       "Task(*)",
       "TodoRead",
       "TodoWrite(*)",
