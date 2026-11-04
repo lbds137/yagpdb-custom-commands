@@ -85,15 +85,19 @@ servers already run the matching slash roots):
 
 gematria (52/9/10) is already trigger None (the roots' renderer) — not a twin, stays.
 
-Proposed check: add a **"Fleet servers (lotv + The Rose)"** section to the live-checks
-page — one item per twin pair (run the text twin and the matching slash root's
-subcommand, confirm parity) plus two smokes (config_sync's hourly id map present;
-`/staff bootstrap` answers on Commands.bootstrap). Regenerate and install BOTH copies
-(Charter: tailnet + claude.ai). After Lila's ticks: disable the twins' panel copies on
-both servers (the hiatus 81/82 pattern — disabled, ids kept, nothing deleted without her
-word), then move files to retired/ where no server runs them any more. Note the earlier
-slash-fleet FUTURE line "lotv /color, then retire contrast/rand_color" is already
-satisfied: color_slash is live on lotv 25 and rose 27.
+The check: **added to the live-checks page 2026-11-04** as section "Fleet roots the
+twins stand in for" (3 items, prefix `fleet`). It covers only what the existing
+sections don't: guards-1 and sync already run /color random, /timestamp, /hebrew
+pyramid, /gematria, /rule, /db and /edit on any server, so the new items are
+`/color contrast` (both), `/hebrew atbash` + `alefbet` + `random` (both), and
+`/pointer` (lotv; rose only if enabled — its enablement is the §4 decision). Per-twin
+parity was dropped as overkill: the files are byte-identical to main's, already
+live-checked there. After Lila's ticks (with guards + sync on the same servers):
+disable the twins' panel copies on both servers (the hiatus 81/82 pattern — disabled,
+ids kept, nothing deleted without her word), then move files to retired/ where no
+server runs them any more. The earlier slash-fleet FUTURE line "lotv /color, then
+retire contrast/rand_color" is already satisfied: color_slash is live on lotv 25 and
+rose 27.
 
 ## 4. The Rose leftover (Lila's call)
 
