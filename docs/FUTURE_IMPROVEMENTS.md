@@ -916,9 +916,9 @@ until the tap). Trigger: the z.ai reset on Wed 11-11 or an agy dispatch, in the 
   most 2s (2.96s total today) and moves the usage-pin logic into Go.
 - Ruled out: letting prove reuse the `make test` results. Prove would then compare against
   another process's run, which is a weaker proof.
-- Process, proposed to Deck: run a suite under about a minute in the foreground
-  (`deck-mem --ok` first) instead of through deck-job with a 3-4 min cron poll. 57 `make ci`
-  runs were logged over 21 days. The "suites via deck-job" rule is Deck's (11-01).
+- Process, shipped (Deck 11-10): suites under about 2 min run in the foreground after
+  `deck-mem --ok`. Longer ones still go through deck-job, whose 3-4 min cron poll had
+  outweighed a 42s `make ci` (57 runs logged over 21 days). The rule lives in the role file.
 
 ## IDE Integration
 
