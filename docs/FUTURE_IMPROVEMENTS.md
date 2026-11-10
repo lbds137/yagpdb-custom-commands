@@ -879,6 +879,47 @@ gets a failing test first.
   `fix`/`hasGlobalDict`/`hasCommandsDict`), isn't `gofmt`-clean, and nothing references it —
   dead code, a candidate to delete (Lila's call).
 
+## Dev-loop performance (Fable review, 2026-11-10, HEAD 28606ac)
+
+Measured: `make ci` takes 42s warm and 152s cold (after `make clean`, under swap) on the
+Deck, and 24s on GitHub. The YAML suite is CPU-bound on one core (perf: `Engine.Execute`
+56%, `checkSnapshot` 18%, of which YAML unmarshal is 15%). `make -j4 --output-sync=target ci`
+took 23.0s, exit 0, with identical output.
+The review was read-only. Driver checks of the code are cited per item. Implementation
+waits for a non-Anthropic lane (Lila 11-10, Fable focus: no routine units on Anthropic
+until the tap). Trigger: the z.ai reset on Wed 11-11 or an agy dispatch, in the order below.
+
+- Defect, deferred (do first): `yagmin prove` builds its Runner without `CI`
+  (`tools/emulator/cmd/yagmin/prove.go:67`). `checkSnapshot` writes a missing snapshot
+  instead of failing (`internal/loader/snapshot.go:283-290`), so `make test-minified` on its own
+  can write snapshots under CI=true. Today `make test` fails first only because the
+  targets run in serial order. Fix: `CI: os.Getenv("CI") != ""`, plus a test.
+- Deferred (after the prove fix): run the `ci` prerequisites in parallel (`Makefile:54-58`,
+  `$(MAKE) -j4 --output-sync=target`). Measured saving: 42s to 23s warm.
+- Deferred: a worker pool inside `RunTests` (`internal/loader/runner.go:1037-1051`, sequential
+  today), keeping results in input order. Keep it sequential under `-update-snapshots`, outside
+  CI and with `StopOnFail`. Hazards: `writeSnapshot` read-modify-write, the package-level
+  `titleCaser` (`internal/yagstd/containers.go:20`, shared by every engine), and suite-level
+  `setup_db` slices (not checked). Acceptance gate: the suite runs in parallel under
+  `go test -race`. Estimated (not measured): `test` 9-14s down to about 3s,
+  `test-minified` 15-19s down to about 5s.
+- Possible defect, unverified: execCC children already run as goroutines, so the shared
+  `titleCaser` may race today when a parent and child both call `title`. Constructing it per
+  call fixes both this and the worker-pool hazard.
+- Deferred: cache parsed snapshot files per run (`snapshot.go:178-191`; today the whole
+  398 KB `command_tests.snap.yaml` is re-parsed for each of 206 snapshot tests). Estimated
+  saving: 1.3-2s per suite run.
+- Deferred: build `bin/yagmin` once and use it in the minify targets (`Makefile:68,71,74-75`)
+  and in `scripts/deploy-manifest.py:159-164` (13 children, 6 of them running `go run`). Saves
+  about 1s warm and 3-6s cold.
+- Ruled out: one yagtest process for all bare runs in `test-all-templates.sh`. It saves at
+  most 2s (2.96s total today) and moves the usage-pin logic into Go.
+- Ruled out: letting prove reuse the `make test` results. Prove would then compare against
+  another process's run, which is a weaker proof.
+- Process, proposed to Deck: run a suite under about a minute in the foreground
+  (`deck-mem --ok` first) instead of through deck-job with a 3-4 min cron poll. 57 `make ci`
+  runs were logged over 21 days. The "suites via deck-job" rule is Deck's (11-01).
+
 ## IDE Integration
 
 ### GoLand Plugin
