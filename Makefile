@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync vendor-drift minify minify-check test-minified
+.PHONY: help lint lint-verbose build-emulator build-yagmin clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync vendor-drift minify minify-check test-minified
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -14,6 +14,9 @@ build-emulator: ## Build the template emulator/test runner
 	@echo "🔨 Building emulator..."
 	@cd tools/emulator && go build -o ../../bin/yagtest ./cmd/yagtest
 	@echo "✅ Emulator built successfully"
+
+build-yagmin: ## Build the yagmin CLI (minify/prove tooling)
+	@cd tools/emulator && go build -o ../../bin/yagmin ./cmd/yagmin
 
 lint: ## Run linter on all .gohtml commands
 	@echo "🔍 Running linter..."
@@ -65,14 +68,14 @@ test-templates: build-emulator ## Smoke test: run every command once with no arg
 # minified form in dist/free/ under the same path. The threshold is a rule, so the set
 # grows when a command grows; nothing is ever deleted (a stale copy that no longer
 # belongs there fails minify-check and is removed by hand).
-minify: ## Write minified copies of every command over the free-tier cap into dist/free/
-	@cd tools/emulator && go run ./cmd/yagmin batch -src ../../commands -dst ../../dist/free -over 10000
+minify: build-yagmin ## Write minified copies of every command over the free-tier cap into dist/free/
+	@cd tools/emulator && ../../bin/yagmin batch -src ../../commands -dst ../../dist/free -over 10000
 
-minify-check: ## Fail when dist/free/ doesn't match what make minify would write
-	@cd tools/emulator && go run ./cmd/yagmin check -src ../../commands -dst ../../dist/free -over 10000
+minify-check: build-yagmin ## Fail when dist/free/ doesn't match what make minify would write
+	@cd tools/emulator && ../../bin/yagmin check -src ../../commands -dst ../../dist/free -over 10000
 
-test-minified: ## Equivalence proof: the whole YAML suite passes on minified copies
-	@cd tools/emulator && go run ./cmd/yagmin prove \
+test-minified: build-yagmin ## Equivalence proof: the whole YAML suite passes on minified copies
+	@cd tools/emulator && ../../bin/yagmin prove \
 		-commands ../../commands -testdata testdata -schema ../../db_schema.yaml
 
 analyze: ## Analyze templates for missing emulator functions
@@ -84,6 +87,7 @@ bin:
 
 # Ensure bin directory exists before building
 build-emulator: | bin
+build-yagmin: | bin
 
 # Development shortcuts
 dev-lint: lint-verbose ## Alias for lint-verbose
@@ -121,11 +125,11 @@ mark-deployed: ## Record that the current commit's commands are live in YAGPDB
 	@git tag -f deployed HEAD >/dev/null && echo "deployed → $$(git log -1 --format='%h %s' HEAD)"
 	@git push -q -f origin deployed 2>/dev/null && echo "Tag pushed" || echo "Tag not pushed (offline?); run: git push -f origin deployed"
 
-deploy-manifest: ## Print the deploy manifest for SERVER=<main|lotv> (needs HEAD pushed)
+deploy-manifest: build-yagmin ## Print the deploy manifest for SERVER=<main|lotv> (needs HEAD pushed)
 	@test -n "$(SERVER)" || (echo "Usage: make deploy-manifest SERVER=main" && exit 1)
 	@python3 scripts/deploy-manifest.py $(SERVER)
 
-test-deploy: ## Node parity tests for deploy.js + the panel.json/manifest/config_sync checks
+test-deploy: build-yagmin ## Node parity tests for deploy.js + the panel.json/manifest/config_sync checks
 	@echo "🧪 Running deploy tooling tests..."
 	@node --test deploy/deploy.test.js
 	@python3 scripts/deploy_panel_check.py

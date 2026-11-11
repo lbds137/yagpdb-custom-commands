@@ -157,8 +157,13 @@ def main() -> int:
     # A free server deploys dist/free copies: refuse a stale one (a command edited without
     # `make minify`), the same check as `make minify-check`.
     if tier == "free":
+        yagmin_bin = os.path.normpath(os.path.join("tools/emulator", "../../bin/yagmin"))
+        if not os.path.exists(yagmin_bin):
+            print("refusing: bin/yagmin is missing (run `make build-yagmin`)",
+                  file=sys.stderr)
+            return 1
         stale = subprocess.run(
-            ["go", "run", "./cmd/yagmin", "check", "-src", "../../commands",
+            ["../../bin/yagmin", "check", "-src", "../../commands",
              "-dst", "../../dist/free", "-over", str(CAPS["free"])],
             cwd="tools/emulator", capture_output=True, text=True,
         )

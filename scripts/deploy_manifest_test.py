@@ -308,7 +308,7 @@ def check_free_tier(env):
         captured_err = io.StringIO()
 
         def fake_run(args, *a, **kw):
-            if list(args[:2]) == ["go", "run"]:
+            if str(args[0]).endswith("yagmin"):
                 return subprocess.CompletedProcess(
                     args, returncode=1, stdout="", stderr="yagmin: stale\n"
                 )

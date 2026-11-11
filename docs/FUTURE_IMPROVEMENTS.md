@@ -223,7 +223,9 @@ Free per run: 1 execCC, 10 DB interactions; commands ≤10,000 runes
   command on a free server), refuses a command over the premium 20,000 cap (a 20,001-rune
   temp source on a premium server), and refuses a stale `dist/free` (loading
   `scripts/deploy-manifest.py` via `importlib` and wrapping `subprocess.run` so the
-  `["go", "run", ...]` yagmin check returns nonzero while `git` calls pass through).
+  yagmin staleness check returns nonzero while `git` calls pass through; the fake keys
+  on the check binary being `yagmin` — originally `go run ./cmd/yagmin`, since 11-11 the
+  prebuilt `bin/yagmin`).
 - Known gap (slash-fleet unit 2, 2026-10-04): `/hebrew` (hebrew_slash) minifies to ~11.3k
   runes, still over the free 10k cap, so a FREE server can't take it as one root
   (atbash's dict alone is ~7k). Options: move the atbash dict into the DB (Gematria dict,
@@ -917,9 +919,12 @@ until the tap). Trigger: the z.ai reset on Wed 11-11 or an agy dispatch, in the 
 - Deferred: cache parsed snapshot files per run (`snapshot.go:178-191`; today the whole
   398 KB `command_tests.snap.yaml` is re-parsed for each of 206 snapshot tests). Estimated
   saving: 1.3-2s per suite run.
-- Deferred: build `bin/yagmin` once and use it in the minify targets (`Makefile:68,71,74-75`)
-  and in `scripts/deploy-manifest.py:159-164` (13 children, 6 of them running `go run`). Saves
-  about 1s warm and 3-6s cold.
+- Shipped (11-11, fresh-context reviewed): `make build-yagmin` builds `bin/yagmin` once;
+  `minify`, `minify-check` and `test-minified` exec it instead of `go run`, and
+  `deploy-manifest` and `test-deploy` build it as a prereq (the free-tier staleness
+  check refuses a missing binary and runs the prebuilt one; hidden-binary red proof
+  before the `test-deploy` prereq, green after). Saves about 1s warm and 3-6s cold per
+  invocation.
 - Ruled out: one yagtest process for all bare runs in `test-all-templates.sh`. It saves at
   most 2s (2.96s total today) and moves the usage-pin logic into Go.
 - Ruled out: letting prove reuse the `make test` results. Prove would then compare against
