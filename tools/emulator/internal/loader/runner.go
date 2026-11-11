@@ -55,6 +55,18 @@ type Runner struct {
 	config         RunnerConfig
 	duplicateNames map[string]bool // snapshot keys used by more than one test
 	parallelTaken  bool            // RunTests ran the worker pool (tests pin the gate)
+
+	// snapshotCache holds parsed snapshot files for this run, so a suite that reads one
+	// file for every snapshot test parses it once. Entries are stamped with the file's
+	// size and mtime and dropped when either changes, so a rewritten file (a Runner's own
+	// write, another Runner's, or an external one) re-parses on the next read (stamp
+	// caveat on snapCacheEntry). Reads may run concurrently, so access is guarded by
+	// snapshotMu.
+	snapshotMu    sync.Mutex
+	snapshotCache map[string]*snapCacheEntry
+	// parseSnapshots parses one snapshot file; nil means readSnapshots. Tests swap in a
+	// counting parser to pin the parse-once behavior.
+	parseSnapshots func(path string) (map[string]Snapshot, error)
 }
 
 // NewRunner creates a new test runner.

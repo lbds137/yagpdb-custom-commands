@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -190,13 +191,84 @@ func readSnapshots(path string) (map[string]Snapshot, error) {
 	return snaps, nil
 }
 
-func writeSnapshot(path, name string, snap Snapshot) error {
-	snaps, err := readSnapshots(path)
+// snapCacheEntry is a parsed snapshot file plus the stamp of the file it was parsed
+// from. A cache entry is trusted only while the file still matches its stamp (size +
+// mtime), so a rewrite of the file invalidates it on the next read. The stamp cannot
+// distinguish a same-size rewrite landing within one mtime tick; no reachable flow
+// produces one (parallel mode never writes, own writes drop the entry, and cross-Runner
+// writes are sequential).
+type snapCacheEntry struct {
+	snaps   map[string]Snapshot
+	modTime time.Time
+	size    int64
+}
+
+// cachedSnapshots returns the snapshot entries at path, parsing the file once per
+// Runner per file version and reusing the parse for every later read. The returned map
+// must not be modified: later readers may hold the same one. Stamped per entry (see
+// snapCacheEntry), so a file rewritten by this Runner, another one, or an outside
+// process is re-parsed.
+func (r *Runner) cachedSnapshots(path string) (map[string]Snapshot, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	parse := r.parseSnapshots
+	if parse == nil {
+		parse = readSnapshots
+	}
+
+	r.snapshotMu.Lock()
+	defer r.snapshotMu.Unlock()
+	if entry, ok := r.snapshotCache[abs]; ok {
+		if info, err := os.Stat(path); err == nil &&
+			info.ModTime().Equal(entry.modTime) && info.Size() == entry.size {
+			return entry.snaps, nil
+		}
+		delete(r.snapshotCache, abs)
+	}
+	snaps, err := parse(path)
+	if err != nil {
+		return nil, err
+	}
+	if r.snapshotCache == nil {
+		r.snapshotCache = map[string]*snapCacheEntry{}
+	}
+	if info, err := os.Stat(path); err == nil {
+		r.snapshotCache[abs] = &snapCacheEntry{snaps: snaps, modTime: info.ModTime(), size: info.Size()}
+	}
+	// A file that doesn't exist parses as empty and isn't cached: the stat above fails,
+	// so every read until the file appears re-parses, and one that appears is fresh.
+	return snaps, nil
+}
+
+// dropCachedSnapshot forgets path's parsed entries, after this Runner rewrites the file.
+func (r *Runner) dropCachedSnapshot(path string) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	r.snapshotMu.Lock()
+	defer r.snapshotMu.Unlock()
+	delete(r.snapshotCache, abs)
+}
+
+func (r *Runner) writeSnapshot(path, name string, snap Snapshot) error {
+	snaps, err := r.cachedSnapshots(path)
 	if err != nil {
 		return err
 	}
-	snaps[name] = snap
-	return saveSnapshots(path, snaps)
+	// Copy before mutating: the cached map may be held by concurrent readers.
+	updated := make(map[string]Snapshot, len(snaps)+1)
+	for k, v := range snaps {
+		updated[k] = v
+	}
+	updated[name] = snap
+	if err := saveSnapshots(path, updated); err != nil {
+		return err
+	}
+	r.dropCachedSnapshot(path)
+	return nil
 }
 
 func saveSnapshots(path string, snaps map[string]Snapshot) error {
@@ -207,7 +279,30 @@ func saveSnapshots(path string, snaps map[string]Snapshot) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o644)
+	// Written through a temp file and renamed, so a reader (another test goroutine, or
+	// the cache re-parsing on the file's new stamp) never sees a half-written file.
+	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".tmp*")
+	if err != nil {
+		return err
+	}
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmp.Name())
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmp.Name())
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
+		os.Remove(tmp.Name())
+		return err
+	}
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		os.Remove(tmp.Name())
+		return err
+	}
+	return nil
 }
 
 // snapText is text in a snapshot. yaml.v3 writes some text as a block scalar that
@@ -274,7 +369,7 @@ func (r *Runner) checkSnapshot(tc *TestCase, output string, ctx *runtime.Executi
 	path := SnapshotPath(tc.SourceFile)
 	got := takeSnapshot(output, ctx, db)
 
-	snaps, err := readSnapshots(path)
+	snaps, err := r.cachedSnapshots(path)
 	if err != nil {
 		return []string{fmt.Sprintf("snapshot: %v", err)}, false
 	}
@@ -284,7 +379,7 @@ func (r *Runner) checkSnapshot(tc *TestCase, output string, ctx *runtime.Executi
 		if !exists && r.config.CI && !r.config.UpdateSnapshots {
 			return []string{fmt.Sprintf("snapshot: none saved for %q in %s (run yagtest test -update-snapshots and commit it)", tc.Name, path)}, false
 		}
-		if err := writeSnapshot(path, tc.Name, got); err != nil {
+		if err := r.writeSnapshot(path, tc.Name, got); err != nil {
 			return []string{fmt.Sprintf("snapshot: writing %s: %v", path, err)}, false
 		}
 		return nil, true
