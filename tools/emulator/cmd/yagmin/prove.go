@@ -64,7 +64,7 @@ func proveRun(commandsDir, testdataDir, schemaFile, scratch string) error {
 	}
 
 	run := func(root string) []*loader.TestResult {
-		r := loader.NewRunner(loader.RunnerConfig{BaseDir: base, Schema: sch, TemplateRoot: root})
+		r := loader.NewRunner(proveConfig(base, sch, root))
 		return r.RunTests(tests)
 	}
 	normal := run("")
@@ -95,6 +95,18 @@ func proveRun(commandsDir, testdataDir, schemaFile, scratch string) error {
 	}
 	fmt.Println("the minified suite matches the normal run")
 	return nil
+}
+
+// proveConfig builds prove's RunnerConfig. CI comes from the environment so a
+// missing snapshot fails under CI (make test-minified, CI=true) instead of being
+// written; the same rule the yagtest runner applies.
+func proveConfig(baseDir string, sch *schema.Schema, templateRoot string) loader.RunnerConfig {
+	return loader.RunnerConfig{
+		BaseDir:      baseDir,
+		Schema:       sch,
+		TemplateRoot: templateRoot,
+		CI:           os.Getenv("CI") != "",
+	}
 }
 
 // testDiff is one differing test: name, and why.

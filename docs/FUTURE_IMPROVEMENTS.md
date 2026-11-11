@@ -889,11 +889,10 @@ The review was read-only. Driver checks of the code are cited per item. Implemen
 waits for a non-Anthropic lane (Lila 11-10, Fable focus: no routine units on Anthropic
 until the tap). Trigger: the z.ai reset on Wed 11-11 or an agy dispatch, in the order below.
 
-- Defect, deferred (do first): `yagmin prove` builds its Runner without `CI`
-  (`tools/emulator/cmd/yagmin/prove.go:67`). `checkSnapshot` writes a missing snapshot
-  instead of failing (`internal/loader/snapshot.go:283-290`), so `make test-minified` on its own
-  can write snapshots under CI=true. Today `make test` fails first only because the
-  targets run in serial order. Fix: `CI: os.Getenv("CI") != ""`, plus a test.
+- Shipped (11-11, fresh-context reviewed): `yagmin prove` now sets `CI` from the
+  environment via proveConfig (`tools/emulator/cmd/yagmin/prove.go`), pinned by
+  TestProveConfig; a missing snapshot fails under CI=true in test-minified instead of
+  being written (the defect below described).
 - Deferred (after the prove fix): run the `ci` prerequisites in parallel (`Makefile:54-58`,
   `$(MAKE) -j4 --output-sync=target`). Measured saving: 42s to 23s warm.
 - Deferred: a worker pool inside `RunTests` (`internal/loader/runner.go:1037-1051`, sequential
