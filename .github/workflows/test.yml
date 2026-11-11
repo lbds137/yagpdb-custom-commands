@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# CI only reads the checkout; nothing publishes (code-scanning #14)
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
