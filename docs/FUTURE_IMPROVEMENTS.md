@@ -895,8 +895,8 @@ until the tap). Trigger: the z.ai reset on Wed 11-11 or an agy dispatch, in the 
   environment via proveConfig (`tools/emulator/cmd/yagmin/prove.go`), pinned by
   TestProveConfig; a missing snapshot fails under CI=true in test-minified instead of
   being written (the defect below described).
-- Deferred (after the prove fix): run the `ci` prerequisites in parallel (`Makefile:54-58`,
-  `$(MAKE) -j4 --output-sync=target`). Measured saving: 42s to 23s warm.
+- Shipped (11-11, unit 2; the flip was missed then): `ci` runs its prerequisites in
+  parallel (`$(MAKE) -j4 --output-sync=target`). Measured saving: 42s to 23s warm.
 - Shipped (11-11, fresh-context reviewed): worker pool inside `RunTests`
   (`runTestsParallel`), active only under `CI && !UpdateSnapshots && !StopOnFail`; the
   sequential loop is otherwise verbatim, results in input order by construction. Measured
