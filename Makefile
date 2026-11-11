@@ -52,7 +52,8 @@ watch: build-emulator ## Rerun template tests whenever a command or test changes
 # As on GitHub (which sets CI): a missing or stale snapshot fails instead of being written
 # or only warned about
 ci: export CI := true
-ci: test-go test test-templates lint test-deploy minify-check test-minified ## Everything CI runs
+ci: ## Everything CI runs (prerequisites in parallel; measured 42s -> 23s warm, Fable 11-10)
+	@$(MAKE) -j4 --output-sync=target --no-print-directory test-go test test-templates lint test-deploy minify-check test-minified
 	@echo "🔍 Checking Go formatting..."
 	@test -z "$$(gofmt -l tools/emulator)" || (gofmt -l tools/emulator && echo "❌ Run: gofmt -w tools/emulator" && exit 1)
 	@echo "✅ All checks passed"
