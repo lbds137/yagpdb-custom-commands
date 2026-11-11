@@ -13,11 +13,7 @@ import (
 	"strconv"
 
 	template "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
-
-var titleCaser = cases.Title(language.Und)
 
 // MaxSliceLength is YAGPDB's cap on cslice length.
 const MaxSliceLength = 10000

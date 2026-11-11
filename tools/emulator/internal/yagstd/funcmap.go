@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/confusables"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // StandardFuncs returns YAGPDB's standard template functions that don't need Discord,
@@ -34,13 +36,17 @@ func StandardFuncs() map[string]interface{} {
 		"toByte":     ToByte,
 
 		// string manipulation
-		"hasPrefix":   strings.HasPrefix,
-		"hasSuffix":   strings.HasSuffix,
-		"joinStr":     joinStrings,
-		"lower":       strings.ToLower,
-		"slice":       slice,
-		"split":       strings.Split,
-		"title":       titleCaser.String,
+		"hasPrefix": strings.HasPrefix,
+		"hasSuffix": strings.HasSuffix,
+		"joinStr":   joinStrings,
+		"lower":     strings.ToLower,
+		"slice":     slice,
+		"split":     strings.Split,
+		// x/text casers aren't safe for concurrent use, so each call gets its own
+		"title": func(s string) string {
+			c := cases.Title(language.Und)
+			return c.String(s)
+		},
 		"trimSpace":   strings.TrimSpace,
 		"upper":       strings.ToUpper,
 		"urlescape":   url.PathEscape,

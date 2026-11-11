@@ -895,16 +895,25 @@ until the tap). Trigger: the z.ai reset on Wed 11-11 or an agy dispatch, in the 
   being written (the defect below described).
 - Deferred (after the prove fix): run the `ci` prerequisites in parallel (`Makefile:54-58`,
   `$(MAKE) -j4 --output-sync=target`). Measured saving: 42s to 23s warm.
-- Deferred: a worker pool inside `RunTests` (`internal/loader/runner.go:1037-1051`, sequential
-  today), keeping results in input order. Keep it sequential under `-update-snapshots`, outside
-  CI and with `StopOnFail`. Hazards: `writeSnapshot` read-modify-write, the package-level
-  `titleCaser` (`internal/yagstd/containers.go:20`, shared by every engine), and suite-level
-  `setup_db` slices (not checked). Acceptance gate: the suite runs in parallel under
-  `go test -race`. Estimated (not measured): `test` 9-14s down to about 3s,
-  `test-minified` 15-19s down to about 5s.
-- Possible defect, unverified: execCC children already run as goroutines, so the shared
-  `titleCaser` may race today when a parent and child both call `title`. Constructing it per
-  call fixes both this and the worker-pool hazard.
+- Shipped (11-11, fresh-context reviewed): worker pool inside `RunTests`
+  (`runTestsParallel`), active only under `CI && !UpdateSnapshots && !StopOnFail`; the
+  sequential loop is otherwise verbatim, results in input order by construction. Measured
+  on the real suite: 6.1s sequential → 2.46s pooled (2.5x). Verified under
+  `CI=true go test -race ./...` (distrobox; host gcc lacks glibc headers). The pool test
+  exercises `title` — the once-shared caser — under the pool, and an unexported
+  `parallelTaken` pin fails the test if the gate inverts. The `setup_db` hazard below was
+  audited: the only Runner-field write in RunTest's call tree is `duplicateNames`,
+  written once before the pool.
+- Shipped (11-11): `titleCaser` constructed per call at the funcmap binding — the x/text
+  caser is not concurrent-safe. The sketch below speculated execCC children race it
+  today: falsified — the emulator runs children inline
+  (`internal/runtime/engine.go:1110`, `childEngine.Execute`), so the race became real
+  only with the pool, which the per-call construction covers.
+- Queued (from the pool review): no standing race gate anywhere (no `-race` in
+  Makefile/CI; host gcc lacks glibc headers, so `-race` runs only in the tools
+  distrobox). The pool's standing protection is the unit-level race run, not CI. A CI
+  job with a -race-built yagtest over the YAML suite costs about +30-60s — CI-budget
+  call, parked for Lila.
 - Deferred: cache parsed snapshot files per run (`snapshot.go:178-191`; today the whole
   398 KB `command_tests.snap.yaml` is re-parsed for each of 206 snapshot tests). Estimated
   saving: 1.3-2s per suite run.

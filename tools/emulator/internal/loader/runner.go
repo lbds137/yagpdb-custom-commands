@@ -8,9 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	goruntime "runtime"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/funcs"
@@ -52,6 +54,7 @@ type RunnerConfig struct {
 type Runner struct {
 	config         RunnerConfig
 	duplicateNames map[string]bool // snapshot keys used by more than one test
+	parallelTaken  bool            // RunTests ran the worker pool (tests pin the gate)
 }
 
 // NewRunner creates a new test runner.
@@ -1035,9 +1038,18 @@ func containsAny(items []string, substr string) bool {
 
 // RunTests executes multiple test cases and returns results.
 func (r *Runner) RunTests(tests []*TestCase) []*TestResult {
-	var results []*TestResult
 	r.duplicateNames = findDuplicateNames(tests)
 
+	// The pool runs only when CI && !UpdateSnapshots && !StopOnFail. The first two
+	// keep every snapshot path a compare (a missing snapshot fails in CI instead of
+	// being written, snapshot.go's checkSnapshot), so writeSnapshot's
+	// read-modify-write of its file never runs concurrently; StopOnFail needs the
+	// sequential loop's early exit, which a pool can't give.
+	if r.config.CI && !r.config.UpdateSnapshots && !r.config.StopOnFail {
+		return r.runTestsParallel(tests)
+	}
+
+	var results []*TestResult
 	for _, tc := range tests {
 		result := r.RunTest(tc)
 		results = append(results, result)
@@ -1047,5 +1059,36 @@ func (r *Runner) RunTests(tests []*TestCase) []*TestResult {
 		}
 	}
 
+	return results
+}
+
+// runTestsParallel runs tests on a worker pool, results in input order: each
+// worker writes only results[i] for the indices it takes, distinct indices so no
+// lock is needed. r.duplicateNames is written once in RunTests before the pool
+// starts and only read here.
+func (r *Runner) runTestsParallel(tests []*TestCase) []*TestResult {
+	r.parallelTaken = true // written once, before the workers start
+	results := make([]*TestResult, len(tests))
+	indices := make(chan int)
+
+	workers := goruntime.GOMAXPROCS(0)
+	if workers > len(tests) {
+		workers = len(tests)
+	}
+	var wg sync.WaitGroup
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range indices {
+				results[i] = r.RunTest(tests[i])
+			}
+		}()
+	}
+	for i := range tests {
+		indices <- i
+	}
+	close(indices)
+	wg.Wait()
 	return results
 }
