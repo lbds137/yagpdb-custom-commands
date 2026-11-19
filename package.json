@@ -1,0 +1,10 @@
+{
+  "name": "yagpdb-custom-commands",
+  "private": true,
+  "devDependencies": {
+    "backlog.md": "1.55.3"
+  },
+  "scripts": {
+    "backlog": "backlog"
+  }
+}

@@ -16,3 +16,6 @@ __pycache__/
 
 # Vendor - external reference sources (not tracked)
 vendor/yagpdb/
+
+# Node (backlog.md CLI)
+node_modules/

@@ -2,6 +2,12 @@
 
 This document tracks potential enhancements for the YAGPDB custom commands project.
 
+> **Queue moved 2026-11-19** (backlog.md fleet standard, Lila's ruling): open items live in
+> the `backlog/` store — `pnpm backlog task list`. This file remains the evidence record
+> (rulings, vendor line numbers, shipped work); every open item here is mirrored by a TASK
+> in the store carrying its disposition (shipped / obsolete / ruled out / deferred + trigger).
+> New findings get a task via `pnpm backlog task create`, with this file as the detail attachment.
+
 ## Command file layout: topic folders (DECIDED, Lila 2026-09-27; SHIPPED the same day)
 
 Reverses the earlier "folders = panel groups" layout (new information: slash roots will

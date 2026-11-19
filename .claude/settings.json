@@ -1,4 +1,7 @@
 {
+  "env": {
+    "SYG_TRACKING_SURFACE": "backlog-md"
+  },
   "permissions": {
     "allow": [
       "Read",
