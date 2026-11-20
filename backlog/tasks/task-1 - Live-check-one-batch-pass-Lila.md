@@ -4,11 +4,13 @@ title: Live-check one-batch pass (Lila)
 status: In Progress
 assignee: []
 created_date: '2026-11-19T21:54:00Z'
+updated_date: '2026-11-20T02:23:00Z'
 labels:
   - live-checks
   - needs-lila
 dependencies: []
-ordinal: 1000
+priority: high
+ordinal: 10
 ---
 
 ## Description
