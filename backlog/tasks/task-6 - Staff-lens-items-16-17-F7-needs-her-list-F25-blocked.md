@@ -4,7 +4,7 @@ title: 'Staff-lens items 16-17: F7 needs her list, F25 blocked'
 status: Deferred
 assignee: []
 created_date: '2026-11-19T21:55:00Z'
-updated_date: '2026-11-20T02:23:00Z'
+updated_date: '2026-11-20T02:43:00Z'
 labels:
   - needs-lila
   - ux
@@ -21,5 +21,5 @@ ordinal: 6000
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Needs Lila: supply the curated list of staff-editable DB entries (F7).
+Needs Lila (action): supply the curated list of staff-editable DB entries (staff-lens audit item F7). Work for Lila, not a decision ask - refiled as an action during the prioritization pass, 2026-11-19.
 <!-- SECTION:NOTES:END -->

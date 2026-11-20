@@ -1,13 +1,12 @@
 ---
 id: TASK-15
-title: 'avatar_viewer embed color: target role color never passed (her call)'
+title: 'avatar_viewer embed color: pass the target role color (decided 11-19)'
 status: To Do
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
-updated_date: '2026-11-20T02:23:00Z'
+updated_date: '2026-11-20T02:43:00Z'
 labels:
   - commands
-  - needs-lila
 dependencies: []
 priority: medium
 ordinal: 40
@@ -23,4 +22,6 @@ ordinal: 40
 
 <!-- SECTION:NOTES:BEGIN -->
 Needs Lila: should the avatar embed take the viewed person's role color (pass Color $color) or stay invoker-colored (delete the dead loop)? Recommendation: pass the target's color.
+
+Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): pass the target color - hand the computed target role color to embed_exec as its Color argument so the avatar embed adopts the color of the viewed member. Implementation task now.
 <!-- SECTION:NOTES:END -->

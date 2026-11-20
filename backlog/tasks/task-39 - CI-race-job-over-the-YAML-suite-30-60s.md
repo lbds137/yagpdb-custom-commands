@@ -1,13 +1,12 @@
 ---
 id: TASK-39
-title: 'CI: -race job over the YAML suite (+30-60s)'
+title: 'CI: -race job over the YAML suite, non-blocking (approved 11-19)'
 status: To Do
 assignee: []
 created_date: '2026-11-19T21:57:00Z'
-updated_date: '2026-11-20T02:23:00Z'
+updated_date: '2026-11-20T02:43:00Z'
 labels:
   - ci
-  - needs-lila
 dependencies: []
 priority: medium
 ordinal: 50
@@ -23,4 +22,6 @@ ordinal: 50
 
 <!-- SECTION:NOTES:BEGIN -->
 Needs Lila: is +30-60s of CI worth a standing -race gate over the YAML suite? Recommendation: yes, as a non-blocking parallel job.
+
+Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): yes - add the race job as a non-blocking parallel CI job at about +30-60s. Implementation task now.
 <!-- SECTION:NOTES:END -->

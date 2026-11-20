@@ -1,13 +1,12 @@
 ---
 id: TASK-16
-title: '/db set: accept plain strings (her call)'
-status: Deferred
+title: '/db set: accept plain strings (decided 11-19)'
+status: To Do
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
-updated_date: '2026-11-20T02:23:00Z'
+updated_date: '2026-11-20T02:43:00Z'
 labels:
   - commands
-  - needs-lila
 dependencies: []
 ordinal: 16000
 ---
@@ -22,4 +21,6 @@ ordinal: 16000
 
 <!-- SECTION:NOTES:BEGIN -->
 Needs Lila: should db set accept plain strings not starting with {? See the recommendation above.
+
+Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): accept plain strings - a value not starting with { stores as-is. Implementation task now; update the pinned parity tests with it.
 <!-- SECTION:NOTES:END -->

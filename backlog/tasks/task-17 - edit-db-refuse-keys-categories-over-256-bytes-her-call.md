@@ -1,13 +1,12 @@
 ---
 id: TASK-17
-title: '/edit + /db: refuse keys/categories over 256 bytes (her call)'
+title: '/edit + /db keys over 256 bytes: leave as is (ruled out 11-19)'
 status: Deferred
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
-updated_date: '2026-11-20T02:23:00Z'
+updated_date: '2026-11-20T02:43:00Z'
 labels:
   - commands
-  - needs-lila
 dependencies: []
 ordinal: 17000
 ---
@@ -22,4 +21,6 @@ ordinal: 17000
 
 <!-- SECTION:NOTES:BEGIN -->
 Needs Lila: refuse >256-byte keys/categories, or leave as is? Recommendation: leave it.
+
+Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): leave as is - RULED OUT. Read and write stay consistent, and the collision needs two names agreeing for all 256 bytes; revisit only if a real over-length name turns up.
 <!-- SECTION:NOTES:END -->

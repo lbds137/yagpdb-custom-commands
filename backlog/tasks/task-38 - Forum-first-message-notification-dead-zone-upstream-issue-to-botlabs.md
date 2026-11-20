@@ -1,12 +1,13 @@
 ---
 id: TASK-38
-title: 'Forum first-message notification dead zone: upstream issue to botlabs?'
-status: To Do
+title: >-
+  Forum first-message notification dead zone: documented, no upstream issue
+  (ruled out 11-19)
+status: Deferred
 assignee: []
 created_date: '2026-11-19T21:57:00Z'
-updated_date: '2026-11-20T02:23:00Z'
+updated_date: '2026-11-20T02:43:00Z'
 labels:
-  - needs-lila
   - watch
 dependencies: []
 priority: medium
@@ -23,4 +24,6 @@ ordinal: 60
 
 <!-- SECTION:NOTES:BEGIN -->
 Needs Lila: file the forum first-message dead zone upstream with botlabs, or leave it documented? Recommendation: leave it (likely unfixable client-side; /prompt works around it).
+
+Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): leave documented - RULED OUT, no upstream issue to botlabs. The dead-zone evidence and the /prompt workaround stay recorded in this task; revisit only if the workaround breaks.
 <!-- SECTION:NOTES:END -->
