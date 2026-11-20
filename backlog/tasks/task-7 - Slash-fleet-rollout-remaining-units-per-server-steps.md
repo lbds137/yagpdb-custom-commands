@@ -4,10 +4,12 @@ title: 'Slash-fleet rollout: remaining units + per-server steps'
 status: In Progress
 assignee: []
 created_date: '2026-11-19T21:55:00Z'
+updated_date: '2026-11-20T02:23:00Z'
 labels:
   - slash-fleet
 dependencies: []
-ordinal: 7000
+priority: medium
+ordinal: 20
 ---
 
 ## Description

@@ -4,6 +4,7 @@ title: '/db set: accept plain strings (her call)'
 status: Deferred
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
+updated_date: '2026-11-20T02:23:00Z'
 labels:
   - commands
   - needs-lila
@@ -16,3 +17,9 @@ ordinal: 16000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 **Deferred (her call; recommendation recorded).** `db set` (text and slash) accepts JSON OBJECT values only — the set path runs jsonToSdict on every string, so `db set Key hello` fails with "Invalid value provided!"; a plain string must be sent as `"hello"`, which jsonToSdict also refuses (objects only). Improvement: accept a plain string as-is when it does not start with `{`. Kept for parity in the slash port (tests pin it). Lila decides whether the convenience is worth the behavior change. Found 2026-09-30.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Needs Lila: should db set accept plain strings not starting with {? See the recommendation above.
+<!-- SECTION:NOTES:END -->

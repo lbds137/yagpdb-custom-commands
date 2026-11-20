@@ -4,10 +4,12 @@ title: 'Emulator: model the panel newline-doubled length check'
 status: To Do
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
+updated_date: '2026-11-20T02:23:00Z'
 labels:
   - emulator
 dependencies: []
-ordinal: 19000
+priority: medium
+ordinal: 30
 ---
 
 ## Description
