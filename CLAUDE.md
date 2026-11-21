@@ -278,9 +278,16 @@ ask for pastes mid-work; when the work is done, report the `make changed-since-d
 The following operations should be discussed before executing:
 
 1. **Git Operations**
-    - Pushing is fine: it runs CI (`.github/workflows/test.yml`) and deploys nothing
+    - Every change lands by PR, never straight to `main`: branch → push → PR. Open it as the
+      owner and not as a draft, because `automerge` only fires for those. The `claude-review`
+      job reviews it, and `automerge` rebase-merges once the review passes and `test` is green.
+      Never merge by hand: a hand merge skips the review gate. The one exception is a PR that
+      changes `.github/workflows/claude-code-review.yml`. The action skips its own review there,
+      so the owner reads it and merges it by hand. (Owner ruling 2026-10-27.) The `main`
+      ruleset ("Repo standard", applied 2026-11-20) enforces all of this with no bypass.
+    - The fleet's backlog-only direct commit (owner ruling 2026-11-19) needs a store lint to
+      pass first. The pinned backlog.md 1.55.3 has none, so here backlog changes go by PR too.
     - Commits are allowed but discuss significant changes first
-    - Branch operations should be explicitly requested
     - One sanctioned `git reset --hard`: the delegation skill's step-0 base self-heal,
       run by a worker in its own `.claude/worktrees/` agent worktree under that block's
       four conditions. Anywhere else, ask first.
