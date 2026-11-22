@@ -190,6 +190,22 @@ tests:
       db_checks:
         - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
 
+  - name: "db_slash ExecData set: a whitespace-only value is refused as empty"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      exec_data:
+        ChannelID: 222222222222222222
+        UserID: 111111111111111111
+        Operation: "set"
+        Key: "Greeting"
+        Value: "   "
+        Title: "Greeting Editing"
+    assertions:
+      sent_messages:
+        - { embed_contains: "You must provide a value!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
+
   - name: "db_slash set: a JSON object over a list is refused and leaves the list unchanged"
     template: "../../../commands/db/db_slash.gohtml"
     context:
@@ -201,6 +217,22 @@ tests:
             embed_contains: "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }
       db_checks:
         - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
+
+  - name: "db_slash set: a JSON object over a nested list is refused and leaves the group unchanged"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Team:Sub", value: "{\"a\":1}" } }
+    setup_db:
+      - { user_id: 111111111111111111, key: "Team", value: { Sub: ["a", "b"] } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Team"
+          value_equals: { Sub: ["a", "b"] }
 
   - name: "db_slash set: a plain string over a group is refused and leaves it unchanged"
     template: "../../../commands/db/db_slash.gohtml"
@@ -336,6 +368,16 @@ tests:
         - { kind: message, ephemeral: true, embed_contains: "Value successfully removed!" }
       db_checks:
         - { user_id: 111111111111111111, key: "Padded", value_equals: ["a"] }
+
+  - name: "db_slash remove: a whitespace-only value is refused as empty"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: remove, options: { key: "List", value: "   " } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "You must provide a value!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
 
   - name: "db_slash remove: removes an array item"
     template: "../../../commands/db/db_slash.gohtml"
