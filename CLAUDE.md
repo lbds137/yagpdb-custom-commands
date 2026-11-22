@@ -263,7 +263,7 @@ group, defer mode, slash description and rows), creating a command (disabled) an
 one are part of the browser deploy, driven by the command's header; the manual path needs
 them by hand.
 
-Fallback (also what the skill's dry run reports for the owner to review): the owner copies
+Fallback, only when Claude-in-Chrome or the panel login is unavailable: the owner copies
 each changed `.gohtml` file into the YAGPDB control panel by hand. `make changed-since-deploy`
 lists the command files that changed since the `deployed` git tag; after pasting them, move
 the tag with `make mark-deployed`. It skips files `deploy/panel.json`'s `"unmanaged"` list
