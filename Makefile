@@ -45,7 +45,9 @@ test-race: ## YAML suite on a -race build of yagtest (needs cgo + glibc headers;
 
 test-go: ## Run the emulator's Go unit tests and vet
 	@echo "🧪 Running Go tests..."
-	@cd tools/emulator && go vet ./... && go test ./...
+	@# -count=1: Go's test cache has served a stale pass for a test that reads
+	@# ../../commands (outside the module) after a command changed
+	@cd tools/emulator && go vet ./... && go test -count=1 ./...
 
 update-snapshots: build-emulator ## Rewrite snapshots after an intended output change
 	@./bin/yagtest test -update-snapshots $(YAGTEST_FLAGS) tools/emulator/testdata/
