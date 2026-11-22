@@ -114,8 +114,9 @@ def check_free_tier(env):
     errors = []
     free = {"name": "Free", "guild": "1", "tier": "free"}
     premium = {"name": "Prem", "guild": "2", "tier": "premium"}
-    minified = "commands/db/db_slash.gohtml"
-    minified_copy = "dist/free/db/db_slash.gohtml"
+    # a command whose dist/free copy is UNDER the free cap
+    minified = "commands/edit/edit_slash.gohtml"
+    minified_copy = "dist/free/edit/edit_slash.gohtml"
     plain = "commands/knowledge/define_slash.gohtml"
 
     # a free server: a command with a dist/free copy deploys the copy, one without deploys itself
@@ -151,7 +152,7 @@ def check_free_tier(env):
         if got["source"] != minified:
             errors.append(f"premium {minified}: source {got['source']!r}, want the path")
 
-    # over the cap: hebrew_slash's minified copy is over 10,000 by panel count; db_slash's
+    # over the cap: hebrew_slash's minified copy is over 10,000 by panel count; edit_slash's
     # copy is not, so only hebrew_slash is named, and its source is the dist copy
     over = "commands/hebrew/hebrew_slash.gohtml"
     over_copy = "dist/free/hebrew/hebrew_slash.gohtml"
