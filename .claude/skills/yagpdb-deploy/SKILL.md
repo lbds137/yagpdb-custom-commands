@@ -40,7 +40,10 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    `origin/main`. A branch commit hasn't passed review, and automerge's rebase rewrites its
    sha, so a `deployed` tag on it would never be on main. (The manifest itself only refuses
    a HEAD that isn't reachable from any `origin/*` branch: raw.githubusercontent.com URLs
-   for an unpushed commit would 404.)
+   for an unpushed commit would 404.) Then `git fetch --force origin tag deployed` and check
+   `git rev-parse 'deployed^{commit}'` equals `git ls-remote origin refs/tags/deployed`: a
+   stale local tag (a round run from another clone) widens step 7's expected set and lets
+   drift through.
 2. `make deploy-manifest SERVER=<main|lotv|rose>` and capture its one line of JSON as `<manifest>`.
    A refusal or a stderr warning means stop and report it, not push through. A command
    with no id for this server is simply left out (panel.json is the per-server map).
@@ -69,8 +72,10 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    needed), so this check is the only gate before a live write. The round's expected set
    is `make changed-since-deploy`, run on the step-1 `main` checkout (after a `create`, its
    ids-and-`config_sync` PR has merged by then, so `config_sync` is in the set; the tag
-   moves only in step 10), plus any command this round created; it
-   covers both servers, since every round deploys main and rose together. Dry-run BOTH
+   moves only in step 10), plus any command this round created. "Created this round"
+   means its id was added to `deploy/panel.json` since the `deployed` tag (the `create`
+   and its ids PR come before step 1). The set covers both servers, since every round
+   deploys main and rose together. Dry-run BOTH
    servers before writing to either. Stop, write nothing, and report the dry runs to Lila
    when either shows any of:
    - a `would-update` on a command outside the expected set (live code or structure that
@@ -102,14 +107,14 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    hash matches, the header's structure matches (`failed: read-back structure <fields>`
    otherwise), and `is_enabled` is what was asked (`failed: read-back enabled ...`).
 9. Every round deploys to BOTH `main` and `rose` (Lila, 2026-10-04: The Rose, her private
-    server, stays in sync with the latest commands; she uses gematria there heavily). Order:
-    steps 2-6 for main and for rose, then step 7's check over both dry runs, then steps 7-8
-    for main and for rose; rose is checked against the same expected set. If main's live
-    run stops at step 8, rose is not written. A new command
-    that should exist on both gets a `create` on each. lotv is deployed only when Lila asks.
+   server, stays in sync with the latest commands; she uses gematria there heavily). Order:
+   steps 2-6 for main and for rose, then step 7's check over both dry runs, then steps 7-8
+   for main and for rose; rose is checked against the same expected set. If main's live
+   run stops at step 8, rose is not written. A new command that should exist on both gets
+   a `create` on each. lotv is deployed only when Lila asks.
 10. Only once main AND rose both came back clean, `make mark-deployed`. If either stopped
-    or failed, leave the tag where it is, so the next round's expected set still covers
-    what didn't land.
+   or failed, leave the tag where it is, so the next round's expected set still covers
+   what didn't land.
 
 ## New commands, enabling, retiring
 
@@ -117,12 +122,14 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
   header (type, trigger, group, rows), then in the panel tab
   `await yagDeploy.create(<guild>, [{path, group}], {dryRun: true})` (every item must come
   back `would-create`; anything else stops the round), then `dryRun: false` (every item
-  `created-disabled`, else stop as below). It POSTs `commands/new` in the header's group, then immediately posts the
-  new command's own form with `is_enabled` cleared and reads back that it is disabled
-  (`created-disabled`). Then: write the returned ids into `deploy/panel.json` (`main` and
-  `rose`; `lotv` only when Lila asks), `make config-sync`, and land that as its own PR
-  (review + automerge, like any change). The new commands stay disabled meanwhile. Once it
-  has merged, run the round from `main` (steps 1-10) with `enable: [<new ids>]`. For the ~1 s between the two
+  `created-disabled`, else stop as below). It POSTs `commands/new` in the header's group,
+  then immediately posts the new command's own form with `is_enabled` cleared and reads
+  back that it is disabled (`created-disabled`). Then: write the returned ids into
+  `deploy/panel.json` (`main` and `rose`; `lotv` only when Lila asks), `make config-sync`,
+  and land that as its own PR (review + automerge, like any change). The new commands stay
+  disabled meanwhile. Once it has merged, run the round from `main` (steps 1-10) with
+  `enable: [<new ids>]`, each server's own ids from panel.json (main's and rose's differ;
+  another server's id fails the run as `failed: options`). For the ~1 s between the two
   POSTs the new command is live and enabled with YAGPDB's placeholder response and an empty
   text trigger (default type Command, customcommands.go:74), so it answers nothing in
   practice; a `failed: created #N ... still ENABLED` status means disable it in the panel at
