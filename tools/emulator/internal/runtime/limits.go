@@ -329,17 +329,27 @@ func (e *Engine) withLimits(name string, fn interface{}) interface{} {
 	return wrapped.Interface()
 }
 
-// checkSourceLength applies YAGPDB's limit on a custom command's length.
+// checkSourceLength applies YAGPDB's limit on a custom command's length. The control
+// panel posts the textarea with CRLF line endings, and the server checks the runes of
+// what it receives (customcommands/customcommands.go validateCCResponseLength), so each
+// newline counts twice; the panel's own counter does the same
+// (customcommands/assets/customcommands-editcmd.html, the character counter). A "\r"
+// in the source is dropped first so a CRLF file counts like an LF one.
 func (ctx *ExecutionContext) checkSourceLength(source string) error {
 	limit := maxSourceRunes
 	if ctx.IsPremium {
 		limit = maxSourceRunesPremium
 	}
-	n := utf8.RuneCountInString(strings.ReplaceAll(source, "\r", ""))
+	normalized := strings.ReplaceAll(source, "\r", "")
+	runes := utf8.RuneCountInString(normalized)
+	newlines := strings.Count(normalized, "\n")
+	n := runes + newlines
 	if n <= limit {
 		return nil
 	}
-	return ctx.limitBreach(fmt.Errorf("the template is %d characters; YAGPDB refuses to save a custom command over %d", n, limit))
+	return ctx.limitBreach(fmt.Errorf("the template is %d characters as the control panel counts them "+
+		"(%d runes + %d newlines, each sent as CRLF); YAGPDB refuses to save a custom command over %d",
+		n, runes, newlines, limit))
 }
 
 // checkOutput applies YAGPDB's output limits to a finished run and returns the output
