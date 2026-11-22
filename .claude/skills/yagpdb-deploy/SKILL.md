@@ -101,7 +101,9 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
   context channels): without one YAGPDB never runs it, silently. Its interval comes from
   the header's `Interval:` on the run after `create` (create leaves it 0, which YAGPDB
   refuses for an hourly command).
-- **Enable / disable:** only through the `enable` / `disable` options, on her explicit yes.
+- **Enable / disable:** only through the `enable` / `disable` options. Enabling a command
+  the round created, as its header says, is part of the round (Lila's ruling). Disabling
+  a live command (a retirement, below) still needs her explicit yes.
 - **Retire:** `disable: [id]` in a run, then `git mv` the file to `retired/` and drop it from
   `deploy/panel.json`. Deleting the command in the panel is permanent and stays Lila's.
 

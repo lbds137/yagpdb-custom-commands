@@ -79,7 +79,8 @@ checks as separate plain commands, same four conditions.
 ## Local-only
 
 Nothing needs secrets or live services. Deploy rounds and `make mark-deployed` are the
-driver's (yagpdb-deploy skill); lotv deploys, panel deletes and live-check ticks are Lila's. Pushing runs CI only and is approved; the driver commits and pushes.
+driver's (yagpdb-deploy skill); lotv deploys, panel deletes and live-check ticks are
+Lila's. Pushing runs CI only and is approved; the driver commits and pushes.
 
 ## Dispatch folder
 
