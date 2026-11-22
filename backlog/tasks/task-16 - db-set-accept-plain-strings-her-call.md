@@ -4,7 +4,7 @@ title: '/db set: accept plain strings (decided 11-19)'
 status: Done
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
-updated_date: '2026-11-22T17:36:00Z'
+updated_date: '2026-11-22T17:44:00Z'
 labels:
   - commands
 dependencies: []
@@ -26,4 +26,6 @@ Needs Lila: should db set accept plain strings not starting with {? See the reco
 Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): accept plain strings - a value not starting with { stores as-is. Implementation task now; update the pinned parity tests with it.
 
 Shipped 2026-11-22 on branch drain-decided-1122: set branch guards jsonToSdict on a leading {; pinned refusal test replaced; new tests for malformed { and a nested plain string. db_slash panel count 19,500 -> 19,621.
+
+Round 1 of PR #32 review (Lila 2026-11-22 AskUserQuestion: all three guards): trim leading whitespace before the { check; refuse a value starting with [ (lists via /db add); refuse a plain string over an existing list or group (point to Key:Sub); reword $invalidValueText so it doesn't imply set takes JSON lists.
 <!-- SECTION:NOTES:END -->
