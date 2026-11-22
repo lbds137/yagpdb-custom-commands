@@ -1,10 +1,10 @@
 ---
 id: TASK-15
 title: 'avatar_viewer embed color: pass the target role color (decided 11-19)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
-updated_date: '2026-11-20T02:43:00Z'
+updated_date: '2026-11-22T17:36:00Z'
 labels:
   - commands
 dependencies: []
@@ -24,4 +24,6 @@ ordinal: 40
 Needs Lila: should the avatar embed take the viewed person's role color (pass Color $color) or stay invoker-colored (delete the dead loop)? Recommendation: pass the target's color.
 
 Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): pass the target color - hand the computed target role color to embed_exec as its Color argument so the avatar embed adopts the color of the viewed member. Implementation task now.
+
+Shipped 2026-11-22 on branch drain-decided-1122: avatar_viewer passes Color $color (init = Global Embed Color); scope widened to the twin avatar_menu (same loop over .TargetMember.Member.Roles). Tests red on the old commands, invoker holds a different colour.
 <!-- SECTION:NOTES:END -->

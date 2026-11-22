@@ -15,6 +15,8 @@
 		"content" (joinStr "" "Viewing " .TargetUser.String "'s avatar.")
 		"ephemeral" true) }}
 
+	{{ $globalDict := (dbGet 0 "Global").Value }}
+
 	{{ $commandsDict := (dbGet 0 "Commands").Value }}
 	{{ $embed_exec := toInt ($commandsDict.Get "embed_exec") }}
 
@@ -23,6 +25,9 @@
 
 	{{- /* no .Member in a context-menu run; the invoker is .Author */ -}}
 	{{ $avatarOwnerNickname := "" }}
+	{{- /* the embed wears the viewed member's top coloured role; none, or no member data:
+	    the server's Embed Color (unset: embed_exec uses the invoker's) */ -}}
+	{{ $color := toInt ($globalDict.Get "Embed Color") }}
 	{{- /* .TargetMember is a dstate.MemberState: the nick lives under .Member, which is
 	    nil when Discord didn't send member fields; nested ifs, since and/or don't short-circuit */ -}}
 	{{ if .TargetMember }}
@@ -30,6 +35,14 @@
 			{{ if .TargetMember.Member.Nick }}
 				{{ $avatarOwnerNickname = .TargetMember.Member.Nick }}
 			{{ end }}
+			{{ $position := 0 }}
+			{{ $roles := .TargetMember.Member.Roles }}
+			{{- range .Guild.Roles -}}
+				{{- if and (in $roles .ID) (.Color) (lt $position .Position) -}}
+					{{- $position = .Position -}}
+					{{- $color = .Color -}}
+				{{- end -}}
+			{{- end -}}
 		{{ end }}
 	{{ end }}
 
@@ -60,6 +73,7 @@
 		"ChannelID" .Channel.ID
 		"Title" "Avatar Viewer"
 		"ImageURL" $avatarURL
+		"Color" $color
 		"Fields" $fields
 		"Components" $buttons
 	) }}
