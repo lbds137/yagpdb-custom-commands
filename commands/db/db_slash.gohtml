@@ -68,33 +68,33 @@
 {{ $isExec := or .ExecData.UserID .ExecData.Operation .ExecData.Key .ExecData.Value .ExecData.Title }}
 
 {{ if $isExec }}
-    {{ $userID = .ExecData.UserID }}
-    {{ $operation = .ExecData.Operation }}
-    {{ $key = .ExecData.Key }}
-    {{ $value = .ExecData.Value }}
-    {{ $valueType = printf "%T" $value }}
-    {{ $title = .ExecData.Title }}
+	{{ $userID = .ExecData.UserID }}
+	{{ $operation = .ExecData.Operation }}
+	{{ $key = .ExecData.Key }}
+	{{ $value = .ExecData.Value }}
+	{{ $valueType = printf "%T" $value }}
+	{{ $title = .ExecData.Title }}
 {{ else if .IsSlashCommand }}
-    {{ $isSlash = true }}
-    {{ $subcommand = .SubCommand }}
-    {{ $operation = .SubCommand }}
-    {{ if eq $operation "view" }}
-        {{ $operation = "get" }}
-    {{ else if eq $operation "browse" }}
-        {{ $operation = "keys" }}
-    {{ else if eq $operation "export" }}
-        {{ $operation = "dump" }}
-    {{ end }}
-    {{ $key = or .Options.key "" }}
-    {{ $value = or .Options.value "" }}
-    {{ $valueType = printf "%T" $value }}
-    {{ if hasRoleID $staffRoleID }}
-        {{ $userID = 0 }}
-        {{ if .Options.user }}
-            {{ $userID = toInt .Options.user.ID }}
-            {{ $targeted = true }}
-        {{ end }}
-    {{ end }}
+	{{ $isSlash = true }}
+	{{ $subcommand = .SubCommand }}
+	{{ $operation = .SubCommand }}
+	{{ if eq $operation "view" }}
+		{{ $operation = "get" }}
+	{{ else if eq $operation "browse" }}
+		{{ $operation = "keys" }}
+	{{ else if eq $operation "export" }}
+		{{ $operation = "dump" }}
+	{{ end }}
+	{{ $key = or .Options.key "" }}
+	{{ $value = or .Options.value "" }}
+	{{ $valueType = printf "%T" $value }}
+	{{ if hasRoleID $staffRoleID }}
+		{{ $userID = 0 }}
+		{{ if .Options.user }}
+			{{ $userID = toInt .Options.user.ID }}
+			{{ $targeted = true }}
+		{{ end }}
+	{{ end }}
 {{ end }}
 
 {{ $isKeys := eq "keys" $operation }}
@@ -113,280 +113,280 @@
 {{ $resultEmoji := "✅" }}
 {{ $displayUserID := $userID }}
 {{ if and $isDump (not $key) }}
-    {{ $key = "all" }}
+	{{ $key = "all" }}
 {{ end }}
 {{ if and $operationCheck $key $valueCheck }}
-    {{/* the engine is retired/db.gohtml's (comments there) but set's input rules; every
-        .Set/.Del is a `$_ :=`, so yagmin can drop the whitespace around it */}}
-    {{ $existingValue := "" }}
-    {{ $found := false }}
+	{{/* the engine is retired/db.gohtml's (comments there) but set's input rules; every
+		.Set/.Del is a `$_ :=`, so yagmin can drop the whitespace around it */}}
+	{{ $existingValue := "" }}
+	{{ $found := false }}
 
-    {{ $keyArray := split $key ":" }}
-    {{ $parentExistingValue := "" }}
-    {{ $lastParentExistingValue := "" }}
-    {{ $parentFound := false }}
-    {{ $firstSubkey := index $keyArray 0 }}
-    {{ $lastSubkey := index $keyArray (sub (len $keyArray) 1) }}
-    {{ if ge (len $keyArray) 2 }}
-        {{ $parentExistingValue = (dbGet $userID $firstSubkey).Value }}
-        {{ if eq $plainMapType (printf "%T" $parentExistingValue) }}
-            {{ $parentExistingValue = sdict $parentExistingValue }}
-        {{ end }}
-        {{ $existingValue = $parentExistingValue }}
-        {{ $found = true }}
-        {{ $key = $firstSubkey }}
-        {{- range $subkey := slice $keyArray 1 -}}
-            {{ $key = joinStr " > " $key $subkey }}
-            {{ if and $found (eq "map" (kindOf $existingValue true)) }}
-                {{ $lastParentExistingValue = $existingValue }}
-                {{ $parentFound = true }}
-                {{ $found = $existingValue.HasKey $subkey }}
-                {{ $existingValue = $existingValue.Get $subkey }}
-                {{/* plain map inside stored JSON: promote to sdict in its parent */}}
-                {{ if eq $plainMapType (printf "%T" $existingValue) }}
-                    {{ $existingValue = sdict $existingValue }}
-                    {{ $_ := $lastParentExistingValue.Set $subkey $existingValue }}
-                {{ end }}
-            {{ else }}
-                {{ $found = false }}
-                {{ $parentFound = false }}
-                {{ $existingValue = "" }}
-            {{ end }}
-        {{- end -}}
-    {{ else }}
-        {{ with dbGet $userID $key }}
-            {{ $found = true }}
-            {{ $existingValue = .Value }}
-            {{ if eq $plainMapType (printf "%T" $existingValue) }}
-                {{ $existingValue = sdict $existingValue }}
-            {{ end }}
-        {{ end }}
-    {{ end }}
-    {{ $existingType := printf "%T" $existingValue }}
-    {{ $errorText := "" }}
+	{{ $keyArray := split $key ":" }}
+	{{ $parentExistingValue := "" }}
+	{{ $lastParentExistingValue := "" }}
+	{{ $parentFound := false }}
+	{{ $firstSubkey := index $keyArray 0 }}
+	{{ $lastSubkey := index $keyArray (sub (len $keyArray) 1) }}
+	{{ if ge (len $keyArray) 2 }}
+		{{ $parentExistingValue = (dbGet $userID $firstSubkey).Value }}
+		{{ if eq $plainMapType (printf "%T" $parentExistingValue) }}
+			{{ $parentExistingValue = sdict $parentExistingValue }}
+		{{ end }}
+		{{ $existingValue = $parentExistingValue }}
+		{{ $found = true }}
+		{{ $key = $firstSubkey }}
+		{{- range $subkey := slice $keyArray 1 -}}
+			{{ $key = joinStr " > " $key $subkey }}
+			{{ if and $found (eq "map" (kindOf $existingValue true)) }}
+				{{ $lastParentExistingValue = $existingValue }}
+				{{ $parentFound = true }}
+				{{ $found = $existingValue.HasKey $subkey }}
+				{{ $existingValue = $existingValue.Get $subkey }}
+				{{/* plain map inside stored JSON: promote to sdict in its parent */}}
+				{{ if eq $plainMapType (printf "%T" $existingValue) }}
+					{{ $existingValue = sdict $existingValue }}
+					{{ $_ := $lastParentExistingValue.Set $subkey $existingValue }}
+				{{ end }}
+			{{ else }}
+				{{ $found = false }}
+				{{ $parentFound = false }}
+				{{ $existingValue = "" }}
+			{{ end }}
+		{{- end -}}
+	{{ else }}
+		{{ with dbGet $userID $key }}
+			{{ $found = true }}
+			{{ $existingValue = .Value }}
+			{{ if eq $plainMapType (printf "%T" $existingValue) }}
+				{{ $existingValue = sdict $existingValue }}
+			{{ end }}
+		{{ end }}
+	{{ end }}
+	{{ $existingType := printf "%T" $existingValue }}
+	{{ $errorText := "" }}
 
-    {{ $ptAction := "" }}
-    {{ if $isDump }}
-        {{ $dumpUserID := $userID }}
-        {{ $dumpData := sdict }}
-        {{ if and $key (ne $key "all") }}
-            {{ $entry := dbGet $dumpUserID $key }}
-            {{ if and $entry $entry.Value }}
-                {{ $_ := $dumpData.Set $key $entry.Value }}
-            {{ end }}
-        {{ else }}
-            {{- range $entry := dbGetPattern $dumpUserID "%" 100 0 -}}
-                {{- if $entry.Value -}}
-                    {{- $_ := $dumpData.Set $entry.Key $entry.Value -}}
-                {{- end -}}
-            {{- end -}}
-        {{ end }}
-        {{ $ptAction = "dumped" }}
-        {{ $displayUserID = $dumpUserID }}
-        {{ $jsonData := json $dumpData true }}
-        {{ $filename := joinStr "" "db_dump_" (toString $dumpUserID) "_" (currentTime.Unix) }}
-        {{ if $isSlash }}
-            {{ sendResponse nil (complexMessage
-                "content" (joinStr "" "Exported " (len $dumpData) " entries to file")
-                "file" $jsonData
-                "filename" $filename
-                "ephemeral" true
-            ) }}
-        {{ else }}
-            {{ sendMessage nil (complexMessage "file" $jsonData "filename" $filename) }}
-        {{ end }}
-        {{ $value = joinStr "" "Exported " (len $dumpData) " entries to file" }}
-    {{ else if $isKeys }}
-        {{ if eq "map" (kindOf $existingValue true) }}
-            {{ $ptAction = "inspected" }}
-            {{ $value = cslice }}
-            {{- range $k, $v := $existingValue -}}
-                {{- $value = $value.Append $k -}}
-            {{- end -}}
-        {{ else }}
-            {{ $errorText = "That name isn't a group of entries, so there is nothing to list." }}
-        {{ end }}
-    {{ else if or $isDelete $isGet }}
-        {{ if $found }}
-            {{ $value = $existingValue }}
-            {{ if $isDelete }}
-                {{ $ptAction = "deleted" }}
-                {{ if ge (len $keyArray) 2 }}
-                    {{ $_ := $lastParentExistingValue.Del $lastSubkey }}
-                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
-                {{ else }}
-                    {{ dbDel $userID $key }}
-                {{ end }}
-            {{ else if $isGet }}
-                {{ $ptAction = "retrieved" }}
-            {{ end }}
-        {{ else }}
-            {{ $errorText = "Nothing is stored under that name." }}
-        {{ end }}
-    {{ else if or $isAdd $isRemove }}
-        {{ try }}
-            {{ $parsedValue := $value }}
-            {{ if eq $stringType $valueType }}
-                {{ $t := trimSpace $value }}
-                {{ if hasPrefix $t "{" }}
-                    {{ $parsedValue = jsonToSdict $t }}
-                {{ end }}
-            {{ end }}
-            {{ if $isAdd }}
-                {{ $ptAction = "added" }}
-            {{ else }}
-                {{ $ptAction = "removed" }}
-            {{ end }}
-            {{ $existingIsSlice := and $found (eq "slice" (kindOf $existingValue true)) }}
-            {{ $existingIsDict := and $found (eq "map" (kindOf $existingValue true)) }}
-            {{ $parsedIsDict := eq "map" (kindOf $parsedValue true) }}
-            {{ if and $existingIsSlice $isAdd }}
-                {{ $newSlice := cslice }}
-                {{ range $item := $existingValue }}
-                    {{ $newSlice = $newSlice.Append $item }}
-                {{ end }}
-                {{ $newSlice = $newSlice.Append $parsedValue }}
-                {{ $existingValue = $newSlice }}
-                {{ if ge (len $keyArray) 2 }}
-                    {{ $_ := $lastParentExistingValue.Set $lastSubkey $existingValue }}
-                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
-                {{ else }}
-                    {{ dbSet $userID $key $existingValue }}
-                {{ end }}
-                {{ $value = $parsedValue }}
-            {{ else if and $existingIsSlice $isRemove }}
-                {{ $newSlice := cslice }}
-                {{ $removed := false }}
-                {{ range $item := $existingValue }}
-                    {{ if and (not $removed) (eq (str $item) (str $parsedValue)) }}
-                        {{ $removed = true }}
-                    {{ else }}
-                        {{ $newSlice = $newSlice.Append $item }}
-                    {{ end }}
-                {{ end }}
-                {{ if $removed }}
-                    {{ $existingValue = $newSlice }}
-                    {{ if ge (len $keyArray) 2 }}
-                        {{ $_ := $lastParentExistingValue.Set $lastSubkey $existingValue }}
-                        {{ dbSet $userID $firstSubkey $parentExistingValue }}
-                    {{ else }}
-                        {{ dbSet $userID $key $existingValue }}
-                    {{ end }}
-                    {{ $value = $parsedValue }}
-                {{ else }}
-                    {{ $errorText = "Nothing is stored under that name." }}
-                {{ end }}
-            {{ else if and $existingIsDict $parsedIsDict }}
-                {{/* Dict operations: add/remove keys of the target dictionary */}}
-                {{ $value = $parsedValue }}
-                {{ $removedAny := false }}
-                {{- range $k, $v := $value -}}
-                    {{- if $isAdd -}}
-                        {{- $existingAtK := $existingValue.Get $k -}}
-                        {{- if and (eq "slice" (kindOf $existingAtK true)) (eq "slice" (kindOf $v true)) -}}
-                            {{- /* both slices: append to a cslice copy (plain ones lack Append) */ -}}
-                            {{- $newSlice := cslice -}}
-                            {{- range $item := $existingAtK -}}
-                                {{- $newSlice = $newSlice.Append $item -}}
-                            {{- end -}}
-                            {{- range $item := $v -}}
-                                {{- $newSlice = $newSlice.Append $item -}}
-                            {{- end -}}
-                            {{- $_ := $existingValue.Set $k $newSlice -}}
-                        {{- else -}}
-                            {{- $_ := $existingValue.Set $k $v -}}
-                        {{- end -}}
-                    {{- else if $existingValue.HasKey $k -}}
-                        {{- $_ := $value.Set $k ($existingValue.Get $k) -}}
-                        {{- $_ := $existingValue.Del $k -}}
-                        {{- $removedAny = true -}}
-                    {{- else -}}
-                        {{- $_ := $value.Del $k -}}
-                    {{- end -}}
-                {{- end -}}
+	{{ $ptAction := "" }}
+	{{ if $isDump }}
+		{{ $dumpUserID := $userID }}
+		{{ $dumpData := sdict }}
+		{{ if and $key (ne $key "all") }}
+			{{ $entry := dbGet $dumpUserID $key }}
+			{{ if and $entry $entry.Value }}
+				{{ $_ := $dumpData.Set $key $entry.Value }}
+			{{ end }}
+		{{ else }}
+			{{- range $entry := dbGetPattern $dumpUserID "%" 100 0 -}}
+				{{- if $entry.Value -}}
+					{{- $_ := $dumpData.Set $entry.Key $entry.Value -}}
+				{{- end -}}
+			{{- end -}}
+		{{ end }}
+		{{ $ptAction = "dumped" }}
+		{{ $displayUserID = $dumpUserID }}
+		{{ $jsonData := json $dumpData true }}
+		{{ $filename := joinStr "" "db_dump_" (toString $dumpUserID) "_" (currentTime.Unix) }}
+		{{ if $isSlash }}
+			{{ sendResponse nil (complexMessage
+				"content" (joinStr "" "Exported " (len $dumpData) " entries to file")
+				"file" $jsonData
+				"filename" $filename
+				"ephemeral" true
+			) }}
+		{{ else }}
+			{{ sendMessage nil (complexMessage "file" $jsonData "filename" $filename) }}
+		{{ end }}
+		{{ $value = joinStr "" "Exported " (len $dumpData) " entries to file" }}
+	{{ else if $isKeys }}
+		{{ if eq "map" (kindOf $existingValue true) }}
+			{{ $ptAction = "inspected" }}
+			{{ $value = cslice }}
+			{{- range $k, $v := $existingValue -}}
+				{{- $value = $value.Append $k -}}
+			{{- end -}}
+		{{ else }}
+			{{ $errorText = "That name isn't a group of entries, so there is nothing to list." }}
+		{{ end }}
+	{{ else if or $isDelete $isGet }}
+		{{ if $found }}
+			{{ $value = $existingValue }}
+			{{ if $isDelete }}
+				{{ $ptAction = "deleted" }}
+				{{ if ge (len $keyArray) 2 }}
+					{{ $_ := $lastParentExistingValue.Del $lastSubkey }}
+					{{ dbSet $userID $firstSubkey $parentExistingValue }}
+				{{ else }}
+					{{ dbDel $userID $key }}
+				{{ end }}
+			{{ else if $isGet }}
+				{{ $ptAction = "retrieved" }}
+			{{ end }}
+		{{ else }}
+			{{ $errorText = "Nothing is stored under that name." }}
+		{{ end }}
+	{{ else if or $isAdd $isRemove }}
+		{{ try }}
+			{{ $parsedValue := $value }}
+			{{ if eq $stringType $valueType }}
+				{{ $t := trimSpace $value }}
+				{{ if hasPrefix $t "{" }}
+					{{ $parsedValue = jsonToSdict $t }}
+				{{ end }}
+			{{ end }}
+			{{ if $isAdd }}
+				{{ $ptAction = "added" }}
+			{{ else }}
+				{{ $ptAction = "removed" }}
+			{{ end }}
+			{{ $existingIsSlice := and $found (eq "slice" (kindOf $existingValue true)) }}
+			{{ $existingIsDict := and $found (eq "map" (kindOf $existingValue true)) }}
+			{{ $parsedIsDict := eq "map" (kindOf $parsedValue true) }}
+			{{ if and $existingIsSlice $isAdd }}
+				{{ $newSlice := cslice }}
+				{{ range $item := $existingValue }}
+					{{ $newSlice = $newSlice.Append $item }}
+				{{ end }}
+				{{ $newSlice = $newSlice.Append $parsedValue }}
+				{{ $existingValue = $newSlice }}
+				{{ if ge (len $keyArray) 2 }}
+					{{ $_ := $lastParentExistingValue.Set $lastSubkey $existingValue }}
+					{{ dbSet $userID $firstSubkey $parentExistingValue }}
+				{{ else }}
+					{{ dbSet $userID $key $existingValue }}
+				{{ end }}
+				{{ $value = $parsedValue }}
+			{{ else if and $existingIsSlice $isRemove }}
+				{{ $newSlice := cslice }}
+				{{ $removed := false }}
+				{{ range $item := $existingValue }}
+					{{ if and (not $removed) (eq (str $item) (str $parsedValue)) }}
+						{{ $removed = true }}
+					{{ else }}
+						{{ $newSlice = $newSlice.Append $item }}
+					{{ end }}
+				{{ end }}
+				{{ if $removed }}
+					{{ $existingValue = $newSlice }}
+					{{ if ge (len $keyArray) 2 }}
+						{{ $_ := $lastParentExistingValue.Set $lastSubkey $existingValue }}
+						{{ dbSet $userID $firstSubkey $parentExistingValue }}
+					{{ else }}
+						{{ dbSet $userID $key $existingValue }}
+					{{ end }}
+					{{ $value = $parsedValue }}
+				{{ else }}
+					{{ $errorText = "Nothing is stored under that name." }}
+				{{ end }}
+			{{ else if and $existingIsDict $parsedIsDict }}
+				{{/* Dict operations: add/remove keys of the target dictionary */}}
+				{{ $value = $parsedValue }}
+				{{ $removedAny := false }}
+				{{- range $k, $v := $value -}}
+					{{- if $isAdd -}}
+						{{- $existingAtK := $existingValue.Get $k -}}
+						{{- if and (eq "slice" (kindOf $existingAtK true)) (eq "slice" (kindOf $v true)) -}}
+							{{- /* both slices: append to a cslice copy (plain ones lack Append) */ -}}
+							{{- $newSlice := cslice -}}
+							{{- range $item := $existingAtK -}}
+								{{- $newSlice = $newSlice.Append $item -}}
+							{{- end -}}
+							{{- range $item := $v -}}
+								{{- $newSlice = $newSlice.Append $item -}}
+							{{- end -}}
+							{{- $_ := $existingValue.Set $k $newSlice -}}
+						{{- else -}}
+							{{- $_ := $existingValue.Set $k $v -}}
+						{{- end -}}
+					{{- else if $existingValue.HasKey $k -}}
+						{{- $_ := $value.Set $k ($existingValue.Get $k) -}}
+						{{- $_ := $existingValue.Del $k -}}
+						{{- $removedAny = true -}}
+					{{- else -}}
+						{{- $_ := $value.Del $k -}}
+					{{- end -}}
+				{{- end -}}
 
-                {{ if or $isAdd $removedAny }}
-                    {{ if ge (len $keyArray) 2 }}
-                        {{ dbSet $userID $firstSubkey $parentExistingValue }}
-                    {{ else }}
-                        {{ dbSet $userID $key $existingValue }}
-                    {{ end }}
-                {{ else }}
-                    {{ $errorText = "Nothing is stored under that name." }}
-                {{ end }}
-            {{ else if $existingIsDict }}
-                {{ $errorText = $invalidValueText }}
-            {{ else }}
-                {{ $errorText = "That name isn't a list or a group, so you can't add to or remove from it." }}
-            {{ end }}
-        {{ catch }}
-            {{ $errorText = $invalidValueText }}
-        {{ end }}
-    {{ else if and (ge (len $keyArray) 2) (not $parentFound) }}
-        {{ $errorText = "That group doesn't exist, so nothing can be stored inside it." }}
-    {{ else }}
-        {{ try }}
-            {{ if eq $stringType $valueType }}
-                {{ $t := trimSpace $value }}
-                {{ $kind := kindOf $existingValue true }}
-                {{ $holdsText := "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }}
-                {{ if hasPrefix $t "{" }}
-                    {{ if and $found (eq "slice" $kind) }}
-                        {{ $errorText = $holdsText }}
-                    {{ else }}
-                        {{ $value = jsonToSdict $t }}
-                    {{ end }}
-                {{ else if hasPrefix $t "[" }}
-                    {{ $errorText = "Lists can't be set directly; put one inside a group, e.g. {\"Tags\": [\"a\"]}." }}
-                {{ else if and $found (in (cslice "map" "slice") $kind) }}
-                    {{ $errorText = $holdsText }}
-                {{ end }}
-            {{ end }}
-            {{ if not $errorText }}
-                {{ $ptAction = "set" }}
-                {{ if ge (len $keyArray) 2 }}
-                    {{ $_ := $lastParentExistingValue.Set $lastSubkey $value }}
-                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
-                {{ else }}
-                    {{ dbSet $userID $key $value }}
-                {{ end }}
-            {{ end }}
-        {{ catch }}
-            {{ $errorText = $invalidValueText }}
-        {{ end }}
-    {{ end }}
+				{{ if or $isAdd $removedAny }}
+					{{ if ge (len $keyArray) 2 }}
+						{{ dbSet $userID $firstSubkey $parentExistingValue }}
+					{{ else }}
+						{{ dbSet $userID $key $existingValue }}
+					{{ end }}
+				{{ else }}
+					{{ $errorText = "Nothing is stored under that name." }}
+				{{ end }}
+			{{ else if $existingIsDict }}
+				{{ $errorText = $invalidValueText }}
+			{{ else }}
+				{{ $errorText = "That name isn't a list or a group, so you can't add to or remove from it." }}
+			{{ end }}
+		{{ catch }}
+			{{ $errorText = $invalidValueText }}
+		{{ end }}
+	{{ else if and (ge (len $keyArray) 2) (not $parentFound) }}
+		{{ $errorText = "That group doesn't exist, so nothing can be stored inside it." }}
+	{{ else }}
+		{{ try }}
+			{{ if eq $stringType $valueType }}
+				{{ $t := trimSpace $value }}
+				{{ $kind := kindOf $existingValue true }}
+				{{ $holdsText := "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }}
+				{{ if hasPrefix $t "{" }}
+					{{ if and $found (eq "slice" $kind) }}
+						{{ $errorText = $holdsText }}
+					{{ else }}
+						{{ $value = jsonToSdict $t }}
+					{{ end }}
+				{{ else if hasPrefix $t "[" }}
+					{{ $errorText = "Lists can't be set directly; put one inside a group, e.g. {\"Tags\": [\"a\"]}." }}
+				{{ else if and $found (in (cslice "map" "slice") $kind) }}
+					{{ $errorText = $holdsText }}
+				{{ end }}
+			{{ end }}
+			{{ if not $errorText }}
+				{{ $ptAction = "set" }}
+				{{ if ge (len $keyArray) 2 }}
+					{{ $_ := $lastParentExistingValue.Set $lastSubkey $value }}
+					{{ dbSet $userID $firstSubkey $parentExistingValue }}
+				{{ else }}
+					{{ dbSet $userID $key $value }}
+				{{ end }}
+			{{ end }}
+		{{ catch }}
+			{{ $errorText = $invalidValueText }}
+		{{ end }}
+	{{ end }}
 
-    {{ $valueType = printf "%T" $value }}
+	{{ $valueType = printf "%T" $value }}
 
-    {{ if $errorText }}
-        {{ $resultEmoji = "⚠️" }}
-        {{ $resultText = $errorText }}
-        {{ $value = "" }}
-    {{ else }}
-        {{ if and (eq $stringType $valueType) (not $value) }}
-            {{ $value = "\"\"" }}
-        {{ else if ne $stringType $valueType }}
-            {{ try }}
-                {{ $value = json $value true }}
-            {{ catch }}
-                {{ $value = joinStr "" "(unable to render type " $valueType ")" }}
-            {{ end }}
-        {{ end }}
-        {{ $resultText = joinStr "" "Value successfully " $ptAction "!" }}
-        {{/* nothing to delete on the slash path; ExecData keeps deleteTrigger */}}
-        {{ if not $isSlash }}
-            {{ deleteTrigger $deleteTriggerDelay }}
-        {{ end }}
-    {{ end }}
+	{{ if $errorText }}
+		{{ $resultEmoji = "⚠️" }}
+		{{ $resultText = $errorText }}
+		{{ $value = "" }}
+	{{ else }}
+		{{ if and (eq $stringType $valueType) (not $value) }}
+			{{ $value = "\"\"" }}
+		{{ else if ne $stringType $valueType }}
+			{{ try }}
+				{{ $value = json $value true }}
+			{{ catch }}
+				{{ $value = joinStr "" "(unable to render type " $valueType ")" }}
+			{{ end }}
+		{{ end }}
+		{{ $resultText = joinStr "" "Value successfully " $ptAction "!" }}
+		{{/* nothing to delete on the slash path; ExecData keeps deleteTrigger */}}
+		{{ if not $isSlash }}
+			{{ deleteTrigger $deleteTriggerDelay }}
+		{{ end }}
+	{{ end }}
 {{ else }}
-    {{ $resultEmoji = "⚠️" }}
-    {{ if not $operationCheck }}
-        {{ $resultText = joinStr "" "Invalid operation provided: " (or $operation $nil) "" }}
-    {{ else if not $key }}
-        {{ $resultText = "You must provide a key!" }}
-    {{ else if not $valueCheck }}
-        {{ $resultText = "You must provide a value!" }}
-    {{ end }}
+	{{ $resultEmoji = "⚠️" }}
+	{{ if not $operationCheck }}
+		{{ $resultText = joinStr "" "Invalid operation provided: " (or $operation $nil) "" }}
+	{{ else if not $key }}
+		{{ $resultText = "You must provide a key!" }}
+	{{ else if not $valueCheck }}
+		{{ $resultText = "You must provide a value!" }}
+	{{ end }}
 {{ end }}
 
 {{ $resultText = joinStr " " $resultEmoji $resultText }}
@@ -395,52 +395,52 @@
   for the code fence (8) and the "…" */}}
 {{ $embedDescriptionLimit := sub 4096 9 }}
 {{ if gt (len (toRune $value)) $embedDescriptionLimit }}
-    {{ $value = joinStr "" (slice (split $value "") 0 $embedDescriptionLimit) "…" }}
+	{{ $value = joinStr "" (slice (split $value "") 0 $embedDescriptionLimit) "…" }}
 {{ end }}
 
 {{/* the Key field holds 1024: cut the key before fencing (fence 7, "…" 1) */}}
 {{ $keyShown := or $key $nil }}
 {{ if gt (len (toRune $keyShown)) 1017 }}
-    {{ $keyShown = joinStr "" (slice (split $keyShown "") 0 1016) "…" }}
+	{{ $keyShown = joinStr "" (slice (split $keyShown "") 0 1016) "…" }}
 {{ end }}
 
 {{/* a mention doesn't render inside a code block, so this field is plain */}}
 {{ $whose := "Server-wide" }}
 {{ if toInt $displayUserID }}
-    {{ $whose = joinStr "" "<@" $displayUserID ">" }}
+	{{ $whose = joinStr "" "<@" $displayUserID ">" }}
 {{ end }}
 
 {{ if $isSlash }}
-    {{ if not $isDump }}
-        {{ $title = joinStr "" "Database Operation: `" $subcommand "`" }}
-        {{ $embed := cembed
-            "title" $title
-            "color" $embedColor
-            "description" (joinStr "" "```\n" (or $value $nil) "\n```")
-            "fields" (cslice
-                (sdict "name" "Whose data" "value" $whose "inline" true)
-                (sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
-                (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
-            )
-        }}
-        {{ sendResponse nil (complexMessage "ephemeral" true "embed" $embed) }}
-    {{ end }}
+	{{ if not $isDump }}
+		{{ $title = joinStr "" "Database Operation: `" $subcommand "`" }}
+		{{ $embed := cembed
+			"title" $title
+			"color" $embedColor
+			"description" (joinStr "" "```\n" (or $value $nil) "\n```")
+			"fields" (cslice
+				(sdict "name" "Whose data" "value" $whose "inline" true)
+				(sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
+				(sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
+			)
+		}}
+		{{ sendResponse nil (complexMessage "ephemeral" true "embed" $embed) }}
+	{{ end }}
 {{ else if $isExec }}
-    {{ if not (and $isExec .ExecData.Title) }}
-        {{ $title = joinStr "" "Database Operation: `" $operation "`" }}
-    {{ end }}
+	{{ if not (and $isExec .ExecData.Title) }}
+		{{ $title = joinStr "" "Database Operation: `" $operation "`" }}
+	{{ end }}
 
-    {{ execCC $embed_exec $yagpdbChannelID 0 (sdict
-        "ChannelID" (or .ExecData.ChannelID .Channel.ID)
-        "Title" $title
-        "Description" (joinStr "" "```\n" (or $value $nil) "\n```")
-        "AuthorID" $displayUserID
-        "Fields" (cslice
-            (sdict "name" "Whose data" "value" $whose "inline" true)
-            (sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
-            (sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
-        )
-    ) }}
+	{{ execCC $embed_exec $yagpdbChannelID 0 (sdict
+		"ChannelID" (or .ExecData.ChannelID .Channel.ID)
+		"Title" $title
+		"Description" (joinStr "" "```\n" (or $value $nil) "\n```")
+		"AuthorID" $displayUserID
+		"Fields" (cslice
+			(sdict "name" "Whose data" "value" $whose "inline" true)
+			(sdict "name" "Key" "value" (joinStr "" "```\n" $keyShown "```") "inline" true)
+			(sdict "name" "Result" "value" (joinStr "" "```\n" $resultText "```") "inline" false)
+		)
+	) }}
 {{ else }}
 Use /db as a slash command: view · browse · set · add · remove · delete · export
 {{ end }}
