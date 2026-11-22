@@ -4,7 +4,7 @@ title: 'Free tier: /db and /cipher over the 10k cap'
 status: To Do
 assignee: []
 created_date: '2026-11-22T17:51:00Z'
-updated_date: '2026-11-22T17:58:00Z'
+updated_date: '2026-11-22T19:50:00Z'
 labels:
   - free-tier
 dependencies: []
@@ -22,4 +22,6 @@ On a free-tier server the deploy refuses commands whose minified dist/free copy 
 
 <!-- SECTION:NOTES:BEGIN -->
 Lila 2026-11-22 (AskUserQuestion): swap db_slash out of the yagmin minify test and the deploy-manifest test for under-cap commands (prompt_post, edit_slash) and track /db's free-tier overage here.
+
+2026-11-22 (TASK-44): premium headroom fixed by tabs; tabs don't change the minified copy (still 10,405). Split plan when this promotes: move export (dump) into an execCC child that answers the interaction itself (the child shares the root's Interaction pointer, slash-fleet.md Mechanics; the root then prints nothing). Export is about 1k characters of the source; re-measure the free copy after the move before choosing a second cut.
 <!-- SECTION:NOTES:END -->
