@@ -1,6 +1,6 @@
 # YAGPDB Custom Commands - Development Tools
 
-.PHONY: help lint lint-verbose build-emulator build-yagmin clean test test-verbose update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync vendor-drift minify minify-check test-minified
+.PHONY: help lint lint-verbose build-emulator build-yagmin clean test test-verbose test-race update-snapshots prune-snapshots test-go watch ci test-templates changed-since-deploy mark-deployed deploy-manifest test-deploy config-sync vendor-drift minify minify-check test-minified
 
 LINTER := python3 tools/linter/yagpdb_lint.py
 YAGTEST_FLAGS := -schema db_schema.yaml
@@ -38,6 +38,10 @@ test: build-emulator ## Run all template tests
 test-verbose: build-emulator ## Run template tests with verbose output
 	@echo "🧪 Running template tests (verbose)..."
 	@./bin/yagtest test -verbose $(YAGTEST_FLAGS) tools/emulator/testdata/
+
+test-race: ## YAML suite on a -race build of yagtest (needs cgo + glibc headers; CI job)
+	@cd tools/emulator && go build -race -o ../../bin/yagtest-race ./cmd/yagtest
+	@CI=true ./bin/yagtest-race test $(YAGTEST_FLAGS) tools/emulator/testdata/
 
 test-go: ## Run the emulator's Go unit tests and vet
 	@echo "🧪 Running Go tests..."

@@ -29,3 +29,25 @@ jobs:
       # Go vet + unit tests, template tests (CI=true makes a missing snapshot fail),
       # the command linter, the deploy tooling tests, and a gofmt check
       - run: make ci
+
+  # Non-blocking on purpose: a red check run would stop automerge (claude-code-review.yml),
+  # so a race or a failure here is a warning in the summary and the job log, not a failed check.
+  race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # Same line as the dev machine (mise); go.mod's "go 1.21" is only the minimum
+          go-version: "1.27"
+          cache-dependency-path: tools/emulator/go.sum
+
+      - name: YAML suite on a -race build (non-blocking)
+        run: |
+          if make test-race; then
+            echo "No data races in the YAML suite." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=Race job::make test-race failed (a data race or a test failure); see this job's log"
+            echo "make test-race FAILED: see the job log." >> "$GITHUB_STEP_SUMMARY"
+          fi
