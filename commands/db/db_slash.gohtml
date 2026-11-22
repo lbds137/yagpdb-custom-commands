@@ -18,7 +18,7 @@
   Slash option: `browse.user user another member's own data (staff)`
   Slash subcommand: `set replace a stored value`
   Slash option: `set.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
-  Slash option: `set.value string! the new value (JSON for lists and groups)`
+  Slash option: `set.value string! the new value: text, or a JSON object for a group`
   Slash option: `set.user user another member's own data (staff)`
   Slash subcommand: `add add an item to a list or group`
   Slash option: `add.key string! name of the entry; use : to go inside a group, e.g. Roles:Staff`
@@ -88,7 +88,6 @@
     {{ $key = or .Options.key "" }}
     {{ $value = or .Options.value "" }}
     {{ $valueType = printf "%T" $value }}
-    {{/* staff default to the GLOBAL row (0); a picked `user` is that member's row */}}
     {{ if hasRoleID $staffRoleID }}
         {{ $userID = 0 }}
         {{ if .Options.user }}
@@ -109,16 +108,15 @@
 {{ $valueCheck := or $value $isKeys $isDelete $isGet $isDump }}
 
 {{ $nil := "(nil)" }}
-{{ $invalidValueText := "I couldn't read that value. Lists and groups must be valid JSON, e.g. {\"a\": 1}." }}
+{{ $invalidValueText := "I couldn't read that value. A group must be a valid JSON object, e.g. {\"a\": 1}." }}
 {{ $resultText := "" }}
 {{ $resultEmoji := "✅" }}
 {{ $displayUserID := $userID }}
-{{/* For dump operation, key is optional (defaults to "all") */}}
 {{ if and $isDump (not $key) }}
     {{ $key = "all" }}
 {{ end }}
 {{ if and $operationCheck $key $valueCheck }}
-    {{/* the engine is retired/db.gohtml's verbatim (its comments live there); every
+    {{/* the engine is retired/db.gohtml's (comments there) but set's input rules; every
         .Set/.Del is a `$_ :=`, so yagmin can drop the whitespace around it */}}
     {{ $existingValue := "" }}
     {{ $found := false }}
@@ -172,7 +170,6 @@
         {{ $dumpUserID := $userID }}
         {{ $dumpData := sdict }}
         {{ if and $key (ne $key "all") }}
-            {{/* Dump specific key only */}}
             {{ $entry := dbGet $dumpUserID $key }}
             {{ if and $entry $entry.Value }}
                 {{ $_ := $dumpData.Set $key $entry.Value }}
@@ -189,7 +186,6 @@
         {{ $jsonData := json $dumpData true }}
         {{ $filename := joinStr "" "db_dump_" (toString $dumpUserID) "_" (currentTime.Unix) }}
         {{ if $isSlash }}
-            {{/* the summary rides beside the file, like channel_activity's CSV */}}
             {{ sendResponse nil (complexMessage
                 "content" (joinStr "" "Exported " (len $dumpData) " entries to file")
                 "file" $jsonData
@@ -231,6 +227,8 @@
         {{ try }}
             {{ $parsedValue := $value }}
             {{ if eq $stringType $valueType }}
+                {{ $value = trimSpace $value }}
+                {{ $parsedValue = $value }}
                 {{ if and (gt (len $value) 0) (eq "{" (index $value 0 | printf "%c")) }}
                     {{ $parsedValue = jsonToSdict $value }}
                 {{ end }}
@@ -330,16 +328,23 @@
     {{ else }}
         {{ try }}
             {{ if eq $stringType $valueType }}
+                {{ $value = trimSpace $value }}
                 {{ if and (gt (len $value) 0) (eq "{" (index $value 0 | printf "%c")) }}
                     {{ $value = jsonToSdict $value }}
+                {{ else if and (gt (len $value) 0) (eq "[" (index $value 0 | printf "%c")) }}
+                    {{ $errorText = "Lists can't be set directly: build one with /db add." }}
+                {{ else if and $found (or (eq "map" (kindOf $existingValue true)) (eq "slice" (kindOf $existingValue true))) }}
+                    {{ $errorText = "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }}
                 {{ end }}
             {{ end }}
-            {{ $ptAction = "set" }}
-            {{ if ge (len $keyArray) 2 }}
-                {{ $_ := $lastParentExistingValue.Set $lastSubkey $value }}
-                {{ dbSet $userID $firstSubkey $parentExistingValue }}
-            {{ else }}
-                {{ dbSet $userID $key $value }}
+            {{ if not $errorText }}
+                {{ $ptAction = "set" }}
+                {{ if ge (len $keyArray) 2 }}
+                    {{ $_ := $lastParentExistingValue.Set $lastSubkey $value }}
+                    {{ dbSet $userID $firstSubkey $parentExistingValue }}
+                {{ else }}
+                    {{ dbSet $userID $key $value }}
+                {{ end }}
             {{ end }}
         {{ catch }}
             {{ $errorText = $invalidValueText }}
@@ -353,7 +358,6 @@
         {{ $resultText = $errorText }}
         {{ $value = "" }}
     {{ else }}
-        {{- /* format the value for user-friendly viewing */ -}}
         {{ if and (eq $stringType $valueType) (not $value) }}
             {{ $value = "\"\"" }}
         {{ else if ne $stringType $valueType }}
@@ -402,7 +406,6 @@
 {{ end }}
 
 {{ if $isSlash }}
-    {{/* export answered with the file already; others reply with the embed */}}
     {{ if not $isDump }}
         {{ $title = joinStr "" "Database Operation: `" $subcommand "`" }}
         {{ $embed := cembed

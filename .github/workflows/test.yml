@@ -43,11 +43,21 @@ jobs:
           go-version: "1.27"
           cache-dependency-path: tools/emulator/go.sum
 
-      - name: YAML suite on a -race build (non-blocking)
+      - name: Build yagtest with -race (non-blocking)
+        id: race_build
         run: |
-          if make test-race; then
-            echo "No data races in the YAML suite." >> "$GITHUB_STEP_SUMMARY"
+          if (cd tools/emulator && go build -race -o ../../bin/yagtest-race ./cmd/yagtest); then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning title=Race job::make test-race failed (a data race or a test failure); see this job's log"
-            echo "make test-race FAILED: see the job log." >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning title=Race job::the -race build failed (cgo/toolchain); no race check ran"
+            echo "Race build FAILED: no race check ran." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: YAML suite on the -race build (non-blocking)
+        if: steps.race_build.outputs.ok == 'true'
+        run: |
+          if CI=true ./bin/yagtest-race test -schema db_schema.yaml tools/emulator/testdata/; then
+            echo "No data races reported in this run of the YAML suite." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=Race job::a data race or a test failure on the -race build; see this step's log"
+            echo "Race run FAILED (data race or test failure): see the job log." >> "$GITHUB_STEP_SUMMARY"
           fi

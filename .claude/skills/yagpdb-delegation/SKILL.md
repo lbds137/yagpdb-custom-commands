@@ -54,6 +54,8 @@ checks as separate plain commands, same four conditions.
 - A `-}}` alone on its own line doesn't parse in YAGPDB; put it on the previous line.
 - A changed command over the free-tier cap stales its `dist/free/` copy, and `make ci`
   fails (minify-check, test-deploy): the driver runs `make minify` after the transfer.
+  A changed command header (slash rows, descriptions) stales the header golden: run
+  `cd tools/emulator && go test ./internal/runtime/ -run TestHeaderGolden -update`.
 - `make ci` fails on stale snapshot entries: after removing or renaming a snapshotted test,
   run `make prune-snapshots`; after an intended output change, `make update-snapshots`,
   then read the snapshot diff.
