@@ -511,9 +511,9 @@ gets a failing test first.
   against the response limit (form arrives CRLF server-side; runes + newline-count vs
   20,000 premium — customcommands-editcmd.html updateCCLength, web/validation.go
   ValidateTemplateField), so a template can pass every emulator test and still be
-  REFUSED at save time (db_slash was: 19,881 runes + 449 lines). The emulator's
-  premium char check should model this (its limit check counts runes only). Guard in
-  place meanwhile: the linter's `response-length` rule (tools/linter/yagpdb_lint.py)
+  REFUSED at save time (db_slash was: 19,881 runes + 449 lines). Shipped (2026-11-22,
+  TASK-19): the emulator's `checkSourceLength` counts runes plus newlines (a CRLF file
+  counts like LF). The linter's `response-length` rule (tools/linter/yagpdb_lint.py)
   errors on any command file whose panel count exceeds 20,000. Note (code reading,
   2026-10-04): deploy.js posts URL-encoded LF text, which the server checks on runes
   alone; the doubled count is the browser save's, and the tooling keeps it as the

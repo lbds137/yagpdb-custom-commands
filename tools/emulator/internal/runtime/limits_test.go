@@ -4,6 +4,7 @@ import (
 	template "github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/yagtemplate"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/schema"
 	"github.com/lbds137/yagpdb-custom-commands/tools/emulator/internal/state"
@@ -128,6 +129,67 @@ func TestSourceLengthLimit(t *testing.T) {
 	ctx = newCtx(true, true)
 	if _, err := run(t, ctx, long); err != nil {
 		t.Errorf("premium allows 20000: %v", err)
+	}
+}
+
+// commentSource builds a template that is one comment of the given rune and newline
+// counts (the newlines inside the comment), so its panel count is runes + newlines.
+func commentSource(runes, newlines int) string {
+	const open, closer = "{{/*", "*/}}"
+	return open + strings.Repeat("\n", newlines) +
+		strings.Repeat("x", runes-newlines-len(open)-len(closer)) + closer
+}
+
+func TestSourceLengthCountsNewlinesTwice(t *testing.T) {
+	// The panel posts the textarea with CRLF line endings, so the server counts each
+	// newline as two characters: 19,000 runes with 1,500 newlines is 20,500 on the panel.
+	over := commentSource(19000, 1500)
+	if got := utf8.RuneCountInString(over); got != 19000 {
+		t.Fatalf("fixture has %d runes, want 19000", got)
+	}
+	ctx := newCtx(true, true)
+	_, err := run(t, ctx, over)
+	if err == nil || !strings.Contains(err.Error(), "refuses to save") {
+		t.Fatalf("premium: want length error for 19000 runes + 1500 newlines, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "20500 characters") {
+		t.Errorf("error should give the panel count 20500, got %v", err)
+	}
+
+	// Exactly at the cap is allowed: 18,500 runes + 1,500 newlines = 20,000.
+	ctx = newCtx(true, true)
+	if _, err := run(t, ctx, commentSource(18500, 1500)); err != nil {
+		t.Errorf("premium: exactly 20000 panel characters must pass, got %v", err)
+	}
+	// One over the cap is refused.
+	ctx = newCtx(true, true)
+	if _, err := run(t, ctx, commentSource(18501, 1500)); err == nil {
+		t.Errorf("premium: 20001 panel characters must be refused")
+	}
+
+	// Free tier: 9,000 runes + 1,001 newlines = 10,001.
+	ctx = newCtx(true, false)
+	if _, err := run(t, ctx, commentSource(9000, 1001)); err == nil {
+		t.Errorf("free: 10001 panel characters must be refused")
+	}
+	ctx = newCtx(true, false)
+	if _, err := run(t, ctx, commentSource(9000, 1000)); err != nil {
+		t.Errorf("free: exactly 10000 panel characters must pass, got %v", err)
+	}
+}
+
+func TestSourceLengthCRLFCountsAsLF(t *testing.T) {
+	lf := commentSource(18500, 1500)
+	crlf := strings.ReplaceAll(lf, "\n", "\r\n")
+
+	ctx := newCtx(true, true)
+	if _, err := run(t, ctx, crlf); err != nil {
+		t.Errorf("CRLF source at exactly 20000 must count like LF, got %v", err)
+	}
+	ctx = newCtx(true, true)
+	_, err := run(t, ctx, strings.ReplaceAll(commentSource(18501, 1500), "\n", "\r\n"))
+	if err == nil || !strings.Contains(err.Error(), "20001 characters") {
+		t.Errorf("CRLF source one over must count 20001 like LF, got %v", err)
 	}
 }
 
