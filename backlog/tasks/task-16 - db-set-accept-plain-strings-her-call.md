@@ -4,10 +4,11 @@ title: '/db set: accept plain strings (decided 11-19)'
 status: To Do
 assignee: []
 created_date: '2026-11-19T21:56:00Z'
-updated_date: '2026-11-20T02:43:00Z'
+updated_date: '2026-11-22T17:32:00Z'
 labels:
   - commands
 dependencies: []
+priority: low
 ordinal: 16000
 ---
 

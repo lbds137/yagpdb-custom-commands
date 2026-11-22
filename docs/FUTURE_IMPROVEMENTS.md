@@ -883,9 +883,8 @@ gets a failing test first.
   RedirectErrorsChannel, nil ChannelOrThreadParent when the parent isn't in state.
 - Shipped (2026-10-22): `scripts/lint-all.sh` runs `yagpdb_lint.py --dir "$PROJECT_ROOT/commands"`.
 - Shipped (2026-10-22): `scripts/save-lint-report.py` passes `--dir .` for relative report paths.
-- Deferred (found 2026-09-27): `tools/linter/main.go` doesn't build (unused vars
-  `fix`/`hasGlobalDict`/`hasCommandsDict`), isn't `gofmt`-clean, and nothing references it —
-  dead code, a candidate to delete (Lila's call).
+- Shipped (2026-11-22, TASK-36, Lila's yes 11-19): deleted `tools/linter/main.go`, dead
+  code that didn't build and that nothing referenced; `yagpdb_lint.py` is the linter.
 
 ## Dev-loop performance (Fable review, 2026-11-10, HEAD 28606ac)
 
