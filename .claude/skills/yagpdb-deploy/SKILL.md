@@ -50,20 +50,33 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
 5. Paste the full contents of `deploy/deploy.js` into `javascript_tool` to define
    `window.yagDeploy`.
 6. Dry run: `await yagDeploy.run(<manifest>, {dryRun: true, enable: [...ids], disable: [...ids]})`
-   (both lists optional). Report only statuses, `enabled` and `structure` to Lila -- never
-   paste command code back into the conversation (the browser tool's content filter blocks
-   some of it anyway, and there's no reason to route it through the model twice). Show her
-   the `would-update` list with each `structure` diff (`{field: {live, header}}`: type,
-   name, trigger, group, deferMode, interval, slashDescription, slash). Each result carries the live
+   (both lists optional). Read back only statuses, `enabled`, `enabledWanted` and
+   `structure` -- never paste command code back into the conversation (the browser tool's
+   content filter blocks some of it anyway, and there's no reason to route it through the
+   model twice). Each `structure` diff is `{field: {live, header}}` (type, name, trigger,
+   group, deferMode, interval, slashDescription, slash). Each result carries the live
    `enabled` and `enabledWanted` (true/false from the `enable`/`disable` lists, null =
    untouched): the planned enable/disable is `enabledWanted` where it differs from `enabled`.
    The dry run also builds each post body, so a type or group the panel's selects lack shows
-   as `failed: header ...` there, not at the real run. A header the emulator rejects comes back `failed: header: ...` and posts
-   nothing. An id in both lists, or not in the manifest, refuses the whole run
-   (`failed: options`) before anything is fetched.
-7. Run for real with the same options and `dryRun: false`. Deploy rounds are Claude's
-   (Lila's standing ruling: no go-ahead needed); stop and report instead when the dry run
-   shows anything unexpected. lotv deploys and panel deletes stay hers.
+   as `failed: header ...` there, not at the real run. A header the emulator rejects comes
+   back `failed: header: ...` and posts nothing. An id in both lists, or not in the
+   manifest, refuses the whole run (`failed: options`) before anything is fetched.
+7. Check the dry run against the round, then run for real with the same options and
+   `dryRun: false`. Deploy rounds are Claude's (Lila's ruling, 2026-11-22: no go-ahead
+   needed), so this check is the only gate before a live write. The round's expected set
+   is `make changed-since-deploy` (both servers: every round deploys main and rose
+   together, so rose shares main's `deployed` tag) plus any command this round created.
+   Stop, write nothing, and report the dry run to Lila when it shows any of:
+   - a `would-update` on a command outside the expected set (live code or structure that
+     drifted from the repo: someone edited the panel, or the last round didn't land);
+   - a `structure` diff on a command outside the expected set;
+   - an `enabledWanted` that differs from `enabled`, other than enabling a command this
+     round created (disabling a live command needs her yes, below);
+   - any status other than `would-update` or `same` (`missing`, `skipped-multi`,
+     `failed: ...`).
+   Otherwise run it. lotv deploys and panel deletes stay hers. The round's final report
+   to Lila carries each server's dry-run and live-run statuses, with every `updated`
+   command's `structure` diff and any enable change: a report, not a gate.
 8. Every command should come back `"updated"` or `"same"`. Anything else (`missing`,
    `skipped-multi`, or a `failed: ...` status) -- stop, report the statuses, and do not retry
    blindly; a retry without understanding the failure can compound it. A failed status
@@ -77,8 +90,8 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
 9. If `SERVER=main` and everything came back clean, `make mark-deployed`.
 10. Every round deploys to BOTH `main` and `rose` (Lila, 2026-10-04: The Rose, her private
     server, stays in sync with the latest commands; she uses gematria there heavily). The
-    `deployed` tag tracks main only, so run the rose manifest's dry run too and deploy
-    whatever comes back `would-update`. A new command that should exist on both gets a
+    `deployed` tag tracks main only, so run the rose manifest's dry run too, check it
+    against the same expected set (step 7), and deploy its `would-update` commands. A new command that should exist on both gets a
     `create` on each. lotv is deployed only when Lila asks.
 
 ## New commands, enabling, retiring
