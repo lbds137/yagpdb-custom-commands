@@ -423,7 +423,7 @@ func TestMinifyElseIfBranch(t *testing.T) {
 func TestMinifyShrinksCommands(t *testing.T) {
 	// the test runs in cmd/yagmin; the repo root is four levels up
 	for _, path := range []string{
-		"../../../../commands/db/db_slash.gohtml",
+		"../../../../commands/general/prompt_post.gohtml",
 		"../../../../commands/gematria/gematria.gohtml",
 		"../../../../commands/edit/edit_slash.gohtml",
 	} {
