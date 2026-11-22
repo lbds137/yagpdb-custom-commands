@@ -47,8 +47,8 @@ checks as separate plain commands, same four conditions.
 
 - Fidelity comes from YAGPDB's code: copy the vendor function, and build test fixtures
   (embeds, messages, errors) from what YAGPDB's code produces, never invented shapes.
-- A changed command file (`commands/<topic>/`) needs Lila to paste it into YAGPDB
-  by hand; the driver reports the batch at the end of a round. A command fix gets a test
+- A changed command file (`commands/<topic>/`) goes live in the driver's deploy round
+  (yagpdb-deploy skill: main and rose, after the batch merges). A command fix gets a test
   that fails on the old command (red on HEAD). `retired/` isn't deployed, so its files
   never need a paste.
 - A `-}}` alone on its own line doesn't parse in YAGPDB; put it on the previous line.
@@ -78,8 +78,8 @@ checks as separate plain commands, same four conditions.
 
 ## Local-only
 
-Nothing needs secrets or live services. Pastes into YAGPDB and `make mark-deployed` are
-Lila's. Pushing runs CI only and is approved; the driver commits and pushes.
+Nothing needs secrets or live services. Deploy rounds and `make mark-deployed` are the
+driver's (yagpdb-deploy skill); lotv deploys, panel deletes and live-check ticks are Lila's. Pushing runs CI only and is approved; the driver commits and pushes.
 
 ## Dispatch folder
 

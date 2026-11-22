@@ -61,7 +61,9 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    as `failed: header ...` there, not at the real run. A header the emulator rejects comes back `failed: header: ...` and posts
    nothing. An id in both lists, or not in the manifest, refuses the whole run
    (`failed: options`) before anything is fetched.
-7. On her go-ahead only, run for real with the same options and `dryRun: false`.
+7. Run for real with the same options and `dryRun: false`. Deploy rounds are Claude's
+   (Lila's standing ruling: no go-ahead needed); stop and report instead when the dry run
+   shows anything unexpected. lotv deploys and panel deletes stay hers.
 8. Every command should come back `"updated"` or `"same"`. Anything else (`missing`,
    `skipped-multi`, or a `failed: ...` status) -- stop, report the statuses, and do not retry
    blindly; a retry without understanding the failure can compound it. A failed status
@@ -83,12 +85,12 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
 
 - **New command:** the id comes from creating it, so the order is: add the file with its
   header (type, trigger, group, rows), then in the panel tab
-  `await yagDeploy.create(<guild>, [{path, group}], {dryRun: true})`, and on her go-ahead
+  `await yagDeploy.create(<guild>, [{path, group}], {dryRun: true})`, then
   `dryRun: false`. It POSTs `commands/new` in the header's group, then immediately posts the
   new command's own form with `is_enabled` cleared and reads back that it is disabled
   (`created-disabled`). Then: write the returned ids into `deploy/panel.json` (`main`, and
   `lotv` if it exists there), `make config-sync`, commit, push, regenerate the manifest, dry
-  run, her go-ahead, and a real run with `enable: [<new ids>]`. For the ~1 s between the two
+  run, and a real run with `enable: [<new ids>]`. For the ~1 s between the two
   POSTs the new command is live and enabled with YAGPDB's placeholder response and an empty
   text trigger (default type Command, customcommands.go:74), so it answers nothing in
   practice; a `failed: created #N ... still ENABLED` status means disable it in the panel at
