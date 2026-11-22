@@ -330,7 +330,9 @@
     {{ else }}
         {{ try }}
             {{ if eq $stringType $valueType }}
-                {{ $value = jsonToSdict $value }}
+                {{ if and (gt (len $value) 0) (eq "{" (index $value 0 | printf "%c")) }}
+                    {{ $value = jsonToSdict $value }}
+                {{ end }}
             {{ end }}
             {{ $ptAction = "set" }}
             {{ if ge (len $keyArray) 2 }}

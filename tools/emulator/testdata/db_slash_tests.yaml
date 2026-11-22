@@ -112,16 +112,42 @@ tests:
         - { kind: message, ephemeral: true,
             embed_contains: "That group doesn't exist, so nothing can be stored inside it." }
 
-  - name: "db_slash set: a plain string is refused (JSON objects only, as the text command)"
+  - name: "db_slash set: a plain string is stored as-is"
     template: "../../../commands/db/db_slash.gohtml"
     context:
       interaction: { type: slash, subcommand: set,
                      options: { key: "Greeting", value: "hello there" } }
     assertions:
       interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully set!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", value_equals: "hello there" }
+
+  - name: "db_slash set: a malformed JSON object is refused and leaves the value unchanged"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Greeting", value: "{oops" } }
+    assertions:
+      interaction_responses:
         - { kind: message, ephemeral: true, embed_contains: "I couldn't read that value. Lists and groups must be valid JSON, e.g. {" }
       db_checks:
         - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
+
+  - name: "db_slash set: a plain string inside a group is stored as-is"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Prefs:Theme", value: "light" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Prefs > Theme" }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Prefs"
+          value_equals:
+            Theme: "light"
+            Alerts: { Ping: true, Digest: false }
 
   - name: "db_slash set: a JSON object value"
     template: "../../../commands/db/db_slash.gohtml"

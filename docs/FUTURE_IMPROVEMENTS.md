@@ -433,10 +433,10 @@ gets a failing test first.
   db.gohtml): `db set` (text and slash alike) only accepts JSON OBJECT values — the set
   path runs jsonToSdict on every string, so `db set Key hello` fails with "Invalid value
   provided!"; a plain string must be sent as `"hello"` (a JSON string literal), which
-  jsonToSdict also refuses (objects only). Kept for parity in the slash port (tests pin
-  it). Improvement would be: accept a plain string as-is when it doesn't start with `{`,
-  storing it as a string. Lila's call whether the convenience is worth the behavior
-  change.
+  jsonToSdict also refuses (objects only). Shipped (2026-11-22, TASK-16, Lila's call
+  11-19): `/db set` stores a value that doesn't start with `{` as a plain string; a
+  `{` value is still parsed, and malformed JSON is still refused. The retired text
+  `db.gohtml` keeps the old behavior.
 - Fixed 2026-09-27, access control (found 2026-09-27 by the Night House site session,
   confirmed by code-reading): everyone/services/db_get_embed.gohtml (and db_get_text,
   same shape) took any all-digit first argument as the target user ID with no staff
