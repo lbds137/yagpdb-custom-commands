@@ -153,9 +153,54 @@ tests:
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true,
-            embed_contains: "Lists can't be set directly: build one with /db add." }
+            embed_contains: "Lists can't be set directly; put one inside a group, e.g. {" }
       db_checks:
         - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
+
+  - name: "db_slash set: a plain string keeps its surrounding spaces exactly"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Greeting", value: "  hi  " } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully set!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", value_equals: "  hi  " }
+
+  - name: "db_slash set: a whitespace-only value is refused as empty"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Greeting", value: "   " } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "You must provide a value!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
+
+  - name: "db_slash add: a whitespace-only value is refused as empty"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: add,
+                     options: { key: "List", value: "   " } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "You must provide a value!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
+
+  - name: "db_slash set: a JSON object over a list is refused and leaves the list unchanged"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "List", value: "{\"a\":1}" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
 
   - name: "db_slash set: a plain string over a group is refused and leaves it unchanged"
     template: "../../../commands/db/db_slash.gohtml"
@@ -270,7 +315,7 @@ tests:
       db_checks:
         - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b", "c"] }
 
-  - name: "db_slash add: a value with surrounding whitespace is trimmed before it is appended"
+  - name: "db_slash add: a value with surrounding whitespace is appended exactly as typed"
     template: "../../../commands/db/db_slash.gohtml"
     context:
       interaction: { type: slash, subcommand: add, options: { key: "List", value: "  c  " } }
@@ -278,7 +323,19 @@ tests:
       interaction_responses:
         - { kind: message, ephemeral: true, embed_contains: "Value successfully added!" }
       db_checks:
-        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b", "c"] }
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b", "  c  "] }
+
+  - name: "db_slash remove: a padded item is matched exactly and removed"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: remove, options: { key: "Padded", value: "  x  " } }
+    setup_db:
+      - { user_id: 111111111111111111, key: "Padded", value: ["a", "  x  "] }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully removed!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Padded", value_equals: ["a"] }
 
   - name: "db_slash remove: removes an array item"
     template: "../../../commands/db/db_slash.gohtml"

@@ -105,7 +105,7 @@
 {{ $isRemove := eq "remove" $operation }}
 {{ $isDump := eq "dump" $operation }}
 {{ $operationCheck := or $isKeys $isDelete $isGet $isSet $isAdd $isRemove $isDump }}
-{{ $valueCheck := or $value $isKeys $isDelete $isGet $isDump }}
+{{ $valueCheck := or (and $value (trimSpace (print $value))) $isKeys $isDelete $isGet $isDump }}
 
 {{ $nil := "(nil)" }}
 {{ $invalidValueText := "I couldn't read that value. A group must be a valid JSON object, e.g. {\"a\": 1}." }}
@@ -227,10 +227,9 @@
         {{ try }}
             {{ $parsedValue := $value }}
             {{ if eq $stringType $valueType }}
-                {{ $value = trimSpace $value }}
-                {{ $parsedValue = $value }}
-                {{ if and (gt (len $value) 0) (eq "{" (index $value 0 | printf "%c")) }}
-                    {{ $parsedValue = jsonToSdict $value }}
+                {{ $t := trimSpace $value }}
+                {{ if hasPrefix $t "{" }}
+                    {{ $parsedValue = jsonToSdict $t }}
                 {{ end }}
             {{ end }}
             {{ if $isAdd }}
@@ -328,13 +327,19 @@
     {{ else }}
         {{ try }}
             {{ if eq $stringType $valueType }}
-                {{ $value = trimSpace $value }}
-                {{ if and (gt (len $value) 0) (eq "{" (index $value 0 | printf "%c")) }}
-                    {{ $value = jsonToSdict $value }}
-                {{ else if and (gt (len $value) 0) (eq "[" (index $value 0 | printf "%c")) }}
-                    {{ $errorText = "Lists can't be set directly: build one with /db add." }}
-                {{ else if and $found (or (eq "map" (kindOf $existingValue true)) (eq "slice" (kindOf $existingValue true))) }}
-                    {{ $errorText = "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }}
+                {{ $t := trimSpace $value }}
+                {{ $kind := kindOf $existingValue true }}
+                {{ $holdsText := "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }}
+                {{ if hasPrefix $t "{" }}
+                    {{ if and $found (eq "slice" $kind) }}
+                        {{ $errorText = $holdsText }}
+                    {{ else }}
+                        {{ $value = jsonToSdict $t }}
+                    {{ end }}
+                {{ else if hasPrefix $t "[" }}
+                    {{ $errorText = "Lists can't be set directly; put one inside a group, e.g. {\"Tags\": [\"a\"]}." }}
+                {{ else if and $found (in (cslice "map" "slice") $kind) }}
+                    {{ $errorText = $holdsText }}
                 {{ end }}
             {{ end }}
             {{ if not $errorText }}
