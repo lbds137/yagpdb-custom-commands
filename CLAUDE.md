@@ -270,9 +270,11 @@ the tag with `make mark-deployed`. It skips files `deploy/panel.json`'s `"unmana
 names (e.g. `log_user`) and prints a `skipped (unmanaged, ...)` line for each instead, since
 pasting one would overwrite the live copy's real values with this repo's placeholder.
 
-The owner pastes in one batch when a round of work is finished, not after each fix. Don't
-ask for pastes mid-work; when the work is done, report the `make changed-since-deploy` list
-(or, when using the skill, its dry-run and live-run statuses).
+Deploy rounds are Claude's (owner ruling): once a round of work has merged, run the skill
+(dry run, then main AND rose, then `make mark-deployed`) without asking, and report its
+dry-run and live-run statuses. Deploy once per finished round, not after each fix. lotv
+deploys, panel deletes and live-check ticks stay the owner's. The manual paste path above
+is the fallback when Claude-in-Chrome or the panel login is unavailable.
 
 ### Tools Requiring Approval
 The following operations should be discussed before executing:
