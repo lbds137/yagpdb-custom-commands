@@ -64,12 +64,17 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
 7. Check the dry run against the round, then run for real with the same options and
    `dryRun: false`. Deploy rounds are Claude's (Lila's ruling, 2026-11-22: no go-ahead
    needed), so this check is the only gate before a live write. The round's expected set
-   is `make changed-since-deploy`, captured once at the start of the round (the tag moves
-   only in step 10), plus any command this round created; it covers both servers, since
-   every round deploys main and rose together. Dry-run BOTH servers before writing to
-   either. Stop, write nothing, and report the dry runs to Lila when either shows any of:
+   is `make changed-since-deploy`, run after the round's last commit (a `create` commits
+   panel.json and regenerates `config_sync`, which must be in the set; the tag moves only
+   in step 10, so the capture is safe until then), plus any command this round created; it
+   covers both servers, since every round deploys main and rose together. Dry-run BOTH
+   servers before writing to either. Stop, write nothing, and report the dry runs to Lila
+   when either shows any of:
    - a `would-update` on a command outside the expected set (live code or structure that
-     drifted from the repo: someone edited the panel, or the last round didn't land);
+     drifted from the repo: someone edited the panel, the last round didn't land, or a
+     `deploy.js` / header-grammar change reads unchanged headers differently). The first
+     round under these rules may stop here on rose drift left by the old "deploy whatever
+     would-update" practice; report it, and a one-off rose reconcile is her call;
    - a `structure` diff on a command outside the expected set;
    - a `slash` diff whose live rows carry `extra: true` on any command: that option has
      panel-only choices or min/max, and the post would clear them;
@@ -91,8 +96,9 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    hash matches, the header's structure matches (`failed: read-back structure <fields>`
    otherwise), and `is_enabled` is what was asked (`failed: read-back enabled ...`).
 9. Every round deploys to BOTH `main` and `rose` (Lila, 2026-10-04: The Rose, her private
-    server, stays in sync with the latest commands; she uses gematria there heavily): steps
-    2-8 run for each, rose's dry run checked against the same expected set. A new command
+    server, stays in sync with the latest commands; she uses gematria there heavily). Order:
+    steps 2-6 for main and for rose, then step 7's check over both dry runs, then steps 7-8
+    for main and for rose; rose is checked against the same expected set. A new command
     that should exist on both gets a `create` on each. lotv is deployed only when Lila asks.
 10. Only once main AND rose both came back clean, `make mark-deployed`. If either stopped
     or failed, leave the tag where it is, so the next round's expected set still covers

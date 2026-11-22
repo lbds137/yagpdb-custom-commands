@@ -4,7 +4,7 @@ title: 'Deploy skill: define the dry-run stop conditions before live writes'
 status: Done
 assignee: []
 created_date: '2026-11-22T18:19:00Z'
-updated_date: '2026-11-22T18:40:00Z'
+updated_date: '2026-11-22T18:51:00Z'
 labels:
   - deploy
 dependencies: []
@@ -21,5 +21,5 @@ From PR #33's passing review (2026-11-22). Deploy rounds are now Claude's (Lila'
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Shipped in the TASK-43 PR: SKILL.md step 7 lists the four stop conditions against the expected set (make changed-since-deploy + this round's creations, both servers); step 6 is read-back only and the Lila report moved to the end of step 7 as the round's final report; step 10 rose checks the same set; CLAUDE.md ruling dated 2026-11-22, duplicate fallback sentence removed.
+Shipped in PR #34: SKILL.md step 7 lists five stop conditions (the four in the description plus a slash diff with live extra: true, i.e. panel-only choices/min/max the post would clear) against the expected set: make changed-since-deploy run after the round's last commit (so a create's config_sync regen is in it) + this round's creations, both servers, both dry-run before any write. Step 6 is read-back only; the report to Lila is the round's final report. mark-deployed moved to step 10, after main AND rose are clean (Gemini review). create gates would-create / created-disabled explicit. CLAUDE.md ruling dated 2026-11-22, duplicate fallback sentence removed.
 <!-- SECTION:NOTES:END -->
