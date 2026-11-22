@@ -40,10 +40,11 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    `origin/main`. A branch commit hasn't passed review, and automerge's rebase rewrites its
    sha, so a `deployed` tag on it would never be on main. (The manifest itself only refuses
    a HEAD that isn't reachable from any `origin/*` branch: raw.githubusercontent.com URLs
-   for an unpushed commit would 404.) Then `git fetch --force origin tag deployed` and check
-   `git rev-parse 'deployed^{commit}'` equals `git ls-remote origin refs/tags/deployed`: a
-   stale local tag (a round run from another clone) widens step 7's expected set and lets
-   drift through.
+   for an unpushed commit would 404.) Then refresh the tag and check it, stopping on a
+   failed fetch or on `TAG-MISMATCH` (a stale local tag, e.g. from a round run in another
+   clone, widens step 7's expected set and lets drift through):
+   `git fetch --force origin tag deployed && test "$(git rev-parse 'deployed^{commit}')" = "$(git ls-remote origin refs/tags/deployed | cut -f1)" && echo TAG-OK || echo TAG-MISMATCH`
+   (`ls-remote` prints `<sha><TAB><ref>`, hence the `cut`).
 2. `make deploy-manifest SERVER=<main|lotv|rose>` and capture its one line of JSON as `<manifest>`.
    A refusal or a stderr warning means stop and report it, not push through. A command
    with no id for this server is simply left out (panel.json is the per-server map).
@@ -113,8 +114,8 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
    run stops at step 8, rose is not written. A new command that should exist on both gets
    a `create` on each. lotv is deployed only when Lila asks.
 10. Only once main AND rose both came back clean, `make mark-deployed`. If either stopped
-   or failed, leave the tag where it is, so the next round's expected set still covers
-   what didn't land.
+    or failed, leave the tag where it is, so the next round's expected set still covers
+    what didn't land.
 
 ## New commands, enabling, retiring
 
