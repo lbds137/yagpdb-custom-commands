@@ -4,7 +4,7 @@ title: 'CI: -race job over the YAML suite, non-blocking (approved 11-19)'
 status: Done
 assignee: []
 created_date: '2026-11-19T21:57:00Z'
-updated_date: '2026-11-22T17:34:00Z'
+updated_date: '2026-11-22T17:44:00Z'
 labels:
   - ci
 dependencies: []
@@ -26,4 +26,6 @@ Needs Lila: is +30-60s of CI worth a standing -race gate over the YAML suite? Re
 Decision (Lila, 2026-11-19 21:43 EST, AskUserQuestion): yes - add the race job as a non-blocking parallel CI job at about +30-60s. Implementation task now.
 
 Shipped 2026-11-22 on branch drain-decided-1122: make test-race + a 'race' job in test.yml. Non-blocking = the step never fails the job (automerge refuses on any non-success check run); a race or failure shows as a ::warning annotation and in the job summary. actionlint clean; the -race run itself is first exercised by this PR's CI.
+
+Round 1 of PR #32 review (Lila 2026-11-22: split): separate race build and run steps with distinct warnings; job stays green.
 <!-- SECTION:NOTES:END -->
