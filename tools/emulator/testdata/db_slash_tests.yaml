@@ -130,9 +130,60 @@ tests:
                      options: { key: "Greeting", value: "{oops" } }
     assertions:
       interaction_responses:
-        - { kind: message, ephemeral: true, embed_contains: "I couldn't read that value. Lists and groups must be valid JSON, e.g. {" }
+        - { kind: message, ephemeral: true, embed_contains: "I couldn't read that value. A group must be a valid JSON object, e.g. {" }
       db_checks:
         - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
+
+  - name: "db_slash set: an object with surrounding whitespace is parsed as a group"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Greeting", value: " {\"Theme\":\"x\"} " } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully set!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", value_equals: { Theme: "x" } }
+
+  - name: "db_slash set: a JSON list is refused and leaves the value unchanged"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Greeting", value: "[\"a\",\"b\"]" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "Lists can't be set directly: build one with /db add." }
+      db_checks:
+        - { user_id: 111111111111111111, key: "Greeting", value_equals: "hi" }
+
+  - name: "db_slash set: a plain string over a group is refused and leaves it unchanged"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "Prefs", value: "hello" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }
+      db_checks:
+        - user_id: 111111111111111111
+          key: "Prefs"
+          value_equals:
+            Theme: "dark"
+            Alerts: { Ping: true, Digest: false }
+
+  - name: "db_slash set: a plain string over a list is refused and leaves it unchanged"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: set,
+                     options: { key: "List", value: "hello" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true,
+            embed_contains: "That name holds a list or a group. Set a name inside it (Key:Sub), or delete it first." }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b"] }
 
   - name: "db_slash set: a plain string inside a group is stored as-is"
     template: "../../../commands/db/db_slash.gohtml"
@@ -213,6 +264,16 @@ tests:
     template: "../../../commands/db/db_slash.gohtml"
     context:
       interaction: { type: slash, subcommand: add, options: { key: "List", value: "c" } }
+    assertions:
+      interaction_responses:
+        - { kind: message, ephemeral: true, embed_contains: "Value successfully added!" }
+      db_checks:
+        - { user_id: 111111111111111111, key: "List", value_equals: ["a", "b", "c"] }
+
+  - name: "db_slash add: a value with surrounding whitespace is trimmed before it is appended"
+    template: "../../../commands/db/db_slash.gohtml"
+    context:
+      interaction: { type: slash, subcommand: add, options: { key: "List", value: "  c  " } }
     assertions:
       interaction_responses:
         - { kind: message, ephemeral: true, embed_contains: "Value successfully added!" }
