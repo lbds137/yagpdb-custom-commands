@@ -6,7 +6,7 @@ require gopkg.in/yaml.v3 v3.0.1
 
 require (
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/text v0.43.0
+	golang.org/x/text v0.44.0
 )
 
 require (
