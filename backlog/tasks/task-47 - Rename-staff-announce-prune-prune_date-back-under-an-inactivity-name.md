@@ -4,7 +4,8 @@ title: Rename /staff announce/prune/prune_date back under an inactivity name
 status: To Do
 assignee: []
 created_date: '2026-11-24T12:54:00Z'
-updated_date: '2026-11-24T12:56:00Z'
+updated_date: '2026-11-24T14:30:00Z'
+priority: medium
 labels:
   - ux
 dependencies: []
@@ -21,4 +22,5 @@ Lila 11-23: "this is not a generic announcement... before the command renames th
 
 <!-- SECTION:NOTES:BEGIN -->
 Lila 2026-11-24 AUQ "inactivity_ prefix": /staff inactivity_announce (which: start/end/remind menu, TASK-46), /staff inactivity_prune [user], /staff inactivity_date date.
+Priority medium (11-24): a user-visible fix Lila asked for, unblocked by TASK-46, but the current names still work, so nothing is broken meanwhile.
 <!-- SECTION:NOTES:END -->
