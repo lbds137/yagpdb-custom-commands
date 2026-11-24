@@ -650,15 +650,17 @@ test("structureDiff names what differs, and live extras the header can't express
   assert.deepEqual(diff.deferMode, { live: "None", header: "Ephemeral Message Response" });
   assert.deepEqual(diff.group, { live: "None", header: "Utility" });
 
-  // live choices on a header option without choices count as a slash diff
+  // live choices on a header option without choices count as a slash diff and mark extra: true
   const applied = J(yagDeploy.applyStructure(LIVE_ENTRIES, header, LABELS, {}));
   const withChoices = applied.map((e) =>
     e[0] === "slash_subcommands.0.options.0.choices" ? [e[0], "a\nb"] : e
   );
-  const extra = J(yagDeploy.structureDiff(header, yagDeploy.liveStructure(withChoices, LABELS)));
+  const liveWithChoices = yagDeploy.liveStructure(withChoices, LABELS);
+  const extra = J(yagDeploy.structureDiff(header, liveWithChoices));
   assert.deepEqual(Object.keys(extra), ["slash"]);
   assert.deepEqual(extra.slash.live.subcommands[0].options[0].choices, ["a", "b"]);
-  assert.equal(extra.slash.live.subcommands[0].options[0].extra, false);
+  assert.equal(extra.slash.live.subcommands[0].options[0].extra, true);
+  assert.equal(liveWithChoices.slash.subcommands[0].options[0].extra, false);
 
   // min_value on an option row: the header can't express it, so it sets extra: true
   const withMin = applied.map((e) =>
@@ -705,7 +707,7 @@ test("Slash choices: parsed, posted joined by LF, and compared against live choi
   );
   assert.equal(yagDeploy.structureDiff(header, yagDeploy.liveStructure(crlf, LABELS)), null);
 
-  // live choices differing from header = diff
+  // live choices differing from header = diff (header also has choices, so extra is false)
   const different = out.map((e) =>
     e[0] === "slash_subcommands.0.options.0.choices" ? [e[0], "a\nc"] : e
   );
@@ -713,6 +715,41 @@ test("Slash choices: parsed, posted joined by LF, and compared against live choi
   assert.deepEqual(Object.keys(diff), ["slash"]);
   assert.deepEqual(diff.slash.live.subcommands[0].options[0].choices, ["a", "c"]);
   assert.deepEqual(diff.slash.header.subcommands[0].options[0].choices, ["a", "b"]);
+  assert.equal(diff.slash.live.subcommands[0].options[0].extra, false);
+
+  // (a) live string_menu with choices, header string with no choices plus an extra new
+  // option -> diff's live row for that option has extra: true (without mutating live)
+  const noChoicesPlusNew = yagDeploy.parseHeader(
+    [
+      "{{- /*",
+      "  Trigger type: `Slash Command`",
+      "  Trigger: `staff`",
+      "  Group: `Staff Utility`",
+      "  Slash description: `Staff tools`",
+      "  Slash subcommand: `announce post an announcement`",
+      "  Slash option: `announce.which string! which announcement`",
+      "  Slash option: `announce.note string a note`",
+      "*/ -}}",
+    ].join("\n")
+  );
+  const liveMenu = yagDeploy.liveStructure(out, LABELS);
+  const panelOnlyDiff = J(yagDeploy.structureDiff(noChoicesPlusNew, liveMenu));
+  assert.deepEqual(Object.keys(panelOnlyDiff), ["slash"]);
+  assert.equal(panelOnlyDiff.slash.live.subcommands[0].options[0].extra, true);
+  assert.equal(liveMenu.slash.subcommands[0].options[0].extra, false);
+
+  // (b) live and header both have the same choices -> no diff
+  assert.equal(yagDeploy.structureDiff(header, liveMenu), null);
+
+  // (c) header declares choices, live has none -> diff, extra false
+  const noLiveChoices = out.map((e) =>
+    e[0] === "slash_subcommands.0.options.0.choices" ? [e[0], ""] : e
+  );
+  const addedChoicesDiff = J(
+    yagDeploy.structureDiff(header, yagDeploy.liveStructure(noLiveChoices, LABELS))
+  );
+  assert.deepEqual(Object.keys(addedChoicesDiff), ["slash"]);
+  assert.equal(addedChoicesDiff.slash.live.subcommands[0].options[0].extra, false);
 });
 
 test("decide and classifyReadBack account for structure and enabled state", () => {

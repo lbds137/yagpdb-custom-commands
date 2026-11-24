@@ -89,7 +89,8 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
      (`git diff deployed -- <file>`, its header lines) didn't change: a panel hand-edit
      the post would silently revert (a command created this round is exempt);
    - a `slash` diff whose live rows carry `extra: true` on any command: that option has
-     panel-only min/max, length limits or channel types, and the post would clear them;
+     panel-only min/max, length limits, channel types or
+     choices the header has no Slash choices line for, and the post would clear them;
    - an `enabledWanted` that differs from `enabled`, other than enabling a command this
      round created (disabling a live command needs her yes, below);
    - any status other than `would-update` or `same` (`missing`, `skipped-multi`,

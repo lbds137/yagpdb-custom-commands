@@ -27,6 +27,7 @@ retired/          - Commands no longer deployed (see retired/README.md)
   Slash choices: `announce.which start | end | remind`
 */ -}}
 ```
+A choice cannot contain `|` or a backtick; 25 choices max, 100 characters each, no repeats.
 
 ### Common Patterns
 
