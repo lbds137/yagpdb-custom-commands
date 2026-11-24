@@ -15,6 +15,19 @@ commands/<topic>/ - Every deployed command, one folder per topic (bump, rules, g
 retired/          - Commands no longer deployed (see retired/README.md)
 ```
 
+**Slash Command Header Lines**:
+```gohtml
+{{- /*
+  Trigger type: `Slash Command`
+  Trigger: `staff`
+  Group: `Staff Utility`
+  Slash description: `Staff tools`
+  Slash subcommand: `announce post an announcement`
+  Slash option: `announce.which string_menu! which announcement`
+  Slash choices: `announce.which start | end | remind`
+*/ -}}
+```
+
 ### Common Patterns
 
 **Configuration Loading**:

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -39,12 +40,12 @@ func TestReadSlashCommand(t *testing.T) {
 		t.Fatalf("got %+v", def)
 	}
 	want := []SlashOption{
-		{"text", "string", types.ApplicationCommandOptionString, "the text", true},
-		{"count", "integer", types.ApplicationCommandOptionInteger, "how many", false},
-		{"who", "user", types.ApplicationCommandOptionUser, "a member", true},
+		{"text", "string", types.ApplicationCommandOptionString, "the text", true, nil},
+		{"count", "integer", types.ApplicationCommandOptionInteger, "how many", false, nil},
+		{"who", "user", types.ApplicationCommandOptionUser, "a member", true, nil},
 	}
 	for i, w := range want {
-		if def.Options[i] != w {
+		if !reflect.DeepEqual(def.Options[i], w) {
 			t.Errorf("option %d: got %+v, want %+v", i, def.Options[i], w)
 		}
 	}
@@ -57,6 +58,20 @@ func TestReadSlashCommand(t *testing.T) {
 		def.Subcommands[0].Description != "read a key" || len(def.Subcommands[1].Options) != 2 ||
 		def.Subcommands[1].Options[1].Name != "ttl" || def.Subcommands[1].Options[1].Required {
 		t.Errorf("subcommands: %+v", def.Subcommands)
+	}
+
+	menuSrc := slashHeaderSource("menu",
+		"  Slash subcommand: `announce post`\n"+
+			"  Slash choices: `announce.which start | end | remind`\n"+
+			"  Slash option: `announce.which string_menu! which announcement`\n")
+	def, err = ReadSlashCommand(menuSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantChoices := []string{"start", "end", "remind"}
+	if len(def.Subcommands) != 1 || len(def.Subcommands[0].Options) != 1 ||
+		!reflect.DeepEqual(def.Subcommands[0].Options[0].Choices, wantChoices) {
+		t.Errorf("menu choices: got %+v", def)
 	}
 }
 
@@ -80,6 +95,9 @@ func TestSlashHeaderValidation(t *testing.T) {
 		// no Group: a test fixture, not a deployable command
 		"optional-first rows without a Group": probeHeader,
 		"a menu type without a Group":         slash("x", "  Slash option: `f string_menu a menu`\n"),
+		"a deployable menu with choices": slash("x",
+			"  Group: `Utility`\n  Slash description: `Menu`\n"+
+				"  Slash option: `f string_menu! a menu`\n  Slash choices: `f a | b`\n"),
 	} {
 		if err := ValidateHeader(src); err != nil {
 			t.Errorf("%s: %v", name, err)
@@ -105,8 +123,50 @@ func slashHeaderErrorCases() []struct{ name, src, want string } {
 			slash("x", "  Group: `Utility`\n  Slash subcommand: `get read`\n  Slash option: `get.a string first`\n"+
 				"  Slash option: `get.b user! second`\n"),
 			`Subcommand "get": Option "b" is required but follows an optional one`},
-		{"menu option type", slash("x", "  Group: `Utility`\n  Slash option: `flavor string_menu! the flavor`\n"),
-			`Option "flavor": type "string_menu" is a choices menu`},
+		{"menu option type",
+			slash("x", "  Group: `Utility`\n  Slash option: `flavor string_menu! the flavor`\n"),
+			`Option "flavor": type "string_menu" is a choices menu and needs a Slash choices line`},
+		{"bad choices row",
+			slash("x", "  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor`\n"),
+			"Slash choices `flavor`: write `[sub.]name a | b | c`"},
+		{"choices for an unknown option",
+			slash("x", "  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `other a | b`\n"),
+			`Slash choices ` + "`other a | b`" + `: no Slash option line names "other"`},
+		{"choices for an unknown subcommand option",
+			slash("x", "  Slash subcommand: `get read`\n"+
+				"  Slash option: `get.flavor string_menu! the flavor`\n"+
+				"  Slash choices: `set.flavor a | b`\n"),
+			`Slash choices ` + "`set.flavor a | b`" + `: no Slash option line names "set.flavor"`},
+		{"duplicate choices row",
+			slash("x", "  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor a | b`\n"+
+				"  Slash choices: `flavor c | d`\n"),
+			`Slash choices ` + "`flavor c | d`" + `: option "flavor" already has choices`},
+		{"choices on a non-menu string option",
+			slash("x", "  Slash option: `flavor string! the flavor`\n  Slash choices: `flavor a | b`\n"),
+			`Option "flavor": choices need a menu type (string_menu); type "string" drops them`},
+		{"choices on a type without a menu",
+			slash("x", "  Slash option: `who user! a member`\n  Slash choices: `who 1 | 2`\n"),
+			`Option "who": type "user" has no choices menu`},
+		{"too many choices",
+			slash("x", "  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor "+
+				manyChoices(26)+"`\n"),
+			`Option "flavor" can have at most 25 choices`},
+		{"empty choice",
+			slash("x", "  Slash option: `flavor string_menu! the flavor`\n"+
+				"  Slash choices: `flavor a | | b`\n"),
+			`Option "flavor" has an empty choice`},
+		{"long choice",
+			slash("x", "  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor a | "+
+				strings.Repeat("c", 101)+"`\n"),
+			`Choice "` + strings.Repeat("c", 101) + `" on option "flavor" must be at most 100 characters`},
+		{"non-integer choice on integer_menu",
+			slash("x", "  Slash option: `level integer_menu! the level`\n"+
+				"  Slash choices: `level 1 | two | 3`\n"),
+			`Choice "two" on option "level" must be a whole number`},
+		{"non-number choice on number_menu",
+			slash("x", "  Slash option: `weight number_menu! the weight`\n"+
+				"  Slash choices: `weight 0.5 | heavy`\n"),
+			`Choice "heavy" on option "weight" must be a number`},
 		{"long slash description", slash("x", "  Slash description: `"+strings.Repeat("d", 101)+"`\n"),
 			"Slash command description must be between 1 and 100 characters"},
 		{"empty slash description", slash("x", "  Slash description: ``\n"),
@@ -164,6 +224,14 @@ func manyOptions(n int) string {
 		b.WriteString(" string an option`\n")
 	}
 	return b.String()
+}
+
+func manyChoices(n int) string {
+	parts := make([]string, n)
+	for i := 0; i < n; i++ {
+		parts[i] = "c" + strings.Repeat("x", i)
+	}
+	return strings.Join(parts, " | ")
 }
 
 // slashCtx is a run of the probe command with the given options.
@@ -336,6 +404,38 @@ func TestSetInteractionSlashErrors(t *testing.T) {
 		} else if _, ok := ctx.Slash.Options["ratio"].(float64); !ok {
 			t.Errorf("number %v is a float64: %#v", raw, ctx.Slash.Options["ratio"])
 		}
+	}
+
+	// Menu options with choices: valid choices accepted, non-choice values refused
+	menuHeader := slashHeaderSource("m",
+		"  Slash option: `which string_menu! which one`\n"+
+			"  Slash choices: `which start | end | remind`\n"+
+			"  Slash option: `level integer_menu a level`\n"+
+			"  Slash choices: `level 1 | 2 | 3`\n"+
+			"  Slash option: `weight number_menu a weight`\n"+
+			"  Slash choices: `weight 0.5 | 1.5`\n")
+	if _, err := slashCtx(t, menuHeader, SlashInvocation{
+		Options: map[string]interface{}{"which": "remind", "level": 2, "weight": 1.5},
+	}, DeferModeNone); err != nil {
+		t.Errorf("valid choices: %v", err)
+	}
+	if _, err := slashCtx(t, menuHeader, SlashInvocation{
+		Options: map[string]interface{}{"which": "pause"},
+	}, DeferModeNone); err == nil || !strings.Contains(err.Error(),
+		`string_menu option "which" takes one of its choices (start, end, remind), not the string "pause"`) {
+		t.Errorf("non-choice string: %v", err)
+	}
+	if _, err := slashCtx(t, menuHeader, SlashInvocation{
+		Options: map[string]interface{}{"which": "start", "level": 4},
+	}, DeferModeNone); err == nil || !strings.Contains(err.Error(),
+		`integer_menu option "level" takes one of its choices (1, 2, 3), not 4 (int)`) {
+		t.Errorf("non-choice integer: %v", err)
+	}
+	if _, err := slashCtx(t, menuHeader, SlashInvocation{
+		Options: map[string]interface{}{"which": "start", "weight": 2.5},
+	}, DeferModeNone); err == nil || !strings.Contains(err.Error(),
+		`number_menu option "weight" takes one of its choices (0.5, 1.5), not 2.5 (float64)`) {
+		t.Errorf("non-choice number: %v", err)
 	}
 }
 

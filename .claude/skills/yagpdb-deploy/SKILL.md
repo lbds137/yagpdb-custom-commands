@@ -20,8 +20,8 @@ interaction defer mode (`Defer mode:`, absent = None), the panel's cosmetic comm
 sets it too), and for a `Slash Command` the
 description (`Slash description:`, required, 1-100 characters: YAGPDB refuses a new slash
 command without one) and the
-`Slash subcommand:` / `Slash option:` rows (replaced wholesale; choices, min/max and channel
-types are posted empty), and for an `Hourly interval` / `Minute interval` the interval
+`Slash subcommand:` / `Slash option:` / `Slash choices:` rows (replaced wholesale; min/max,
+min/max length and channel types are posted empty), and for an `Hourly interval` / `Minute interval` the interval
 (`Interval:`, required, within the panel's 1-744 hours / 5-44640 minutes: the unit the
 panel's field shows; a minute interval that is whole hours is refused, since the panel
 shows it as hourly;
@@ -89,7 +89,7 @@ instead of listing them, so the same overwrite risk noted below can't reach the 
      (`git diff deployed -- <file>`, its header lines) didn't change: a panel hand-edit
      the post would silently revert (a command created this round is exempt);
    - a `slash` diff whose live rows carry `extra: true` on any command: that option has
-     panel-only choices or min/max, and the post would clear them;
+     panel-only min/max, length limits or channel types, and the post would clear them;
    - an `enabledWanted` that differs from `enabled`, other than enabling a command this
      round created (disabling a live command needs her yes, below);
    - any status other than `would-update` or `same` (`missing`, `skipped-multi`,
@@ -162,7 +162,7 @@ for its `Commands`-dict key. Only once that comes up empty is it safe to retire 
 
 - Deleting a command in the panel (permanent): list it for Lila instead of acting on it.
 - Anything the header doesn't express: channels, roles, case sensitivity, show
-  errors, context channels, and an option's choices, min/max and channel types.
+  errors, context channels, and an option's min/max, length limits and channel types.
 
 ## Landmines
 
@@ -176,8 +176,8 @@ for its `Commands`-dict key. Only once that comes up empty is it safe to retire 
   a rebuilt one, so every field it doesn't manage survives untouched.
 - The emulator's header validation (and so the JS port) rejects two shapes the panel stores
   differently, because a read-back could never match them: an optional option before a
-  required one (the panel stores required first) and `*_menu` option types (shown back as
-  the base type, without choices).
+  required one (the panel stores required first) and a `*_menu` option type without a
+  `Slash choices:` line (shown back as the base type).
 - The header grammar is parsed twice, in Go (the emulator) and in `deploy.js`; Go's
   `TestHeaderGolden` writes `deploy/testdata/headers.golden.json` and `make test-deploy`
   holds the JS port to it. After a header or grammar change, regenerate it with

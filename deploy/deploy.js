@@ -94,6 +94,8 @@
   var CONTEXT_MENU_NAME_RE = /^[-_\p{L}\p{N} ]{1,32}$/u;
   var MAX_SLASH_OPTIONS = 25;
   var MAX_SLASH_DESCRIPTION = 100;
+  var MAX_SLASH_CHOICES = 25;
+  var MAX_SLASH_CHOICE_LEN = 100;
 
   // The panel's option type keys (slashFormType, customcommands.go:278-302).
   var SLASH_FORM_TYPES = [
@@ -179,11 +181,60 @@
     }
     return {
       sub: sub,
-      opt: { name: name, type: formType, description: f.slice(2).join(" "), required: required },
+      opt: {
+        name: name,
+        type: formType,
+        description: f.slice(2).join(" "),
+        required: required,
+        choices: [],
+      },
     };
   }
 
-  // validateSlashOptionList, customcommands.go:715-741.
+  // "[sub.]name choice one | choice two | choice three" -> {path, choices}
+  function parseSlashChoicesRow(row) {
+    var f = fields(row);
+    if (f.length < 2) {
+      throw new Error("Slash choices `" + row + "`: write `[sub.]name a | b | c`");
+    }
+    var path = f[0];
+    var rest = goTrim(row).slice(path.length);
+    var choices = rest.split("|").map(goTrim);
+    return { path: path, choices: choices };
+  }
+
+  function findSlashOption(def, path) {
+    var dot = path.indexOf(".");
+    if (dot >= 0) {
+      var subName = path.slice(0, dot);
+      var optName = path.slice(dot + 1);
+      for (const sub of def.subcommands) {
+        if (eqFold(sub.name, subName)) {
+          for (const opt of sub.options) {
+            if (opt.name === optName) return opt;
+          }
+        }
+      }
+      return null;
+    }
+    for (const opt of def.options) {
+      if (opt.name === path) return opt;
+    }
+    return null;
+  }
+
+  function isInt64Choice(s) {
+    if (!/^[+-]?\d+$/.test(s)) return false;
+    var n = BigInt(s.replace(/^\+/, ""));
+    return n >= -(2n ** 63n) && n < 2n ** 63n;
+  }
+
+  function isFloat64Choice(s) {
+    if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(s)) return false;
+    return Number.isFinite(Number(s));
+  }
+
+  // validateSlashOptionList, customcommands.go:715-760.
   function validateSlashOptionList(options) {
     if (options.length > MAX_SLASH_OPTIONS) {
       throw new Error("can have at most " + MAX_SLASH_OPTIONS + " options");
@@ -210,6 +261,47 @@
           "Description for option " + goQuote(oname) + " must be between 1 and " +
             MAX_SLASH_DESCRIPTION + " characters"
         );
+      }
+      if (opt.choices.length > 0) {
+        if (opt.type === "string_menu" || opt.type === "integer_menu" || opt.type === "number_menu") {
+          // valid menu type
+        } else if (opt.type === "string" || opt.type === "integer" || opt.type === "number") {
+          throw new Error(
+            "Option " + goQuote(oname) + ": choices need a menu type (" + opt.type +
+              "_menu); type " + goQuote(opt.type) + " drops them"
+          );
+        } else {
+          throw new Error(
+            "Option " + goQuote(oname) + ": type " + goQuote(opt.type) + " has no choices menu"
+          );
+        }
+      }
+      if (opt.choices.length > MAX_SLASH_CHOICES) {
+        throw new Error(
+          "Option " + goQuote(oname) + " can have at most " + MAX_SLASH_CHOICES + " choices"
+        );
+      }
+      for (const c of opt.choices) {
+        var trimmed = goTrim(c);
+        if (trimmed === "") {
+          throw new Error("Option " + goQuote(oname) + " has an empty choice");
+        }
+        if (runeCount(trimmed) > MAX_SLASH_CHOICE_LEN) {
+          throw new Error(
+            "Choice " + goQuote(trimmed) + " on option " + goQuote(oname) +
+              " must be at most " + MAX_SLASH_CHOICE_LEN + " characters"
+          );
+        }
+        if ((opt.type === "integer" || opt.type === "integer_menu") && !isInt64Choice(trimmed)) {
+          throw new Error(
+            "Choice " + goQuote(trimmed) + " on option " + goQuote(oname) + " must be a whole number"
+          );
+        }
+        if ((opt.type === "number" || opt.type === "number_menu") && !isFloat64Choice(trimmed)) {
+          throw new Error(
+            "Choice " + goQuote(trimmed) + " on option " + goQuote(oname) + " must be a number"
+          );
+        }
       }
     }
   }
@@ -309,23 +401,39 @@
         );
       }
     }
+    for (const row of headerLines("Slash choices", header)) {
+      var parsedChoices = parseSlashChoicesRow(row);
+      var targetOpt = findSlashOption(def, parsedChoices.path);
+      if (targetOpt === null) {
+        throw new Error(
+          "Slash choices `" + row + "`: no Slash option line names " + goQuote(parsedChoices.path)
+        );
+      }
+      if (targetOpt.choices.length > 0) {
+        throw new Error(
+          "Slash choices `" + row + "`: option " + goQuote(parsedChoices.path) +
+            " already has choices"
+        );
+      }
+      targetOpt.choices = parsedChoices.choices;
+    }
     validateSlashDef(def);
     return def;
   }
 
   // slash.go validateDeployableSlashDef: two shapes the panel stores differently (required
-  // options first, customcommands.go:396-398; *_menu shown back as the base type,
-  // :308-324), which a read-back could never match.
+  // options first, customcommands.go:396-398; *_menu without choices shown back as the base
+  // type, :308-324), which a read-back could never match.
   function validateDeployableSlashDef(def) {
     function check(options) {
       var seenOptional = false;
       for (const opt of options) {
-        if (/_menu$/.test(opt.type)) {
+        if (/_menu$/.test(opt.type) && opt.choices.length === 0) {
           var base = opt.type.replace(/_menu$/, "");
           throw new Error(
             "Option " + goQuote(opt.name) + ": type " + goQuote(opt.type) +
-              " is a choices menu, which a header can't express (the panel shows it back as " +
-              goQuote(base) + "): use " + goQuote(base)
+              " is a choices menu and needs a Slash choices line (the panel shows a menu with no choices back as " +
+              goQuote(base) + ")"
           );
         }
         if (opt.required && seenOptional) {
@@ -511,7 +619,7 @@
   var SLASH_COMMAND = "Slash Command";
   // Option fields a header row can't express; posted empty, and a live non-empty value
   // counts as a difference.
-  var EXTRA_OPTION_FIELDS = ["choices", "min_value", "max_value", "min_length", "max_length", "channel_types"];
+  var EXTRA_OPTION_FIELDS = ["min_value", "max_value", "min_length", "max_length", "channel_types"];
 
   function entryValue(entries, name) {
     for (const e of entries) if (e[0] === name) return e[1];
@@ -534,6 +642,17 @@
     });
   }
 
+  // parseChoiceLines, customcommands.go:420-429: split on newlines, trim, drop empty lines.
+  function parseChoiceLines(raw) {
+    if (!raw) return [];
+    return String(raw)
+      .split(/\r?\n/)
+      .map(goTrim)
+      .filter(function (c) {
+        return c !== "";
+      });
+  }
+
   function normalizeRow(fieldMap) {
     var extra = false;
     for (const f of EXTRA_OPTION_FIELDS) {
@@ -544,6 +663,7 @@
       type: fieldMap.type || "",
       description: fieldMap.description || "",
       required: fieldMap.required !== undefined,
+      choices: parseChoiceLines(fieldMap.choices),
       extra: extra,
     };
   }
@@ -612,7 +732,14 @@
   // The header's slash rows in the same comparable shape.
   function headerSlashRows(slash) {
     function row(o) {
-      return { name: o.name, type: o.type, description: o.description, required: o.required, extra: false };
+      return {
+        name: o.name,
+        type: o.type,
+        description: o.description,
+        required: o.required,
+        choices: o.choices || [],
+        extra: false,
+      };
     }
     return {
       subcommands: slash.subcommands.map(function (s) {
@@ -684,7 +811,7 @@
     ];
     if (o.required) out.push([prefix + ".required", "on"]);
     out.push(
-      [prefix + ".choices", ""],
+      [prefix + ".choices", o.choices && o.choices.length ? o.choices.join("\n") : ""],
       [prefix + ".min_value", ""],
       [prefix + ".max_value", ""],
       [prefix + ".min_length", ""],

@@ -65,13 +65,15 @@
             "name": "link",
             "type": "string",
             "description": "the message link",
-            "required": true
+            "required": true,
+            "choices": []
           },
           {
             "name": "comment",
             "type": "string",
             "description": "a note to post with it",
-            "required": false
+            "required": false,
+            "choices": []
           }
         ]
       }
@@ -96,13 +98,15 @@
                 "name": "key",
                 "type": "string",
                 "description": "the keyword, letters only",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "text",
                 "type": "string",
                 "description": "the plaintext, up to 2000 characters",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -114,13 +118,15 @@
                 "name": "key",
                 "type": "string",
                 "description": "the keyword, letters only",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "text",
                 "type": "string",
                 "description": "the ciphertext, up to 2000 characters",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -132,7 +138,8 @@
                 "name": "text",
                 "type": "string",
                 "description": "the ciphertext, up to 2000 characters",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -144,7 +151,8 @@
                 "name": "text",
                 "type": "string",
                 "description": "the ciphertext, up to 2000 characters",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -156,7 +164,8 @@
                 "name": "text",
                 "type": "string",
                 "description": "the ciphertext, up to 2000 characters",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           }
@@ -178,13 +187,15 @@
                 "name": "color",
                 "type": "string",
                 "description": "hex code, # optional (use this OR role)",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "role",
                 "type": "role",
                 "description": "a role whose color to check (use this OR color)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -196,7 +207,8 @@
                 "name": "colors",
                 "type": "string",
                 "description": "hex codes and/or role IDs or mentions, up to 10",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -213,7 +225,8 @@
                 "name": "color",
                 "type": "string",
                 "description": "hex code, # optional",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           }
@@ -265,13 +278,15 @@
                 "name": "key",
                 "type": "string",
                 "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "user",
                 "type": "user",
                 "description": "another member's own data (staff)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -283,13 +298,15 @@
                 "name": "key",
                 "type": "string",
                 "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "user",
                 "type": "user",
                 "description": "another member's own data (staff)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -301,19 +318,22 @@
                 "name": "key",
                 "type": "string",
                 "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "value",
                 "type": "string",
                 "description": "the new value: text, or a JSON object for a group",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "user",
                 "type": "user",
                 "description": "another member's own data (staff)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -325,19 +345,22 @@
                 "name": "key",
                 "type": "string",
                 "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "value",
                 "type": "string",
                 "description": "the new value (JSON for lists and groups)",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "user",
                 "type": "user",
                 "description": "another member's own data (staff)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -349,19 +372,22 @@
                 "name": "key",
                 "type": "string",
                 "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "value",
                 "type": "string",
                 "description": "the item to take out (JSON for lists and groups)",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "user",
                 "type": "user",
                 "description": "another member's own data (staff)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -373,13 +399,15 @@
                 "name": "key",
                 "type": "string",
                 "description": "name of the entry; use : to go inside a group, e.g. Roles:Staff",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "user",
                 "type": "user",
                 "description": "another member's own data (staff)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -391,13 +419,15 @@
                 "name": "key",
                 "type": "string",
                 "description": "empty = all entries",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "user",
                 "type": "user",
                 "description": "another member's own data (staff)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           }
@@ -437,7 +467,8 @@
                 "name": "rule",
                 "type": "integer",
                 "description": "rule number (a number that doesn't exist yet adds a new rule)",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -449,19 +480,22 @@
                 "name": "section",
                 "type": "string",
                 "description": "section to edit, e.g. Inactivity Prune (capitals don't matter)",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "name",
                 "type": "string",
                 "description": "name of the entry, e.g. Opening Announcement",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "create",
                 "type": "boolean",
                 "description": "start a brand-new section (only if it doesn't exist yet)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -473,7 +507,8 @@
                 "name": "rule",
                 "type": "integer",
                 "description": "rule number to delete",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -485,13 +520,15 @@
                 "name": "section",
                 "type": "string",
                 "description": "section of the entry, e.g. Inactivity Prune",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "name",
                 "type": "string",
                 "description": "name of the entry, e.g. Opening Announcement",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           }
@@ -522,7 +559,8 @@
             "name": "text",
             "type": "string",
             "description": "the text to calculate",
-            "required": true
+            "required": true,
+            "choices": []
           }
         ]
       }
@@ -568,19 +606,22 @@
             "name": "channel",
             "type": "channel",
             "description": "where the prompt goes (default: this channel)",
-            "required": false
+            "required": false,
+            "choices": []
           },
           {
             "name": "thread",
             "type": "boolean",
             "description": "post as a new thread (forced on for forum channels)",
-            "required": false
+            "required": false,
+            "choices": []
           },
           {
             "name": "role",
             "type": "role",
             "description": "a role to ping at the top",
-            "required": false
+            "required": false,
+            "choices": []
           }
         ]
       }
@@ -608,7 +649,8 @@
             "name": "id",
             "type": "string",
             "description": "a Discord ID or mention (default: you)",
-            "required": false
+            "required": false,
+            "choices": []
           }
         ]
       }
@@ -639,7 +681,8 @@
                 "name": "text",
                 "type": "string",
                 "description": "the text to encipher",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -651,7 +694,8 @@
                 "name": "text",
                 "type": "string",
                 "description": "the text to convert",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -663,7 +707,8 @@
                 "name": "text",
                 "type": "string",
                 "description": "one or more words",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -675,13 +720,15 @@
                 "name": "letters",
                 "type": "integer",
                 "description": "letters per group",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "groups",
                 "type": "integer",
                 "description": "how many groups (default 1)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           }
@@ -712,7 +759,8 @@
             "name": "term",
             "type": "string",
             "description": "the term to look up (omit for the whole glossary)",
-            "required": false
+            "required": false,
+            "choices": []
           }
         ]
       }
@@ -755,13 +803,15 @@
             "name": "role",
             "type": "role",
             "description": "role to ping",
-            "required": true
+            "required": true,
+            "choices": []
           },
           {
             "name": "message",
             "type": "string",
             "description": "message to send with the ping",
-            "required": false
+            "required": false,
+            "choices": []
           }
         ]
       }
@@ -792,7 +842,8 @@
                 "name": "roles",
                 "type": "string",
                 "description": "leave empty to pick the roles from a menu (recommended)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -804,7 +855,8 @@
                 "name": "which",
                 "type": "string",
                 "description": "start, end or remind",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -816,7 +868,8 @@
                 "name": "user",
                 "type": "user",
                 "description": "member to review (leave empty to pick from a menu)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -828,7 +881,8 @@
                 "name": "date",
                 "type": "string",
                 "description": "the next prune date as announcements should show it, e.g. March 1",
-                "required": true
+                "required": true,
+                "choices": []
               }
             ]
           },
@@ -845,13 +899,15 @@
                 "name": "from",
                 "type": "integer",
                 "description": "first rule number to post (default: all)",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "to",
                 "type": "integer",
                 "description": "last rule number to post (default: all)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -868,31 +924,36 @@
                 "name": "user1",
                 "type": "user",
                 "description": "member whose reputation to clear",
-                "required": true
+                "required": true,
+                "choices": []
               },
               {
                 "name": "user2",
                 "type": "user",
                 "description": "another member to clear (optional)",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "user3",
                 "type": "user",
                 "description": "another member to clear (optional)",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "user4",
                 "type": "user",
                 "description": "another member to clear (optional)",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "user5",
                 "type": "user",
                 "description": "another member to clear (optional)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -904,7 +965,8 @@
                 "name": "staff_role",
                 "type": "role",
                 "description": "the staff role (omit to keep the current one)",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           }
@@ -970,31 +1032,36 @@
                 "name": "staff",
                 "type": "role",
                 "description": "the staff role (most staff commands check it; Administrator only)",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "member",
                 "type": "role",
                 "description": "the role inactivity pings at start and end",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "active",
                 "type": "role",
                 "description": "the role the inactivity prune picker treats as active",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "inactive",
                 "type": "role",
                 "description": "the role inactivity reminders ping and the prune picker checks",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "bump",
                 "type": "role",
                 "description": "the role the bump reminder pings",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           },
@@ -1006,13 +1073,15 @@
                 "name": "bot",
                 "type": "channel",
                 "description": "where helper commands run",
-                "required": false
+                "required": false,
+                "choices": []
               },
               {
                 "name": "mod_log",
                 "type": "channel",
                 "description": "where hiatus and unhiatus post their record",
-                "required": false
+                "required": false,
+                "choices": []
               }
             ]
           }
@@ -1037,7 +1106,8 @@
             "name": "number",
             "type": "integer",
             "description": "the rule to view (omit to browse all)",
-            "required": false
+            "required": false,
+            "choices": []
           }
         ]
       }
@@ -1070,37 +1140,43 @@
               "name": "text",
               "type": "string",
               "description": "the text",
-              "required": true
+              "required": true,
+              "choices": []
             },
             {
               "name": "who",
               "type": "user",
               "description": "a member",
-              "required": true
+              "required": true,
+              "choices": []
             },
             {
               "name": "count",
               "type": "integer",
               "description": "how many",
-              "required": false
+              "required": false,
+              "choices": []
             },
             {
               "name": "where",
               "type": "channel",
               "description": "a channel",
-              "required": false
+              "required": false,
+              "choices": []
             },
             {
               "name": "rank",
               "type": "role",
               "description": "a role",
-              "required": false
+              "required": false,
+              "choices": []
             },
             {
               "name": "whom",
               "type": "mentionable",
               "description": "a role or a user",
-              "required": false
+              "required": false,
+              "choices": []
             }
           ]
         }
@@ -1123,7 +1199,8 @@
                   "name": "key",
                   "type": "string",
                   "description": "the key",
-                  "required": true
+                  "required": true,
+                  "choices": []
                 }
               ]
             },
@@ -1135,13 +1212,15 @@
                   "name": "key",
                   "type": "string",
                   "description": "the key",
-                  "required": true
+                  "required": true,
+                  "choices": []
                 },
                 {
                   "name": "ttl",
                   "type": "integer",
                   "description": "seconds",
-                  "required": false
+                  "required": false,
+                  "choices": []
                 }
               ]
             }
@@ -1177,7 +1256,8 @@
               "name": "מפתח",
               "type": "string",
               "description": "the key",
-              "required": true
+              "required": true,
+              "choices": []
             }
           ]
         }
@@ -1232,6 +1312,41 @@
         "slashDescription": null,
         "slash": null
       }
+    },
+    {
+      "name": "menu options with choices",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Group: `Utility`\n  Slash description: `Menu probe`\n  Slash choices: `flavor vanilla | dark chocolate`\n  Slash option: `flavor string_menu! pick a flavor`\n  Slash option: `level integer_menu a level`\n  Slash choices: `level 1 | 2 | 3`\n*/}}",
+      "header": {
+        "deferMode": 0,
+        "interval": null,
+        "slashDescription": "Menu probe",
+        "slash": {
+          "subcommands": [],
+          "options": [
+            {
+              "name": "flavor",
+              "type": "string_menu",
+              "description": "pick a flavor",
+              "required": true,
+              "choices": [
+                "vanilla",
+                "dark chocolate"
+              ]
+            },
+            {
+              "name": "level",
+              "type": "integer_menu",
+              "description": "a level",
+              "required": false,
+              "choices": [
+                "1",
+                "2",
+                "3"
+              ]
+            }
+          ]
+        }
+      }
     }
   ],
   "errors": [
@@ -1248,7 +1363,62 @@
     {
       "name": "menu option type",
       "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Group: `Utility`\n  Slash option: `flavor string_menu! the flavor`\n*/}}",
-      "error": "header: Option \"flavor\": type \"string_menu\" is a choices menu, which a header can't express (the panel shows it back as \"string\"): use \"string\""
+      "error": "header: Option \"flavor\": type \"string_menu\" is a choices menu and needs a Slash choices line (the panel shows a menu with no choices back as \"string\")"
+    },
+    {
+      "name": "bad choices row",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor`\n*/}}",
+      "error": "header: Slash choices `flavor`: write `[sub.]name a | b | c`"
+    },
+    {
+      "name": "choices for an unknown option",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `other a | b`\n*/}}",
+      "error": "header: Slash choices `other a | b`: no Slash option line names \"other\""
+    },
+    {
+      "name": "choices for an unknown subcommand option",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash subcommand: `get read`\n  Slash option: `get.flavor string_menu! the flavor`\n  Slash choices: `set.flavor a | b`\n*/}}",
+      "error": "header: Slash choices `set.flavor a | b`: no Slash option line names \"set.flavor\""
+    },
+    {
+      "name": "duplicate choices row",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor a | b`\n  Slash choices: `flavor c | d`\n*/}}",
+      "error": "header: Slash choices `flavor c | d`: option \"flavor\" already has choices"
+    },
+    {
+      "name": "choices on a non-menu string option",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string! the flavor`\n  Slash choices: `flavor a | b`\n*/}}",
+      "error": "header: Option \"flavor\": choices need a menu type (string_menu); type \"string\" drops them"
+    },
+    {
+      "name": "choices on a type without a menu",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `who user! a member`\n  Slash choices: `who 1 | 2`\n*/}}",
+      "error": "header: Option \"who\": type \"user\" has no choices menu"
+    },
+    {
+      "name": "too many choices",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor c | cx | cxx | cxxx | cxxxx | cxxxxx | cxxxxxx | cxxxxxxx | cxxxxxxxx | cxxxxxxxxx | cxxxxxxxxxx | cxxxxxxxxxxx | cxxxxxxxxxxxx | cxxxxxxxxxxxxx | cxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxxxxxxxx | cxxxxxxxxxxxxxxxxxxxxxxxxx`\n*/}}",
+      "error": "header: Option \"flavor\" can have at most 25 choices"
+    },
+    {
+      "name": "empty choice",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor a | | b`\n*/}}",
+      "error": "header: Option \"flavor\" has an empty choice"
+    },
+    {
+      "name": "long choice",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor a | ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc`\n*/}}",
+      "error": "header: Choice \"ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\" on option \"flavor\" must be at most 100 characters"
+    },
+    {
+      "name": "non-integer choice on integer_menu",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `level integer_menu! the level`\n  Slash choices: `level 1 | two | 3`\n*/}}",
+      "error": "header: Choice \"two\" on option \"level\" must be a whole number"
+    },
+    {
+      "name": "non-number choice on number_menu",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `weight number_menu! the weight`\n  Slash choices: `weight 0.5 | heavy`\n*/}}",
+      "error": "header: Choice \"heavy\" on option \"weight\" must be a number"
     },
     {
       "name": "long slash description",
