@@ -1421,6 +1421,11 @@
       "error": "header: Choice \"heavy\" on option \"weight\" must be a number"
     },
     {
+      "name": "inf choice on number_menu",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `weight number_menu! the weight`\n  Slash choices: `weight 1 | inf`\n*/}}",
+      "error": "header: Choice \"inf\" on option \"weight\" must be a number"
+    },
+    {
       "name": "long slash description",
       "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash description: `ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd`\n*/}}",
       "error": "header: Slash command description must be between 1 and 100 characters"
