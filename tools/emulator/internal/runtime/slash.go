@@ -25,6 +25,8 @@ var (
 	headerSlashOption     = regexp.MustCompile("(?i:Slash option): `([^`]*)`")
 	headerSlashSubcommand = regexp.MustCompile("(?i:Slash subcommand): `([^`]*)`")
 	headerSlashChoices    = regexp.MustCompile("(?i:Slash choices): `([^`]*)`")
+	// a number_menu choice: deploy.js isFloat64Choice's pattern
+	decimalChoice = regexp.MustCompile(`^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$`)
 	// "Slash description: `Color tools`" is the command's own description (the panel's
 	// slash_command_description); the browser deploy writes it, the emulator ignores it.
 	headerSlashDescription = regexp.MustCompile("(?i:Slash description): `([^`]*)`")
@@ -337,7 +339,9 @@ func validateSlashOptionList(options []SlashOption) error {
 					return fmt.Errorf("Choice %q on option %q must be a whole number", trimmed, oname)
 				}
 			case types.ApplicationCommandOptionNumber:
-				if _, err := strconv.ParseFloat(trimmed, 64); err != nil {
+				// stricter than the panel's ParseFloat: Discord refuses inf/nan, and deploy.js
+				// accepts decimal numbers only
+				if !decimalChoice.MatchString(trimmed) {
 					return fmt.Errorf("Choice %q on option %q must be a number", trimmed, oname)
 				}
 			}
