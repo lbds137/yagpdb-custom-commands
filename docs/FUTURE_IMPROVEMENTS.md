@@ -85,7 +85,7 @@ picks, then the minifier.
   and the handler refuses unknown categories unless `create` is set. `/edit delete_entry`'s
   unknown-category refusal stays as is (delete never creates). A dynamic category
   picker would need /setup-style machinery (YAGPDB's string_menu choices are static,
-  set in the panel form). Pick up with the next /edit polish round or with the
+  declared on a `Slash choices:` header line and written to the panel form by deploy). Pick up with the next /edit polish round or with the
   pickers (roadmap item 4). Shipped (2026-10-04, /edit polish round): `/edit entry`
   takes `create` (boolean); the flag rides the modal custom_id `edit:entry:new:<unix>`,
   an unknown category without it is refused (at /edit when the option names one, and

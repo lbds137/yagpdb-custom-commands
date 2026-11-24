@@ -27,10 +27,11 @@ const (
 )
 
 type goldenOption struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
+	Name        string   `json:"name"`
+	Type        string   `json:"type"`
+	Description string   `json:"description"`
+	Required    bool     `json:"required"`
+	Choices     []string `json:"choices"`
 }
 
 type goldenSubcommand struct {
@@ -86,6 +87,12 @@ func goldenSamples(t *testing.T) []goldenSample {
 		{"a minute interval", "{{/*\n  Trigger type: `Minute interval`\n  Group: `Utility`\n  Interval: `15`\n*/}}"},
 		{"an Interval line on a command is ignored",
 			"{{/*\n  Trigger type: `Command`\n  Trigger: `x`\n  Interval: `3`\n*/}}"},
+		{"menu options with choices", slashHeaderSource("x",
+			"  Group: `Utility`\n  Slash description: `Menu probe`\n"+
+				"  Slash choices: `flavor vanilla | dark chocolate`\n"+
+				"  Slash option: `flavor string_menu! pick a flavor`\n"+
+				"  Slash option: `level integer_menu a level`\n"+
+				"  Slash choices: `level 1 | 2 | 3`\n")},
 	}
 	var out []goldenSample
 	for _, s := range sources {
@@ -97,7 +104,11 @@ func goldenSamples(t *testing.T) []goldenSample {
 func goldenOptions(opts []SlashOption) []goldenOption {
 	out := make([]goldenOption, 0, len(opts))
 	for _, o := range opts {
-		out = append(out, goldenOption{o.Name, o.FormType, o.Description, o.Required})
+		choices := o.Choices
+		if choices == nil {
+			choices = []string{}
+		}
+		out = append(out, goldenOption{o.Name, o.FormType, o.Description, o.Required, choices})
 	}
 	return out
 }

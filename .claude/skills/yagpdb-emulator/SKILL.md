@@ -313,12 +313,16 @@ docs/design/emulator-interactions.md. Modals: see Modals.
 
 A slash command's header says `Trigger type: \`Slash Command\``, `Trigger:` its name
 (lowercase, as the panel requires) and one line per panel row: `Slash subcommand:
-\`get read a key\`` (name, description) and `Slash option: \`[sub.]name type[!]
+\`get read a key\`` (name, description), `Slash option: \`[sub.]name type[!]
 description\`` with the panel's type keys (string, string_menu, integer, integer_menu,
 number, number_menu, boolean, user, channel, role, mentionable), `!` = required and
 `sub.` = the subcommand it belongs to (a command with subcommands has no top-level
-options). The header is validated as the panel validates the form (vendor
-customcommands/customcommands.go:610-741, its error texts): lowercase names of 1-32
+options), and `Slash choices: \`[sub.]name choice one | choice two | choice three\`` for
+a `*_menu` option (1-25 non-empty choices of at most 100 characters, whole numbers for
+`integer_menu`, numbers for `number_menu`; a choice cannot contain `|` or a backtick, and
+a deployable `*_menu` option requires a `Slash choices:` line). The header is validated
+as the panel validates the form (vendor
+customcommands/customcommands.go:610-760, its error texts): lowercase names of 1-32
 letters/numbers/dashes/underscores, descriptions of 1-100 characters, no duplicates,
 at most 25 options, and no `Update Message Response` defer mode. To test one:
 

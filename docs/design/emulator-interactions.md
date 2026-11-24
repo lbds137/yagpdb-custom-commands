@@ -108,7 +108,8 @@ the component's message in place. Snapshots gain `interaction_responses:` and
   \`[sub.]name type[!] description\`` with type from slashFormType keys
   (customcommands.go:278-302: string, string_menu, integer, integer_menu, number,
   number_menu, boolean, user, channel, role, mentionable), `!` = required, `sub.` = its
-  subcommand; `Slash subcommand: \`get description\``. `Defer mode: \`Ephemeral Message
+  subcommand; `Slash choices: \`[sub.]name a | b | c\`` for a `*_menu` option;
+  `Slash subcommand: \`get description\``. `Defer mode: \`Ephemeral Message
   Response\`` (panel labels; default None; "Update Message Response" rejected for Slash
   and context menus: :614, :539).
 - Context menus: `Trigger type: \`User Context Menu\``, `Trigger: \`View avatar\``
@@ -170,8 +171,8 @@ checkbox/radio/select fields (handle_component.go:384-420; a modal needs more th
 inputs; unit 4 models clabel around a ctextInput only, and a clabel around a cmenu is
 an emulator error, never a silent pass); resolving menu `Values` beyond strings; the
 "restricted" reply (:142-159) and CmdRunsInChannel/ForUser (panel restrictions get
-modelled); option min/max/choice
-validation (Discord's job); autocomplete; DM interactions (:26-29). (Corrected by unit 3:
+modelled); option min/max
+validation (Discord's job; option choices are modelled, TASK-46); autocomplete; DM interactions (:26-29). (Corrected by unit 3:
 sendDM in a context menu is NOT an error — context menus get a nil member
 (handle_contextmenu.go:115-120) and tmplSendDM returns "" silently when c.MS is nil,
 common/templates/context_funcs.go:75; the emulator models that, with a warning.)

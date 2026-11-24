@@ -183,7 +183,7 @@ IDs" refusal then only fires on the text path.
 
 **F13. `inactivity action:` is a typed word** (small). `staff_slash.gohtml:44-47`, header :20-24.
 Why: five jobs hide behind one free-text option, and typos land on "Invalid Action
-Specified". Static choices would fix it, but the deploy cannot express them (F25).
+Specified". Static choices would fix it, and TASK-46 unblocked them in the deploy (F25).
 Proposed: split into three subcommands, `announce` (option `which`: start, end or remind;
 still typed, but three words), `prune` (option `user`, picker when empty) and `prune_date`
 (option `date` required). `/staff` goes from 7 to 9 subcommands: fine at premium (25), under the 10 free
@@ -280,6 +280,7 @@ bypass through a third path (`/staff bootstrap staff_role:`), which that ruling 
 syntax, so a deploy replaces hand-set choices with none. Don't rely on choices until the
 header grammar, `deploy.js`, the Go emulator and its golden are extended together; prefer the
 subcommand splits (F4, F13).
+Unblocked by TASK-46: `Slash choices:` is now supported across the header grammar, `deploy.js`, the emulator and its golden.
 
 ## 3. Fine as they are
 

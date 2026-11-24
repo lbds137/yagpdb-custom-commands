@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -15,12 +16,15 @@ import (
 // and the handlers' data keys. The response machinery is the component click's
 // (interactions.go).
 
-// Header lines, one per panel row: "Slash subcommand: `get description`" and
+// Header lines, one per panel row: "Slash subcommand: `get description`",
 // "Slash option: `[sub.]name type[!] description`" (type from slashFormType, `!` =
-// required, `sub.` = the subcommand it belongs to).
+// required, `sub.` = the subcommand it belongs to), and
+// "Slash choices: `[sub.]name choice one | choice two | choice three`" for a *_menu
+// option (a choice cannot contain `|` or a backtick).
 var (
 	headerSlashOption     = regexp.MustCompile("(?i:Slash option): `([^`]*)`")
 	headerSlashSubcommand = regexp.MustCompile("(?i:Slash subcommand): `([^`]*)`")
+	headerSlashChoices    = regexp.MustCompile("(?i:Slash choices): `([^`]*)`")
 	// "Slash description: `Color tools`" is the command's own description (the panel's
 	// slash_command_description); the browser deploy writes it, the emulator ignores it.
 	headerSlashDescription = regexp.MustCompile("(?i:Slash description): `([^`]*)`")
@@ -39,6 +43,8 @@ func ReadSlashDescription(source string) (string, bool) {
 const (
 	maxSlashCommandOptions     = 25
 	maxSlashCommandDescription = 100
+	maxSlashCommandChoices     = 25
+	maxSlashChoiceLength       = 100
 )
 
 var (
@@ -70,13 +76,14 @@ const slashFormTypeKeys = "string, string_menu, integer, integer_menu, number, n
 	"boolean, user, channel, role, mentionable"
 
 // SlashOption is one option row of the panel (SlashCommandOption, customcommands.go:
-// 151-165, without the constraints the emulator doesn't validate: choices, min/max).
+// 151-165, without the constraints the emulator doesn't validate: min/max).
 type SlashOption struct {
 	Name        string
 	FormType    string // the panel's type key (string, integer_menu, user...)
 	Type        types.ApplicationCommandOptionType
 	Description string
 	Required    bool
+	Choices     []string
 }
 
 // SlashSubcommand is one subcommand row with its options (SlashCommandSubcommand, :171-175).
@@ -158,7 +165,59 @@ func ReadSlashCommand(source string) (SlashCommandDef, error) {
 				"(subcommand lines come first)", m[1], subName)
 		}
 	}
+	for _, m := range headerSlashChoices.FindAllStringSubmatch(header, -1) {
+		path, choices, err := parseSlashChoicesRow(m[1])
+		if err != nil {
+			return def, err
+		}
+		opt := findSlashOption(&def, path)
+		if opt == nil {
+			return def, fmt.Errorf("Slash choices `%s`: no Slash option line names %q", m[1], path)
+		}
+		if len(opt.Choices) > 0 {
+			return def, fmt.Errorf("Slash choices `%s`: option %q already has choices", m[1], path)
+		}
+		opt.Choices = choices
+	}
 	return def, validateSlashCommandDef(def)
+}
+
+// parseSlashChoicesRow reads "[sub.]name choice one | choice two | choice three".
+func parseSlashChoicesRow(row string) (path string, choices []string, err error) {
+	fields := strings.Fields(row)
+	if len(fields) < 2 {
+		return "", nil, fmt.Errorf("Slash choices `%s`: write `[sub.]name a | b | c`", row)
+	}
+	path = fields[0]
+	rest := strings.TrimSpace(row)[len(path):]
+	parts := strings.Split(rest, "|")
+	choices = make([]string, len(parts))
+	for i, p := range parts {
+		choices[i] = strings.TrimSpace(p)
+	}
+	return path, choices, nil
+}
+
+func findSlashOption(def *SlashCommandDef, path string) *SlashOption {
+	if i := strings.Index(path, "."); i >= 0 {
+		sub, name := path[:i], path[i+1:]
+		for s := range def.Subcommands {
+			if strings.EqualFold(def.Subcommands[s].Name, sub) {
+				for o := range def.Subcommands[s].Options {
+					if def.Subcommands[s].Options[o].Name == name {
+						return &def.Subcommands[s].Options[o]
+					}
+				}
+			}
+		}
+		return nil
+	}
+	for o := range def.Options {
+		if def.Options[o].Name == path {
+			return &def.Options[o]
+		}
+	}
+	return nil
 }
 
 // parseSlashSubcommandRow reads "name description".
@@ -226,7 +285,7 @@ func validateSlashCommandDef(def SlashCommandDef) error {
 	return validateSlashOptionList(def.Options)
 }
 
-// validateSlashOptionList is the panel's (customcommands.go:715-741) for the checks a
+// validateSlashOptionList is the panel's (customcommands.go:715-760) for the checks a
 // header row can fail.
 func validateSlashOptionList(options []SlashOption) error {
 	if len(options) > maxSlashCommandOptions {
@@ -250,6 +309,39 @@ func validateSlashOptionList(options []SlashOption) error {
 			return fmt.Errorf("Description for option %q must be between 1 and %d characters", oname,
 				maxSlashCommandDescription)
 		}
+		if len(opt.Choices) > 0 {
+			switch opt.FormType {
+			case "string_menu", "integer_menu", "number_menu":
+			case "string", "integer", "number":
+				return fmt.Errorf("Option %q: choices need a menu type (%s_menu); type %q drops them",
+					oname, opt.FormType, opt.FormType)
+			default:
+				return fmt.Errorf("Option %q: type %q has no choices menu", oname, opt.FormType)
+			}
+		}
+		if len(opt.Choices) > maxSlashCommandChoices {
+			return fmt.Errorf("Option %q can have at most %d choices", oname, maxSlashCommandChoices)
+		}
+		for _, c := range opt.Choices {
+			trimmed := strings.TrimSpace(c)
+			if trimmed == "" {
+				return fmt.Errorf("Option %q has an empty choice", oname)
+			}
+			if utf8.RuneCountInString(trimmed) > maxSlashChoiceLength {
+				return fmt.Errorf("Choice %q on option %q must be at most %d characters",
+					trimmed, oname, maxSlashChoiceLength)
+			}
+			switch opt.Type {
+			case types.ApplicationCommandOptionInteger:
+				if _, err := strconv.ParseInt(trimmed, 10, 64); err != nil {
+					return fmt.Errorf("Choice %q on option %q must be a whole number", trimmed, oname)
+				}
+			case types.ApplicationCommandOptionNumber:
+				if _, err := strconv.ParseFloat(trimmed, 64); err != nil {
+					return fmt.Errorf("Choice %q on option %q must be a number", trimmed, oname)
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -259,15 +351,15 @@ func validateSlashOptionList(options []SlashOption) error {
 // from ValidateHeader only (a test fixture may use either shape).
 //   - an optional option before a required one: the panel stores required options first
 //     (parseSlashOptionForms' sort.SliceStable, customcommands.go:396-398);
-//   - a *_menu type: a header can't carry choices, and the panel shows a menu option
-//     without choices back as its base type (slashFormTypeKey, customcommands.go:308-324).
+//   - a *_menu type without a Slash choices line: the panel shows a menu option without
+//     choices back as its base type (slashFormTypeKey, customcommands.go:308-324).
 func validateDeployableSlashDef(def SlashCommandDef) error {
 	check := func(options []SlashOption) error {
 		seenOptional := false
 		for _, opt := range options {
-			if base, isMenu := strings.CutSuffix(opt.FormType, "_menu"); isMenu {
-				return fmt.Errorf("Option %q: type %q is a choices menu, which a header can't express "+
-					"(the panel shows it back as %q): use %q", opt.Name, opt.FormType, base, base)
+			if base, isMenu := strings.CutSuffix(opt.FormType, "_menu"); isMenu && len(opt.Choices) == 0 {
+				return fmt.Errorf("Option %q: type %q is a choices menu and needs a Slash choices line "+
+					"(the panel shows a menu with no choices back as %q)", opt.Name, opt.FormType, base)
 			}
 			if opt.Required && seenOptional {
 				return fmt.Errorf("Option %q is required but follows an optional one: write the "+
@@ -501,26 +593,43 @@ func (ctx *ExecutionContext) slashOptionValue(d SlashOption, raw interface{},
 	resolved *types.ApplicationCommandInteractionDataResolved) (interface{}, error) {
 	switch d.Type {
 	case types.ApplicationCommandOptionString:
-		if s, ok := raw.(string); ok {
-			return s, nil
+		s, ok := raw.(string)
+		if !ok {
+			return nil, fmt.Errorf("%s takes a string, not %s", d.FormType, describeRaw(raw))
 		}
-		return nil, fmt.Errorf("%s takes a string, not %s", d.FormType, describeRaw(raw))
+		if len(d.Choices) > 0 && !matchesStringChoice(d.Choices, s) {
+			return nil, choiceError(d, raw)
+		}
+		return s, nil
 	case types.ApplicationCommandOptionInteger:
-		if n, ok := rawInt(raw); ok {
-			return n, nil
+		n, ok := rawInt(raw)
+		if !ok {
+			return nil, fmt.Errorf("%s takes a whole number, not %s", d.FormType, describeRaw(raw))
 		}
-		return nil, fmt.Errorf("%s takes a whole number, not %s", d.FormType, describeRaw(raw))
+		if len(d.Choices) > 0 && !matchesIntChoice(d.Choices, n) {
+			return nil, choiceError(d, raw)
+		}
+		return n, nil
 	case types.ApplicationCommandOptionNumber:
-		switch v := raw.(type) {
+		var v float64
+		var ok bool
+		switch val := raw.(type) {
 		case float64:
-			return v, nil
+			v, ok = val, true
 		case float32:
-			return float64(v), nil
+			v, ok = float64(val), true
+		default:
+			if n, isInt := rawInt(raw); isInt {
+				v, ok = float64(n), true
+			}
 		}
-		if n, ok := rawInt(raw); ok {
-			return float64(n), nil
+		if !ok {
+			return nil, fmt.Errorf("%s takes a number, not %s", d.FormType, describeRaw(raw))
 		}
-		return nil, fmt.Errorf("%s takes a number, not %s", d.FormType, describeRaw(raw))
+		if len(d.Choices) > 0 && !matchesFloatChoice(d.Choices, v) {
+			return nil, choiceError(d, raw)
+		}
+		return v, nil
 	case types.ApplicationCommandOptionBoolean:
 		if b, ok := raw.(bool); ok {
 			return b, nil
@@ -623,6 +732,38 @@ func describeRaw(raw interface{}) string {
 		return "nothing"
 	}
 	return fmt.Sprintf("%v (%T)", raw, raw)
+}
+
+func choiceError(d SlashOption, raw interface{}) error {
+	return fmt.Errorf("%s option %q takes one of its choices (%s), not %s",
+		d.FormType, d.Name, strings.Join(d.Choices, ", "), describeRaw(raw))
+}
+
+func matchesStringChoice(choices []string, v string) bool {
+	for _, c := range choices {
+		if v == c {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesIntChoice(choices []string, v int64) bool {
+	for _, c := range choices {
+		if n, err := strconv.ParseInt(strings.TrimSpace(c), 10, 64); err == nil && v == n {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesFloatChoice(choices []string, v float64) bool {
+	for _, c := range choices {
+		if n, err := strconv.ParseFloat(strings.TrimSpace(c), 64); err == nil && v == n {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveSlashOptionValue is YAGPDB's (handle_slashcommand.go:181-238): the value a
