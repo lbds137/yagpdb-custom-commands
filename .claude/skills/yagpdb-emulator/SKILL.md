@@ -318,10 +318,10 @@ description\`` with the panel's type keys (string, string_menu, integer, integer
 number, number_menu, boolean, user, channel, role, mentionable), `!` = required and
 `sub.` = the subcommand it belongs to (a command with subcommands has no top-level
 options), and `Slash choices: \`[sub.]name choice one | choice two | choice three\`` for
-a `*_menu` option (1-25 non-empty choices of at most 100 characters, whole numbers for
-`integer_menu`, numbers for `number_menu`; a choice cannot contain `|` or a backtick, and
-a deployable `*_menu` option requires a `Slash choices:` line). The header is validated
-as the panel validates the form (vendor
+a `*_menu` option (whole numbers for `integer_menu`, numbers for `number_menu`, and a
+deployable `*_menu` option requires a `Slash choices:` line;
+a choice cannot contain `|` or a backtick; 25 choices max, 100 characters each, no repeats).
+The header is validated as the panel validates the form (vendor
 customcommands/customcommands.go:610-760, its error texts): lowercase names of 1-32
 letters/numbers/dashes/underscores, descriptions of 1-100 characters, no duplicates,
 at most 25 options, and no `Update Message Response` defer mode. To test one:

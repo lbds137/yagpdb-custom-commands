@@ -324,6 +324,7 @@ func validateSlashOptionList(options []SlashOption) error {
 		if len(opt.Choices) > maxSlashCommandChoices {
 			return fmt.Errorf("Option %q can have at most %d choices", oname, maxSlashCommandChoices)
 		}
+		seenChoices := make(map[interface{}]bool, len(opt.Choices))
 		for _, c := range opt.Choices {
 			trimmed := strings.TrimSpace(c)
 			if trimmed == "" {
@@ -333,18 +334,33 @@ func validateSlashOptionList(options []SlashOption) error {
 				return fmt.Errorf("Choice %q on option %q must be at most %d characters",
 					trimmed, oname, maxSlashChoiceLength)
 			}
+			var choiceKey interface{} = trimmed
 			switch opt.Type {
 			case types.ApplicationCommandOptionInteger:
-				if _, err := strconv.ParseInt(trimmed, 10, 64); err != nil {
+				n, err := strconv.ParseInt(trimmed, 10, 64)
+				if err != nil {
 					return fmt.Errorf("Choice %q on option %q must be a whole number", trimmed, oname)
 				}
+				choiceKey = n
 			case types.ApplicationCommandOptionNumber:
 				// stricter than the panel's ParseFloat: Discord refuses inf/nan, and deploy.js
 				// accepts decimal numbers only
 				if !decimalChoice.MatchString(trimmed) {
 					return fmt.Errorf("Choice %q on option %q must be a number", trimmed, oname)
 				}
+				n, err := strconv.ParseFloat(trimmed, 64)
+				if err != nil {
+					return fmt.Errorf("Choice %q on option %q must be a number", trimmed, oname)
+				}
+				if n == 0 {
+					n = 0
+				}
+				choiceKey = n
 			}
+			if seenChoices[choiceKey] {
+				return fmt.Errorf("Option %q has the choice %q twice", oname, trimmed)
+			}
+			seenChoices[choiceKey] = true
 		}
 	}
 	return nil

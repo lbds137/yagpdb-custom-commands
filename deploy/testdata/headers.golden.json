@@ -1426,6 +1426,21 @@
       "error": "header: Choice \"inf\" on option \"weight\" must be a number"
     },
     {
+      "name": "overflow choice on number_menu",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `weight number_menu! the weight`\n  Slash choices: `weight 1 | 1e400`\n*/}}",
+      "error": "header: Choice \"1e400\" on option \"weight\" must be a number"
+    },
+    {
+      "name": "duplicate string choice",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `flavor string_menu! the flavor`\n  Slash choices: `flavor a | b | a`\n*/}}",
+      "error": "header: Option \"flavor\" has the choice \"a\" twice"
+    },
+    {
+      "name": "duplicate integer choice",
+      "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash option: `level integer_menu! the level`\n  Slash choices: `level 1 | 01`\n*/}}",
+      "error": "header: Option \"level\" has the choice \"01\" twice"
+    },
+    {
       "name": "long slash description",
       "source": "{{/*\n  Trigger type: `Slash Command`\n  Trigger: `x`\n  Slash description: `ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd`\n*/}}",
       "error": "header: Slash command description must be between 1 and 100 characters"

@@ -171,6 +171,18 @@ func slashHeaderErrorCases() []struct{ name, src, want string } {
 			slash("x", "  Slash option: `weight number_menu! the weight`\n"+
 				"  Slash choices: `weight 1 | inf`\n"),
 			`Choice "inf" on option "weight" must be a number`},
+		{"overflow choice on number_menu",
+			slash("x", "  Slash option: `weight number_menu! the weight`\n"+
+				"  Slash choices: `weight 1 | 1e400`\n"),
+			`Choice "1e400" on option "weight" must be a number`},
+		{"duplicate string choice",
+			slash("x", "  Slash option: `flavor string_menu! the flavor`\n"+
+				"  Slash choices: `flavor a | b | a`\n"),
+			`Option "flavor" has the choice "a" twice`},
+		{"duplicate integer choice",
+			slash("x", "  Slash option: `level integer_menu! the level`\n"+
+				"  Slash choices: `level 1 | 01`\n"),
+			`Option "level" has the choice "01" twice`},
 		{"long slash description", slash("x", "  Slash description: `"+strings.Repeat("d", 101)+"`\n"),
 			"Slash command description must be between 1 and 100 characters"},
 		{"empty slash description", slash("x", "  Slash description: ``\n"),

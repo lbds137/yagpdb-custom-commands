@@ -281,6 +281,7 @@
           "Option " + goQuote(oname) + " can have at most " + MAX_SLASH_CHOICES + " choices"
         );
       }
+      var seenChoices = new Set();
       for (const c of opt.choices) {
         var trimmed = goTrim(c);
         if (trimmed === "") {
@@ -302,6 +303,18 @@
             "Choice " + goQuote(trimmed) + " on option " + goQuote(oname) + " must be a number"
           );
         }
+        var choiceKey =
+          opt.type === "integer" || opt.type === "integer_menu"
+            ? BigInt(trimmed.replace(/^\+/, ""))
+            : opt.type === "number" || opt.type === "number_menu"
+              ? Number(trimmed)
+              : trimmed;
+        if (seenChoices.has(choiceKey)) {
+          throw new Error(
+            "Option " + goQuote(oname) + " has the choice " + goQuote(trimmed) + " twice"
+          );
+        }
+        seenChoices.add(choiceKey);
       }
     }
   }
@@ -769,6 +782,47 @@
     };
   }
 
+  // Copy liveRows, marking extra: true on any option row that has live choices the header
+  // does not declare for that subcommand + option name.
+  function markPanelOnlyChoices(liveRows, wantRows) {
+    function headerHasChoices(opts, name) {
+      for (const o of opts) {
+        if (o.name === name) return o.choices.length > 0;
+      }
+      return false;
+    }
+    function copyOpts(liveOpts, wantOpts) {
+      return liveOpts.map(function (o) {
+        var extra = o.extra || (o.choices.length > 0 && !headerHasChoices(wantOpts, o.name));
+        return {
+          name: o.name,
+          type: o.type,
+          description: o.description,
+          required: o.required,
+          choices: o.choices.slice(),
+          extra: extra,
+        };
+      });
+    }
+    return {
+      subcommands: liveRows.subcommands.map(function (s) {
+        var wantSub = null;
+        for (const ws of wantRows.subcommands) {
+          if (ws.name === s.name) {
+            wantSub = ws;
+            break;
+          }
+        }
+        return {
+          name: s.name,
+          description: s.description,
+          options: copyOpts(s.options, wantSub ? wantSub.options : []),
+        };
+      }),
+      options: copyOpts(liveRows.options, wantRows.options),
+    };
+  }
+
   // {field: {live, header}} for every managed field where the header and the live form
   // disagree, or null. A header field that is absent (trigger, group, slash description) is
   // not managed; the defer mode always is (an absent line means None, as in the emulator);
@@ -797,7 +851,7 @@
       }
       var wantRows = headerSlashRows(header.slash || { subcommands: [], options: [] });
       if (JSON.stringify(wantRows) !== JSON.stringify(live.slash)) {
-        differ("slash", live.slash, wantRows);
+        differ("slash", markPanelOnlyChoices(live.slash, wantRows), wantRows);
       }
     }
     return Object.keys(diff).length ? diff : null;
